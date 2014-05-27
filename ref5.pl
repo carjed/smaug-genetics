@@ -13,7 +13,7 @@ use POSIX;
 #-Expand to more complex adjacent-site combinations
 #-Parallel handling of fasta start/endpoints
 #-Integrate with primary Perl pipeline
-#test checkout
+#test checkout from winscp
 ###################################################
 
 

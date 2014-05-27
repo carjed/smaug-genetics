@@ -32,6 +32,10 @@ print "Select R script:\n
 
 my $script = <>;
 
+print "Enter bin size:\n";
+
+my $binwidth = <>;
+
 #Process inputs (need to change to elsif to prevent bad entries)
 my $dir;
 if ($mac==1) {
@@ -42,7 +46,7 @@ if ($mac==2) {
 }
 
 my $cmd;
-my $args="$chr $dir";
+my $args="$chr $dir $binwidth";
 if ($script==1) {
 	$cmd="Rscript test.R $args";
 }
@@ -115,12 +119,12 @@ while (<$input2>) {
 print TEMP "$seq\n";
 
 #call CpGI script
-my $cpgicmd="perl cpgi130.pl temp.fasta";
-&forkExecWait($cpgicmd);
+#my $cpgicmd="perl cpgi130.pl temp.fasta";
+#&forkExecWait($cpgicmd);
 
 #Initialize bin variables
 my $length=length($seq);
-my $binwidth=1000000;
+#my $binwidth=1000000;
 my $numbins=ceil($length/$binwidth);
 my @A;
 my @C;

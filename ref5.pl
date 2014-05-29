@@ -15,6 +15,10 @@ use Pod::Usage;
 # -update directories to be consistent with pipe.pl
 # -Parallel handling of fasta start/endpoints
 # -Integrate with primary Perl pipeline
+# -create top level R script with shared cmds and branch only unique cmds
+# -update R scripts to account for local sequence
+# -update directories used in R scripts
+# -directly integrate call to bcftools for summary files?
 #
 # Associated Files:
 # -prop.R
@@ -37,6 +41,7 @@ my $mac;
 my $script;
 my $binwidth=100000;
 my $adj=0;
+my $cpg='';
 
 my $subseq=2;
 if ($adj!=0) {
@@ -48,6 +53,7 @@ GetOptions ('chr=i'=> \$chr,
 'script=i' => \$script,
 'b=i' => \$binwidth,
 'f=i' => \$adj,
+'cpg' => \$cpg,
 'help|?'=> \$help,
 man => \$man) or pod2usage(1);
 
@@ -57,8 +63,9 @@ pod2usage(-verbose => 2) if $man;
 if (!$chr | !$mac | !$script) {
 	pod2usage("$0: Missing mandatory argument.");
 }
+
 ##############################################################################
-#Process mandatory inputs (need to change to elsif to prevent bad entries)
+#Process mandatory inputs
 ##############################################################################
 my $dir;
 if ($mac==1) {
@@ -68,8 +75,15 @@ if ($mac==2) {
 	$dir = "doubletons";
 }
 
+my $cpg_flag;
+if ($cpg) {
+	$cpg_flag="on";
+} else {
+	$cpg_flag="off";
+}
+
 my $cmd;
-my $args="$chr $dir $binwidth";
+my $args="$chr $dir $binwidth $cpg_flag";
 if ($script==1) {
 	$cmd="Rscript count.R $args";
 }
@@ -81,7 +95,7 @@ my $sindex=$chr-1;
 my $eindex=$chr;
 
 ##############################################################################
-#Read in reference fasta file and summary file
+#Read in reference fasta file and summary file and initialize outputs
 ##############################################################################
 my $file = "/net/bipolar/jedidiah/human_g1k_v37.fasta";
 open my $input, '<', $file or die "can't open $file: $!";
@@ -89,21 +103,27 @@ open my $input, '<', $file or die "can't open $file: $!";
 my $summ = "/net/bipolar/jedidiah/bcftools/summaries/$dir/all/chr$chr.$dir.summary.txt";
 open my $index, '<', $summ or die "can't open $summ: $!";
 
-##############################################################################
-#initialize outputs
-##############################################################################
 my $cpg_out = 'cpg_out.txt';
 open(OUT, '>', $cpg_out) or die "can't write to $cpg_out: $!\n";
 
 my $bin_out = 'bin_out.txt';
 open(BIN, '>', $bin_out) or die "can't write to $bin_out: $!\n";
 
-my $fasta_out = 'temp.fasta';
-open(TEMP, '>', $fasta_out) or die "can't write to $fasta_out: $!\n";
+##############################################################################
+#Extract only the position column from the summary file
+##############################################################################
+print "Getting positions from summary file...\n";
+my @POS;
+#readline($index); #<-throws out summary header if it exists
+while (<$index>) {
+	push (@POS, (split(/\t/, $_))[1]);
+}
+print "Done\n";
 
 ##############################################################################
 #Find all headings from fasta file to define endpoints
 ##############################################################################
+print "Getting sequence for chromosome $chr...\n";
 my @endpts;
 while (<$input>) {
 	if ($_=~ />/) {
@@ -122,14 +142,6 @@ for my $i (0 .. $#endpts) {
                 $end=$endpts[$i];
         }
 } 
-##############################################################################
-#Extract only the position column from the summary file
-##############################################################################
-my @POS;
-#readline($index); #<-throws out summary header if it exists
-while (<$index>) {
-	push (@POS, (split(/\t/, $_))[1]);
-}
 
 ##############################################################################
 #Re-read in reference fasta file and subset for selected chromosome
@@ -144,14 +156,33 @@ while (<$input2>) {
         $seq .= $_;
     }
 }
-
-print TEMP "$seq\n";
+print "Done\n";
 
 ##############################################################################
 #call CpGI script
 ##############################################################################
-#my $cpgicmd="perl cpgi130.pl temp.fasta";
-#&forkExecWait($cpgicmd);
+my @cpgi_index;
+my $fasta_out;
+
+if ($cpg) {
+	$fasta_out = 'temp.fasta';
+	open(TEMP, '>', $fasta_out) or die "can't write to $fasta_out: $!\n";
+	print TEMP ">chr$chr\n";
+	print TEMP "$seq\n";
+	
+	#my $cpgicmd="perl cpgi130.pl temp.fasta"; #<-using slower CpG Island Searcher program
+	print "Running CpG Island analysis...\n";
+	my $cpgicmd="perl CpGcluster.pl temp.fasta 50 1E-5 > CpGCluster.log";
+	&forkExecWait($cpgicmd);
+	print "Done\n";
+	
+	my $cpgi_file = "/net/bipolar/jedidiah/smaug-genetics/temp.cpg";
+	open my $cpgi, '<', $cpgi_file or die "can't open $file: $!";
+
+	while (<$cpgi>) {
+		push(@cpgi_index, $_);
+	}
+}
 
 ##############################################################################
 #Count number of each nucleotide per bin (can be parallelized)
@@ -175,37 +206,76 @@ for my $i (0 .. $numbins-1) {
 	print BIN "$sum_at\t$sum_cg\n";
 }
 
-#Verify output
-#print "$length\n$numbins\n$A\n";
-#foreach my $count (@A) {
-#	print "$count\n";
-#}
-
 ##############################################################################
 #Compare summary to reference and output pos/local subsequence/bin
 #Update here to include adjacent sites
 ##############################################################################
-foreach my $row (@POS) {
-    print OUT "$row\t";
-    print OUT substr($seq, $row-$adj-1, $subseq);
-	print OUT "\t";
-	print OUT ceil($row/$binwidth);
-    print OUT "\n";
+print "Creating data file...\n";
+
+if ($cpg) {
+	foreach my $row (@POS) {
+		my $hit=0;	
+		foreach my $cpgi_int (@cpgi_index) {
+			my @pair = split(/,/, $cpgi_int);
+			my $start=$pair[0];
+			my $end=$pair[1];
+			
+			if (($row >= $start) && ($row <= $end)) {
+				$hit=1;
+				last;
+			}
+		}
+
+		print OUT "$row\t";
+	    print OUT substr($seq, $row-$adj-1, $subseq);
+		print OUT "\t";
+		print OUT ceil($row/$binwidth);
+		print OUT "\t";
+		print OUT "$hit";
+		print OUT "\n";
+	}
+} else {
+	foreach my $row (@POS) {
+		print OUT "$row\t";
+	    print OUT substr($seq, $row-$adj-1, $subseq);
+		print OUT "\t";
+		print OUT ceil($row/$binwidth);
+		print OUT "\n";
+	}
 }
+
+print "Done\n";
+
 ##############################################################################
 #Run selected R script
 ##############################################################################
+print "Running R script...\n";
 &forkExecWait($cmd);
+print "Done. See images folder for output.\n";
 
 ##############################################################################
-#Remove temp files
+#Clean up temp files
 ##############################################################################
-unlink $fasta_out;
+if ($cpg) {
+	unlink $fasta_out;
+}
 unlink $cpg_out;
 unlink $bin_out;
 
 my $plots_out="Rplots.pdf";
 unlink $plots_out;
+
+my $Rlog="R.log";
+unlink $Rlog;
+
+my $CpGlog="CpGCluster.log";
+unlink $CpGlog;
+
+my $CpGlog2="temp.cpg-log.txt";
+unlink $CpGlog2;
+
+my $CpGtemp="temp.cpg";
+unlink $CpGtemp;
 
 ##############################################################################
 # Hyun's subroutine--executes system commands

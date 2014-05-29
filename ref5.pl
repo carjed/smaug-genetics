@@ -134,7 +134,7 @@ while (<$index>) {
 ##############################################################################
 #Re-read in reference fasta file and subset for selected chromosome
 ##############################################################################
-my $file2 = 'human_g1k_v37.fasta';
+my $file2 = "/net/bipolar/jedidiah/human_g1k_v37.fasta";
 open my $input2, '<', $file2 or die "can't open $file: $!";
 
 my $seq;
@@ -195,14 +195,17 @@ foreach my $row (@POS) {
 ##############################################################################
 #Run selected R script
 ##############################################################################
-#&forkExecWait($cmd);
+&forkExecWait($cmd);
 
 ##############################################################################
 #Remove temp files
 ##############################################################################
-#unlink $fasta_out;
-#unlink $cpg_out;
-#unlink $bin_out;
+unlink $fasta_out;
+unlink $cpg_out;
+unlink $bin_out;
+
+my $plots_out="Rplots.pdf";
+unlink $plots_out;
 
 ##############################################################################
 # Hyun's subroutine--executes system commands

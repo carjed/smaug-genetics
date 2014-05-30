@@ -4,6 +4,9 @@ use warnings;
 use POSIX;
 use Getopt::Long;
 use Pod::Usage;
+use File::Basename;
+use File::Path qw(make_path);
+use Cwd;
 
 ##############################################################################
 # SMAUG: Singleton Mutation Analysis Utility with Graphics
@@ -19,8 +22,9 @@ use Pod::Usage;
 # -update R scripts to account for local sequence
 # -update directories used in R scripts
 # -directly integrate call to bcftools for summary files?
+# -scan for .fasta file and download if missing
 #
-# Associated Files:
+# Associated Files (need to update for new CPGI script):
 # -prop.R
 # -count.R
 # -bin_out.txt
@@ -34,6 +38,9 @@ use Pod::Usage;
 ##############################################################################
 #Initialize inputs/options/defaults and define errors
 ##############################################################################
+my $wdir=getcwd;
+my $parentdir=dirname($wdir);
+
 my $help=0;
 my $man=0;
 my $chr;
@@ -67,12 +74,12 @@ if (!$chr | !$mac | !$script) {
 ##############################################################################
 #Process mandatory inputs
 ##############################################################################
-my $dir;
+my $macl;
 if ($mac==1) {
-	$dir = "singletons";
+	$macl = "singletons";
 }
 if ($mac==2) {
-	$dir = "doubletons";
+	$macl = "doubletons";
 }
 
 my $cpg_flag;
@@ -83,7 +90,7 @@ if ($cpg) {
 }
 
 my $cmd;
-my $args="$chr $dir $binwidth $cpg_flag";
+my $args="$chr $macl $binwidth $cpg_flag";
 if ($script==1) {
 	$cmd="Rscript count.R $args";
 }
@@ -95,12 +102,13 @@ my $sindex=$chr-1;
 my $eindex=$chr;
 
 ##############################################################################
-#Read in reference fasta file and summary file and initialize outputs
+# Read in reference fasta file and summary file and initialize outputs
+# -Will eventually update summary file location to match pipe.pl
 ##############################################################################
-my $file = "/net/bipolar/jedidiah/human_g1k_v37.fasta";
-open my $input, '<', $file or die "can't open $file: $!";
+my $file = "$parentdir/human_g1k_v37.fasta";
+open my $fasta, '<', $file or die "can't open $file: $!";
 
-my $summ = "/net/bipolar/jedidiah/bcftools/summaries/$dir/all/chr$chr.$dir.summary.txt";
+my $summ = "/net/bipolar/jedidiah/bcftools/summaries/$macl/all/chr$chr.$macl.summary.txt";
 open my $index, '<', $summ or die "can't open $summ: $!";
 
 my $cpg_out = 'cpg_out.txt';
@@ -125,7 +133,7 @@ print "Done\n";
 ##############################################################################
 print "Getting sequence for chromosome $chr...\n";
 my @endpts;
-while (<$input>) {
+while (<$fasta>) {
 	if ($_=~ />/) {
 		push (@endpts, $.);
 	}
@@ -146,11 +154,11 @@ for my $i (0 .. $#endpts) {
 ##############################################################################
 #Re-read in reference fasta file and subset for selected chromosome
 ##############################################################################
-my $file2 = "/net/bipolar/jedidiah/human_g1k_v37.fasta";
-open my $input2, '<', $file2 or die "can't open $file: $!";
+my $file2 = "$parentdir/human_g1k_v37.fasta";
+open my $fasta2, '<', $file2 or die "can't open $file: $!";
 
 my $seq;
-while (<$input2>) {
+while (<$fasta2>) {
 	chomp;
     if ($.>$start && $.< $end) {
         $seq .= $_;
@@ -162,11 +170,11 @@ print "Done\n";
 #call CpGI script
 ##############################################################################
 my @cpgi_index;
-my $fasta_out;
+my $temp_fasta;
 
 if ($cpg) {
-	$fasta_out = 'temp.fasta';
-	open(TEMP, '>', $fasta_out) or die "can't write to $fasta_out: $!\n";
+	$temp_fasta = 'temp.fasta';
+	open(TEMP, '>', $temp_fasta) or die "can't write to $temp_fasta: $!\n";
 	print TEMP ">chr$chr\n";
 	print TEMP "$seq\n";
 	
@@ -176,7 +184,7 @@ if ($cpg) {
 	&forkExecWait($cpgicmd);
 	print "Done\n";
 	
-	my $cpgi_file = "/net/bipolar/jedidiah/smaug-genetics/temp.cpg";
+	my $cpgi_file = "$wdir/temp.cpg";
 	open my $cpgi, '<', $cpgi_file or die "can't open $file: $!";
 
 	while (<$cpgi>) {
@@ -257,7 +265,7 @@ print "Done. See images folder for output.\n";
 #Clean up temp files
 ##############################################################################
 if ($cpg) {
-	unlink $fasta_out;
+	unlink $temp_fasta;
 }
 unlink $cpg_out;
 unlink $bin_out;

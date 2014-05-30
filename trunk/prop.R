@@ -17,11 +17,12 @@ chr<-as.character(args[1])
 macl<-as.character(args[2])
 binwidth<-as.numeric(args[3])
 cpg_flag<-as.character(args[4])
+summ<-as.character(args[5])
 
 if (macl=="singletons") mac<-"Singleton"
 if (macl=="doubletons") mac<-"Doubleton"
 
-loc<-print(paste0("/net/bipolar/jedidiah/bcftools/summaries/",macl,"/all/chr",chr,".",macl,".summary.txt"))
+#summ<-print(paste0("/net/bipolar/jedidiah/bcftools/summaries/",macl,"/all/chr",chr,".",macl,".summary.txt"))
 title1<-print(paste0("Chr",chr," ",mac, " Relative Mutation Rate"))
 title2<-print(paste0("Chr",chr," ",mac, " Mutations--scaled proportions"))
 title3<-print(paste0("Chr",chr," ",mac, " CpG Mutations--scaled proportions"))
@@ -30,7 +31,7 @@ out2<-print(paste0("/net/bipolar/jedidiah/images/chr",chr,"_",mac,"_mutation_pro
 out3<-print(paste0("/net/bipolar/jedidiah/images/chr",chr,"_",mac,"_cpg_mutation_prop2.png"))
 
 #read in summary file and update columns
-chr22<-read.table(loc, header=F, stringsAsFactors=F)
+chr22<-read.table(summ, header=F, stringsAsFactors=F)
 names(chr22)<-c("CHR", "POS", "REF", "ALT", "ANNO")
 
 chr22$CAT<-paste(chr22$REF, chr22$ALT, sep="")

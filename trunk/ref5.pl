@@ -15,14 +15,20 @@ use Cwd;
 # outputs adjacent sites, then passes output to R script to plot distribution
 #
 # To-Do:
-# -update directories to be consistent with pipe.pl
+# -update directories here and in R scripts to be consistent with pipe.pl
+# -make folder in images directory for each chromosome
 # -Parallel handling of fasta start/endpoints
-# -Integrate with primary Perl pipeline
+# -Integrate with pipe.pl
 # -create top level R script with shared cmds and branch only unique cmds
 # -update R scripts to account for local sequence
-# -update directories used in R scripts
+# -update image directories used in R scripts
 # -directly integrate call to bcftools for summary files?
-# -scan for .fasta file and download if missing
+#
+# Long-term goals:
+# -Cross-reference with annotation data and plot
+# -Integrate somatic mutation info
+# -Better integration of different frequency class info
+# -Hidden Markov Model
 #
 # Associated Files (need to update for new CPGI script):
 # -prop.R
@@ -82,6 +88,8 @@ if ($mac==2) {
 	$macl = "doubletons";
 }
 
+my $summ = "/net/bipolar/jedidiah/bcftools/summaries/$macl/all/chr$chr.$macl.summary.txt";
+
 my $cpg_flag;
 if ($cpg) {
 	$cpg_flag="on";
@@ -90,7 +98,7 @@ if ($cpg) {
 }
 
 my $cmd;
-my $args="$chr $macl $binwidth $cpg_flag";
+my $args="$chr $macl $binwidth $cpg_flag $summ";
 if ($script==1) {
 	$cmd="Rscript count.R $args";
 }
@@ -106,9 +114,24 @@ my $eindex=$chr;
 # -Will eventually update summary file location to match pipe.pl
 ##############################################################################
 my $file = "$parentdir/human_g1k_v37.fasta";
-open my $fasta, '<', $file or die "can't open $file: $!";
 
-my $summ = "/net/bipolar/jedidiah/bcftools/summaries/$macl/all/chr$chr.$macl.summary.txt";
+if (-e $file) {
+	print "Using reference genome: $file\n";
+} else {
+	print "Reference genome not found in parent directory. Would you like to download one? (y/n): ";
+	my $choice = <>;
+	chomp $choice;
+	if ($choice eq "y") {
+		my $dlcmd="wget -P $parentdir/ ftp://ftp-trace.ncbi.nih.gov/1000genomes/ftp/technical/reference/human_g1k_v37.fasta.gz";
+		&forkExecWait($dlcmd);
+		my $unzipcmd="gunzip $parentdir/human_g1k_v37.fasta";
+		&forkExecWait($unzipcmd);
+	} else {
+		die "Please upload an appropriate reference genome to the parent directory\n";
+	}
+}
+
+open my $fasta, '<', $file or die "can't open $file: $!";
 open my $index, '<', $summ or die "can't open $summ: $!";
 
 my $cpg_out = 'cpg_out.txt';
@@ -129,7 +152,8 @@ while (<$index>) {
 print "Done\n";
 
 ##############################################################################
-#Find all headings from fasta file to define endpoints
+# Find all headings from fasta file to define endpoints
+# Re-read in reference fasta file and subset for selected chromosome
 ##############################################################################
 print "Getting sequence for chromosome $chr...\n";
 my @endpts;
@@ -151,9 +175,6 @@ for my $i (0 .. $#endpts) {
         }
 } 
 
-##############################################################################
-#Re-read in reference fasta file and subset for selected chromosome
-##############################################################################
 my $file2 = "$parentdir/human_g1k_v37.fasta";
 open my $fasta2, '<', $file2 or die "can't open $file: $!";
 
@@ -178,7 +199,6 @@ if ($cpg) {
 	print TEMP ">chr$chr\n";
 	print TEMP "$seq\n";
 	
-	#my $cpgicmd="perl cpgi130.pl temp.fasta"; #<-using slower CpG Island Searcher program
 	print "Running CpG Island analysis...\n";
 	my $cpgicmd="perl CpGcluster.pl temp.fasta 50 1E-5 > CpGCluster.log";
 	&forkExecWait($cpgicmd);

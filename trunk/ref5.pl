@@ -23,6 +23,7 @@ use Cwd;
 # -update R scripts to account for local sequence
 # -update image directories used in R scripts
 # -directly integrate call to bcftools for summary files?
+# -create directory for per-chromosome sequence files
 #
 # Long-term goals:
 # -Cross-reference with annotation data and plot
@@ -88,7 +89,8 @@ if ($mac==2) {
 	$macl = "doubletons";
 }
 
-my $summ = "/net/bipolar/jedidiah/bcftools/summaries/$macl/all/chr$chr.$macl.summary.txt";
+#my $summ = "/net/bipolar/jedidiah/bcftools/summaries/$macl/all/chr$chr.$macl.summary.txt";
+my $summ = "/net/bipolar/jedidiah/testpipe/summaries/chr$chr.summary";
 
 my $cpg_flag;
 if ($cpg) {
@@ -141,17 +143,6 @@ my $bin_out = 'bin_out.txt';
 open(BIN, '>', $bin_out) or die "can't write to $bin_out: $!\n";
 
 ##############################################################################
-#Extract only the position column from the summary file
-##############################################################################
-print "Getting positions from summary file...\n";
-my @POS;
-#readline($index); #<-throws out summary header if it exists
-while (<$index>) {
-	push (@POS, (split(/\t/, $_))[1]);
-}
-print "Done\n";
-
-##############################################################################
 # Find all headings from fasta file to define endpoints
 # Re-read in reference fasta file and subset for selected chromosome
 ##############################################################################
@@ -185,6 +176,23 @@ while (<$fasta2>) {
         $seq .= $_;
     }
 }
+
+my $abase;
+my $cbase;
+my $gbase;
+my $tbase;
+
+$abase=($seq =~ tr/A//);
+$cbase=($seq =~ tr/C//);
+$gbase=($seq =~ tr/G//);
+$tbase=($seq =~ tr/T//);
+
+my $gcsum=$cbase+$gbase;
+my $total=$abase+$cbase+$gbase+$tbase;
+my $gc = $gcsum/$total;
+
+print "GC content of chr$chr: $gc\n";
+
 print "Done\n";
 
 ##############################################################################
@@ -217,10 +225,13 @@ if ($cpg) {
 ##############################################################################
 my $length=length($seq);
 my $numbins=ceil($length/$binwidth);
+my $bin;
 my @A;
 my @C;
 my @G;
 my @T;
+
+print BIN "AT\tCG\tprop_GC\tBIN\n";
 
 for my $i (0 .. $numbins-1) {
 	$A[$i]= (substr($seq, $i*$binwidth, $binwidth) =~ tr/A//);
@@ -230,9 +241,26 @@ for my $i (0 .. $numbins-1) {
 
 	my $sum_at=$A[$i]+$T[$i];
 	my $sum_cg=$C[$i]+$G[$i];
+	my $GC=0;
+	if (($sum_at+$sum_cg)!=0) {
+		$GC=($sum_cg/($sum_at+$sum_cg));
+	}
+	
+	$bin=$i+1;
 
-	print BIN "$sum_at\t$sum_cg\n";
+	print BIN "$sum_at\t$sum_cg\t$GC\t$bin\n";
 }
+
+##############################################################################
+#Extract position column from the summary file
+##############################################################################
+print "Getting positions from summary file...\n";
+my @POS;
+#readline($index); #<-throws out summary header if it exists
+while (<$index>) {
+	push (@POS, (split(/\t/, $_))[1]);
+}
+print "Done\n";
 
 ##############################################################################
 #Compare summary to reference and output pos/local subsequence/bin
@@ -241,6 +269,9 @@ for my $i (0 .. $numbins-1) {
 print "Creating data file...\n";
 
 if ($cpg) {
+	
+	print OUT "POS\tPAIR\tCPGI\n";
+
 	foreach my $row (@POS) {
 		my $hit=0;	
 		foreach my $cpgi_int (@cpgi_index) {
@@ -257,17 +288,20 @@ if ($cpg) {
 		print OUT "$row\t";
 	    print OUT substr($seq, $row-$adj-1, $subseq);
 		print OUT "\t";
-		print OUT ceil($row/$binwidth);
-		print OUT "\t";
+		#print OUT ceil($row/$binwidth);
+		#print OUT "\t";
 		print OUT "$hit";
 		print OUT "\n";
 	}
 } else {
+
+	print OUT "POS\tPAIR\n";
+
 	foreach my $row (@POS) {
 		print OUT "$row\t";
 	    print OUT substr($seq, $row-$adj-1, $subseq);
-		print OUT "\t";
-		print OUT ceil($row/$binwidth);
+		#print OUT "\t";
+		#print OUT ceil($row/$binwidth);
 		print OUT "\n";
 	}
 }

@@ -18,13 +18,12 @@ use Cwd;
 # To-Do:
 # -update directories here and in R scripts to be consistent with pipe.pl
 # -make folder in images directory for each chromosome
-# -Parallel handling of fasta start/endpoints
 # -Integrate with pipe.pl
 # -create top level R script with shared cmds and branch only unique cmds
 # -update R scripts to account for local sequence
-# -update image directories used in R scripts
 # -directly integrate call to bcftools for summary files?
 # -create directory for per-chromosome sequence files
+# -modify count.R to match recent updates
 #
 # Long-term goals:
 # -Cross-reference with annotation data and plot
@@ -32,15 +31,6 @@ use Cwd;
 # -Better integration of different frequency class info
 # -Hidden Markov Model
 #
-# Associated Files (need to update for new CPGI script):
-# -prop.R
-# -count.R
-# -bin_out.txt
-# -cpg_out.txt
-# -cpgi130.pl
-# -human_g1k_v37.fasta
-# -temp.fasta
-# -
 ##############################################################################
 
 ##############################################################################
@@ -97,18 +87,23 @@ if ($cpg) {
 	$cpg_flag="off";
 }
 
-my $sindex=$chr-1;
-my $eindex=$chr;
+my $nextchr;
+
+if ($chr<22) {
+	$nextchr=$chr+1;
+} elsif ($chr==22) {
+	$nextchr="X";
+}
 
 ##############################################################################
 # Read in reference, summary, and hotspot file and initialize outputs
 # download hg37 from nih.gov if missing
 # -Will eventually update summary file location to match pipe.pl
 ##############################################################################
-my $file = "$parentdir/human_g1k_v37.fasta";
+my $f_fasta = "$parentdir/human_g1k_v37.fasta";
 
-if (-e $file) {
-	print "Using reference genome: $file\n";
+if (-e $f_fasta) {
+	print "Using reference genome: $f_fasta\n";
 } else {
 	print "Reference genome not found in parent directory. Would you like to download one? (y/n): ";
 	my $choice = <>;
@@ -123,17 +118,17 @@ if (-e $file) {
 	}
 }
 
-open my $fasta, '<', $file or die "can't open $file: $!";
+open my $fasta, '<', $f_fasta or die "can't open $f_fasta: $!";
 
-#my $summ = "/net/bipolar/jedidiah/bcftools/summaries/$macl/all/chr$chr.$macl.summary.txt";
-my $summ = "/net/bipolar/jedidiah/testpipe/summaries/chr$chr.summary";
-open my $index, '<', $summ or die "can't open $summ: $!";
+#my $f_summ = "/net/bipolar/jedidiah/bcftools/summaries/$macl/all/chr$chr.$macl.summary.txt";
+my $f_summ = "/net/bipolar/jedidiah/testpipe/summaries/chr$chr.summary";
+open my $summ, '<', $f_summ or die "can't open $f_summ: $!";
 
 my $f_hotspots = "/net/bipolar/jedidiah/genetic_map/hotspots.txt";
 #my $f_hotspots="test_hotspots.txt";
 open my $hotspots, '<', $f_hotspots or die "can't open $f_hotspots: $!";
 
-my $outfile = "chr$chr.expanded.summary";
+my $outfile = "expanded.summary";
 open(OUT, '>', $outfile) or die "can't write to $outfile: $!\n";
 
 my $bin_out = 'bin_out.txt';
@@ -146,46 +141,21 @@ open(BIN, '>', $bin_out) or die "can't write to $bin_out: $!\n";
 # Re-read in reference fasta file and subset for selected chromosome
 ##############################################################################
 print "Getting sequence for chromosome $chr...\n";
-my @endpts;
+
+my $seq;
 while (<$fasta>) {
-	if ($_=~ />/) {
-		push (@endpts, $.);
+	chomp;
+	if (/>$chr/../>$nextchr/) {
+		next if />$chr/ || />$nextchr/;
+		$seq .=$_;
 	}
 }
 
-my $start;
-my $end;
-
-for my $i (0 .. $#endpts) {
-        if ($i == $sindex) {
-                $start=$endpts[$i];
-        }
-        if ($i == $eindex) {
-                $end=$endpts[$i];
-        }
-} 
-
-my $file2 = "$parentdir/human_g1k_v37.fasta";
-open my $fasta2, '<', $file2 or die "can't open $file: $!";
-
-my $seq;
-while (<$fasta2>) {
-	chomp;
-    if ($.>$start && $.< $end) {
-        $seq .= $_;
-    }
-}
-
 # Validate overall GC content of chromosome
-my $abase;
-my $cbase;
-my $gbase;
-my $tbase;
-
-$abase=($seq =~ tr/A//);
-$cbase=($seq =~ tr/C//);
-$gbase=($seq =~ tr/G//);
-$tbase=($seq =~ tr/T//);
+my $abase=($seq =~ tr/A//);
+my $cbase=($seq =~ tr/C//);
+my $gbase=($seq =~ tr/G//);
+my $tbase=($seq =~ tr/T//);
 
 my $gcsum=$cbase+$gbase;
 my $total=$abase+$cbase+$gbase+$tbase;
@@ -212,8 +182,8 @@ if ($cpg) {
 	&forkExecWait($cpgicmd);
 	print "Done\n";
 	
-	my $cpgi_file = "$wdir/temp.cpg";
-	open my $cpgi, '<', $cpgi_file or die "can't open $file: $!";
+	my $f_cpgi = "$wdir/temp.cpg";
+	open my $cpgi, '<', $f_cpgi or die "can't open $f_cpgi: $!";
 
 	while (<$cpgi>) {
 		push(@cpgi_index, $_);
@@ -257,8 +227,8 @@ for my $i (0 .. $numbins-1) {
 print "Getting positions from summary file...\n";
 my @POS;
 my @NEWSUMM;
-#readline($index); #<-throws out summary header if it exists
-while (<$index>) {
+#readline($summ); #<-throws out summary header if it exists
+while (<$summ>) {
 	push (@POS, (split(/\t/, $_))[1]);
 	push (@NEWSUMM, $_);
 }
@@ -309,7 +279,7 @@ if ($cpg) {
 	}
 } else {
 
-	print OUT "CHR\tPOS\tREF\tALT\tDP\tNS\tANNO\tSEQ\tDIST\n";
+	print OUT "CHR\tPOS\tREF\tALT\tDP\tAN\tANNO\tSEQ\tDIST\n";
 
 	foreach my $row (@NEWSUMM) {
 		chomp $row;
@@ -330,7 +300,7 @@ print "Done\n";
 #Run selected R script
 ##############################################################################
 my $cmd;
-my $args="$chr $macl $binwidth $cpg_flag $summ";
+my $args="$chr $macl $binwidth $cpg_flag $outfile";
 if ($script==1) {
 	$cmd="Rscript count.R $args";
 }
@@ -483,10 +453,14 @@ specify which R script to run: 1 for counts, 2 for proportions
 
 specify bin width for histograms (default is 100,000)
 
-=item B<--f>
+=item B<--adj>
 
 specify number of nucleotides in either direction from the variant to include in analysis
-default includes only the next 5' nucleotide for CpG distinction
+default includes only the next 3' nucleotide for CpG distinction
+
+=item B<--cpg>
+
+specifies extra analysis specific to CpG sites
 
 =back
 

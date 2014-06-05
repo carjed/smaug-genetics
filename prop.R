@@ -36,15 +36,15 @@ out4<-print(paste0("/net/bipolar/jedidiah/images/chr",chr,"_",mac,"_mutation_vs_
 out5<-print(paste0("/net/bipolar/jedidiah/images/chr",chr,"_",mac,"_mutation_vs_hotspot_heatmap.png"))
 
 #read in summary file and update columns
-chr22<-read.table(summ, header=F, stringsAsFactors=F)
-names(chr22)<-c("CHR", "POS", "REF", "ALT", "DP", "AN", "ANNO")
+chr22<-read.table(summ, header=T, stringsAsFactors=F)
+#names(chr22)<-c("CHR", "POS", "REF", "ALT", "DP", "AN", "ANNO")
 
 chr22$DP<-as.numeric(chr22$DP)
 chr22$DP[is.na(chr22$DP)]=mean(chr22$DP, na.rm=T)
 
 chr22$AVGDP<-chr22$DP/(chr22$AN/2)
 
-chr22$BIN<-ceiling(chr22$POS/100000)
+chr22$BIN<-ceiling(chr22$POS/binwidth)
 
 chr22$CAT<-paste(chr22$REF, chr22$ALT, sep="")
 
@@ -72,15 +72,18 @@ ggsave(out4)
 bins<-read.table("bin_out.txt", header=T, stringsAsFactors=F)
 
 #Read in perl script output containing local sequence and bin number
-chr22a<-read.table("cpg_out.txt", header=T, stringsAsFactors=F)
+#chr22a<-read.table("expanded.summary", header=T, stringsAsFactors=F)
 
-chr22m<-merge(chr22, chr22a, by="POS")
+#chr22m<-merge(chr22, chr22a, by="POS")
 
-hotspot_agg<-aggregate(DIST ~ BIN+Category, data=chr22m, mean)
+hotspot_agg<-aggregate(DIST ~ BIN+Category, data=chr22, mean)
 
 ggplot(hotspot_agg, aes(x=BIN, y=Category, fill=DIST))+geom_tile()+scale_fill_gradientn(colours=myPalette(4))+scale_x_continuous(breaks=seq(0,xmax,50))
 ggsave(out5)
 
+##############################################################################
+#CpG Analysis
+##############################################################################
 if (cpg_flag=="on") {
 	#names(chr22a)<-c("POS","PAIR","CPGI")
 	

@@ -16,14 +16,13 @@ use Cwd;
 # outputs adjacent sites, then passes output to R script to plot distribution
 #
 # To-Do:
-# -update directories here and in R scripts to be consistent with pipe.pl
+# -update directories here and in R script to be consistent with pipe.pl
 # -make folder in images directory for each chromosome
 # -Integrate with pipe.pl
 # -create top level R script with shared cmds and branch only unique cmds
 # -update R scripts to account for local sequence
 # -directly integrate call to bcftools for summary files?
 # -create directory for per-chromosome sequence files
-# -modify count.R to match recent updates
 #
 # Long-term goals:
 # -Cross-reference with annotation data and plot
@@ -43,19 +42,12 @@ my $help=0;
 my $man=0;
 my $chr;
 my $mac;
-my $script;
 my $binwidth=100000;
 my $adj=0;
 my $cpg='';
 
-my $subseq=2;
-if ($adj!=0) {
-	$subseq = $adj*2+1;
-}
-
 GetOptions ('chr=i'=> \$chr,
 'mac=i'=> \$mac,
-'script=i' => \$script,
 'b=i' => \$binwidth,
 'adj=i' => \$adj,
 'cpg' => \$cpg,
@@ -65,9 +57,11 @@ man => \$man) or pod2usage(1);
 pod2usage(0) if $help;
 pod2usage(-verbose => 2) if $man;
 
-if (!$chr | !$mac | !$script) {
+if (!$chr | !$mac) {
 	pod2usage("$0: Missing mandatory argument.");
 }
+
+print "Local subsequence and CpG command entered simultaneously--overriding CpG analysis\n" if ($cpg && $adj!=0);
 
 ##############################################################################
 #Process mandatory inputs
@@ -81,14 +75,18 @@ if ($mac==2) {
 }
 
 my $cpg_flag;
-if ($cpg) {
+if ($cpg && $adj==0) {
 	$cpg_flag="on";
 } else {
 	$cpg_flag="off";
 }
 
-my $nextchr;
+my $subseq=2;
+if ($adj!=0) {
+	$subseq = $adj*2+1;
+}
 
+my $nextchr;
 if ($chr<22) {
 	$nextchr=$chr+1;
 } elsif ($chr==22) {
@@ -171,7 +169,7 @@ print "Done\n";
 my @cpgi_index;
 my $temp_fasta;
 
-if ($cpg) {
+if ($cpg && $adj==0) {
 	$temp_fasta = 'temp.fasta';
 	open(TEMP, '>', $temp_fasta) or die "can't write to $temp_fasta: $!\n";
 	print TEMP ">chr$chr\n";
@@ -250,7 +248,7 @@ print "Done\n";
 ##############################################################################
 print "Creating data file...\n";
 
-if ($cpg) {
+if ($cpg && $adj==0) {
 	
 	print OUT "CHR\tPOS\tREF\tALT\tDP\tNS\tANNO\tPAIR\tCPGI\tDIST\n";
 
@@ -299,14 +297,9 @@ print "Done\n";
 ##############################################################################
 #Run selected R script
 ##############################################################################
-my $cmd;
+
 my $args="$chr $macl $binwidth $cpg_flag $outfile";
-if ($script==1) {
-	$cmd="Rscript count.R $args";
-}
-if ($script==2) {
-	$cmd="Rscript prop.R $args";
-}
+my $cmd="Rscript prop.R $args";
 
 print "Running R script...\n";
 &forkExecWait($cmd);
@@ -315,7 +308,7 @@ print "Done. See images folder for output.\n";
 ##############################################################################
 #Clean up temp files
 ##############################################################################
-if ($cpg) {
+if ($cpg && $adj==0) {
 	unlink $temp_fasta;
 }
 unlink $outfile;

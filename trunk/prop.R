@@ -33,6 +33,7 @@ out1<-print(paste0("/net/bipolar/jedidiah/images/chr",chr,"_",mac,"_mutation_pro
 out2<-print(paste0("/net/bipolar/jedidiah/images/chr",chr,"_",mac,"_mutation_prop2.png"))
 out3<-print(paste0("/net/bipolar/jedidiah/images/chr",chr,"_",mac,"_cpg_mutation_prop2.png"))
 out4<-print(paste0("/net/bipolar/jedidiah/images/chr",chr,"_",mac,"_mutation_vs_depth_heatmap.png"))
+out5<-print(paste0("/net/bipolar/jedidiah/images/chr",chr,"_",mac,"_mutation_vs_hotspot_heatmap.png"))
 
 #read in summary file and update columns
 chr22<-read.table(summ, header=F, stringsAsFactors=F)
@@ -73,9 +74,16 @@ bins<-read.table("bin_out.txt", header=T, stringsAsFactors=F)
 #Read in perl script output containing local sequence and bin number
 chr22a<-read.table("cpg_out.txt", header=T, stringsAsFactors=F)
 
+chr22m<-merge(chr22, chr22a, by="POS")
+
+hotspot_agg<-aggregate(DIST ~ BIN+Category, data=chr22m, mean)
+
+ggplot(hotspot_agg, aes(x=BIN, y=Category, fill=DIST))+geom_tile()+scale_fill_gradientn(colours=myPalette(4))+scale_x_continuous(breaks=seq(0,xmax,50))
+ggsave(out5)
+
 if (cpg_flag=="on") {
 	#names(chr22a)<-c("POS","PAIR","CPGI")
-	chr22m<-merge(chr22, chr22a, by="POS")
+	
 	chr22m$CpG[chr22m$PAIR=="CG" | chr22m$PAIR=="GC"]<-1
 	chr22m$CpG[chr22m$PAIR!="CG" & chr22m$PAIR!="GC"]<-0
 
@@ -101,9 +109,6 @@ if (cpg_flag=="on") {
 	suppressMessages(ggplot(count5cpg, aes(x=factor(BIN), y=rel_prop, colour=Category, fill=Category, alpha=0.5))+geom_bar(position="stack", stat="identity")+ scale_x_discrete(breaks=seq(0,xmax,50))+xlab("Bin")+ylab("Proportion")+ggtitle(title3))
 	suppressMessages(ggsave(out3))
 } 
-#else {
-#	names(chr22a)<-c("POS","PAIR")
-#}
 
 #All--Merge bins + summary files and process
 count<-count(chr22, c("Category", "BIN", "CHR"))

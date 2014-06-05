@@ -6,6 +6,7 @@ use Getopt::Long;
 use Pod::Usage;
 use File::Basename;
 use File::Path qw(make_path);
+use List::Util qw(first max maxstr min minstr reduce shuffle sum);
 use Cwd;
 
 ##############################################################################
@@ -66,7 +67,7 @@ GetOptions ('chr=i'=> \$chr,
 'mac=i'=> \$mac,
 'script=i' => \$script,
 'b=i' => \$binwidth,
-'f=i' => \$adj,
+'adj=i' => \$adj,
 'cpg' => \$cpg,
 'help|?'=> \$help,
 man => \$man) or pod2usage(1);
@@ -89,9 +90,6 @@ if ($mac==2) {
 	$macl = "doubletons";
 }
 
-#my $summ = "/net/bipolar/jedidiah/bcftools/summaries/$macl/all/chr$chr.$macl.summary.txt";
-my $summ = "/net/bipolar/jedidiah/testpipe/summaries/chr$chr.summary";
-
 my $cpg_flag;
 if ($cpg) {
 	$cpg_flag="on";
@@ -99,20 +97,12 @@ if ($cpg) {
 	$cpg_flag="off";
 }
 
-my $cmd;
-my $args="$chr $macl $binwidth $cpg_flag $summ";
-if ($script==1) {
-	$cmd="Rscript count.R $args";
-}
-if ($script==2) {
-	$cmd="Rscript prop.R $args";
-}
-
 my $sindex=$chr-1;
 my $eindex=$chr;
 
 ##############################################################################
-# Read in reference fasta file and summary file and initialize outputs
+# Read in reference, summary, and hotspot file and initialize outputs
+# download hg37 from nih.gov if missing
 # -Will eventually update summary file location to match pipe.pl
 ##############################################################################
 my $file = "$parentdir/human_g1k_v37.fasta";
@@ -134,13 +124,22 @@ if (-e $file) {
 }
 
 open my $fasta, '<', $file or die "can't open $file: $!";
+
+#my $summ = "/net/bipolar/jedidiah/bcftools/summaries/$macl/all/chr$chr.$macl.summary.txt";
+my $summ = "/net/bipolar/jedidiah/testpipe/summaries/chr$chr.summary";
 open my $index, '<', $summ or die "can't open $summ: $!";
 
-my $cpg_out = 'cpg_out.txt';
-open(OUT, '>', $cpg_out) or die "can't write to $cpg_out: $!\n";
+my $f_hotspots = "/net/bipolar/jedidiah/genetic_map/hotspots.txt";
+#my $f_hotspots="test_hotspots.txt";
+open my $hotspots, '<', $f_hotspots or die "can't open $f_hotspots: $!";
+
+my $outfile = "chr$chr.expanded.summary";
+open(OUT, '>', $outfile) or die "can't write to $outfile: $!\n";
 
 my $bin_out = 'bin_out.txt';
 open(BIN, '>', $bin_out) or die "can't write to $bin_out: $!\n";
+
+
 
 ##############################################################################
 # Find all headings from fasta file to define endpoints
@@ -177,6 +176,7 @@ while (<$fasta2>) {
     }
 }
 
+# Validate overall GC content of chromosome
 my $abase;
 my $cbase;
 my $gbase;
@@ -252,27 +252,43 @@ for my $i (0 .. $numbins-1) {
 }
 
 ##############################################################################
-#Extract position column from the summary file
+# Extract position column from the summary file and get hotspot coordinates
 ##############################################################################
 print "Getting positions from summary file...\n";
 my @POS;
+my @NEWSUMM;
 #readline($index); #<-throws out summary header if it exists
 while (<$index>) {
 	push (@POS, (split(/\t/, $_))[1]);
+	push (@NEWSUMM, $_);
+}
+print "Done\n";
+
+print "Getting hotspot coordinates...\n";
+my @loci;
+readline($hotspots); #<-throws out header
+while (<$hotspots>) {
+	if ($_ =~ /^chr$chr/) {
+		push (@loci, $_);
+	}
 }
 print "Done\n";
 
 ##############################################################################
-#Compare summary to reference and output pos/local subsequence/bin
-#Update here to include adjacent sites
+# Compare summary to reference and output pos/local subsequence/bin
+# Update here to include adjacent sites
 ##############################################################################
 print "Creating data file...\n";
 
 if ($cpg) {
 	
-	print OUT "POS\tPAIR\tCPGI\n";
+	print OUT "CHR\tPOS\tREF\tALT\tDP\tNS\tANNO\tPAIR\tCPGI\tDIST\n";
 
-	foreach my $row (@POS) {
+	foreach my $row (@NEWSUMM) {
+		chomp $row;
+		my @line=split(/\t/, $row);
+		my $pos=$line[1];
+		my $distance = &dist2Hotspot($pos);
 		my $hit=0;	
 		foreach my $cpgi_int (@cpgi_index) {
 			my @pair = split(/,/, $cpgi_int);
@@ -288,21 +304,23 @@ if ($cpg) {
 		print OUT "$row\t";
 	    print OUT substr($seq, $row-$adj-1, $subseq);
 		print OUT "\t";
-		#print OUT ceil($row/$binwidth);
-		#print OUT "\t";
-		print OUT "$hit";
-		print OUT "\n";
+		print OUT "$hit\t";
+		print OUT "$distance\n";
 	}
 } else {
 
-	print OUT "POS\tPAIR\n";
+	print OUT "CHR\tPOS\tREF\tALT\tDP\tNS\tANNO\tSEQ\tDIST\n";
 
-	foreach my $row (@POS) {
+	foreach my $row (@NEWSUMM) {
+		chomp $row;
+		my @line=split(/\t/, $row);
+		my $pos=$line[1];
+		my $distance = &dist2Hotspot($pos);
+		
 		print OUT "$row\t";
-	    print OUT substr($seq, $row-$adj-1, $subseq);
-		#print OUT "\t";
-		#print OUT ceil($row/$binwidth);
-		print OUT "\n";
+	    print OUT substr($seq, $pos-$adj-1, $subseq);
+		print OUT "\t";
+		print OUT "$distance\n";
 	}
 }
 
@@ -311,6 +329,15 @@ print "Done\n";
 ##############################################################################
 #Run selected R script
 ##############################################################################
+my $cmd;
+my $args="$chr $macl $binwidth $cpg_flag $summ";
+if ($script==1) {
+	$cmd="Rscript count.R $args";
+}
+if ($script==2) {
+	$cmd="Rscript prop.R $args";
+}
+
 print "Running R script...\n";
 &forkExecWait($cmd);
 print "Done. See images folder for output.\n";
@@ -321,7 +348,7 @@ print "Done. See images folder for output.\n";
 if ($cpg) {
 	unlink $temp_fasta;
 }
-unlink $cpg_out;
+unlink $outfile;
 unlink $bin_out;
 
 my $plots_out="Rplots.pdf";
@@ -356,6 +383,64 @@ sub forkExecWait {
     else {
 		waitpid($kidpid,0);
     }
+}
+
+##############################################################################
+# Hotspot Subroutine
+# Input: variant position
+# Output: Distance to hotspot
+##############################################################################
+sub dist2Hotspot {
+	my $site = shift;
+	my $prevabsstart=10e10;
+	my $prevabsend=10e10;
+	my $prevdist=10e10;
+	
+	my $dist;
+	my $distout;
+	
+	#returns distance to first locus if site occurs before 
+	#returns distance to last locus if site occurs after
+	my @first = split(/\t/, $loci[0]);
+	my @last = split(/\t/, $loci[$#loci]);
+	
+	if ($site < $first[2]) {
+		$dist = $first[2]-$site;
+		return $dist;
+		last;
+	} elsif ($site > $last[3]) {
+		$dist = $site-$last[3];
+		return $dist;
+		last;	
+	}
+	
+	foreach my $locus (@loci) {
+		my @elements=split(/\t/, $locus);
+		my $absstart=abs($site-$elements[2]);
+		my $absend=abs($site-$elements[3]);
+
+		# returns 0 and stops if site is in hotspot
+		# checks distance to current hotspot; if previous hotspot is closer $prevdist is returned
+		# if site is near last hotspot in list (with $dist<$prevdist), loop ends and $dist is returned
+
+		if ($site >=$elements[2] && $site <= $elements[3]) {
+			$dist=0;
+			return $dist;
+			last;
+		} elsif ($site < $last[3]) {
+			$dist = min $absstart, $absend, $prevabsstart, $prevabsend;
+
+			if ($prevdist <= $dist) {
+				$dist=$prevdist;
+				return $prevdist;
+				last;
+			} 
+		}
+		$prevabsstart=$absstart;
+		$prevabsend=$absend;
+		$prevdist=$dist;		
+	}
+	return $dist;
 }
 
 __END__

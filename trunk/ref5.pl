@@ -149,6 +149,9 @@ while (<$fasta>) {
 	}
 }
 
+my $altseq=$seq;
+$altseq =~ tr/ACGT/TGCA/;
+
 # Validate overall GC content of chromosome
 my $abase=($seq =~ tr/A//);
 my $cbase=($seq =~ tr/C//);
@@ -257,6 +260,7 @@ if ($cpg && $adj==0) {
 		my @line=split(/\t/, $row);
 		my $pos=$line[1];
 		my $distance = &dist2Hotspot($pos);
+		my $localseq = substr($seq, $pos-$adj-1, $subseq);
 		my $hit=0;	
 		foreach my $cpgi_int (@cpgi_index) {
 			my @pair = split(/,/, $cpgi_int);
@@ -269,26 +273,21 @@ if ($cpg && $adj==0) {
 			}
 		}
 
-		print OUT "$row\t";
-	    print OUT substr($seq, $row-$adj-1, $subseq);
-		print OUT "\t";
-		print OUT "$hit\t";
-		print OUT "$distance\n";
+		print OUT "$row\t$localseq\t$hit\t$distance\n";
 	}
 } else {
 
-	print OUT "CHR\tPOS\tREF\tALT\tDP\tAN\tANNO\tSEQ\tDIST\n";
+	print OUT "CHR\tPOS\tREF\tALT\tDP\tAN\tANNO\tSEQ\tALTSEQ\tDIST\n";
 
 	foreach my $row (@NEWSUMM) {
 		chomp $row;
 		my @line=split(/\t/, $row);
 		my $pos=$line[1];
 		my $distance = &dist2Hotspot($pos);
+		my $localseq = substr($seq, $pos-$adj-1, $subseq);
+		my $altlocalseq = substr($altseq, $pos-$adj-1, $subseq);
 		
-		print OUT "$row\t";
-	    print OUT substr($seq, $pos-$adj-1, $subseq);
-		print OUT "\t";
-		print OUT "$distance\n";
+		print OUT "$row\t$localseq\t$altlocalseq\t$distance\n";
 	}
 }
 
@@ -311,7 +310,8 @@ print "Done. See images folder for output.\n";
 if ($cpg && $adj==0) {
 	unlink $temp_fasta;
 }
-unlink $outfile;
+
+#unlink $outfile;
 unlink $bin_out;
 
 my $plots_out="Rplots.pdf";

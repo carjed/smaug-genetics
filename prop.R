@@ -5,6 +5,11 @@
 #1. Relative to all corresponding nucleotides per bin
 #2. Relative to observed total per bin
 #####################################################
+
+##############################################################################
+# Process Options/Args
+##############################################################################
+
 options(warn=-1)
 sink("R.log")
 
@@ -23,7 +28,9 @@ summ<-as.character(args[5])
 if (macl=="singletons") mac<-"Singleton"
 if (macl=="doubletons") mac<-"Doubleton"
 
-#summ<-print(paste0("/net/bipolar/jedidiah/bcftools/summaries/",macl,"/all/chr",chr,".",macl,".summary.txt"))
+##############################################################################
+# Initialize titles/output strings
+##############################################################################
 
 main_rel_title<-print(paste0("Chr",chr," ",mac, " Relative Mutation Rate"))
 main_rel_out<-print(paste0("/net/bipolar/jedidiah/images/chr",chr,"_",mac,"_mutation_prop.png"))
@@ -31,33 +38,25 @@ main_rel_out<-print(paste0("/net/bipolar/jedidiah/images/chr",chr,"_",mac,"_muta
 main_scale_title<-print(paste0("Chr",chr," ",mac, " Mutations--scaled proportions"))
 main_scale_out<-print(paste0("/net/bipolar/jedidiah/images/chr",chr,"_",mac,"_mutation_prop2.png"))
 
-cpg_scale_title<-print(paste0("Chr",chr," ",mac, " CpG Mutations--scaled proportions"))
-cpg_scale_out<-print(paste0("/net/bipolar/jedidiah/images/chr",chr,"_",mac,"_cpg_mutation_prop2.png"))
-
-cpg_dist_title<-print(paste0("Chr",chr," ",mac, " CpG Distribution by Mutation Type"))
-cpg_ident_out<-print(paste0("/net/bipolar/jedidiah/images/chr",chr,"_",mac,"_cpg_dist_ident.png"))
-cpg_dodge_out<-print(paste0("/net/bipolar/jedidiah/images/chr",chr,"_",mac,"_cpg_dist_dodge.png"))
-
 main_dist_title<-print(paste0("Chr",chr," ",mac, " Distribution by Mutation Type"))
 main_ident_out<-print(paste0("/net/bipolar/jedidiah/images/chr",chr,"_",mac,"_dist_ident.png"))
 main_dodge_out<-print(paste0("/net/bipolar/jedidiah/images/chr",chr,"_",mac,"_dist_dodge.png"))
 
-depth_heat_out<-print(paste0("/net/bipolar/jedidiah/images/chr",chr,"_",mac,"_mutation_vs_depth_heatmap.png"))
-hotspot_heat_out<-print(paste0("/net/bipolar/jedidiah/images/chr",chr,"_",mac,"_mutation_vs_hotspot_heatmap.png"))
-
-#read in summary file and update columns
+##############################################################################
+#read in summary file and bins file
+#
+#summ<-print(paste0("/net/bipolar/jedidiah/bcftools/summaries/",macl,"/all/chr",chr,".",macl,".summary.txt"))
 #chr22<-read.table("/net/bipolar/jedidiah/testpipe/summaries/chr22.summary", header=F, stringsAsFactors=F)
-chr22<-read.table(summ, header=T, stringsAsFactors=F)
-
 #names(chr22)<-c("CHR", "POS", "REF", "ALT", "DP", "AN", "ANNO")
+##############################################################################
+
+chr22<-read.table(summ, header=T, stringsAsFactors=F)
+bins<-read.table("bin_out.txt", header=T, stringsAsFactors=F)
 
 chr22$DP<-as.numeric(chr22$DP)
 chr22$DP[is.na(chr22$DP)]=mean(chr22$DP, na.rm=T)
-
 chr22$AVGDP<-chr22$DP/(chr22$AN/2)
-
 chr22$BIN<-ceiling(chr22$POS/binw)
-
 chr22$CAT<-paste(chr22$REF, chr22$ALT, sep="")
 
 chr22$Category[chr22$CAT=="AC" | chr22$CAT=="TG"]<-"AT to CG"
@@ -66,6 +65,13 @@ chr22$Category[chr22$CAT=="AT" | chr22$CAT=="TA"]<-"AT to TA"
 chr22$Category[chr22$CAT=="GA" | chr22$CAT=="CT"]<-"GC to AT"
 chr22$Category[chr22$CAT=="GC" | chr22$CAT=="CG"]<-"GC to CG"
 chr22$Category[chr22$CAT=="GT" | chr22$CAT=="CA"]<-"GC to TA"
+
+##############################################################################
+# Heatmaps
+##############################################################################
+
+depth_heat_out<-print(paste0("/net/bipolar/jedidiah/images/chr",chr,"_",mac,"_mutation_vs_depth_heatmap.png"))
+hotspot_heat_out<-print(paste0("/net/bipolar/jedidiah/images/chr",chr,"_",mac,"_mutation_vs_hotspot_heatmap.png"))
 
 #long form aggregate--average depth per bin per category
 aggdata<-aggregate(AVGDP ~ BIN+Category, data=chr22, mean)
@@ -80,24 +86,52 @@ xmax<-floor(max(aggdata$BIN)/100)*100
 ggplot(agg2, aes(x=BIN, y=Category, fill=AVGDP))+geom_tile()+scale_fill_gradientn(colours=myPalette(4))+scale_x_continuous(breaks=seq(0,xmax,50))
 ggsave(depth_heat_out)
 
-#Read in bins file from perl script
-bins<-read.table("bin_out.txt", header=T, stringsAsFactors=F)
-
-#Read in perl script output containing local sequence and bin number
-#chr22a<-read.table("expanded.summary", header=T, stringsAsFactors=F)
-
-#chr22m<-merge(chr22, chr22a, by="POS")
-
 hotspot_agg<-aggregate(DIST ~ BIN+Category, data=chr22, mean)
 
 ggplot(hotspot_agg, aes(x=BIN, y=Category, fill=DIST))+geom_tile()+scale_fill_gradientn(colours=myPalette(4))+scale_x_continuous(breaks=seq(0,xmax,50))
 ggsave(hotspot_heat_out)
 
 ##############################################################################
+# Local Sequence Analysis
+##############################################################################
+
+chr22$Sequence<-paste0(pmin(chr22$SEQ, chr22$ALTSEQ),"(",pmax(chr22$SEQ, chr22$ALTSEQ),")")
+cats<-factor(chr22$Category)
+
+for (i in 1:6) {
+	cat<-levels(cats)[i]
+	chr22s<-chr22[chr22$Category==cat,]
+	title<-paste0("Chr22: ",cat," Mutations by Local Sequence")
+	ggplot(chr22s, aes(x=POS))+geom_histogram(binwidth=binw, position="identity")+ggtitle(title)+facet_wrap(~Sequence)
+	out<-paste0("/net/bipolar/jedidiah/images/chr",chr," ",cat," by local seq.png")
+	ggsave(out)
+}
+
+aggseq<-count(chr22, c("Sequence", "Category"))
+aggseq_a<-aggseq[grep("^A", aggseq$Category),]
+aggseq_g<-aggseq[grep("^G", aggseq$Category),]
+
+at_seq_title<-paste0("Chr",chr,": AT Mutations by Local Sequence")
+gc_seq_title<-paste0("Chr",chr,": GC Mutations by Local Sequence")
+at_seq_out<-paste0("/net/bipolar/jedidiah/images/chr",chr,"_AT_seq.png")
+gc_seq_out<-paste0("/net/bipolar/jedidiah/images/chr",chr,"_GC_seq.png")
+
+ggplot(aggseq_a, aes(x=Category, y=freq, fill=Sequence))+geom_bar(position="dodge", stat="identity")+ggtitle(at_seq_title)
+ggsave(at_seq_out)
+ggplot(aggseq_g, aes(x=Category, y=freq, fill=Sequence))+geom_bar(position="dodge", stat="identity")+ggtitle(gc_seq_title)
+ggsave(gc_seq_out)
+
+##############################################################################
 #CpG Analysis
 ##############################################################################
 if (cpg_flag=="on") {
 	#names(chr22a)<-c("POS","PAIR","CPGI")
+	cpg_scale_title<-print(paste0("Chr",chr," ",mac, " CpG Mutations--scaled proportions"))
+	cpg_scale_out<-print(paste0("/net/bipolar/jedidiah/images/chr",chr,"_",mac,"_cpg_mutation_prop2.png"))
+
+	cpg_dist_title<-print(paste0("Chr",chr," ",mac, " CpG Distribution by Mutation Type"))
+	cpg_ident_out<-print(paste0("/net/bipolar/jedidiah/images/chr",chr,"_",mac,"_cpg_dist_ident.png"))
+	cpg_dodge_out<-print(paste0("/net/bipolar/jedidiah/images/chr",chr,"_",mac,"_cpg_dist_dodge.png"))
 	
 	chr22m$CpG[chr22m$PAIR=="CG" | chr22m$PAIR=="GC"]<-1
 	chr22m$CpG[chr22m$PAIR!="CG" & chr22m$PAIR!="GC"]<-0
@@ -129,8 +163,6 @@ if (cpg_flag=="on") {
 	
 	suppressMessages(ggplot(count5cpg, aes(x=factor(BIN), y=rel_prop, colour=Category, fill=Category, alpha=0.5))+geom_bar(position="stack", stat="identity")+ scale_x_discrete(breaks=seq(0,xmax,50))+xlab("Bin")+ylab("Proportion")+ggtitle(cpg_scale_title))
 	suppressMessages(ggsave(cpg_scale_out))
-	
-
 } 
 
 #All--Merge bins + summary files and process

@@ -1,4 +1,47 @@
 #!/usr/local/bin/perl
+
+##############################################################################
+# SMAUG: Singleton Mutation Analysis Utility with Graphics
+#
+# Jedidiah Carlson
+# Department of Biostatistics
+# The University of Michigan
+# Last Revision: 06/10/2014
+#
+##############################################################################
+# SUMMARY:
+# SMAUG uses extremely rare variants to visualize changes in mutation rates
+# across the genome. The following genomic features are currently implemented
+# or are in development:
+# -local sequence (+/- 1 adjacent nucleotide)
+# -CpG status
+# -Distance to nearest recombination hotspot
+# -GC content
+# -Average read depth
+# 
+# CURRENT RESTRICTIONS:
+# -Only works with singleton summary files (--mac 1); expanded doubleton
+# 	summary files are not yet created
+# -only takes tri-nucleotide sequences (--adj 1)
+#
+# TO-DO:
+# -update directories here and in R script to be consistent with pipe.pl
+# -make folder in images directory for each chromosome
+# -Integrate with pipe.pl
+# -directly integrate call to bcftools for summary files?
+# -create directory for per-chromosome sequence files
+#
+# LONG-TERM GOALS:
+# -Cross-reference with annotation data
+# -Integrate somatic mutation info
+# -Better integration of different frequency class info (e.g. shared plots)
+# -Hidden Markov Model
+#
+##############################################################################
+
+##############################################################################
+#Initialize inputs, options, and defaults and define errors
+##############################################################################
 use strict;
 use warnings;
 use POSIX;
@@ -9,32 +52,6 @@ use File::Path qw(make_path);
 use List::Util qw(first max maxstr min minstr reduce shuffle sum);
 use Cwd;
 
-##############################################################################
-# SMAUG: Singleton Mutation Analysis Utility with Graphics
-#
-# Compares summary file from bcftools with reference genome and 
-# outputs adjacent sites, then passes output to R script to plot distribution
-#
-# To-Do:
-# -update directories here and in R script to be consistent with pipe.pl
-# -make folder in images directory for each chromosome
-# -Integrate with pipe.pl
-# -create top level R script with shared cmds and branch only unique cmds
-# -update R scripts to account for local sequence
-# -directly integrate call to bcftools for summary files?
-# -create directory for per-chromosome sequence files
-#
-# Long-term goals:
-# -Cross-reference with annotation data and plot
-# -Integrate somatic mutation info
-# -Better integration of different frequency class info
-# -Hidden Markov Model
-#
-##############################################################################
-
-##############################################################################
-#Initialize inputs/options/defaults and define errors
-##############################################################################
 my $wdir=getcwd;
 my $parentdir=dirname($wdir);
 
@@ -45,12 +62,14 @@ my $mac;
 my $binwidth=100000;
 my $adj=0;
 my $cpg='';
+my $hot='';
 
 GetOptions ('chr=i'=> \$chr,
 'mac=i'=> \$mac,
 'b=i' => \$binwidth,
 'adj=i' => \$adj,
 'cpg' => \$cpg,
+'hot' => \$hot,
 'help|?'=> \$help,
 man => \$man) or pod2usage(1);
 
@@ -66,6 +85,7 @@ print "Local subsequence and CpG command entered simultaneously--overriding CpG 
 ##############################################################################
 #Process mandatory inputs
 ##############################################################################
+
 my $macl;
 if ($mac==1) {
 	$macl = "singletons";
@@ -79,6 +99,13 @@ if ($cpg && $adj==0) {
 	$cpg_flag="on";
 } else {
 	$cpg_flag="off";
+}
+
+my $hot_flag;
+if ($hot) {
+	$hot_flag="on";
+} else {
+	$hot_flag="off";
 }
 
 my $subseq=2;
@@ -98,6 +125,7 @@ if ($chr<22) {
 # download hg37 from nih.gov if missing
 # -Will eventually update summary file location to match pipe.pl
 ##############################################################################
+
 my $f_fasta = "$parentdir/human_g1k_v37.fasta";
 
 if (-e $f_fasta) {
@@ -122,22 +150,20 @@ open my $fasta, '<', $f_fasta or die "can't open $f_fasta: $!";
 my $f_summ = "/net/bipolar/jedidiah/testpipe/summaries/chr$chr.summary";
 open my $summ, '<', $f_summ or die "can't open $f_summ: $!";
 
-my $f_hotspots = "/net/bipolar/jedidiah/genetic_map/hotspots.txt";
-#my $f_hotspots="test_hotspots.txt";
-open my $hotspots, '<', $f_hotspots or die "can't open $f_hotspots: $!";
-
 my $outfile = "expanded.summary";
 open(OUT, '>', $outfile) or die "can't write to $outfile: $!\n";
 
 my $bin_out = 'bin_out.txt';
 open(BIN, '>', $bin_out) or die "can't write to $bin_out: $!\n";
 
-
+my $bin_out2 = 'bin_out2.txt';
+open(BIN2, '>', $bin_out2) or die "can't write to $bin_out2: $!\n";
 
 ##############################################################################
-# Find all headings from fasta file to define endpoints
-# Re-read in reference fasta file and subset for selected chromosome
+# Retrieve reference sequence for selected chromosome
+# -also returns symmetric sequence for local sequence analysis
 ##############################################################################
+
 print "Getting sequence for chromosome $chr...\n";
 
 my $seq;
@@ -169,6 +195,7 @@ print "Done\n";
 ##############################################################################
 #call CpGI script
 ##############################################################################
+
 my @cpgi_index;
 my $temp_fasta;
 
@@ -192,40 +219,143 @@ if ($cpg && $adj==0) {
 }
 
 ##############################################################################
-#Count number of each nucleotide per bin (can be parallelized)
+# Counts possible mutable sites per bin for 6 main categories
+# and for local sequence analysis if selected
+# -also returns GC content per bin, to be implemented later
 ##############################################################################
-my $length=length($seq);
-my $numbins=ceil($length/$binwidth);
-my $bin;
-my @A;
-my @C;
-my @G;
-my @T;
 
-print BIN "AT\tCG\tprop_GC\tBIN\n";
+print "Getting bin counts...\n";
 
-for my $i (0 .. $numbins-1) {
-	$A[$i]= (substr($seq, $i*$binwidth, $binwidth) =~ tr/A//);
-    $C[$i]= (substr($seq, $i*$binwidth, $binwidth) =~ tr/C//);
-    $G[$i]= (substr($seq, $i*$binwidth, $binwidth) =~ tr/G//);
-    $T[$i]= (substr($seq, $i*$binwidth, $binwidth) =~ tr/T//);
+if ($adj==1) {
 
-	my $sum_at=$A[$i]+$T[$i];
-	my $sum_cg=$C[$i]+$G[$i];
-	my $GC=0;
-	if (($sum_at+$sum_cg)!=0) {
-		$GC=($sum_cg/($sum_at+$sum_cg));
+	my $length=length($seq);
+	my $numbins=ceil($length/$binwidth);
+	my $bin;
+	my @A;
+	my @C;
+	my @G;
+	my @T;
+	my @a= glob "{A,C,G,T}"x $subseq;
+	my @b = (0) x (scalar @a);
+
+	my @trinucs=($seq=~/(?=(.{$subseq}))/g);
+	my %tri_count=();
+	@tri_count{@a}=@b;
+	$tri_count{$_}++ for @trinucs;
+
+	print BIN2 "SEQ\tCOUNT\n";
+	foreach my $count (sort keys %tri_count) {
+		if ($count !~ /N/) {
+			print BIN2 "$count\t$tri_count{$count}\n";
+		} 
 	}
-	
-	$bin=$i+1;
 
-	print BIN "$sum_at\t$sum_cg\t$GC\t$bin\n";
+	print BIN "AT\tCG\tprop_GC\tBIN\t";
+	foreach my $tri (@a) {
+		my $alttri=$tri;
+		$alttri =~ tr/ACGT/TGCA/;
+		my $min = minstr($tri, $alttri);
+		my $max = maxstr($tri, $alttri);
+		if ($tri !~ /^G|^T/) {
+			print BIN "$min($max)\t";
+		}
+	}
+	print BIN "\n";
+
+	for my $i (0 .. $numbins-1) {
+		$A[$i]= (substr($seq, $i*$binwidth, $binwidth) =~ tr/A//);
+		$C[$i]= (substr($seq, $i*$binwidth, $binwidth) =~ tr/C//);
+		$G[$i]= (substr($seq, $i*$binwidth, $binwidth) =~ tr/G//);
+		$T[$i]= (substr($seq, $i*$binwidth, $binwidth) =~ tr/T//);
+
+		my @trinucs=(substr($seq, $i*$binwidth, $binwidth)=~/(?=(.{$subseq}))/g);
+		#for(@trinucs){print "$_\n"};
+		my %tri_count=();
+		@tri_count{@a}=@b;
+		$tri_count{$_}++ for @trinucs;
+		
+		my $sum_at=$A[$i]+$T[$i];
+		my $sum_cg=$C[$i]+$G[$i];
+		my $GC=0;
+		if (($sum_at+$sum_cg)!=0) {
+			$GC=($sum_cg/($sum_at+$sum_cg));
+		}
+		
+		$bin=$i+1;
+
+		print BIN "$sum_at\t$sum_cg\t$GC\t$bin\t";
+		#print BIN "$_:$tri_count{$_}\t" for sort keys(%tri_count);
+		foreach my $count (sort keys %tri_count) {
+			if ($count !~ /N|^G|^T/) {
+				my $altcount= $count;
+				$altcount =~ tr/ACGT/TGCA/;
+				my $sum=$tri_count{$count}+$tri_count{$altcount};
+				print BIN "$sum\t";
+			} 
+		}
+		print BIN "\n";
+	}
+} else {
+	my $length=length($seq);
+	my $numbins=ceil($length/$binwidth);
+	my $bin;
+	my @A;
+	my @C;
+	my @G;
+	my @T;
+
+	print BIN "AT\tCG\tprop_GC\tBIN\n";
+
+	for my $i (0 .. $numbins-1) {
+		$A[$i]= (substr($seq, $i*$binwidth, $binwidth) =~ tr/A//);
+		$C[$i]= (substr($seq, $i*$binwidth, $binwidth) =~ tr/C//);
+		$G[$i]= (substr($seq, $i*$binwidth, $binwidth) =~ tr/G//);
+		$T[$i]= (substr($seq, $i*$binwidth, $binwidth) =~ tr/T//);
+
+        my $sum_at=$A[$i]+$T[$i];
+        my $sum_cg=$C[$i]+$G[$i];
+        my $GC=0;
+        
+		if (($sum_at+$sum_cg)!=0) {
+            $GC=($sum_cg/($sum_at+$sum_cg));
+        }
+        
+        $bin=$i+1;
+
+        print BIN "$sum_at\t$sum_cg\t$GC\t$bin\n";
+	}
+}
+
+print "Done\n";
+
+##############################################################################
+# Get hotspot coordinates if selected
+##############################################################################
+
+my @loci;
+if ($hot) {
+	my $f_hotspots = "/net/bipolar/jedidiah/genetic_map/hotspots.txt";
+	#my $f_hotspots="test_hotspots.txt";
+	open my $hotspots, '<', $f_hotspots or die "can't open $f_hotspots: $!";
+
+	print "Getting hotspot coordinates...\n";
+	
+	readline($hotspots); #<-throws out header
+	while (<$hotspots>) {
+		if ($_ =~ /^chr$chr/) {
+			push (@loci, $_);
+		}
+	}
+	print "Done\n";
 }
 
 ##############################################################################
-# Extract position column from the summary file and get hotspot coordinates
+# Output expanded summary file based on selected options
+# -passed to R script along with bins file(s)
 ##############################################################################
-print "Getting positions from summary file...\n";
+
+print "Creating data file...\n";
+
 my @POS;
 my @NEWSUMM;
 #readline($summ); #<-throws out summary header if it exists
@@ -233,33 +363,15 @@ while (<$summ>) {
 	push (@POS, (split(/\t/, $_))[1]);
 	push (@NEWSUMM, $_);
 }
-print "Done\n";
-
-print "Getting hotspot coordinates...\n";
-my @loci;
-readline($hotspots); #<-throws out header
-while (<$hotspots>) {
-	if ($_ =~ /^chr$chr/) {
-		push (@loci, $_);
-	}
-}
-print "Done\n";
-
-##############################################################################
-# Compare summary to reference and output pos/local subsequence/bin
-# Update here to include adjacent sites
-##############################################################################
-print "Creating data file...\n";
 
 if ($cpg && $adj==0) {
 	
-	print OUT "CHR\tPOS\tREF\tALT\tDP\tNS\tANNO\tPAIR\tCPGI\tDIST\n";
+	print OUT "CHR\tPOS\tREF\tALT\tDP\tAN\tANNO\tPAIR\tCPGI\n";
 
 	foreach my $row (@NEWSUMM) {
 		chomp $row;
 		my @line=split(/\t/, $row);
 		my $pos=$line[1];
-		my $distance = &dist2Hotspot($pos);
 		my $localseq = substr($seq, $pos-$adj-1, $subseq);
 		my $hit=0;	
 		foreach my $cpgi_int (@cpgi_index) {
@@ -267,15 +379,15 @@ if ($cpg && $adj==0) {
 			my $start=$pair[0];
 			my $end=$pair[1];
 			
-			if (($row >= $start) && ($row <= $end)) {
+			if (($pos >= $start) && ($pos <= $end)) {
 				$hit=1;
 				last;
 			}
 		}
 
-		print OUT "$row\t$localseq\t$hit\t$distance\n";
+		print OUT "$row\t$localseq\t$hit\n";
 	}
-} else {
+} elsif ($hot) {
 
 	print OUT "CHR\tPOS\tREF\tALT\tDP\tAN\tANNO\tSEQ\tALTSEQ\tDIST\n";
 
@@ -289,6 +401,19 @@ if ($cpg && $adj==0) {
 		
 		print OUT "$row\t$localseq\t$altlocalseq\t$distance\n";
 	}
+} else {
+
+	print OUT "CHR\tPOS\tREF\tALT\tDP\tAN\tANNO\tSEQ\tALTSEQ\n";
+
+	foreach my $row (@NEWSUMM) {
+		chomp $row;
+		my @line=split(/\t/, $row);
+		my $pos=$line[1];
+		my $localseq = substr($seq, $pos-$adj-1, $subseq);
+		my $altlocalseq = substr($altseq, $pos-$adj-1, $subseq);
+		
+		print OUT "$row\t$localseq\t$altlocalseq\n";
+	}
 }
 
 print "Done\n";
@@ -297,7 +422,7 @@ print "Done\n";
 #Run selected R script
 ##############################################################################
 
-my $args="$chr $macl $binwidth $cpg_flag $outfile";
+my $args="$chr $macl $binwidth $cpg_flag $outfile $adj $hot_flag";
 my $cmd="Rscript prop.R $args";
 
 print "Running R script...\n";
@@ -307,12 +432,14 @@ print "Done. See images folder for output.\n";
 ##############################################################################
 #Clean up temp files
 ##############################################################################
+
 if ($cpg && $adj==0) {
 	unlink $temp_fasta;
 }
 
-#unlink $outfile;
+unlink $outfile;
 unlink $bin_out;
+unlink $bin_out2;
 
 my $plots_out="Rplots.pdf";
 unlink $plots_out;
@@ -330,8 +457,9 @@ my $CpGtemp="temp.cpg";
 unlink $CpGtemp;
 
 ##############################################################################
-# Hyun's subroutine--executes system commands
+# fork-exec-wait subroutine
 ##############################################################################
+
 sub forkExecWait {
     my $cmd = shift;
     #print "forkExecWait(): $cmd\n";
@@ -353,6 +481,7 @@ sub forkExecWait {
 # Input: variant position
 # Output: Distance to hotspot
 ##############################################################################
+
 sub dist2Hotspot {
 	my $site = shift;
 	my $prevabsstart=10e10;
@@ -409,7 +538,7 @@ sub dist2Hotspot {
 __END__
 =head1 NAME
 
-ref5.pl - Customized mysqldump utility
+ref5.pl - SMAUG: Singleton Mutation Analysis Utility with Graphics
 
 =head1 SYNOPSIS
 
@@ -420,7 +549,9 @@ ref5.pl - Customized mysqldump utility
 		--mac			minor allele count
 		--script		R script
 		--b			binwidth
-		--f			flank
+		--adj		number of adjacent nucleotides
+		--cpg		CpG site analysis
+		--hot		Distance to nearest recombination hotspot analysis
 
 =head1 OPTIONS
 
@@ -453,7 +584,11 @@ default includes only the next 3' nucleotide for CpG distinction
 
 =item B<--cpg>
 
-specifies extra analysis specific to CpG sites
+toggles extra analysis specific to CpG sites
+
+=item B<--hot>
+
+toggles extra analysis for distance to nearest recombination hotspot 
 
 =back
 

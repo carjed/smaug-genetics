@@ -55,6 +55,10 @@ chr22$Category[chr22$CAT=="GT" | chr22$CAT=="CA"]<-"GC to TA"
 xmax<-floor(max(chr22$BIN)/100)*100
 
 ##############################################################################
+# Annotation-specific analyses
+##############################################################################
+
+##############################################################################
 # Default plots for 6 basic categories across chromosome:
 # -Dodged/Stacked distribution (counts)
 # -Stacked proportions summing to 1
@@ -202,17 +206,27 @@ if (adj==1) {
 	write.csv(pc, "tri_counts_100kb.csv", row.names=F)
 	
 	log.pc<-as.matrix(log(pc[-1]+1,2))
-	breaks<-names(log.pc)[seq(8,112,16)]
+	ybreaks<-names(pc[-1])[seq(8,96,16)]
+	ylabs<-unique(substr(names(pc[-1]),1,8))
+	xbreaks=seq(50-(min(pc[1]) %% 50),nrow(pc),50)
+	xlabs=xbreaks+min(pc[1])
 	
+	count_heat_title<-paste0("Chr",chr,": Mutation Counts Heatmap")
 	count_out<-paste0(imgdir,"/chr",chr,"_count_heatmap.png")
 	
 	ggplot(melt(log.pc), aes(Var1,Var2,fill=value))+
 		geom_raster()+
 		scale_fill_gradientn(colours=myPalette(100))+
 		theme_bw()+
-		theme(panel.border=element_blank(),legend.position="none")+
+		theme(panel.border=element_blank(),
+			legend.position="none",
+			axis.text.x = element_text(angle = 90, hjust = 0.5),
+			axis.text.y = element_text(angle = 90, hjust = 0.5))+
 		xlab(NULL)+
-		scale_y_discrete(breaks=breaks)
+		ylab(NULL)+
+		ggtitle(count_heat_title)+
+		scale_y_discrete(breaks=ybreaks, labels=ylabs)+
+		scale_x_discrete(breaks=xbreaks, labels=xlabs)
 	ggsave(count_out)
 	
 
@@ -223,21 +237,30 @@ if (adj==1) {
 		pc1[,i]<-pc[,i]/bins_r[,substr(names(pc)[i], 10,nchar(names(pc)[i]))]
 	}
 	
+	catnames<-substr(names(pc),1,8)
+	
 	write.csv(pc1, "tri_rel_mut_rate_100kb.csv", row.names=F)
 	
 
 	
 	log.pc1<-as.matrix(log(pc1[-1]*10000+1,2))
 	
+	rel_heat_title<-paste0("Chr",chr,": Relative Mutation Rate Heatmap")
 	rel_rate_out<-paste0(imgdir,"/chr",chr,"_rel_rate_heatmap.png")
 	
 	ggplot(melt(log.pc1), aes(Var1,Var2,fill=value))+
 		geom_raster()+
 		scale_fill_gradientn(colours=myPalette(100))+
 		theme_bw()+
-		theme(panel.border=element_blank(),legend.position="none")+
+		theme(panel.border=element_blank(),
+			legend.position="none",
+			axis.text.x = element_text(angle = 90, hjust = 0.5),
+			axis.text.y = element_text(angle = 90, hjust = 0.5))+
 		xlab(NULL)+
-		scale_y_discrete(breaks=breaks)
+		ylab(NULL)+
+		ggtitle(rel_heat_title)+
+		scale_y_discrete(breaks=ybreaks, labels=ylabs)+
+		scale_x_discrete(breaks=xbreaks, labels=xlabs)
 	ggsave(rel_rate_out)
 	
 }
@@ -307,7 +330,7 @@ if (hot_flag=="on") {
 	hotspot_agg<-aggregate(DIST ~ BIN+Category, data=chr22, mean)
 
 	ggplot(hotspot_agg, aes(x=BIN, y=Category, fill=DIST))+
-		geom_tile()+
+		geom_raster()+
 		scale_fill_gradientn(colours=myPalette(4))+
 		scale_x_continuous(breaks=seq(0,xmax,50))
 	suppressMessages(ggsave(hotspot_heat_out))
@@ -322,7 +345,7 @@ if (hot_flag=="on") {
 
 	#Graphics--heatmap of avg. depth per bin for the 6 mutation categories
 	ggplot(agg2, aes(x=BIN, y=Category, fill=AVGDP))+
-		geom_tile()+
+		geom_raster()+
 		scale_fill_gradientn(colours=myPalette(4))+
 		scale_x_continuous(breaks=seq(0,xmax,50))
 	suppressMessages(ggsave(depth_heat_out))

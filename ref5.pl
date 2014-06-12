@@ -16,6 +16,7 @@
 # -local sequence (+/- 1 adjacent nucleotide)
 # -CpG status
 # -Distance to nearest recombination hotspot
+# -Fuctional annotation
 # -GC content
 # -Average read depth
 # 
@@ -27,6 +28,8 @@
 # TO-DO:
 # -update directories here and in R script to be consistent with pipe.pl
 # -Integrate with pipe.pl
+# -stitch together heatmaps for multiple chromosomes
+# -subset annotations
 # -directly integrate call to bcftools for summary files?
 # -create directory for per-chromosome sequence files
 #
@@ -62,6 +65,7 @@ my $binwidth=100000;
 my $adj=0;
 my $cpg='';
 my $hot='';
+my $anno='';
 
 GetOptions ('chr=i'=> \$chr,
 'mac=i'=> \$mac,
@@ -69,6 +73,7 @@ GetOptions ('chr=i'=> \$chr,
 'adj=i' => \$adj,
 'cpg' => \$cpg,
 'hot' => \$hot,
+'anno=s' => \$anno,
 'help|?'=> \$help,
 man => \$man) or pod2usage(1);
 
@@ -87,6 +92,15 @@ print "Local subsequence and CpG command entered simultaneously--overriding CpG 
 
 make_path("$parentdir/images/chr$chr");
 my $imgdir="$parentdir/images/chr$chr";
+
+my @annos=qw(Intergenic Intron Nonsynonymous Exon Synonymous Utr3 Utr5 Upstream Downstream Stop_Gain Stop_Loss Start_Loss Essential_Splice_Site Normal_Splice_Site);
+
+if ($anno && $anno ~~ @annos) {
+	make_path("$parentdir/images/chr$chr/anno/$anno");
+	$imgdir="$parentdir/images/chr$chr/anno/$anno";
+} elsif ($anno && !($anno~~@annos)) {
+	print "Invalid annotation entered--all sites will be used.  See help file for further information.\n";
+}
 
 print "$imgdir\n";
 
@@ -363,9 +377,20 @@ print "Creating data file...\n";
 my @POS;
 my @NEWSUMM;
 #readline($summ); #<-throws out summary header if it exists
-while (<$summ>) {
-	push (@POS, (split(/\t/, $_))[1]);
-	push (@NEWSUMM, $_);
+
+if ($anno && $anno~~@annos) {
+	print "subsetting $anno sites\n";
+	while (<$summ>) {
+		push (@POS, (split(/\t/, $_))[1]);
+		if ($_ =~ /$anno/) {
+			push (@NEWSUMM, $_);
+		}
+	}
+} else {
+	while (<$summ>) {
+		push (@POS, (split(/\t/, $_))[1]);
+		push (@NEWSUMM, $_);
+	}
 }
 
 if ($cpg && $adj==0) {
@@ -551,11 +576,11 @@ ref5.pl - SMAUG: Singleton Mutation Analysis Utility with Graphics
 		--help			program documentation
 		--chr			chromosome
 		--mac			minor allele count
-		--script		R script
 		--b			binwidth
-		--adj		number of adjacent nucleotides
-		--cpg		CpG site analysis
-		--hot		Distance to nearest recombination hotspot analysis
+		--adj			number of adjacent nucleotides
+		--cpg			CpG site analysis?
+		--hot			recombination hotspots?
+		--anno			annotation
 
 =head1 OPTIONS
 
@@ -563,19 +588,15 @@ ref5.pl - SMAUG: Singleton Mutation Analysis Utility with Graphics
 
 =item B<--help>
 
-Print a brief help message and exits.
+Display this documentation
 
 =item B<--chr>
 
-specify chromosome for analysis
+MANDATORY: specify chromosome for analysis
 
 =item B<--mac>
 
-specify minor allele count of sites in existing summary file
-
-=item B<--script>
-
-specify which R script to run: 1 for counts, 2 for proportions
+MANDATORY: specify minor allele count of sites in existing summary file
 
 =item B<--b>
 
@@ -583,8 +604,8 @@ specify bin width for histograms (default is 100,000)
 
 =item B<--adj>
 
-specify number of nucleotides in either direction from the variant to include in analysis
-default includes only the next 3' nucleotide for CpG distinction
+specify number of adjacent nucleotides in either direction from the variant to include in analysis
+default includes only the adjacent 3' nucleotide for CpG distinction
 
 =item B<--cpg>
 
@@ -593,6 +614,25 @@ toggles extra analysis specific to CpG sites
 =item B<--hot>
 
 toggles extra analysis for distance to nearest recombination hotspot 
+
+=item B<--anno>
+
+subset summary file by one of the following annotations and perform analyses:
+
+Intergenic
+Intron
+Nonsynonymous
+Exon
+Synonymous
+Utr3
+Utr5
+Upstream
+Downstream
+Stop_Gain
+Stop_Loss
+Start_Loss
+Essential_Splice_Site
+Normal_Splice_Site
 
 =back
 

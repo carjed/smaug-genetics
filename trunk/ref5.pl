@@ -26,7 +26,6 @@
 #
 # TO-DO:
 # -update directories here and in R script to be consistent with pipe.pl
-# -make folder in images directory for each chromosome
 # -Integrate with pipe.pl
 # -directly integrate call to bcftools for summary files?
 # -create directory for per-chromosome sequence files
@@ -86,6 +85,11 @@ print "Local subsequence and CpG command entered simultaneously--overriding CpG 
 #Process mandatory inputs
 ##############################################################################
 
+make_path("$parentdir/images/chr$chr");
+my $imgdir="$parentdir/images/chr$chr";
+
+print "$imgdir\n";
+
 my $macl;
 if ($mac==1) {
 	$macl = "singletons";
@@ -121,7 +125,7 @@ if ($chr<22) {
 }
 
 ##############################################################################
-# Read in reference, summary, and hotspot file and initialize outputs
+# Read in files and initialize outputs
 # download hg37 from nih.gov if missing
 # -Will eventually update summary file location to match pipe.pl
 ##############################################################################
@@ -147,7 +151,7 @@ if (-e $f_fasta) {
 open my $fasta, '<', $f_fasta or die "can't open $f_fasta: $!";
 
 #my $f_summ = "/net/bipolar/jedidiah/bcftools/summaries/$macl/all/chr$chr.$macl.summary.txt";
-my $f_summ = "/net/bipolar/jedidiah/testpipe/summaries/chr$chr.summary";
+my $f_summ = "$parentdir/testpipe/summaries/chr$chr.summary";
 open my $summ, '<', $f_summ or die "can't open $f_summ: $!";
 
 my $outfile = "expanded.summary";
@@ -164,7 +168,7 @@ open(BIN2, '>', $bin_out2) or die "can't write to $bin_out2: $!\n";
 # -also returns symmetric sequence for local sequence analysis
 ##############################################################################
 
-print "Getting sequence for chromosome $chr...\n";
+print "Getting reference sequence for chromosome $chr...\n";
 
 my $seq;
 while (<$fasta>) {
@@ -334,7 +338,7 @@ print "Done\n";
 
 my @loci;
 if ($hot) {
-	my $f_hotspots = "/net/bipolar/jedidiah/genetic_map/hotspots.txt";
+	my $f_hotspots = "$parentdir/genetic_map/hotspots.txt";
 	#my $f_hotspots="test_hotspots.txt";
 	open my $hotspots, '<', $f_hotspots or die "can't open $f_hotspots: $!";
 
@@ -422,7 +426,7 @@ print "Done\n";
 #Run selected R script
 ##############################################################################
 
-my $args="$chr $macl $binwidth $cpg_flag $outfile $adj $hot_flag";
+my $args="$chr $macl $binwidth $cpg_flag $outfile $adj $hot_flag $imgdir";
 my $cmd="Rscript prop.R $args";
 
 print "Running R script...\n";

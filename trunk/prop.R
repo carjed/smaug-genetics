@@ -9,6 +9,7 @@ sink("R.log")
 
 suppressMessages(require(ggplot2))
 suppressMessages(require(plyr))
+suppressMessages(require(reshape2))
 suppressMessages(require(RColorBrewer))
 
 args<-commandArgs(TRUE)
@@ -20,9 +21,12 @@ cpg_flag<-as.character(args[4])
 summ<-as.character(args[5])
 adj<-as.numeric(args[6])
 hot_flag<-as.character(args[7])
+imgdir<-args[8]
 
 if (macl=="singletons") mac<-"Singleton"
 if (macl=="doubletons") mac<-"Doubleton"
+
+myPalette <- colorRampPalette(rev(brewer.pal(11, "Spectral")), space="Lab")
 
 ##############################################################################
 #read in summary file and bins file and update columns
@@ -33,7 +37,7 @@ if (macl=="doubletons") mac<-"Doubleton"
 ##############################################################################
 
 chr22<-read.table(summ, header=T, stringsAsFactors=F)
-bins<-read.table("bin_out.txt", header=T, stringsAsFactors=F)
+bins<-read.table("bin_out.txt", header=T, stringsAsFactors=F, check.names=F)
 
 chr22$DP<-as.numeric(chr22$DP)
 chr22$DP[is.na(chr22$DP)]=mean(chr22$DP, na.rm=T)
@@ -59,19 +63,24 @@ xmax<-floor(max(chr22$BIN)/100)*100
 
 # Initialize titles/output strings
 main_rel_title<-print(paste0("Chr",chr," ",mac, " Relative Mutation Rate"))
-main_rel_out<-print(paste0("/net/bipolar/jedidiah/images/chr",chr,"_",mac,"_mutation_prop.png"))
+main_rel_out<-print(paste0(imgdir,"/chr",chr,"_",mac,"_mutation_prop.png"))
 
 main_scale_title<-print(paste0("Chr",chr," ",mac, " Mutations--scaled proportions"))
-main_scale_out<-print(paste0("/net/bipolar/jedidiah/images/chr",chr,"_",mac,"_mutation_prop2.png"))
+main_scale_out<-print(paste0(imgdir,"/chr",chr,"_",mac,"_mutation_prop2.png"))
 
 main_dist_title<-print(paste0("Chr",chr," ",mac, " Distribution by Mutation Type"))
-main_ident_out<-print(paste0("/net/bipolar/jedidiah/images/chr",chr,"_",mac,"_dist_ident.png"))
-main_dodge_out<-print(paste0("/net/bipolar/jedidiah/images/chr",chr,"_",mac,"_dist_dodge.png"))
+main_ident_out<-print(paste0(imgdir,"/chr",chr,"_",mac,"_dist_ident.png"))
+main_dodge_out<-print(paste0(imgdir,"/chr",chr,"_",mac,"_dist_dodge.png"))
 
 #Plot dodged and stacked distributions of 6 main categories
-ggplot(chr22, aes(x=POS, colour=Category, fill=Category, group=Category, alpha=0.5))+geom_histogram(binwidth=binw, position="identity")+ggtitle(main_dist_title)
+ggplot(chr22, aes(x=POS, colour=Category, fill=Category, group=Category, alpha=0.5))+
+	geom_histogram(binwidth=binw, position="identity")+
+	ggtitle(main_dist_title)
 suppressMessages(ggsave(main_ident_out))
-ggplot(chr22, aes(x=POS, colour=Category, fill=Category, group=Category, alpha=0.5))+geom_histogram(binwidth=binw, position="dodge")+ggtitle(main_dist_title)
+
+ggplot(chr22, aes(x=POS, colour=Category, fill=Category, group=Category, alpha=0.5))+
+	geom_histogram(binwidth=binw, position="dodge")+
+	ggtitle(main_dist_title)
 suppressMessages(ggsave(main_dodge_out))
 
 
@@ -84,7 +93,12 @@ count<-merge(count, aggregate(freq~BIN, data=count, sum), by="BIN")
 count$rel_prop<-count$freq.x/count$freq.y
 count<-count[order(count$BIN, count$Category),]
 
-suppressMessages(ggplot(count, aes(x=factor(BIN), y=rel_prop, colour=Category, fill=Category, alpha=0.5))+geom_bar(position="stack", stat="identity")+ scale_x_discrete(breaks=seq(0,xmax,50))+xlab("Bin")+ylab("Proportion")+ggtitle(main_scale_title))
+ggplot(count, aes(x=factor(BIN), y=rel_prop, colour=Category, fill=Category, alpha=0.5))+
+	geom_bar(position="stack", stat="identity")+
+	scale_x_discrete(breaks=seq(0,xmax,50))+
+	xlab("Bin")+
+	ylab("Proportion")+
+	ggtitle(main_scale_title)
 suppressMessages(ggsave(main_scale_out))
 
 # Plot relative mutation rate per bin for 6 main categories 
@@ -94,8 +108,20 @@ countAT$prop<-countAT$freq.x/countAT$AT
 countGC$prop<-countGC$freq.x/countGC$CG
 count2<-rbind(countAT, countGC)
 
-suppressMessages(ggplot(count2, aes(x=factor(BIN), y=prop, colour=Category, fill=Category, group=Category, alpha=0.5))+geom_bar(position="dodge", stat="identity")+ scale_x_discrete(breaks=seq(0,xmax,50))+xlab("Bin")+ylab("Proportion")+ggtitle(main_rel_title))
+ggplot(count2, aes(x=factor(BIN), y=prop, colour=Category, fill=Category, group=Category, alpha=0.5))+
+	geom_bar(position="dodge", stat="identity")+
+	scale_x_discrete(breaks=seq(0,xmax,50))+
+	xlab("Bin")+
+	ylab("Proportion")+
+	ggtitle(main_rel_title)
 suppressMessages(ggsave(main_rel_out))
+
+# Kataegis plot (experimental--likely easier to create column in perl script)
+
+# chr22$PREV<-c(chr22$POS[1], chr22$POS[-length(chr22$POS)])
+# chr22$DIST_NEXT<-chr22$POS-chr22$PREV
+# ggplot(chr22, aes(x=POS, y=DIST_NEXT, colour=Category))+geom_point()+scale_y_log10()
+# ggsave(imgdir,"/chr22_kataegis.png", width=10, height=4)
 
 ##############################################################################
 # Local Sequence Analysis
@@ -113,8 +139,11 @@ if (adj==1) {
 		cat<-levels(cats)[i]
 		chr22s<-chr22[chr22$Category==cat,]
 		title<-paste0("Chr22: ",cat," Mutations by Local Sequence")
-		ggplot(chr22s, aes(x=POS))+geom_histogram(binwidth=binw, position="identity")+ggtitle(title)+facet_wrap(~Sequence)
-		out<-paste0("/net/bipolar/jedidiah/images/chr",chr," ",cat," by local seq.png")
+		ggplot(chr22s, aes(x=POS))+
+			geom_histogram(binwidth=binw, position="identity")+
+			ggtitle(title)+
+			facet_wrap(~Sequence)
+		out<-paste0(imgdir,"/chr",chr," ",cat," by local seq.png")
 		suppressMessages(ggsave(out))
 	}
 
@@ -133,22 +162,84 @@ if (adj==1) {
 	at_rel_prop_title<-paste0("Chr",chr,": AT Relative Mutation Rate by Local Sequence")
 	gc_rel_prop_title<-paste0("Chr",chr,": GC Relative Mutation Rate by Local Sequence")
 
-	at_seq_out<-paste0("/net/bipolar/jedidiah/images/chr",chr,"_AT_seq.png")
-	gc_seq_out<-paste0("/net/bipolar/jedidiah/images/chr",chr,"_GC_seq.png")
-	at_rel_out<-paste0("/net/bipolar/jedidiah/images/chr",chr,"_AT_rel.png")
-	gc_rel_out<-paste0("/net/bipolar/jedidiah/images/chr",chr,"_GC_rel.png")
+	at_seq_out<-paste0(imgdir,"/chr",chr,"_AT_seq.png")
+	gc_seq_out<-paste0(imgdir,"/chr",chr,"_GC_seq.png")
+	at_rel_out<-paste0(imgdir,"/chr",chr,"_AT_rel.png")
+	gc_rel_out<-paste0(imgdir,"/chr",chr,"_GC_rel.png")
 
-	ggplot(aggseq_a, aes(x=Category, y=freq, fill=Sequence))+geom_bar(position="dodge", stat="identity")+ggtitle(at_seq_title)
+	ggplot(aggseq_a, aes(x=Category, y=freq, fill=Sequence))+
+		geom_bar(position="dodge", stat="identity")+
+		ggtitle(at_seq_title)
 	suppressMessages(ggsave(at_seq_out))
 
-	ggplot(aggseq_g, aes(x=Category, y=freq, fill=Sequence))+geom_bar(position="dodge", stat="identity")+ggtitle(gc_seq_title)
+	ggplot(aggseq_g, aes(x=Category, y=freq, fill=Sequence))+
+		geom_bar(position="dodge", stat="identity")+
+		ggtitle(gc_seq_title)
 	suppressMessages(ggsave(gc_seq_out))
 
-	ggplot(aggseq_a, aes(x=Category, y=rel_prop, fill=Sequence))+geom_bar(position="dodge", stat="identity")+ggtitle(at_rel_prop_title)+ylab("Relative Mutation Rate")
+	ggplot(aggseq_a, aes(x=Category, y=rel_prop, fill=Sequence))+
+		geom_bar(position="dodge", stat="identity")+
+		ggtitle(at_rel_prop_title)+
+		ylab("Relative Mutation Rate")
 	suppressMessages(ggsave(at_rel_out))
 
-	ggplot(aggseq_g, aes(x=Category, y=rel_prop, fill=Sequence))+geom_bar(position="dodge", stat="identity")+ggtitle(gc_rel_prop_title)+ylab("Relative Mutation Rate")
+	ggplot(aggseq_g, aes(x=Category, y=rel_prop, fill=Sequence))+
+		geom_bar(position="dodge", stat="identity")+
+		ggtitle(gc_rel_prop_title)+
+		ylab("Relative Mutation Rate")
 	suppressMessages(ggsave(gc_rel_out))
+	
+
+	#Output datasets and heatmaps
+
+	chr22r<-chr22[,c('BIN', 'Category', 'Sequence')]
+	
+
+	#Counts per bin
+	pc<-dcast(chr22r, BIN~Category+Sequence)
+	bins_r<-bins[pc$BIN,4:ncol(bins)]
+	#bins_r<-bins_r[pc$BIN,]
+	write.csv(pc, "tri_counts_100kb.csv", row.names=F)
+	
+	log.pc<-as.matrix(log(pc[-1]+1,2))
+	breaks<-names(log.pc)[seq(8,112,16)]
+	
+	count_out<-paste0(imgdir,"/chr",chr,"_count_heatmap.png")
+	
+	ggplot(melt(log.pc), aes(Var1,Var2,fill=value))+
+		geom_raster()+
+		scale_fill_gradientn(colours=myPalette(100))+
+		theme_bw()+
+		theme(panel.border=element_blank(),legend.position="none")+
+		xlab(NULL)+
+		scale_y_discrete(breaks=breaks)
+	ggsave(count_out)
+	
+
+	#Relative mutation rate per bin
+	pc1<-pc
+
+	for (i in 2:ncol(pc))  {
+		pc1[,i]<-pc[,i]/bins_r[,substr(names(pc)[i], 10,nchar(names(pc)[i]))]
+	}
+	
+	write.csv(pc1, "tri_rel_mut_rate_100kb.csv", row.names=F)
+	
+
+	
+	log.pc1<-as.matrix(log(pc1[-1]*10000+1,2))
+	
+	rel_rate_out<-paste0(imgdir,"/chr",chr,"_rel_rate_heatmap.png")
+	
+	ggplot(melt(log.pc1), aes(Var1,Var2,fill=value))+
+		geom_raster()+
+		scale_fill_gradientn(colours=myPalette(100))+
+		theme_bw()+
+		theme(panel.border=element_blank(),legend.position="none")+
+		xlab(NULL)+
+		scale_y_discrete(breaks=breaks)
+	ggsave(rel_rate_out)
+	
 }
 
 
@@ -161,11 +252,11 @@ if (adj==1) {
 if (cpg_flag=="on") {
 	#names(chr22a)<-c("POS","PAIR","CPGI")
 	cpg_scale_title<-print(paste0("Chr",chr," ",mac, " CpG Mutations--scaled proportions"))
-	cpg_scale_out<-print(paste0("/net/bipolar/jedidiah/images/chr",chr,"_",mac,"_cpg_mutation_prop2.png"))
+	cpg_scale_out<-print(paste0(imgdir,"/chr",chr,"_",mac,"_cpg_mutation_prop2.png"))
 
 	cpg_dist_title<-print(paste0("Chr",chr," ",mac, " CpG Distribution by Mutation Type"))
-	cpg_ident_out<-print(paste0("/net/bipolar/jedidiah/images/chr",chr,"_",mac,"_cpg_dist_ident.png"))
-	cpg_dodge_out<-print(paste0("/net/bipolar/jedidiah/images/chr",chr,"_",mac,"_cpg_dist_dodge.png"))
+	cpg_ident_out<-print(paste0(imgdir,"/chr",chr,"_",mac,"_cpg_dist_ident.png"))
+	cpg_dodge_out<-print(paste0(imgdir,"/chr",chr,"_",mac,"_cpg_dist_dodge.png"))
 	
 	chr22b$CpG[chr22b$PAIR=="CG" | chr22b$PAIR=="GC"]<-1
 	chr22b$CpG[chr22b$PAIR!="CG" & chr22b$PAIR!="GC"]<-0
@@ -178,9 +269,14 @@ if (cpg_flag=="on") {
 	chr22cpg$Category[chr22cpg$CAT=="GT" | chr22cpg$CAT=="CA"]<-"GC to TA"
 	
 	#Plot distribution of 3 CpG categories
-	ggplot(chr22cpg, aes(x=POS, colour=Category, fill=Category, group=Category, alpha=0.5))+geom_histogram(binwidth=binw, position="identity")+ggtitle(cpg_dist_title)
+	ggplot(chr22cpg, aes(x=POS, colour=Category, fill=Category, group=Category, alpha=0.5))+
+		geom_histogram(binwidth=binw, position="identity")+
+		ggtitle(cpg_dist_title)
 	ggsave(cpg_ident_out)
-	ggplot(chr22cpg, aes(x=POS, colour=Category, fill=Category, group=Category, alpha=0.5))+geom_histogram(binwidth=binw, position="dodge")+ggtitle(cpg_dist_title)
+	
+	ggplot(chr22cpg, aes(x=POS, colour=Category, fill=Category, group=Category, alpha=0.5))+
+		geom_histogram(binwidth=binw, position="dodge")+
+		ggtitle(cpg_dist_title)
 	ggsave(cpg_dodge_out)
 
 	#CpG--Merge bins + summary files and process
@@ -189,7 +285,12 @@ if (cpg_flag=="on") {
 	countcpg$rel_prop<-countcpg$freq.x/countcpg$freq.y
 	countcpg<-countcpg[order(countcpg$BIN, countcpg$Category),]
 	
-	suppressMessages(ggplot(countcpg, aes(x=factor(BIN), y=rel_prop, colour=Category, fill=Category, alpha=0.5))+geom_bar(position="stack", stat="identity")+ scale_x_discrete(breaks=seq(0,xmax,50))+xlab("Bin")+ylab("Proportion")+ggtitle(cpg_scale_title))
+	ggplot(countcpg, aes(x=factor(BIN), y=rel_prop, colour=Category, fill=Category, alpha=0.5))+
+		geom_bar(position="stack", stat="identity")+
+		scale_x_discrete(breaks=seq(0,xmax,50))+
+		xlab("Bin")+
+		ylab("Proportion")+
+		ggtitle(cpg_scale_title)
 	suppressMessages(ggsave(cpg_scale_out))
 } 
 
@@ -201,17 +302,18 @@ if (cpg_flag=="on") {
 
 if (hot_flag=="on") {
 	#RECOMBINATION HOTSPOTS
-	myPalette <- colorRampPalette(rev(brewer.pal(11, "Spectral")), space="Lab")
-
-	hotspot_heat_out<-print(paste0("/net/bipolar/jedidiah/images/chr",chr,"_",mac,"_mutation_vs_hotspot_heatmap.png"))
+	hotspot_heat_out<-print(paste0(imgdir,"/chr",chr,"_",mac,"_mutation_vs_hotspot_heatmap.png"))
 
 	hotspot_agg<-aggregate(DIST ~ BIN+Category, data=chr22, mean)
 
-	ggplot(hotspot_agg, aes(x=BIN, y=Category, fill=DIST))+geom_tile()+scale_fill_gradientn(colours=myPalette(4))+scale_x_continuous(breaks=seq(0,xmax,50))
+	ggplot(hotspot_agg, aes(x=BIN, y=Category, fill=DIST))+
+		geom_tile()+
+		scale_fill_gradientn(colours=myPalette(4))+
+		scale_x_continuous(breaks=seq(0,xmax,50))
 	suppressMessages(ggsave(hotspot_heat_out))
 
 	#DEPTH	
-	depth_heat_out<-print(paste0("/net/bipolar/jedidiah/images/chr",chr,"_",mac,"_mutation_vs_depth_heatmap.png"))
+	depth_heat_out<-print(paste0(imgdir,"/chr",chr,"_",mac,"_mutation_vs_depth_heatmap.png"))
 
 	aggdata<-aggregate(AVGDP ~ BIN+Category, data=chr22, mean)
 
@@ -219,8 +321,9 @@ if (hot_flag=="on") {
 	agg2<-aggdata[aggdata$BIN>250,]
 
 	#Graphics--heatmap of avg. depth per bin for the 6 mutation categories
-	myPalette <- colorRampPalette(rev(brewer.pal(11, "Spectral")), space="Lab")
-
-	ggplot(agg2, aes(x=BIN, y=Category, fill=AVGDP))+geom_tile()+scale_fill_gradientn(colours=myPalette(4))+scale_x_continuous(breaks=seq(0,xmax,50))
+	ggplot(agg2, aes(x=BIN, y=Category, fill=AVGDP))+
+		geom_tile()+
+		scale_fill_gradientn(colours=myPalette(4))+
+		scale_x_continuous(breaks=seq(0,xmax,50))
 	suppressMessages(ggsave(depth_heat_out))
 }

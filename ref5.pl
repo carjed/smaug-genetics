@@ -65,7 +65,7 @@ my $binwidth=100000;
 my $adj=0;
 my $cpg='';
 my $hot='';
-my $anno='';
+my @annoin;
 
 GetOptions ('chr=i'=> \$chr,
 'mac=i'=> \$mac,
@@ -73,7 +73,7 @@ GetOptions ('chr=i'=> \$chr,
 'adj=i' => \$adj,
 'cpg' => \$cpg,
 'hot' => \$hot,
-'anno=s' => \$anno,
+'anno=s' => \@annoin,
 'help|?'=> \$help,
 man => \$man) or pod2usage(1);
 
@@ -87,22 +87,35 @@ if (!$chr | !$mac) {
 print "Local subsequence and CpG command entered simultaneously--overriding CpG analysis\n" if ($cpg && $adj!=0);
 
 ##############################################################################
-#Process mandatory inputs
+#Process inputs
 ##############################################################################
 
 make_path("$parentdir/images/chr$chr");
 my $imgdir="$parentdir/images/chr$chr";
 
+@annoin=split(',',join(',',@annoin));
 my @annos=qw(Intergenic Intron Nonsynonymous Exon Synonymous Utr3 Utr5 Upstream Downstream Stop_Gain Stop_Loss Start_Loss Essential_Splice_Site Normal_Splice_Site);
+my @useannos;
 
-if ($anno && $anno ~~ @annos) {
-	make_path("$parentdir/images/chr$chr/anno/$anno");
-	$imgdir="$parentdir/images/chr$chr/anno/$anno";
-} elsif ($anno && !($anno~~@annos)) {
-	print "Invalid annotation entered--all sites will be used.  See help file for further information.\n";
+if (@annoin) {
+	print "Verifying selected annotations...\n";
+	for (@annoin) {
+		if ($_ ~~ @annos) {
+			print "$_: valid\n";
+			push(@useannos, $_);
+		} else {
+			print "$_: invalid annotation. See help file.\n";
+		}
+	}
+	
+	if (@useannos) {
+		my $annodir=join('_',@useannos);
+		make_path("$parentdir/images/chr$chr/anno/$annodir");
+		$imgdir="$parentdir/images/chr$chr/anno/$annodir";
+	}
 }
 
-print "$imgdir\n";
+print "Plots will be created in: $imgdir\n";
 
 my $macl;
 if ($mac==1) {
@@ -197,16 +210,16 @@ my $altseq=$seq;
 $altseq =~ tr/ACGT/TGCA/;
 
 # Validate overall GC content of chromosome
-my $abase=($seq =~ tr/A//);
-my $cbase=($seq =~ tr/C//);
-my $gbase=($seq =~ tr/G//);
-my $tbase=($seq =~ tr/T//);
+# my $abase=($seq =~ tr/A//);
+# my $cbase=($seq =~ tr/C//);
+# my $gbase=($seq =~ tr/G//);
+# my $tbase=($seq =~ tr/T//);
 
-my $gcsum=$cbase+$gbase;
-my $total=$abase+$cbase+$gbase+$tbase;
-my $gc = $gcsum/$total;
+# my $gcsum=$cbase+$gbase;
+# my $total=$abase+$cbase+$gbase+$tbase;
+# my $gc = $gcsum/$total;
 
-print "GC content of chr$chr: $gc\n";
+# print "GC content of chr$chr: $gc\n";
 
 print "Done\n";
 
@@ -378,15 +391,18 @@ my @POS;
 my @NEWSUMM;
 #readline($summ); #<-throws out summary header if it exists
 
-if ($anno && $anno~~@annos) {
-	print "subsetting $anno sites\n";
+if (@useannos) {
+	print "subsetting sites by selected annotation(s)...\n";
 	while (<$summ>) {
 		push (@POS, (split(/\t/, $_))[1]);
-		if ($_ =~ /$anno/) {
-			push (@NEWSUMM, $_);
+		foreach my $anno (@useannos) {
+			if ($_ =~ /$anno/) {
+				push (@NEWSUMM, $_);
+			}
 		}
 	}
 } else {
+	print "No annotation subset selected. Using all data...\n";
 	while (<$summ>) {
 		push (@POS, (split(/\t/, $_))[1]);
 		push (@NEWSUMM, $_);
@@ -462,6 +478,8 @@ print "Done. See images folder for output.\n";
 #Clean up temp files
 ##############################################################################
 
+print "Cleaning up temp files...\n";
+
 if ($cpg && $adj==0) {
 	unlink $temp_fasta;
 }
@@ -484,6 +502,8 @@ unlink $CpGlog2;
 
 my $CpGtemp="temp.cpg";
 unlink $CpGtemp;
+
+print "Done\n";
 
 ##############################################################################
 # fork-exec-wait subroutine
@@ -580,7 +600,7 @@ ref5.pl - SMAUG: Singleton Mutation Analysis Utility with Graphics
 		--adj			number of adjacent nucleotides
 		--cpg			CpG site analysis?
 		--hot			recombination hotspots?
-		--anno			annotation
+		--anno			annotation(s)
 
 =head1 OPTIONS
 
@@ -617,7 +637,7 @@ toggles extra analysis for distance to nearest recombination hotspot
 
 =item B<--anno>
 
-subset summary file by one of the following annotations and perform analyses:
+comma-separated list consisting of any of the following annotations:
 
 Intergenic
 Intron

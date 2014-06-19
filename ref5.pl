@@ -462,15 +462,15 @@ if ($cpg && $adj==0) {
 	unlink $temp_fasta;
 }
 
-unlink $outfile;
-unlink $bin_out;
-unlink $bin_out2;
+# unlink $outfile;
+# unlink $bin_out;
+# unlink $bin_out2;
 
 my $plots_out="Rplots.pdf";
 unlink $plots_out;
 
 my $Rlog="R.log";
-unlink $Rlog;
+#unlink $Rlog;
 
 my $CpGlog="CpGCluster.log";
 unlink $CpGlog;

@@ -27,6 +27,9 @@ if (macl=="singletons") mac<-"Singleton"
 if (macl=="doubletons") mac<-"Doubleton"
 
 myPalette <- colorRampPalette(rev(brewer.pal(11, "Spectral")), space="Lab")
+myPaletteB <- colorRampPalette(rev(brewer.pal(9, "Blues")), space="Lab")
+myPaletteR <- colorRampPalette(rev(brewer.pal(9, "Reds")), space="Lab")
+rb<-c(myPaletteB(6)[1:3],myPaletteR(6)[1:3])
 
 ##############################################################################
 #read in summary file and bins file and update columns
@@ -77,14 +80,22 @@ main_ident_out<-print(paste0(imgdir,"/chr",chr,"_",mac,"_dist_ident.png"))
 main_dodge_out<-print(paste0(imgdir,"/chr",chr,"_",mac,"_dist_dodge.png"))
 
 #Plot dodged and stacked distributions of 6 main categories
-ggplot(chr22, aes(x=POS, colour=Category, fill=Category, group=Category, alpha=0.5))+
-	geom_histogram(binwidth=binw, position="identity")+
-	ggtitle(main_dist_title)
+ggplot(chr22, aes(x=POS, colour=Category, fill=Category, group=Category))+
+	geom_histogram(binwidth=binw, position="identity", alpha=0.5)+
+	scale_fill_manual(values=rb)+
+	scale_colour_manual(values=rb)+
+	ggtitle(main_dist_title)+
+	theme_bw()+
+	theme(panel.border=element_blank())
 suppressMessages(ggsave(main_ident_out))
 
-ggplot(chr22, aes(x=POS, colour=Category, fill=Category, group=Category, alpha=0.5))+
-	geom_histogram(binwidth=binw, position="dodge")+
-	ggtitle(main_dist_title)
+ggplot(chr22, aes(x=POS, colour=Category, fill=Category, group=Category))+
+	geom_histogram(binwidth=binw, position="dodge", alpha=0.5)+
+	scale_fill_manual(values=rb)+
+	scale_colour_manual(values=rb)+
+	ggtitle(main_dist_title)+
+	theme_bw()+
+	theme(panel.border=element_blank())
 suppressMessages(ggsave(main_dodge_out))
 
 
@@ -97,12 +108,16 @@ count<-merge(count, aggregate(freq~BIN, data=count, sum), by="BIN")
 count$rel_prop<-count$freq.x/count$freq.y
 count<-count[order(count$BIN, count$Category),]
 
-ggplot(count, aes(x=factor(BIN), y=rel_prop, colour=Category, fill=Category, alpha=0.5))+
-	geom_bar(position="stack", stat="identity")+
+ggplot(count, aes(x=factor(BIN), y=rel_prop, colour=Category, fill=Category))+
+	geom_bar(position="stack", stat="identity", alpha=0.5)+
 	scale_x_discrete(breaks=seq(0,xmax,50))+
+	scale_fill_manual(values=rb)+
+	scale_colour_manual(values=rb)+
 	xlab("Bin")+
 	ylab("Proportion")+
-	ggtitle(main_scale_title)
+	ggtitle(main_scale_title)+
+	theme_bw()+
+	theme(panel.border=element_blank())
 suppressMessages(ggsave(main_scale_out))
 
 # Plot relative mutation rate per bin for 6 main categories 
@@ -112,15 +127,37 @@ countAT$prop<-countAT$freq.x/countAT$AT
 countGC$prop<-countGC$freq.x/countGC$CG
 count2<-rbind(countAT, countGC)
 
-ggplot(count2, aes(x=factor(BIN), y=prop, colour=Category, fill=Category, group=Category, alpha=0.5))+
-	geom_bar(position="dodge", stat="identity")+
+ggplot(count2, aes(x=factor(BIN), y=prop, colour=Category, fill=Category, group=Category))+
+	geom_bar(position="dodge", stat="identity", alpha=0.5)+
 	scale_x_discrete(breaks=seq(0,xmax,50))+
+	scale_fill_manual(values=rb)+
+	scale_colour_manual(values=rb)+
 	xlab("Bin")+
 	ylab("Proportion")+
-	ggtitle(main_rel_title)
+	ggtitle(main_rel_title)+
+	theme_bw()+
+	theme(panel.border=element_blank())
 suppressMessages(ggsave(main_rel_out))
 
-# Kataegis plot (experimental--likely easier to create column in perl script)
+
+# GC content heatmap	
+gc_heat_out<-print(paste0(imgdir,"/chr",chr,"_",mac,"_mutation_vs_gc_heatmap.png"))
+
+aggdata<-aggregate(GC ~ BIN+Category, data=chr22, mean)
+
+ggplot(aggdata, aes(x=BIN, y=Category, fill=GC))+
+	geom_raster()+
+	scale_fill_gradientn(colours=myPalette(4))+
+	scale_x_continuous(breaks=seq(0,xmax,50))+
+	scale_y_discrete(breaks=NULL)+
+	ylab(NULL)+
+	theme_bw()+
+	theme(panel.border=element_blank())
+suppressMessages(ggsave(gc_heat_out))
+
+
+
+# Kataegis plot (experimental--not informative yet)
 
 # chr22$PREV<-c(chr22$POS[1], chr22$POS[-length(chr22$POS)])
 # chr22$DIST_NEXT<-chr22$POS-chr22$PREV
@@ -146,6 +183,7 @@ if (adj==1) {
 		ggplot(chr22s, aes(x=POS))+
 			geom_histogram(binwidth=binw, position="identity")+
 			ggtitle(title)+
+			theme_bw()+
 			facet_wrap(~Sequence)
 		out<-paste0(imgdir,"/chr",chr," ",cat," by local seq.png")
 		suppressMessages(ggsave(out))
@@ -173,24 +211,44 @@ if (adj==1) {
 
 	ggplot(aggseq_a, aes(x=Category, y=freq, fill=Sequence))+
 		geom_bar(position="dodge", stat="identity")+
-		ggtitle(at_seq_title)
+		scale_fill_manual(values=myPalette(16))+
+		ggtitle(at_seq_title)+
+		theme_bw()+
+		theme(panel.border=element_blank(),
+			axis.ticks.x=element_blank(),
+			panel.grid.major.y=element_blank())
 	suppressMessages(ggsave(at_seq_out))
 
 	ggplot(aggseq_g, aes(x=Category, y=freq, fill=Sequence))+
 		geom_bar(position="dodge", stat="identity")+
-		ggtitle(gc_seq_title)
+		scale_fill_manual(values=myPalette(16))+
+		ggtitle(gc_seq_title)+
+		theme_bw()+
+		theme(panel.border=element_blank(),
+			axis.ticks.x=element_blank(),
+			panel.grid.major.y=element_blank())
 	suppressMessages(ggsave(gc_seq_out))
 
 	ggplot(aggseq_a, aes(x=Category, y=rel_prop, fill=Sequence))+
 		geom_bar(position="dodge", stat="identity")+
+		scale_fill_manual(values=myPalette(16))+
 		ggtitle(at_rel_prop_title)+
-		ylab("Relative Mutation Rate")
+		ylab("Relative Mutation Rate")+
+		theme_bw()+
+		theme(panel.border=element_blank(),
+			axis.ticks.x=element_blank(),
+			panel.grid.major.y=element_blank())
 	suppressMessages(ggsave(at_rel_out))
 
 	ggplot(aggseq_g, aes(x=Category, y=rel_prop, fill=Sequence))+
 		geom_bar(position="dodge", stat="identity")+
+		scale_fill_manual(values=myPalette(16))+
 		ggtitle(gc_rel_prop_title)+
-		ylab("Relative Mutation Rate")
+		ylab("Relative Mutation Rate")+
+		theme_bw()+
+		theme(panel.border=element_blank(),
+			axis.ticks.x=element_blank(),
+			panel.grid.major.y=element_blank())
 	suppressMessages(ggsave(gc_rel_out))
 	
 
@@ -292,14 +350,18 @@ if (cpg_flag=="on") {
 	chr22cpg$Category[chr22cpg$CAT=="GT" | chr22cpg$CAT=="CA"]<-"GC to TA"
 	
 	#Plot distribution of 3 CpG categories
-	ggplot(chr22cpg, aes(x=POS, colour=Category, fill=Category, group=Category, alpha=0.5))+
-		geom_histogram(binwidth=binw, position="identity")+
-		ggtitle(cpg_dist_title)
+	ggplot(chr22cpg, aes(x=POS, colour=Category, fill=Category, group=Category))+
+		geom_histogram(binwidth=binw, position="identity", alpha=0.5)+
+		ggtitle(cpg_dist_title)+
+		theme_bw()+
+		theme(panel.border=element_blank())
 	ggsave(cpg_ident_out)
 	
-	ggplot(chr22cpg, aes(x=POS, colour=Category, fill=Category, group=Category, alpha=0.5))+
-		geom_histogram(binwidth=binw, position="dodge")+
-		ggtitle(cpg_dist_title)
+	ggplot(chr22cpg, aes(x=POS, colour=Category, fill=Category, group=Category))+
+		geom_histogram(binwidth=binw, position="dodge", alpha=0.5)+
+		ggtitle(cpg_dist_title)+
+		theme_bw()+
+		theme(panel.border=element_blank())
 	ggsave(cpg_dodge_out)
 
 	#CpG--Merge bins + summary files and process
@@ -308,12 +370,14 @@ if (cpg_flag=="on") {
 	countcpg$rel_prop<-countcpg$freq.x/countcpg$freq.y
 	countcpg<-countcpg[order(countcpg$BIN, countcpg$Category),]
 	
-	ggplot(countcpg, aes(x=factor(BIN), y=rel_prop, colour=Category, fill=Category, alpha=0.5))+
-		geom_bar(position="stack", stat="identity")+
+	ggplot(countcpg, aes(x=factor(BIN), y=rel_prop, colour=Category, fill=Category))+
+		geom_bar(position="stack", stat="identity", alpha=0.5)+
 		scale_x_discrete(breaks=seq(0,xmax,50))+
 		xlab("Bin")+
 		ylab("Proportion")+
-		ggtitle(cpg_scale_title)
+		ggtitle(cpg_scale_title)+
+		theme_bw()+
+		theme(panel.border=element_blank())
 	suppressMessages(ggsave(cpg_scale_out))
 } 
 
@@ -327,12 +391,22 @@ if (hot_flag=="on") {
 	#RECOMBINATION HOTSPOTS
 	hotspot_heat_out<-print(paste0(imgdir,"/chr",chr,"_",mac,"_mutation_vs_hotspot_heatmap.png"))
 
-	hotspot_agg<-aggregate(DIST ~ BIN+Category, data=chr22, mean)
-
-	ggplot(hotspot_agg, aes(x=BIN, y=Category, fill=DIST))+
+	# hotspot_agg<-aggregate(DIST ~ BIN+Category, data=chr22, mean)
+	
+	# ggplot(hotspot_agg, aes(x=BIN, y=Category, fill=DIST))+
+		# geom_raster()+
+		# scale_fill_gradientn(colours=myPalette(4))+
+		# scale_x_continuous(breaks=seq(0,xmax,50))+
+		# theme_bw()
+	# suppressMessages(ggsave(hotspot_heat_out))
+	
+	#RECOMBINATION HOTSPOTS--INDICATOR METHOD
+	chr22s<-chr22[chr22$DIST==1,]
+	hotspot_agg<-count(chr22s, c("Category", "BIN"))
+	
+	ggplot(hotspot_agg, aes(x=BIN, y=Category, fill=freq))+
 		geom_raster()+
-		scale_fill_gradientn(colours=myPalette(4))+
-		scale_x_continuous(breaks=seq(0,xmax,50))
+		scale_fill_gradientn(colours=myPalette(4))
 	suppressMessages(ggsave(hotspot_heat_out))
 
 	#DEPTH	
@@ -347,6 +421,7 @@ if (hot_flag=="on") {
 	ggplot(agg2, aes(x=BIN, y=Category, fill=AVGDP))+
 		geom_raster()+
 		scale_fill_gradientn(colours=myPalette(4))+
-		scale_x_continuous(breaks=seq(0,xmax,50))
+		scale_x_continuous(breaks=seq(0,xmax,50))+
+		theme_bw()
 	suppressMessages(ggsave(depth_heat_out))
 }

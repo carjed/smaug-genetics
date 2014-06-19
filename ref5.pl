@@ -6,7 +6,7 @@
 # Jedidiah Carlson
 # Department of Biostatistics
 # The University of Michigan
-# Last Revision: 06/10/2014
+# Last Revision: 06/19/2014
 #
 ##############################################################################
 # SUMMARY:
@@ -29,12 +29,11 @@
 # -update directories here and in R script to be consistent with pipe.pl
 # -Integrate with pipe.pl
 # -stitch together heatmaps for multiple chromosomes
-# -subset annotations
 # -directly integrate call to bcftools for summary files?
 # -create directory for per-chromosome sequence files
+# -pass appropriate titles to R script for annotation subsets
 #
 # LONG-TERM GOALS:
-# -Cross-reference with annotation data
 # -Integrate somatic mutation info
 # -Better integration of different frequency class info (e.g. shared plots)
 # -Hidden Markov Model
@@ -411,7 +410,7 @@ if (@useannos) {
 
 if ($cpg && $adj==0) {
 	
-	print OUT "CHR\tPOS\tREF\tALT\tDP\tAN\tANNO\tPAIR\tCPGI\n";
+	print OUT "CHR\tPOS\tREF\tALT\tDP\tAN\tANNO\tPAIR\tCPGI\tGC\n";
 
 	foreach my $row (@NEWSUMM) {
 		chomp $row;
@@ -429,26 +428,29 @@ if ($cpg && $adj==0) {
 				last;
 			}
 		}
+		my $gcprop = &getGC($pos);
 
-		print OUT "$row\t$localseq\t$hit\n";
+		print OUT "$row\t$localseq\t$hit\t$gcprop\n";
 	}
 } elsif ($hot) {
 
-	print OUT "CHR\tPOS\tREF\tALT\tDP\tAN\tANNO\tSEQ\tALTSEQ\tDIST\n";
+	print OUT "CHR\tPOS\tREF\tALT\tDP\tAN\tANNO\tSEQ\tALTSEQ\tGC\tDIST\n";
 
 	foreach my $row (@NEWSUMM) {
 		chomp $row;
 		my @line=split(/\t/, $row);
 		my $pos=$line[1];
-		my $distance = &dist2Hotspot($pos);
 		my $localseq = substr($seq, $pos-$adj-1, $subseq);
 		my $altlocalseq = substr($altseq, $pos-$adj-1, $subseq);
+		my $gcprop = &getGC($pos);
+		#my $distance = &dist2Hotspot($pos);
+		my $distance = &dist2Hot2($pos);
 		
-		print OUT "$row\t$localseq\t$altlocalseq\t$distance\n";
+		print OUT "$row\t$localseq\t$altlocalseq\t$gcprop\t$distance\n";
 	}
 } else {
 
-	print OUT "CHR\tPOS\tREF\tALT\tDP\tAN\tANNO\tSEQ\tALTSEQ\n";
+	print OUT "CHR\tPOS\tREF\tALT\tDP\tAN\tANNO\tSEQ\tALTSEQ\tGC\n";
 
 	foreach my $row (@NEWSUMM) {
 		chomp $row;
@@ -456,8 +458,9 @@ if ($cpg && $adj==0) {
 		my $pos=$line[1];
 		my $localseq = substr($seq, $pos-$adj-1, $subseq);
 		my $altlocalseq = substr($altseq, $pos-$adj-1, $subseq);
+		my $gcprop = &getGC($pos);
 		
-		print OUT "$row\t$localseq\t$altlocalseq\n";
+		print OUT "$row\t$localseq\t$altlocalseq\t$gcprop\n";
 	}
 }
 
@@ -484,9 +487,9 @@ if ($cpg && $adj==0) {
 	unlink $temp_fasta;
 }
 
-unlink $outfile;
-unlink $bin_out;
-unlink $bin_out2;
+# unlink $outfile;
+# unlink $bin_out;
+# unlink $bin_out2;
 
 my $plots_out="Rplots.pdf";
 unlink $plots_out;
@@ -540,8 +543,8 @@ sub dist2Hotspot {
 	my $dist;
 	my $distout;
 	
-	#returns distance to first locus if site occurs before 
-	#returns distance to last locus if site occurs after
+	#returns distance to first locus if site occurs before all hotspots
+	#returns distance to last locus if site occurs after all hotspots
 	my @first = split(/\t/, $loci[0]);
 	my @last = split(/\t/, $loci[$#loci]);
 	
@@ -582,6 +585,58 @@ sub dist2Hotspot {
 		$prevdist=$dist;		
 	}
 	return $dist;
+}
+##############################################################################
+# Hotspot--alternate version with indicators
+##############################################################################
+sub dist2Hot2 {
+	my $site = shift;
+	my $hit=0;
+	
+	my @first = split(/\t/, $loci[0]);
+	my @last = split(/\t/, $loci[$#loci]);	
+	
+	if ($site < $first[2]-100) {
+		return $hit;
+		last;
+	} elsif ($site > $last[3]+100) {
+		return $hit;
+		last;	
+	}	
+	
+	foreach my $locus (@loci) {
+		my @elements=split(/\t/, $locus);
+
+		if ($site >=$elements[2]-100 && $site <= $elements[3]+100) {
+			$hit=1;
+			return $hit;
+			last;
+		}		
+	}	
+	
+	return $hit;
+}
+
+##############################################################################
+# Get GC content for flanking regions of site
+##############################################################################
+
+sub getGC {
+	my $site=shift;
+	my $region_s=$site-($binwidth/2);
+	#my $region_e=$site-$binwidth/2;
+	my $region=substr($seq,$region_s,$binwidth);
+	
+	my $abase=($region =~ tr/A//);
+	my $cbase=($region =~ tr/C//);
+	my $gbase=($region =~ tr/G//);
+	my $tbase=($region =~ tr/T//);
+
+	my $gcsum=$cbase+$gbase;
+	my $total=$abase+$cbase+$gbase+$tbase;
+	my $gc_content = $gcsum/$total;
+	
+	return $gc_content;
 }
 
 __END__

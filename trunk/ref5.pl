@@ -52,6 +52,7 @@ use File::Basename;
 use File::Path qw(make_path);
 use List::Util qw(first max maxstr min minstr reduce shuffle sum);
 use Cwd;
+use Benchmark;
 
 my $wdir=getcwd;
 my $parentdir=dirname($wdir);
@@ -191,7 +192,7 @@ open(BIN2, '>', $bin_out2) or die "can't write to $bin_out2: $!\n";
 
 ##############################################################################
 # Retrieve reference sequence for selected chromosome
-# -also returns symmetric sequence for local sequence analysis
+# -also returns symmetric sequence to be used in local sequence analysis
 ##############################################################################
 
 print "Getting reference sequence for chromosome $chr...\n";
@@ -208,24 +209,13 @@ while (<$fasta>) {
 my $altseq=$seq;
 $altseq =~ tr/ACGT/TGCA/;
 
-# Validate overall GC content of chromosome
-# my $abase=($seq =~ tr/A//);
-# my $cbase=($seq =~ tr/C//);
-# my $gbase=($seq =~ tr/G//);
-# my $tbase=($seq =~ tr/T//);
-
-# my $gcsum=$cbase+$gbase;
-# my $total=$abase+$cbase+$gbase+$tbase;
-# my $gc = $gcsum/$total;
-
-# print "GC content of chr$chr: $gc\n";
-
 print "Done\n";
 
 ##############################################################################
-#call CpGI script
+# Create index files for CpG islands or recombination hotspots, if selected
 ##############################################################################
 
+#CpGI
 my @cpgi_index;
 my $temp_fasta;
 
@@ -248,23 +238,41 @@ if ($cpg && $adj==0) {
 	}
 }
 
+#Hotspots
+my @loci;
+if ($hot) {
+	my $f_hotspots = "$parentdir/genetic_map/hotspots.txt";
+	#my $f_hotspots="test_hotspots.txt";
+	open my $hotspots, '<', $f_hotspots or die "can't open $f_hotspots: $!";
+
+	print "Getting hotspot coordinates...\n";
+	
+	readline($hotspots); #<-throws out header
+	while (<$hotspots>) {
+		if ($_ =~ /^chr$chr/) {
+			push (@loci, $_);
+		}
+	}
+	print "Done\n";
+}
+
 ##############################################################################
 # Counts possible mutable sites per bin for 6 main categories
 # and for local sequence analysis if selected
-# -also returns GC content per bin, to be implemented later
+# -also returns GC content per bin
 ##############################################################################
 
 print "Getting bin counts...\n";
+my $length=length($seq);
+my $numbins=ceil($length/$binwidth);
+my $bin;
+my @A;
+my @C;
+my @G;
+my @T;
 
 if ($adj==1) {
 
-	my $length=length($seq);
-	my $numbins=ceil($length/$binwidth);
-	my $bin;
-	my @A;
-	my @C;
-	my @G;
-	my @T;
 	my @a= glob "{A,C,G,T}"x $subseq;
 	my @b = (0) x (scalar @a);
 
@@ -326,13 +334,6 @@ if ($adj==1) {
 		print BIN "\n";
 	}
 } else {
-	my $length=length($seq);
-	my $numbins=ceil($length/$binwidth);
-	my $bin;
-	my @A;
-	my @C;
-	my @G;
-	my @T;
 
 	print BIN "AT\tCG\tprop_GC\tBIN\n";
 
@@ -359,35 +360,17 @@ if ($adj==1) {
 print "Done\n";
 
 ##############################################################################
-# Get hotspot coordinates if selected
-##############################################################################
-
-my @loci;
-if ($hot) {
-	my $f_hotspots = "$parentdir/genetic_map/hotspots.txt";
-	#my $f_hotspots="test_hotspots.txt";
-	open my $hotspots, '<', $f_hotspots or die "can't open $f_hotspots: $!";
-
-	print "Getting hotspot coordinates...\n";
-	
-	readline($hotspots); #<-throws out header
-	while (<$hotspots>) {
-		if ($_ =~ /^chr$chr/) {
-			push (@loci, $_);
-		}
-	}
-	print "Done\n";
-}
-
-##############################################################################
 # Output expanded summary file based on selected options
 # -passed to R script along with bins file(s)
 ##############################################################################
 
 print "Creating data file...\n";
+my $start_time=new Benchmark;
 
 my @POS;
 my @NEWSUMM;
+my $a_nu_start=0;
+my $a_nu_start_cpg=0;
 #readline($summ); #<-throws out summary header if it exists
 
 if (@useannos) {
@@ -417,20 +400,10 @@ if ($cpg && $adj==0) {
 		my @line=split(/\t/, $row);
 		my $pos=$line[1];
 		my $localseq = substr($seq, $pos-$adj-1, $subseq);
-		my $hit=0;	
-		foreach my $cpgi_int (@cpgi_index) {
-			my @pair = split(/,/, $cpgi_int);
-			my $start=$pair[0];
-			my $end=$pair[1];
-			
-			if (($pos >= $start) && ($pos <= $end)) {
-				$hit=1;
-				last;
-			}
-		}
+		my $cpgi = &getCpGI($pos);
 		my $gcprop = &getGC($pos);
 
-		print OUT "$row\t$localseq\t$hit\t$gcprop\n";
+		print OUT "$row\t$localseq\t$cpgi\t$gcprop\n";
 	}
 } elsif ($hot) {
 
@@ -443,8 +416,7 @@ if ($cpg && $adj==0) {
 		my $localseq = substr($seq, $pos-$adj-1, $subseq);
 		my $altlocalseq = substr($altseq, $pos-$adj-1, $subseq);
 		my $gcprop = &getGC($pos);
-		#my $distance = &dist2Hotspot($pos);
-		my $distance = &dist2Hot2($pos);
+		my $distance = &getD2H($pos);
 		
 		print OUT "$row\t$localseq\t$altlocalseq\t$gcprop\t$distance\n";
 	}
@@ -464,7 +436,10 @@ if ($cpg && $adj==0) {
 	}
 }
 
-print "Done\n";
+my $end_time=new Benchmark;
+my $difference = timediff($end_time, $start_time);
+print "Done. ";
+print "Runtime: ", timestr($difference), "\n";
 
 ##############################################################################
 #Run selected R script
@@ -487,9 +462,9 @@ if ($cpg && $adj==0) {
 	unlink $temp_fasta;
 }
 
-# unlink $outfile;
-# unlink $bin_out;
-# unlink $bin_out2;
+unlink $outfile;
+unlink $bin_out;
+unlink $bin_out2;
 
 my $plots_out="Rplots.pdf";
 unlink $plots_out;
@@ -511,7 +486,6 @@ print "Done\n";
 ##############################################################################
 # fork-exec-wait subroutine
 ##############################################################################
-
 sub forkExecWait {
     my $cmd = shift;
     #print "forkExecWait(): $cmd\n";
@@ -529,67 +503,10 @@ sub forkExecWait {
 }
 
 ##############################################################################
-# Hotspot Subroutine
-# Input: variant position
-# Output: Distance to hotspot
+# Recombination Hotspot Subroutine
+# Returns 1 if site is inside or within 100bp of hotspot, 0 otherwise
 ##############################################################################
-
-sub dist2Hotspot {
-	my $site = shift;
-	my $prevabsstart=10e10;
-	my $prevabsend=10e10;
-	my $prevdist=10e10;
-	
-	my $dist;
-	my $distout;
-	
-	#returns distance to first locus if site occurs before all hotspots
-	#returns distance to last locus if site occurs after all hotspots
-	my @first = split(/\t/, $loci[0]);
-	my @last = split(/\t/, $loci[$#loci]);
-	
-	if ($site < $first[2]) {
-		$dist = $first[2]-$site;
-		return $dist;
-		last;
-	} elsif ($site > $last[3]) {
-		$dist = $site-$last[3];
-		return $dist;
-		last;	
-	}
-	
-	foreach my $locus (@loci) {
-		my @elements=split(/\t/, $locus);
-		my $absstart=abs($site-$elements[2]);
-		my $absend=abs($site-$elements[3]);
-
-		# returns 0 and stops if site is in hotspot
-		# checks distance to current hotspot; if previous hotspot is closer $prevdist is returned
-		# if site is near last hotspot in list (with $dist<$prevdist), loop ends and $dist is returned
-
-		if ($site >=$elements[2] && $site <= $elements[3]) {
-			$dist=0;
-			return $dist;
-			last;
-		} elsif ($site < $last[3]) {
-			$dist = min $absstart, $absend, $prevabsstart, $prevabsend;
-
-			if ($prevdist <= $dist) {
-				$dist=$prevdist;
-				return $prevdist;
-				last;
-			} 
-		}
-		$prevabsstart=$absstart;
-		$prevabsend=$absend;
-		$prevdist=$dist;		
-	}
-	return $dist;
-}
-##############################################################################
-# Hotspot--alternate version with indicators
-##############################################################################
-sub dist2Hot2 {
+sub getD2H {
 	my $site = shift;
 	my $hit=0;
 	
@@ -604,13 +521,16 @@ sub dist2Hot2 {
 		last;	
 	}	
 	
-	foreach my $locus (@loci) {
+	for my $i ($a_nu_start .. $#loci) {
+		my $locus=$loci[$i];
 		my @elements=split(/\t/, $locus);
 
 		if ($site >=$elements[2]-100 && $site <= $elements[3]+100) {
 			$hit=1;
+			$a_nu_start=$i;
 			return $hit;
 			last;
+			
 		}		
 	}	
 	
@@ -618,9 +538,44 @@ sub dist2Hot2 {
 }
 
 ##############################################################################
-# Get GC content for flanking regions of site
+# CpGI Subroutine
+# Returns 1 if site is in CpG island, 0 otherwise
 ##############################################################################
+sub getCpGI {
+	my $site = shift;
+	my $hit=0;	
+	
+	my @first = split(/,/, $cpgi_index[0]);
+	my @last = split(/,/, $cpgi_index[$#cpgi_index]);	
+	
+	if ($site < $first[0]) {
+		return $hit;
+		last;
+	} elsif ($site > $last[1]) {
+		return $hit;
+		last;	
+	}	
+	
+	for my $i ($a_nu_start_cpg .. $#cpgi_index) {
+		my $cpgi_int = $cpgi_index[$i];
+		my @pair = split(/,/, $cpgi_int);
+		
+		if (($site >= $pair[0]) && ($site <= $pair[1])) {
+			$hit=1;
+			$a_nu_start_cpg=$i;
+			return $hit;
+			last;
+		}
+	}
+	
+	return $hit;
+}
 
+##############################################################################
+# GC Content Subroutine
+# Returns proportion of G or C nucleotides in reference genome for given
+# flanking region of site
+##############################################################################
 sub getGC {
 	my $site=shift;
 	my $region_s=$site-($binwidth/2);

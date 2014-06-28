@@ -6,7 +6,7 @@
 # Jedidiah Carlson
 # Department of Biostatistics
 # The University of Michigan
-# Last Revision: 06/19/2014
+# Last Revision: 06/27/2014
 #
 ##############################################################################
 # SUMMARY:
@@ -215,7 +215,6 @@ print "Done\n";
 # Create index files for CpG islands or recombination hotspots, if selected
 ##############################################################################
 
-#CpGI
 my @cpgi_index;
 my $temp_fasta;
 
@@ -238,23 +237,8 @@ if ($cpg && $adj==0) {
 	}
 }
 
-#Hotspots
-my @loci;
-if ($hot) {
-	my $f_hotspots = "$parentdir/genetic_map/hotspots.txt";
-	#my $f_hotspots="test_hotspots.txt";
-	open my $hotspots, '<', $f_hotspots or die "can't open $f_hotspots: $!";
 
-	print "Getting hotspot coordinates...\n";
-	
-	readline($hotspots); #<-throws out header
-	while (<$hotspots>) {
-		if ($_ =~ /^chr$chr/) {
-			push (@loci, $_);
-		}
-	}
-	print "Done\n";
-}
+
 
 ##############################################################################
 # Counts possible mutable sites per bin for 6 main categories
@@ -276,10 +260,11 @@ if ($adj==1) {
 	my @a= glob "{A,C,G,T}"x $subseq;
 	my @b = (0) x (scalar @a);
 
-	my @trinucs=($seq=~/(?=(.{$subseq}))/g);
+	my @trinucs=($seq=~/(?=([ACGT]{$subseq}))/g);
 	my %tri_count=();
 	@tri_count{@a}=@b;
 	$tri_count{$_}++ for @trinucs;
+	
 
 	print BIN2 "SEQ\tCOUNT\n";
 	foreach my $count (sort keys %tri_count) {
@@ -306,7 +291,7 @@ if ($adj==1) {
 		$G[$i]= (substr($seq, $i*$binwidth, $binwidth) =~ tr/G//);
 		$T[$i]= (substr($seq, $i*$binwidth, $binwidth) =~ tr/T//);
 
-		my @trinucs=(substr($seq, $i*$binwidth, $binwidth)=~/(?=(.{$subseq}))/g);
+		my @trinucs=(substr($seq, $i*$binwidth, $binwidth)=~/(?=([ACGT]{$subseq}))/g);
 		#for(@trinucs){print "$_\n"};
 		my %tri_count=();
 		@tri_count{@a}=@b;
@@ -369,6 +354,7 @@ my $start_time=new Benchmark;
 
 my @POS;
 my @NEWSUMM;
+my @loci;
 my $a_nu_start=0;
 my $a_nu_start_cpg=0;
 #readline($summ); #<-throws out summary header if it exists
@@ -407,7 +393,9 @@ if ($cpg && $adj==0) {
 	}
 } elsif ($hot) {
 
-	print OUT "CHR\tPOS\tREF\tALT\tDP\tAN\tANNO\tSEQ\tALTSEQ\tGC\tDIST\n";
+	&Hotspots;
+	#print OUT "CHR\tPOS\tREF\tALT\tDP\tAN\tANNO\tSEQ\tALTSEQ\tGC\tDIST\n";
+	print OUT "CHR\tPOS\tREF\tALT\tDP\tAN\tANNO\tSEQ\tALTSEQ\tGC\n";
 
 	foreach my $row (@NEWSUMM) {
 		chomp $row;
@@ -416,9 +404,10 @@ if ($cpg && $adj==0) {
 		my $localseq = substr($seq, $pos-$adj-1, $subseq);
 		my $altlocalseq = substr($altseq, $pos-$adj-1, $subseq);
 		my $gcprop = &getGC($pos);
-		my $distance = &getD2H($pos);
+		#my $distance = &getD2H($pos);
 		
-		print OUT "$row\t$localseq\t$altlocalseq\t$gcprop\t$distance\n";
+		#print OUT "$row\t$localseq\t$altlocalseq\t$gcprop\t$distance\n";
+		print OUT "$row\t$localseq\t$altlocalseq\t$gcprop\n";
 	}
 } else {
 
@@ -462,9 +451,9 @@ if ($cpg && $adj==0) {
 	unlink $temp_fasta;
 }
 
-# unlink $outfile;
-# unlink $bin_out;
-# unlink $bin_out2;
+unlink $outfile;
+unlink $bin_out;
+unlink $bin_out2;
 
 my $plots_out="Rplots.pdf";
 unlink $plots_out;
@@ -589,10 +578,135 @@ sub getGC {
 
 	my $gcsum=$cbase+$gbase;
 	my $total=$abase+$cbase+$gbase+$tbase;
-	my $gc_content = $gcsum/$total;
+	my $gc_content=0.5;
 	
+	if ($total != 0) {
+		$gc_content = $gcsum/$total;
+	}
 	return $gc_content;
 }
+
+##############################################################################
+# Output expanded hotspot file
+##############################################################################
+
+sub Hotspots {
+	my $f_hotspots = "$parentdir/genetic_map/hotspots.txt"; #<-original hotspots input
+	open my $hotspots, '<', $f_hotspots or die "can't open $f_hotspots: $!";
+	
+	my $hotspots_bed = "$parentdir/genetic_map/hotspots.bed"; #<-initialize bed output
+	open(HOTBED, '>', $hotspots_bed) or die "can't write to $hotspots_bed: $!\n";
+
+	print "Analyzing recombination hotspots...\n";
+	
+	####### Read in original hotspots
+	my $chrst;
+	readline($hotspots); #<-throws out header
+	while (<$hotspots>) {
+		my @line=split(/\t/, $_);
+		$chrst=$line[0];
+		if ($chrst eq "chr$chr") {
+			push (@loci, $_);
+		}
+	}
+	
+	####### Output hotspots in bed format
+	foreach (@loci) {
+		chomp;
+		my @elements=split(/\t/, $_);
+		my $chr=$elements[0];
+		my $start=$elements[2];
+		my $end=$elements[3];
+		print HOTBED "$chr\t$start\t$end\n";
+	}
+	
+	####### liftOver to hg19
+	my $liftOvercmd="./liftOver $hotspots_bed hg17ToHg19.over.chain $parentdir/genetic_map/hotspots_hg19.bed unMapped";
+	&forkExecWait($liftOvercmd);
+	
+	####### Read in liftOver output
+	my $f_new_hotspots = "$parentdir/genetic_map/hotspots_hg19.bed";
+	open my $new_hotspots, '<', $f_new_hotspots or die "can't open $f_new_hotspots: $!";
+	
+	my @newloci;
+	while (<$new_hotspots>) {
+		push (@newloci, $_);
+	}
+	
+	####### Initialize output
+	my $hotspot_counts = 'hotspot_counts.txt';
+	open(HOTCOUNT, '>', $hotspot_counts) or die "can't write to $hotspot_counts: $!\n";
+	
+	####### Process hg19 hotspots
+	my $summind=0;
+	print HOTCOUNT "Chromosome\tStart\tEnd\tCentre\tWidth(kb)\tAT\tGC\tATCOUNT\tGCCOUNT\tAT_CG\tAT_GC\tAT_TA\tGC_AT\tGC_CG\tGC_TA\n";
+	foreach (@newloci) {
+		chomp;
+		my @elements=split(/\t/, $_);
+		
+		my $start=$elements[1]-100;
+		my $end=$elements[2]+100;
+		my $length=$end-$start;
+		my $center=$start+$length/2;
+		
+		my $hotspot_seq=substr($seq,$start-1,$length);
+		
+		my $abase=($hotspot_seq =~ tr/A//);
+		my $cbase=($hotspot_seq =~ tr/C//);
+		my $gbase=($hotspot_seq =~ tr/G//);
+		my $tbase=($hotspot_seq =~ tr/T//);
+		
+		my $gcsum=$cbase+$gbase;
+		my $atsum=$abase+$tbase;
+		
+		print HOTCOUNT "$_\t$center\t$length\t$atsum\t$gcsum\t";
+		
+		my $atcount=0;
+		my $gccount=0;
+		
+		my $AT_CG=0;
+		my $AT_GC=0;
+		my $AT_TA=0;
+		
+		my $GC_AT=0;
+		my $GC_CG=0;
+		my $GC_TA=0;
+		
+		for my $i ($summind .. $#NEWSUMM) {
+			my $row = $NEWSUMM[$i];
+			
+			my @line=split(/\t/, $row);
+			my $pos=$line[1];
+			my $ref=$line[2];
+			my $alt=$line[3];
+			
+			if ($pos >=$start && $pos <= $end) {
+				#print "$pos:$ref\n";
+				$atcount++ if ($ref eq "A" or $ref eq "T");
+				$gccount++ if ($ref eq "C" or $ref eq "G");
+				
+				$AT_CG++ if ($ref eq "A" and $alt eq "C") or ($ref eq "T" and $alt eq "G");
+				$AT_GC++ if ($ref eq "A" and $alt eq "G") or ($ref eq "T" and $alt eq "C");
+				$AT_TA++ if ($ref eq "A" and $alt eq "T") or ($ref eq "T" and $alt eq "A");
+				
+				$GC_AT++ if ($ref eq "G" and $alt eq "A") or ($ref eq "C" and $alt eq "T");
+				$GC_CG++ if ($ref eq "G" and $alt eq "C") or ($ref eq "C" and $alt eq "G");
+				$GC_TA++ if ($ref eq "G" and $alt eq "T") or ($ref eq "C" and $alt eq "A");
+				
+				$summind=$i;
+			}
+			
+			if ($pos > $end) {
+				$summind=$i;
+				last;
+			}
+		}	
+		
+		print HOTCOUNT "$atcount\t$gccount\t$AT_CG\t$AT_GC\t$AT_TA\t$GC_AT\t$GC_CG\t$GC_TA\n";
+	}
+}
+
+
 
 __END__
 =head1 NAME

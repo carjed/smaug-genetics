@@ -237,9 +237,6 @@ if ($cpg && $adj==0) {
 	}
 }
 
-
-
-
 ##############################################################################
 # Counts possible mutable sites per bin for 6 main categories
 # and for local sequence analysis if selected
@@ -394,8 +391,8 @@ if ($cpg && $adj==0) {
 } elsif ($hot) {
 
 	&Hotspots;
-	#print OUT "CHR\tPOS\tREF\tALT\tDP\tAN\tANNO\tSEQ\tALTSEQ\tGC\tDIST\n";
-	print OUT "CHR\tPOS\tREF\tALT\tDP\tAN\tANNO\tSEQ\tALTSEQ\tGC\n";
+	print OUT "CHR\tPOS\tREF\tALT\tDP\tAN\tANNO\tSEQ\tALTSEQ\tGC\tDIST\n";
+	#print OUT "CHR\tPOS\tREF\tALT\tDP\tAN\tANNO\tSEQ\tALTSEQ\tGC\n";
 
 	foreach my $row (@NEWSUMM) {
 		chomp $row;
@@ -404,10 +401,10 @@ if ($cpg && $adj==0) {
 		my $localseq = substr($seq, $pos-$adj-1, $subseq);
 		my $altlocalseq = substr($altseq, $pos-$adj-1, $subseq);
 		my $gcprop = &getGC($pos);
-		#my $distance = &getD2H($pos);
+		my $distance = &getD2H($pos);
 		
-		#print OUT "$row\t$localseq\t$altlocalseq\t$gcprop\t$distance\n";
-		print OUT "$row\t$localseq\t$altlocalseq\t$gcprop\n";
+		print OUT "$row\t$localseq\t$altlocalseq\t$gcprop\t$distance\n";
+		#print OUT "$row\t$localseq\t$altlocalseq\t$gcprop\n";
 	}
 } else {
 
@@ -451,9 +448,9 @@ if ($cpg && $adj==0) {
 	unlink $temp_fasta;
 }
 
-unlink $outfile;
-unlink $bin_out;
-unlink $bin_out2;
+# unlink $outfile;
+# unlink $bin_out;
+# unlink $bin_out2;
 
 my $plots_out="Rplots.pdf";
 unlink $plots_out;
@@ -519,8 +516,7 @@ sub getD2H {
 			$a_nu_start=$i;
 			return $hit;
 			last;
-			
-		}		
+		}	
 	}	
 	
 	return $hit;
@@ -624,22 +620,64 @@ sub Hotspots {
 	my $liftOvercmd="./liftOver $hotspots_bed hg17ToHg19.over.chain $parentdir/genetic_map/hotspots_hg19.bed unMapped";
 	&forkExecWait($liftOvercmd);
 	
-	####### Read in liftOver output
+	####### Read in liftOver output and per-site data
 	my $f_new_hotspots = "$parentdir/genetic_map/hotspots_hg19.bed";
 	open my $new_hotspots, '<', $f_new_hotspots or die "can't open $f_new_hotspots: $!";
+	
+	my $f_site_data = "$parentdir/genetic_map/genetic_map_GRCh37_chr$chr.txt";
+	open my $site_data, '<', $f_site_data or die "can't open $f_site_data: $!";
+	
+	####### Initialize outputs
+	my $hotspot_counts = 'hotspot_counts.txt';
+	open(HOTCOUNT, '>', $hotspot_counts) or die "can't write to $hotspot_counts: $!\n";
+	
+	my $new_sites = 'new_sites.txt';
+	open(NEWSITES, '>', $new_sites) or die "can't write to $new_sites: $!\n";
+	
+	my $bin_out3 = 'bin_out3.txt';
+	open(BIN3, '>', $bin_out3) or die "can't write to $bin_out3: $!\n";
 	
 	my @newloci;
 	while (<$new_hotspots>) {
 		push (@newloci, $_);
 	}
 	
-	####### Initialize output
-	my $hotspot_counts = 'hotspot_counts.txt';
-	open(HOTCOUNT, '>', $hotspot_counts) or die "can't write to $hotspot_counts: $!\n";
+	print NEWSITES "Chromosome\tPOS\tRate\tMap\tStart\n";
+	
+	readline($site_data);
+	while(<$site_data>) {
+		chomp;
+		my @data=split(/\t/, $_);
+		my $site=$data[1];
+		my $hotspot;
+		
+		foreach my $row (@newloci) {
+			chomp;
+			my @elements=split(/\t/, $row);
+			
+			my $start=$elements[1]-100;
+			my $end=$elements[2]+100;
+			my $length=$end-$start;
+			my $center=$start+$length/2;
+			
+			if ($site >=$start && $site <= $end) {
+				$hotspot=$start+100;
+				last;
+			} else {
+				$hotspot=0;
+			}
+		}
+		
+		if ($hotspot!=0) {
+			print NEWSITES "$_\t$hotspot\n";
+		}
+	}
 	
 	####### Process hg19 hotspots
 	my $summind=0;
-	print HOTCOUNT "Chromosome\tStart\tEnd\tCentre\tWidth(kb)\tAT\tGC\tATCOUNT\tGCCOUNT\tAT_CG\tAT_GC\tAT_TA\tGC_AT\tGC_CG\tGC_TA\n";
+	my $oldend=0;
+	my $rc_seq;
+	print HOTCOUNT "Chromosome\tStart\tEnd\tCentre\tWidth(kb)\tD2E\tAT\tGC\tATCOUNT\tGCCOUNT\tAT_CG\tAT_GC\tAT_TA\tGC_AT\tGC_CG\tGC_TA\n";
 	foreach (@newloci) {
 		chomp;
 		my @elements=split(/\t/, $_);
@@ -649,7 +687,13 @@ sub Hotspots {
 		my $length=$end-$start;
 		my $center=$start+$length/2;
 		
+		my $d2e=$start-$oldend;
+		$oldend=$end;
+		
+		#Count tri-nucleotide sequences within hotspots
 		my $hotspot_seq=substr($seq,$start-1,$length);
+		$rc_seq.="$hotspot_seq.";
+		#print "$rc_seq\n";
 		
 		my $abase=($hotspot_seq =~ tr/A//);
 		my $cbase=($hotspot_seq =~ tr/C//);
@@ -659,7 +703,7 @@ sub Hotspots {
 		my $gcsum=$cbase+$gbase;
 		my $atsum=$abase+$tbase;
 		
-		print HOTCOUNT "$_\t$center\t$length\t$atsum\t$gcsum\t";
+		print HOTCOUNT "$_\t$center\t$length\t$d2e\t$atsum\t$gcsum\t";
 		
 		my $atcount=0;
 		my $gccount=0;
@@ -704,9 +748,23 @@ sub Hotspots {
 		
 		print HOTCOUNT "$atcount\t$gccount\t$AT_CG\t$AT_GC\t$AT_TA\t$GC_AT\t$GC_CG\t$GC_TA\n";
 	}
+	
+	my @a= glob "{A,C,G,T}"x $subseq;
+	my @b = (0) x (scalar @a);
+
+	my @trinucs=($rc_seq=~/(?=([ACGT]{$subseq}))/g);
+	my %tri_count=();
+	@tri_count{@a}=@b;
+	$tri_count{$_}++ for @trinucs;
+	
+
+	print BIN3 "SEQ\tCOUNT\n";
+	foreach my $count (sort keys %tri_count) {
+		if ($count !~ /N/) {
+			print BIN3 "$count\t$tri_count{$count}\n";
+		} 
+	}
 }
-
-
 
 __END__
 =head1 NAME

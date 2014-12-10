@@ -45,9 +45,6 @@ g<-myPaletteG(6)[1:3]
 chr22<-read.table(summ, header=T, stringsAsFactors=F)
 bins<-read.table("bin_out.txt", header=T, stringsAsFactors=F, check.names=F)
 
-chr22$DP<-as.numeric(chr22$DP)
-chr22$DP[is.na(chr22$DP)]=mean(chr22$DP, na.rm=T)
-chr22$AVGDP<-chr22$DP/(chr22$AN/2)
 chr22$BIN<-ceiling(chr22$POS/binw)
 chr22$CAT<-paste(chr22$REF, chr22$ALT, sep="")
 
@@ -57,6 +54,19 @@ chr22$Category[chr22$CAT=="AT" | chr22$CAT=="TA"]<-"AT_TA"
 chr22$Category[chr22$CAT=="GA" | chr22$CAT=="CT"]<-"GC_AT"
 chr22$Category[chr22$CAT=="GC" | chr22$CAT=="CG"]<-"GC_CG"
 chr22$Category[chr22$CAT=="GT" | chr22$CAT=="CA"]<-"GC_TA"
+
+xmax<-floor(max(chr22$BIN)/100)*100
+
+################
+# spec$BIN<-ceiling(spec$POS/binw)
+# spec$CAT<-paste(spec$REF, spec$ALT, sep="")
+
+# spec$Category[spec$CAT=="AC" | spec$CAT=="TG"]<-"AT_CG"
+# spec$Category[spec$CAT=="AG" | spec$CAT=="TC"]<-"AT_GC"
+# spec$Category[spec$CAT=="AT" | spec$CAT=="TA"]<-"AT_TA"
+# spec$Category[spec$CAT=="GA" | spec$CAT=="CT"]<-"GC_AT"
+# spec$Category[spec$CAT=="GC" | spec$CAT=="CG"]<-"GC_CG"
+# spec$Category[spec$CAT=="GT" | spec$CAT=="CA"]<-"GC_TA"
 
 xmax<-floor(max(chr22$BIN)/100)*100
 
@@ -73,13 +83,13 @@ xmax<-floor(max(chr22$BIN)/100)*100
 
 ############# INITIALIZE TITLES/OUTPUT STRINGS
 main_rel_title<-paste0("Chr",chr," ",mac, " Relative Mutation Rate")
-main_rel_out<-paste0(imgdir,"/chr",chr,"_",mac,"_mutation_prop.png")
+main_rel_out<-paste0(imgdir,"/chr",chr,"_",mac,"_mutation_prop.svg")
 
 main_scale_title<-paste0("Chr",chr," ",mac, " Mutations--scaled proportions")
-main_scale_out<-paste0(imgdir,"/chr",chr,"_",mac,"_mutation_prop2.png")
+main_scale_out<-paste0(imgdir,"/chr",chr,"_",mac,"_mutation_prop2.svg")
 
 main_dist_title<-paste0("Chr",chr," ",mac, " Distribution by Mutation Type")
-main_dist_out<-paste0(imgdir,"/chr",chr,"_",mac,"_dist_count.png")
+main_dist_out<-paste0(imgdir,"/chr",chr,"_",mac,"_dist_count.svg")
 
 ############## PLOT DISTRIBUTION OF COUNTS FOR 6 MAIN CATEGORIES
 ggplot(chr22, aes(x=POS, colour=Category, fill=Category))+
@@ -90,6 +100,7 @@ ggplot(chr22, aes(x=POS, colour=Category, fill=Category))+
 	ggtitle(main_dist_title)+
 	theme_bw()+
 	theme(panel.border=element_blank(),
+		legend.position="none",
 		axis.text.x = element_text(angle = 90, hjust = 0.5),
 		axis.text.y = element_text(angle = 90, hjust = 0.5))
 suppressMessages(ggsave(main_dist_out))
@@ -99,9 +110,9 @@ suppressMessages(ggsave(main_dist_out))
 
 # out4<-print(paste0("chr",chr,"_",mac,"_mutation_prop2.txt"))
 # write.table(count, out4, col.names=T, row.names=F, quote=F, sep="\t")
-chr22b<-merge(chr22, bins, by="BIN")
+chr22b<-merge(chr22, bins, by="BIN", all=TRUE)
 count<-count(chr22b, c("Category", "BIN", "AT", "CG", "prop_GC"))
-count<-merge(count, aggregate(freq~BIN, data=count, sum), by="BIN")
+count<-merge(count, aggregate(freq~BIN, data=count, sum), by="BIN", all=TRUE)
 count$rel_prop<-count$freq.x/count$freq.y
 count<-count[order(count$BIN, count$Category),]
 
@@ -122,9 +133,12 @@ suppressMessages(ggsave(main_scale_out))
 
 countAT<-count[grep("^AT", count$Category),]
 countGC<-count[grep("^GC", count$Category),]
+countNULL<-count[count$prop_GC==0,]
 countAT$prop<-countAT$freq.x/countAT$AT
 countGC$prop<-countGC$freq.x/countGC$CG
-count2<-rbind(countAT, countGC)
+countNULL$prop<-countNULL$AT/countNULL$freq.x
+count2<-rbind(countAT, countGC, countNULL)
+count2[is.na(count2)]<-"AT_CG"
 #cwa<-aggregate(prop~Category, data=count2, mean)
 #names(cwa)<-c("variable", "avg")
 
@@ -149,17 +163,18 @@ ggplot(count2, aes(x=factor(BIN), y=prop, colour=Category, fill=Category))+
 	scale_colour_manual(values=rb)+
 	xlab("Bin")+
 	ylab("Relative Mutation Rate")+
-	ggtitle(main_rel_title)+
+	#ggtitle(main_rel_title)+
 	theme_bw()+
 	theme(panel.border=element_blank(),
+		legend.position="none",
 		axis.text.x = element_text(angle = 90, hjust = 0.5),
 		axis.text.y = element_text(angle = 90, hjust = 0.5))
 suppressMessages(ggsave(main_rel_out))
 
 
 ############# GC CONTENT HEATMAP	
-gc_heat_title<-paste0("Chr",chr," "," GC Content Heatmap")
-gc_heat_out<-paste0(imgdir,"/chr",chr,"_",mac,"_mutation_vs_gc_heatmap.png")
+gc_heat_title<-paste0("Chr",chr," ",mac," GC Content Heatmap")
+gc_heat_out<-paste0(imgdir,"/chr",chr,"_",mac,"_mutation_vs_gc_heatmap.svg")
 
 aggdata<-aggregate(GC ~ BIN+Category, data=chr22, mean)
 
@@ -183,7 +198,7 @@ suppressMessages(ggsave(gc_heat_out))
 # chr22$PREV<-c(chr22$POS[1], chr22$POS[-length(chr22$POS)])
 # chr22$DIST_NEXT<-chr22$POS-chr22$PREV
 # ggplot(chr22, aes(x=POS, y=DIST_NEXT, colour=Category))+geom_point()+scale_y_log10()
-# ggsave(imgdir,"/chr22_kataegis.png", width=10, height=4)
+# ggsave(imgdir,"/chr22_kataegis.svg", width=10, height=4)
 
 ##############################################################################
 # Local Sequence Analysis
@@ -213,8 +228,8 @@ if (adj==1) {
 	xbreaks=seq(50-(min(pcm[1]) %% 50),nrow(pcm),50)
 	xlabs=xbreaks+min(pcm[1])
 	
-	count_heat_title<-paste0("Chr",chr,": Mutation Counts Heatmap")
-	count_out<-paste0(imgdir,"/chr",chr,"_count_heatmap.png")
+	count_heat_title<-paste0("Chr",chr," ",mac, " Mutation Counts Heatmap")
+	count_out<-paste0(imgdir,"/chr",chr,"_",mac,"_count_heatmap.svg")
 	
 	ggplot(melt(log.pcm), aes(Var1,Var2,fill=value))+
 		geom_raster()+
@@ -252,7 +267,7 @@ if (adj==1) {
 	log.pc1<-as.matrix(log(pc1[-1]*10000+1,2))
 	
 	rel_heat_title<-paste0("Chr",chr,": Relative Mutation Rate Heatmap")
-	rel_rate_out<-paste0(imgdir,"/chr",chr,"_rel_rate_heatmap.png")
+	rel_rate_out<-paste0(imgdir,"/chr",chr,"_",mac,"_rel_rate_heatmap.svg")
 	
 	ggplot(melt(log.pc1), aes(Var1,Var2,fill=value))+
 		geom_raster()+
@@ -282,7 +297,7 @@ if (adj==1) {
 			ggtitle(title)+
 			theme_bw()+
 			facet_wrap(~Sequence)
-		out<-paste0(imgdir,"/chr",chr," ",cat," by local seq.png")
+		out<-paste0(imgdir,"/chr",chr,"_",mac," ",cat," by local seq.svg")
 		suppressMessages(ggsave(out))
 	}
 
@@ -337,10 +352,10 @@ if (adj==1) {
 	at_rel_prop_title<-paste0("Chr",chr,": AT Relative Mutation Rate by Local Sequence")
 	gc_rel_prop_title<-paste0("Chr",chr,": GC Relative Mutation Rate by Local Sequence")
 
-	at_seq_out<-paste0(imgdir,"/chr",chr,"_AT_seq.png")
-	gc_seq_out<-paste0(imgdir,"/chr",chr,"_GC_seq.png")
-	at_rel_out<-paste0(imgdir,"/chr",chr,"_AT_rel.png")
-	gc_rel_out<-paste0(imgdir,"/chr",chr,"_GC_rel.png")
+	at_seq_out<-paste0(imgdir,"/chr",chr,"_",mac,"_AT_seq.svg")
+	gc_seq_out<-paste0(imgdir,"/chr",chr,"_",mac,"_GC_seq.svg")
+	at_rel_out<-paste0(imgdir,"/chr",chr,"_",mac,"_AT_rel.svg")
+	gc_rel_out<-paste0(imgdir,"/chr",chr,"_",mac,"_GC_rel.svg")
 
 	############# PLOT COUNTS
 	ggplot(aggseq_a, aes(x=Category, y=freq, fill=Sequence))+
@@ -370,7 +385,7 @@ if (adj==1) {
 		geom_bar(position="dodge", stat="identity")+
 		geom_errorbar(limits_prop, position="dodge")+
 		scale_fill_manual(values=myPalette(16))+
-		ggtitle(at_rel_prop_title)+
+		#ggtitle(at_rel_prop_title)+
 		ylab("Relative Mutation Rate")+
 		theme_bw()+
 		theme(panel.border=element_blank(),
@@ -382,7 +397,7 @@ if (adj==1) {
 		geom_bar(position="dodge", stat="identity")+
 		geom_errorbar(limits_prop, position="dodge")+
 		scale_fill_manual(values=myPalette(16))+
-		ggtitle(gc_rel_prop_title)+
+		#ggtitle(gc_rel_prop_title)+
 		ylab("Relative Mutation Rate")+
 		theme_bw()+
 		theme(panel.border=element_blank(),
@@ -400,11 +415,11 @@ if (adj==1) {
 if (cpg_flag=="on") {
 	#names(chr22a)<-c("POS","PAIR","CPGI")
 	cpg_scale_title<-paste0("Chr",chr," ",mac, " CpG Mutations--scaled proportions")
-	cpg_scale_out<-paste0(imgdir,"/chr",chr,"_",mac,"_cpg_mutation_prop2.png")
+	cpg_scale_out<-paste0(imgdir,"/chr",chr,"_",mac,"_cpg_mutation_prop2.svg")
 
 	cpg_dist_title<-paste0("Chr",chr," ",mac, " CpG Distribution by Mutation Type")
-	cpg_ident_out<-paste0(imgdir,"/chr",chr,"_",mac,"_cpg_dist_ident.png")
-	cpg_dodge_out<-paste0(imgdir,"/chr",chr,"_",mac,"_cpg_dist_dodge.png")
+	cpg_ident_out<-paste0(imgdir,"/chr",chr,"_",mac,"_cpg_dist_ident.svg")
+	cpg_dodge_out<-paste0(imgdir,"/chr",chr,"_",mac,"_cpg_dist_dodge.svg")
 	
 	chr22b$CpG[chr22b$PAIR=="CG" | chr22b$PAIR=="GC"]<-1
 	chr22b$CpG[chr22b$PAIR!="CG" & chr22b$PAIR!="GC"]<-0
@@ -468,7 +483,7 @@ if (cpg_flag=="on") {
 if (hot_flag=="on") {
 
 	recomb_title<-paste0("Chr",chr," ",mac, " Relative Mutation Rates in Recombination Hotspots")
-	recomb_out<-paste0(imgdir,"/chr",chr,"_",mac,"_hotspot_rel_mut_rate.png")
+	recomb_out<-paste0(imgdir,"/chr",chr,"_",mac,"_hotspot_rel_mut_rate.svg")
 
 	sites<-read.table("new_sites.txt", header=T, stringsAsFactors=F)
 	aggsites<-aggregate(Rate~Start, data=sites, mean)
@@ -526,8 +541,8 @@ if (hot_flag=="on") {
 	at_rel_rec_prop_title<-paste0("Chr",chr,": AT Relative Mutation Rate by Local Sequence\n(recombination hotspots only)")
 	gc_rel_rec_prop_title<-paste0("Chr",chr,": GC Relative Mutation Rate by Local Sequence\n(recombination hotspots only)")
 	
-	at_rel_rec_out<-paste0(imgdir,"/chr",chr,"_AT_rel_rec.png")
-	gc_rel_rec_out<-paste0(imgdir,"/chr",chr,"_GC_rel_rec.png")
+	at_rel_rec_out<-paste0(imgdir,"/chr",chr,"_",mac,"_AT_rel_rec.svg")
+	gc_rel_rec_out<-paste0(imgdir,"/chr",chr,"_",mac,"_GC_rel_rec.svg")
 
 	ggplot(aggseq_a, aes(x=Category, y=rel_prop, fill=Sequence))+
 	geom_bar(position="dodge", stat="identity")+
@@ -555,7 +570,7 @@ if (hot_flag=="on") {
 	
 	
 	############# PLOT HEATMAP OF RECOMBINATION HOTSPOTS (INDICATOR METHOD)
-	# hotspot_heat_out<-paste0(imgdir,"/chr",chr,"_",mac,"_mutation_vs_hotspot_heatmap.png")
+	# hotspot_heat_out<-paste0(imgdir,"/chr",chr,"_",mac,"_mutation_vs_hotspot_heatmap.svg")
 
 	# chr22s<-chr22[chr22$DIST==1,]
 	# hotspot_agg<-count(chr22s, c("Category", "BIN"))
@@ -580,7 +595,12 @@ if (hot_flag=="on") {
 	# suppressMessages(ggsave(hotspot_heat_out))
 
 	#DEPTH	
-	# depth_heat_out<-paste0(imgdir,"/chr",chr,"_",mac,"_mutation_vs_depth_heatmap.png")
+	
+	# chr22$DP<-as.numeric(chr22$DP)
+	# chr22$DP[is.na(chr22$DP)]=mean(chr22$DP, na.rm=T)
+	# chr22$AVGDP<-chr22$DP/(chr22$AN/2)
+	
+	# depth_heat_out<-paste0(imgdir,"/chr",chr,"_",mac,"_mutation_vs_depth_heatmap.svg")
 
 	# aggdata<-aggregate(AVGDP ~ BIN+Category, data=chr22, mean)
 

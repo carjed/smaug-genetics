@@ -6,7 +6,7 @@
 # Jedidiah Carlson
 # Department of Biostatistics
 # The University of Michigan
-# Last Revision: 06/27/2014
+# Last Revision: 07/02/2014
 #
 ##############################################################################
 # SUMMARY:
@@ -155,9 +155,11 @@ if ($chr<22) {
 # Read in files and initialize outputs
 # download hg37 from nih.gov if missing
 # -Will eventually update summary file location to match pipe.pl
+# 
+# For human-chimp, comment/uncomment line 184 and line 192
 ##############################################################################
 
-my $f_fasta = "$parentdir/human_g1k_v37.fasta";
+my $f_fasta = "$parentdir/reference_data/human_g1k_v37.fasta";
 
 if (-e $f_fasta) {
 	print "Using reference genome: $f_fasta\n";
@@ -177,12 +179,23 @@ if (-e $f_fasta) {
 
 open my $fasta, '<', $f_fasta or die "can't open $f_fasta: $!";
 
-#my $f_summ = "/net/bipolar/jedidiah/bcftools/summaries/$macl/all/chr$chr.$macl.summary.txt";
-my $f_summ = "$parentdir/testpipe/summaries/chr$chr.summary";
+####OLD####my $f_summ = "/net/bipolar/jedidiah/bcftools/summaries/$macl/all/chr$chr.$macl.summary.txt";
+
+# my $f_summ = "$parentdir/testpipe/summaries/$macl/chr$chr.summary";
+# my $f_summ = "$parentdir/smaug-sandbox/scripts/human_chimp_chr10.summary";
+# my $f_summ = "/net/bipolar/jedidiah/testpipe/summaries/chr10.common.summary";
+my $f_summ = "/net/bipolar/jedidiah/cur_vs_anc.summary";
 open my $summ, '<', $f_summ or die "can't open $f_summ: $!";
 
 my $outfile = "expanded.summary";
 open(OUT, '>', $outfile) or die "can't write to $outfile: $!\n";
+
+if ($mac==1) {
+	# print OUT "CHR\tPOS\tREF\tALT\tDP\tAN\tANNO\t";
+	print OUT "CHR\tPOS\tREF\tALT\t";
+} elsif ($mac==2) {
+	print OUT "CHR\tPOS\tREF\tALT\tANNO\t";
+}
 
 my $bin_out = 'bin_out.txt';
 open(BIN, '>', $bin_out) or die "can't write to $bin_out: $!\n";
@@ -212,7 +225,7 @@ $altseq =~ tr/ACGT/TGCA/;
 print "Done\n";
 
 ##############################################################################
-# Create index files for CpG islands or recombination hotspots, if selected
+# Create index files for CpG islands if selected
 ##############################################################################
 
 my @cpgi_index;
@@ -376,7 +389,7 @@ if (@useannos) {
 
 if ($cpg && $adj==0) {
 	
-	print OUT "CHR\tPOS\tREF\tALT\tDP\tAN\tANNO\tPAIR\tCPGI\tGC\n";
+	print OUT "PAIR\tCPGI\tGC\n";
 
 	foreach my $row (@NEWSUMM) {
 		chomp $row;
@@ -391,7 +404,8 @@ if ($cpg && $adj==0) {
 } elsif ($hot) {
 
 	&Hotspots;
-	print OUT "CHR\tPOS\tREF\tALT\tDP\tAN\tANNO\tSEQ\tALTSEQ\tGC\tDIST\n";
+	print OUT "SEQ\tALTSEQ\tGC\tDIST\n";
+	#print OUT "CHR\tPOS\tREF\tALT\tDP\tAN\tANNO\tSEQ\tALTSEQ\tGC\tDIST\n";
 	#print OUT "CHR\tPOS\tREF\tALT\tDP\tAN\tANNO\tSEQ\tALTSEQ\tGC\n";
 
 	foreach my $row (@NEWSUMM) {
@@ -408,7 +422,7 @@ if ($cpg && $adj==0) {
 	}
 } else {
 
-	print OUT "CHR\tPOS\tREF\tALT\tDP\tAN\tANNO\tSEQ\tALTSEQ\tGC\n";
+	print OUT "SEQ\tALTSEQ\tGC\n";
 
 	foreach my $row (@NEWSUMM) {
 		chomp $row;
@@ -448,15 +462,15 @@ if ($cpg && $adj==0) {
 	unlink $temp_fasta;
 }
 
-# unlink $outfile;
-# unlink $bin_out;
-# unlink $bin_out2;
+unlink $outfile;
+unlink $bin_out;
+unlink $bin_out2;
 
 my $plots_out="Rplots.pdf";
 unlink $plots_out;
 
 my $Rlog="R.log";
-#unlink $Rlog;
+unlink $Rlog;
 
 my $CpGlog="CpGCluster.log";
 unlink $CpGlog;
@@ -583,14 +597,14 @@ sub getGC {
 }
 
 ##############################################################################
-# Output expanded hotspot file
+# Output expanded hotspot files
 ##############################################################################
 
 sub Hotspots {
-	my $f_hotspots = "$parentdir/genetic_map/hotspots.txt"; #<-original hotspots input
+	my $f_hotspots = "$parentdir/reference_data/genetic_map/hotspots.txt"; #<-original hotspots input
 	open my $hotspots, '<', $f_hotspots or die "can't open $f_hotspots: $!";
 	
-	my $hotspots_bed = "$parentdir/genetic_map/hotspots.bed"; #<-initialize bed output
+	my $hotspots_bed = "$parentdir/reference_data/genetic_map/hotspots.bed"; #<-initialize bed output
 	open(HOTBED, '>', $hotspots_bed) or die "can't write to $hotspots_bed: $!\n";
 
 	print "Analyzing recombination hotspots...\n";
@@ -617,14 +631,14 @@ sub Hotspots {
 	}
 	
 	####### liftOver to hg19
-	my $liftOvercmd="./liftOver $hotspots_bed hg17ToHg19.over.chain $parentdir/genetic_map/hotspots_hg19.bed unMapped";
+	my $liftOvercmd="./liftOver $hotspots_bed hg17ToHg19.over.chain $parentdir/reference_data/genetic_map/hotspots_hg19.bed unMapped";
 	&forkExecWait($liftOvercmd);
 	
 	####### Read in liftOver output and per-site data
-	my $f_new_hotspots = "$parentdir/genetic_map/hotspots_hg19.bed";
+	my $f_new_hotspots = "$parentdir/reference_data/genetic_map/hotspots_hg19.bed";
 	open my $new_hotspots, '<', $f_new_hotspots or die "can't open $f_new_hotspots: $!";
 	
-	my $f_site_data = "$parentdir/genetic_map/genetic_map_GRCh37_chr$chr.txt";
+	my $f_site_data = "$parentdir/reference_data/genetic_map/genetic_map_GRCh37_chr$chr.txt";
 	open my $site_data, '<', $f_site_data or die "can't open $f_site_data: $!";
 	
 	####### Initialize outputs

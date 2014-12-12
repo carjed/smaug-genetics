@@ -65,6 +65,7 @@ my $binwidth=100000;
 my $adj=0;
 my $cpg='';
 my $hot='';
+my $mask_flag='';
 my @annoin;
 
 GetOptions ('chr=i'=> \$chr,
@@ -73,6 +74,7 @@ GetOptions ('chr=i'=> \$chr,
 'adj=i' => \$adj,
 'cpg' => \$cpg,
 'hot' => \$hot,
+'mf' => \$mask_flag,
 'anno=s' => \@annoin,
 'help|?'=> \$help,
 man => \$man) or pod2usage(1);
@@ -184,15 +186,16 @@ open my $fasta, '<', $f_fasta or die "can't open $f_fasta: $!";
 # my $f_summ = "$parentdir/testpipe/summaries/$macl/chr$chr.summary";
 # my $f_summ = "$parentdir/smaug-sandbox/scripts/human_chimp_chr10.summary";
 # my $f_summ = "/net/bipolar/jedidiah/testpipe/summaries/chr10.common.summary";
-my $f_summ = "/net/bipolar/jedidiah/cur_vs_anc.summary";
+# my $f_summ = "/net/bipolar/jedidiah/cur_vs_anc.summary";
+my $f_summ = "/net/bipolar/jedidiah/testpipe/vcfs/mask/summary/chr20.summary";
 open my $summ, '<', $f_summ or die "can't open $f_summ: $!";
 
 my $outfile = "expanded.summary";
 open(OUT, '>', $outfile) or die "can't write to $outfile: $!\n";
 
 if ($mac==1) {
-	# print OUT "CHR\tPOS\tREF\tALT\tDP\tAN\tANNO\t";
-	print OUT "CHR\tPOS\tREF\tALT\t";
+	print OUT "CHR\tPOS\tREF\tALT\tDP\tAN\tANNO\t";
+	# print OUT "CHR\tPOS\tREF\tALT\t";
 } elsif ($mac==2) {
 	print OUT "CHR\tPOS\tREF\tALT\tANNO\t";
 }
@@ -216,6 +219,23 @@ while (<$fasta>) {
 	if (/>$chr/../>$nextchr/) {
 		next if />$chr/ || />$nextchr/;
 		$seq .=$_;
+	}
+}
+
+if($mask_flag){
+	print "Applying mask to ref genome...\n";
+	my $mask_file = "/net/bipolar/jedidiah/reference_data/20140520.strict_mask.bed";
+	open my $mask, '<', $mask_file or die "can't open $mask_file: $!";
+	
+	readline($mask);
+
+	while (<$mask>){
+		my @line=split(/\t/, $_);
+		if($line[0] eq "chr$chr"){
+			my $c1=$line[1]-1;
+			my $c2=$line[2];
+			my $newseq=substr($seq, $c1, $c2-$c1, "N" x ($c2-$c1));
+		}
 	}
 }
 
@@ -432,7 +452,9 @@ if ($cpg && $adj==0) {
 		my $altlocalseq = substr($altseq, $pos-$adj-1, $subseq);
 		my $gcprop = &getGC($pos);
 		
-		print OUT "$row\t$localseq\t$altlocalseq\t$gcprop\n";
+		if($localseq =~ /^[ACGT]+$/){
+			print OUT "$row\t$localseq\t$altlocalseq\t$gcprop\n";
+		}
 	}
 }
 
@@ -462,9 +484,9 @@ if ($cpg && $adj==0) {
 	unlink $temp_fasta;
 }
 
-unlink $outfile;
-unlink $bin_out;
-unlink $bin_out2;
+# unlink $outfile;
+# unlink $bin_out;
+# unlink $bin_out2;
 
 my $plots_out="Rplots.pdf";
 unlink $plots_out;

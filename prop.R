@@ -48,6 +48,8 @@ bins<-read.table("bin_out.txt", header=T, stringsAsFactors=F, check.names=F)
 chr22$BIN<-ceiling(chr22$POS/binw)
 chr22$CAT<-paste(chr22$REF, chr22$ALT, sep="")
 
+# chr22<-chr22[ which(chr22$BIN<260 | chr22$BIN>300),]
+
 chr22$Category[chr22$CAT=="AC" | chr22$CAT=="TG"]<-"AT_CG"
 chr22$Category[chr22$CAT=="AG" | chr22$CAT=="TC"]<-"AT_GC"
 chr22$Category[chr22$CAT=="AT" | chr22$CAT=="TA"]<-"AT_TA"
@@ -255,7 +257,7 @@ if (adj==1) {
 	bins_r<-bins[pcm$BIN,4:ncol(bins)]
 	
 	for (i in 2:ncol(pc1))  {
-		pc1[,i]<-round(pc1[,i]/bins_r[,substr(names(pc1)[i], 7,nchar(names(pc1)[i]))], 4)
+		pc1[,i]<-round(pc1[,i]/bins_r[,substr(names(pc1)[i], 7, nchar(names(pc1)[i]))], 4)
 	}
 	
 	#pc1<-pc1[450:500,]

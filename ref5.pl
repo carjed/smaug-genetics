@@ -97,6 +97,7 @@ my $imgdir="$parentdir/images/chr$chr";
 
 @annoin=split(',',join(',',@annoin));
 my @annos=qw(Intergenic Intron Nonsynonymous Exon Synonymous Utr3 Utr5 Upstream Downstream Stop_Gain Stop_Loss Start_Loss Essential_Splice_Site Normal_Splice_Site);
+my @exonic=qw(Nonsynonymous Synonymous Stop_Gain Stop_Loss Start_Loss Essential_Splice_Site Normal_Splice_Site);
 my @useannos;
 
 if (@annoin) {
@@ -160,37 +161,16 @@ if ($chr<22) {
 # 
 # For human-chimp, comment/uncomment line 184 and line 192
 ##############################################################################
-
-my $f_fasta = "$parentdir/reference_data/human_g1k_v37.fasta";
-
-if (-e $f_fasta) {
-	print "Using reference genome: $f_fasta\n";
-} else {
-	print "Reference genome not found in parent directory. Would you like to download one? (y/n): ";
-	my $choice = <>;
-	chomp $choice;
-	if ($choice eq "y") {
-		my $dlcmd="wget -P $parentdir/ ftp://ftp-trace.ncbi.nih.gov/1000genomes/ftp/technical/reference/human_g1k_v37.fasta.gz";
-		&forkExecWait($dlcmd);
-		my $unzipcmd="gunzip $parentdir/human_g1k_v37.fasta";
-		&forkExecWait($unzipcmd);
-	} else {
-		die "Please upload an appropriate reference genome to the parent directory\n";
-	}
-}
-
-open my $fasta, '<', $f_fasta or die "can't open $f_fasta: $!";
-
 ####OLD####my $f_summ = "/net/bipolar/jedidiah/bcftools/summaries/$macl/all/chr$chr.$macl.summary.txt";
 
-# my $f_summ = "$parentdir/testpipe/summaries/$macl/chr$chr.summary";
+my $f_summ = "/net/bipolar/jedidiah/testpipe/summaries/$macl/chr$chr.summary"; #main line for full processing
 # my $f_summ = "$parentdir/smaug-sandbox/scripts/human_chimp_chr10.summary";
 # my $f_summ = "/net/bipolar/jedidiah/testpipe/summaries/chr10.common.summary";
 # my $f_summ = "/net/bipolar/jedidiah/cur_vs_anc.summary";
-my $f_summ = "/net/bipolar/jedidiah/testpipe/vcfs/mask/summary/chr20.summary";
+# my $f_summ = "/net/bipolar/jedidiah/testpipe/vcfs/mask/summary/chr20.summary";
 open my $summ, '<', $f_summ or die "can't open $f_summ: $!";
 
-my $outfile = "expanded.summary";
+my $outfile = "$parentdir/output/chr$chr.expanded.summary";
 open(OUT, '>', $outfile) or die "can't write to $outfile: $!\n";
 
 if ($mac==1) {
@@ -200,43 +180,68 @@ if ($mac==1) {
 	print OUT "CHR\tPOS\tREF\tALT\tANNO\t";
 }
 
-my $bin_out = 'bin_out.txt';
+my $bin_out = "$parentdir/output/chr$chr.bin_out.txt";
 open(BIN, '>', $bin_out) or die "can't write to $bin_out: $!\n";
 
-my $bin_out2 = 'bin_out2.txt';
-open(BIN2, '>', $bin_out2) or die "can't write to $bin_out2: $!\n";
+my $seq=&getRef();
 
-##############################################################################
-# Retrieve reference sequence for selected chromosome
-# -also returns symmetric sequence to be used in local sequence analysis
-##############################################################################
+sub getRef{
+	my $f_fasta = "$parentdir/reference_data/human_g1k_v37.fasta";
 
-print "Getting reference sequence for chromosome $chr...\n";
-
-my $seq;
-while (<$fasta>) {
-	chomp;
-	if (/>$chr/../>$nextchr/) {
-		next if />$chr/ || />$nextchr/;
-		$seq .=$_;
-	}
-}
-
-if($mask_flag){
-	print "Applying mask to ref genome...\n";
-	my $mask_file = "/net/bipolar/jedidiah/reference_data/20140520.strict_mask.bed";
-	open my $mask, '<', $mask_file or die "can't open $mask_file: $!";
-	
-	readline($mask);
-
-	while (<$mask>){
-		my @line=split(/\t/, $_);
-		if($line[0] eq "chr$chr"){
-			my $c1=$line[1]-1;
-			my $c2=$line[2];
-			my $newseq=substr($seq, $c1, $c2-$c1, "N" x ($c2-$c1));
+	if (-e $f_fasta) {
+		print "Using reference genome: $f_fasta\n";
+	} else {
+		print "Reference genome not found in parent directory. Would you like to download one? (y/n): ";
+		my $choice = <>;
+		chomp $choice;
+		if ($choice eq "y") {
+			my $dlcmd="wget -P $parentdir/ ftp://ftp-trace.ncbi.nih.gov/1000genomes/ftp/technical/reference/human_g1k_v37.fasta.gz";
+			&forkExecWait($dlcmd);
+			my $unzipcmd="gunzip $parentdir/human_g1k_v37.fasta";
+			&forkExecWait($unzipcmd);
+		} else {
+			die "Please upload an appropriate reference genome to the parent directory\n";
 		}
 	}
+
+	open my $fasta, '<', $f_fasta or die "can't open $f_fasta: $!";
+
+
+
+	##############################################################################
+	# Retrieve reference sequence for selected chromosome
+	# -also returns symmetric sequence to be used in local sequence analysis
+	##############################################################################
+
+	print "Getting reference sequence for chromosome $chr...\n";
+
+	my $seq;
+	while (<$fasta>) {
+		chomp;
+		if (/>$chr/../>$nextchr/) {
+			next if />$chr/ || />$nextchr/;
+			$seq .=$_;
+		}
+	}
+
+	if($mask_flag){
+		print "Applying mask to ref genome...\n";
+		my $mask_file = "$parentdir/reference_data/testmask2.bed";
+		open my $mask, '<', $mask_file or die "can't open $mask_file: $!";
+		
+		readline($mask);
+
+		while (<$mask>){
+			my @line=split(/\t/, $_);
+			if($line[0] eq "$chr"){
+				my $c1=$line[1]-1;
+				my $c2=$line[2];
+				my $newseq=substr($seq, $c1, $c2-$c1, "N" x ($c2-$c1));
+			}
+		}
+	}
+
+	return $seq;
 }
 
 my $altseq=$seq;
@@ -276,103 +281,127 @@ if ($cpg && $adj==0) {
 # -also returns GC content per bin
 ##############################################################################
 
-print "Getting bin counts...\n";
-my $length=length($seq);
-my $numbins=ceil($length/$binwidth);
-my $bin;
-my @A;
-my @C;
-my @G;
-my @T;
+&binCounts();
 
-if ($adj==1) {
+sub binCounts{
+	print "Getting bin counts...\n";
+	my $length=length($seq);
+	my $numbins=ceil($length/$binwidth);
+	my $bin;
 
-	my @a= glob "{A,C,G,T}"x $subseq;
-	my @b = (0) x (scalar @a);
+	if ($adj>=1) {
 
+		my @a= glob "{A,C,G,T}"x $subseq;
+		my @b = (0) x (scalar @a);
+
+		# &countSubSeq(@a, @b);
+
+		print "Processing BIN1 header\n";
+		print BIN "AT\tCG\tprop_GC\tBIN\t";
+		foreach my $tri (@a) {
+			my $alttri=$tri;
+			$alttri =~ tr/ACGT/TGCA/;
+			# $alttri = reverse $alttri;
+			my $min = minstr($tri, $alttri);
+			my $max = reverse maxstr($tri, $alttri);
+			# if ($tri !~ /^G|^T/) {
+				# print BIN "$min($max)\t";
+				print BIN "$tri\t";
+			# }
+		}
+		print BIN "\n";
+
+		print "Processing subseq counts per bin\n";
+		for my $i (0 .. $numbins-1) {
+		
+			my $A = &nucCount($i, "A");
+			my $C = &nucCount($i, "C");
+			my $G = &nucCount($i, "G");
+			my $T = &nucCount($i, "T");
+
+			my @trinucs=(substr($seq, $i*$binwidth, $binwidth)=~/(?=([ACGT]{$subseq}))/g);
+			#for(@trinucs){print "$_\n"};
+			my %tri_count=();
+			@tri_count{@a}=@b;
+			$tri_count{$_}++ for @trinucs;
+			
+			my $sum_at=$A+$T;
+			my $sum_cg=$C+$G;
+			my $GC=0;
+			if (($sum_at+$sum_cg)!=0) {
+				$GC=($sum_cg/($sum_at+$sum_cg));
+			}
+			
+			$bin=$i+1;
+
+			print BIN "$sum_at\t$sum_cg\t$GC\t$bin\t";
+			#print BIN "$_:$tri_count{$_}\t" for sort keys(%tri_count);
+			foreach my $count (sort keys %tri_count) {
+				# if ($count !~ /N|^G|^T/) {
+					my $altcount= $count;
+					$altcount =~ tr/ACGT/TGCA/;
+					$altcount = reverse $altcount;
+					my $sum=$tri_count{$count}+$tri_count{$altcount};
+					print BIN "$sum\t";
+				# } 
+			}
+			print BIN "\n";
+		}
+	} else {
+
+		print BIN "AT\tCG\tprop_GC\tBIN\n";
+
+		for my $i (0 .. $numbins-1) {
+		
+			my $A = &nucCount($i, "A");
+			my $C = &nucCount($i, "C");
+			my $G = &nucCount($i, "G");
+			my $T = &nucCount($i, "T");
+
+			my $sum_at=$A+$T;
+			my $sum_cg=$C+$G;
+			my $GC=0;
+			
+			if (($sum_at+$sum_cg)!=0) {
+				$GC=($sum_cg/($sum_at+$sum_cg));
+			}
+			
+			$bin=$i+1;
+
+			print BIN "$sum_at\t$sum_cg\t$GC\t$bin\n";
+		}
+	}
+
+	print "Done\n";
+}
+
+sub countSubSeq{
+	my @seqs=shift;
+	my @vec=shift;
+	print "Counting subseqs in ref\n";
 	my @trinucs=($seq=~/(?=([ACGT]{$subseq}))/g);
 	my %tri_count=();
-	@tri_count{@a}=@b;
+	@tri_count{@seqs}=@vec;
 	$tri_count{$_}++ for @trinucs;
-	
+	print "Done\n";
 
+	print "Processing BIN2\n";
 	print BIN2 "SEQ\tCOUNT\n";
 	foreach my $count (sort keys %tri_count) {
 		if ($count !~ /N/) {
 			print BIN2 "$count\t$tri_count{$count}\n";
 		} 
 	}
-
-	print BIN "AT\tCG\tprop_GC\tBIN\t";
-	foreach my $tri (@a) {
-		my $alttri=$tri;
-		$alttri =~ tr/ACGT/TGCA/;
-		my $min = minstr($tri, $alttri);
-		my $max = maxstr($tri, $alttri);
-		if ($tri !~ /^G|^T/) {
-			print BIN "$min($max)\t";
-		}
-	}
-	print BIN "\n";
-
-	for my $i (0 .. $numbins-1) {
-		$A[$i]= (substr($seq, $i*$binwidth, $binwidth) =~ tr/A//);
-		$C[$i]= (substr($seq, $i*$binwidth, $binwidth) =~ tr/C//);
-		$G[$i]= (substr($seq, $i*$binwidth, $binwidth) =~ tr/G//);
-		$T[$i]= (substr($seq, $i*$binwidth, $binwidth) =~ tr/T//);
-
-		my @trinucs=(substr($seq, $i*$binwidth, $binwidth)=~/(?=([ACGT]{$subseq}))/g);
-		#for(@trinucs){print "$_\n"};
-		my %tri_count=();
-		@tri_count{@a}=@b;
-		$tri_count{$_}++ for @trinucs;
-		
-		my $sum_at=$A[$i]+$T[$i];
-		my $sum_cg=$C[$i]+$G[$i];
-		my $GC=0;
-		if (($sum_at+$sum_cg)!=0) {
-			$GC=($sum_cg/($sum_at+$sum_cg));
-		}
-		
-		$bin=$i+1;
-
-		print BIN "$sum_at\t$sum_cg\t$GC\t$bin\t";
-		#print BIN "$_:$tri_count{$_}\t" for sort keys(%tri_count);
-		foreach my $count (sort keys %tri_count) {
-			if ($count !~ /N|^G|^T/) {
-				my $altcount= $count;
-				$altcount =~ tr/ACGT/TGCA/;
-				my $sum=$tri_count{$count}+$tri_count{$altcount};
-				print BIN "$sum\t";
-			} 
-		}
-		print BIN "\n";
-	}
-} else {
-
-	print BIN "AT\tCG\tprop_GC\tBIN\n";
-
-	for my $i (0 .. $numbins-1) {
-		$A[$i]= (substr($seq, $i*$binwidth, $binwidth) =~ tr/A//);
-		$C[$i]= (substr($seq, $i*$binwidth, $binwidth) =~ tr/C//);
-		$G[$i]= (substr($seq, $i*$binwidth, $binwidth) =~ tr/G//);
-		$T[$i]= (substr($seq, $i*$binwidth, $binwidth) =~ tr/T//);
-
-        my $sum_at=$A[$i]+$T[$i];
-        my $sum_cg=$C[$i]+$G[$i];
-        my $GC=0;
-        
-		if (($sum_at+$sum_cg)!=0) {
-            $GC=($sum_cg/($sum_at+$sum_cg));
-        }
-        
-        $bin=$i+1;
-
-        print BIN "$sum_at\t$sum_cg\t$GC\t$bin\n";
-	}
+	print "Done\n";
 }
 
-print "Done\n";
+sub nucCount{
+	my $binnum=shift;
+	my $nuc=shift;
+	
+	my $out = () = substr($seq, $binnum*$binwidth, $binwidth) =~ /$nuc/g;
+	return $out;
+}
 
 ##############################################################################
 # Output expanded summary file based on selected options
@@ -433,7 +462,7 @@ if ($cpg && $adj==0) {
 		my @line=split(/\t/, $row);
 		my $pos=$line[1];
 		my $localseq = substr($seq, $pos-$adj-1, $subseq);
-		my $altlocalseq = substr($altseq, $pos-$adj-1, $subseq);
+		my $altlocalseq = reverse substr($altseq, $pos-$adj-1, $subseq);
 		my $gcprop = &getGC($pos);
 		my $distance = &getD2H($pos);
 		
@@ -449,7 +478,7 @@ if ($cpg && $adj==0) {
 		my @line=split(/\t/, $row);
 		my $pos=$line[1];
 		my $localseq = substr($seq, $pos-$adj-1, $subseq);
-		my $altlocalseq = substr($altseq, $pos-$adj-1, $subseq);
+		my $altlocalseq = reverse substr($altseq, $pos-$adj-1, $subseq);
 		my $gcprop = &getGC($pos);
 		
 		if($localseq =~ /^[ACGT]+$/){
@@ -467,7 +496,7 @@ print "Runtime: ", timestr($difference), "\n";
 #Run selected R script
 ##############################################################################
 
-my $args="$chr $macl $binwidth $cpg_flag $outfile $adj $hot_flag $imgdir";
+my $args="$chr $macl $binwidth $cpg_flag $outfile $adj $hot_flag $imgdir $bin_out";
 my $cmd="Rscript prop.R $args";
 
 print "Running R script...\n";
@@ -618,10 +647,13 @@ sub getGC {
 	return $gc_content;
 }
 
+# subgetExonic{
+	# my$site
+# }
+
 ##############################################################################
 # Output expanded hotspot files
 ##############################################################################
-
 sub Hotspots {
 	my $f_hotspots = "$parentdir/reference_data/genetic_map/hotspots.txt"; #<-original hotspots input
 	open my $hotspots, '<', $f_hotspots or die "can't open $f_hotspots: $!";
@@ -653,7 +685,7 @@ sub Hotspots {
 	}
 	
 	####### liftOver to hg19
-	my $liftOvercmd="./liftOver $hotspots_bed hg17ToHg19.over.chain $parentdir/reference_data/genetic_map/hotspots_hg19.bed unMapped";
+	my $liftOvercmd="$parentdir/reference_data/liftOver $hotspots_bed $parentdir/reference_data/hg17ToHg19.over.chain $parentdir/reference_data/genetic_map/hotspots_hg19.bed unMapped";
 	&forkExecWait($liftOvercmd);
 	
 	####### Read in liftOver output and per-site data

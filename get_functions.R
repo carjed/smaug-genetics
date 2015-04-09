@@ -25,17 +25,17 @@ reverse_chars <- function(string){
 	paste(reversed_split, collapse="")
 }
 
-# rrheat <- function(dat, facetvar){
-	# p <- ggplot()+
-	# geom_tile(data=dat, aes(x=v2a, y=v3, fill=log(v4*10000+1,2)))+
-	# geom_text(data=dat, aes(x=v2a, y=v3, label=round(v4,3), family="Courier", size=0.1))+
-	# geom_rect(data=f, size=1.4, colour="grey30", aes(xmin=xlo, xmax=xhi, ymin=ylo, ymax=yhi), fill=NA)+
-	# scale_fill_gradientn(colours=myPalette((ncol(pc1)-1)/6))+
-	# xlab("Left flank")+
-	# ylab("Right flank")+
-	# theme(legend.position="none")+
-	# scale_x_discrete(labels=levs_a)+
-	# facet_wrap(~facetvar, ncol=1)
+rrheat <- function(dat, levels, facetvar){
+	p <- ggplot()+
+	geom_tile(data=dat, aes(x=v2a, y=v3, fill=log(v4*10000+1,2)))+
+	geom_text(data=dat, aes(x=v2a, y=v3, label=round(v4,3), family="Courier", size=0.1))+
+	geom_rect(data=f, size=1.4, colour="grey30", aes(xmin=xlo, xmax=xhi, ymin=ylo, ymax=yhi), fill=NA)+
+	scale_fill_gradientn(colours=myPalette((ncol(pc1)-1)/6))+
+	xlab("Left flank")+
+	ylab("Right flank")+
+	theme(legend.position="none")+
+	scale_x_discrete(labels=levels)+
+	facet_wrap(as.formula(paste("~", facetvar)), ncol=1)
 	
-	# return(p)
-# }	
+	return(p)
+}	

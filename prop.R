@@ -285,32 +285,10 @@ if (adj>=1) {
 	##############################################################################
 	# Plot relative rate heatmaps
 	##############################################################################
-	ggplot()+
-		geom_tile(data=map_a, aes(x=v2a, y=v3, fill=log(v4*10000+1,2)))+
-		geom_text(data=map_a, aes(x=v2a, y=v3, label=round(v4,3), family="Courier", size=0.1))+
-		geom_rect(data=f, size=1.4, colour="grey30", aes(xmin=xlo, xmax=xhi, ymin=ylo, ymax=yhi), fill=NA)+
-		scale_fill_gradientn(colours=myPalette((ncol(pc1)-1)/6))+
-		xlab("Left flank")+
-		ylab("Right flank")+
-		theme(legend.position="none")+
-		scale_x_discrete(labels=levs_a)+
-		facet_wrap(~v5, ncol=1)
-	
-	# rrheat(map_a, v5)
+	rrheat(map_a, levs_a, "v5")
 	suppressMessages(ggsave(at_map_out, width=12, height=24))
 	
-	ggplot()+
-		geom_tile(data=map_g, aes(x=v2a, y=v3, fill=log(v4*10000+1,2)))+
-		# geom_rect(data=frames_g, size=1, colour="black", aes(xmin=v2a1-0.5, xmax=v2a1+0.5, ymin=v3a1-0.5, ymax=v3a1+0.5))+
-		geom_text(data=map_g, aes(x=v2a, y=v3, label=round(v4,3), family="Courier", size=0.1))+
-		geom_rect(data=f, size=1.4, colour="grey30", aes(xmin=xlo, xmax=xhi, ymin=ylo, ymax=yhi), fill=NA)+
-		scale_fill_gradientn(colours=myPalette((ncol(pc1)-1)/6))+
-		xlab("Left flank")+
-		ylab("Right flank")+
-		theme(legend.position="none")+
-		scale_x_discrete(labels=levs_g)+
-		# scale_x_discrete(labels=unique(as.character(lapply(as.vector(map_a$v2a), reverse_chars))))+
-		facet_wrap(~v5, ncol=1)
+	rrheat(map_g, levs_g, "v5")
 	suppressMessages(ggsave(gc_map_out, width=12, height=24))
 	
 	##############################################################################
@@ -340,54 +318,17 @@ if (adj>=1) {
 	levs_g <- as.character(lapply(as.vector(levels(map_g$v2a)), reverse_chars))
 	levs_c <- as.character(lapply(as.vector(levels(map_c$v2a)), reverse_chars))
 	levs_t <- as.character(lapply(as.vector(levels(map_t$v2a)), reverse_chars))
-	
-	ggplot()+
-		geom_tile(data=map_a, aes(x=v2a, y=v3, fill=log(v4*10000+1,2)))+
-		geom_text(data=map_a, aes(x=v2a, y=v3, label=round(v4,3), family="Courier", size=0.1))+
-		geom_rect(data=f, size=1.4, colour="grey30", aes(xmin=xlo, xmax=xhi, ymin=ylo, ymax=yhi), fill=NA)+
-		scale_fill_gradientn(colours=myPalette((ncol(pc1)-1)/6))+
-		xlab("Left flank")+
-		ylab("Right flank")+
-		theme(legend.position="none")+
-		scale_x_discrete(labels=levs_a)+
-		facet_wrap(~v6, ncol=1)
+		
+	rrheat(map_a, levs_a, "v6")
 	suppressMessages(ggsave(a_map_out, width=12, height=24))
-	
-	
-	ggplot()+
-		geom_tile(data=map_g, aes(x=v2a, y=v3, fill=log(v4*10000+1,2)))+
-		geom_text(data=map_g, aes(x=v2a, y=v3, label=round(v4,3), family="Courier", size=0.1))+
-		geom_rect(data=f, size=1.4, colour="grey30", aes(xmin=xlo, xmax=xhi, ymin=ylo, ymax=yhi), fill=NA)+
-		scale_fill_gradientn(colours=myPalette((ncol(pc1)-1)/6))+
-		xlab("Left flank")+
-		ylab("Right flank")+
-		theme(legend.position="none")+
-		scale_x_discrete(labels=levs_g)+
-		facet_wrap(~v6, ncol=1)
+		
+	rrheat(map_g, levs_g, "v6")
 	suppressMessages(ggsave(g_map_out, width=12, height=24))
-	
-	ggplot()+
-		geom_tile(data=map_c, aes(x=v2a, y=v3, fill=log(v4*10000+1,2)))+
-		geom_text(data=map_c, aes(x=v2a, y=v3, label=round(v4,3), family="Courier", size=0.1))+
-		geom_rect(data=f, size=1.4, colour="grey30", aes(xmin=xlo, xmax=xhi, ymin=ylo, ymax=yhi), fill=NA)+
-		scale_fill_gradientn(colours=myPalette((ncol(pc1)-1)/6))+
-		xlab("Left flank")+
-		ylab("Right flank")+
-		theme(legend.position="none")+
-		scale_x_discrete(labels=levs_c)+
-		facet_wrap(~v6, ncol=1)
+		
+	rrheat(map_c, levs_c, "v6")
 	suppressMessages(ggsave(c_map_out, width=12, height=24))
-	
-	ggplot()+
-		geom_tile(data=map_t, aes(x=v2a, y=v3, fill=log(v4*10000+1,2)))+
-		geom_text(data=map_t, aes(x=v2a, y=v3, label=round(v4,3), family="Courier", size=0.1))+
-		geom_rect(data=f, size=1.4, colour="grey30", aes(xmin=xlo, xmax=xhi, ymin=ylo, ymax=yhi), fill=NA)+
-		scale_fill_gradientn(colours=myPalette((ncol(pc1)-1)/6))+
-		xlab("Left flank")+
-		ylab("Right flank")+
-		theme(legend.position="none")+
-		scale_x_discrete(labels=levs_t)+
-		facet_wrap(~v6, ncol=1)
+		
+	rrheat(map_t, levs_t, "v6")
 	suppressMessages(ggsave(t_map_out, width=12, height=24))
 	
 	##############################################################################

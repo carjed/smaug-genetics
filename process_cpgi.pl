@@ -11,29 +11,32 @@ use List::Util qw(first max maxstr min minstr reduce shuffle sum);
 use Cwd;
 use Benchmark;
 
+my $chr;
+GetOptions ('chr=i'=> \$chr);
+
 ## READ SINGLETON/COMMON DATA
-my $chr10_sing = "/net/bipolar/jedidiah/smaug-genetics/chr10.expanded.summary_S";
+my $chr10_sing = "/net/bipolar/jedidiah/mutation/output/chr$chr.expanded.summary";
 open my $summ_sing, '<', $chr10_sing or die "can't open $chr10_sing: $!";
 readline($summ_sing); #<-throws out summary header if it exists
 
-my $chr10_comm = "/net/bipolar/jedidiah/smaug-genetics/chr10.expanded.summary"; 
-open my $summ_comm, '<', $chr10_comm or die "can't open $chr10_comm: $!";
-readline($summ_comm); #<-throws out summary header if it exists
+# my $chr10_comm = "/net/bipolar/jedidiah/smaug-genetics/chr10.expanded.summary"; 
+# open my $summ_comm, '<', $chr10_comm or die "can't open $chr10_comm: $!";
+# readline($summ_comm); #<-throws out summary header if it exists
 
 ## DEFINE OUTPUT FILES
-my $outfile_S = "chr10.cpgi.expanded.summary_S";
+my $outfile_S = "chr$chr.cpgi.expanded.summary";
 open(OUT_S, '>', $outfile_S) or die "can't write to $outfile_S: $!\n";
 
-my $outfile_C = "chr10.cpgi.expanded.summary";
-open(OUT_C, '>', $outfile_C) or die "can't write to $outfile_C: $!\n";
+# my $outfile_C = "chr10.cpgi.expanded.summary";
+# open(OUT_C, '>', $outfile_C) or die "can't write to $outfile_C: $!\n";
 
 ## GET CPG ISLAND DATA
 my @cpgi_index;
 my $f_cpgi = "/net/bipolar/jedidiah/reference_data/model-based-cpg-islands-hg19.txt";
 open my $cpgi, '<', $f_cpgi or die "can't open $f_cpgi: $!";
-readline($cpgi); #<-throws out summary header if it exists
+my $header=readline($cpgi); #<-throws out summary header if it exists
 
-my $chr=10;
+# my $chr=10;
 
 my $chrst;
 while (<$cpgi>) {
@@ -57,6 +60,7 @@ while (<$summ_sing>) {
 	push (@NEWSUMM_S, $_);
 }
 
+print OUT_S "$header\n";
 foreach my $row (@NEWSUMM_S) {
 	chomp $row;
 	my @line=split(/\t/, $row);
@@ -66,21 +70,21 @@ foreach my $row (@NEWSUMM_S) {
 	print OUT_S "$row\t$cpgi_ind\n";
 }
 
-$a_nu_start_cpg=0;
+# $a_nu_start_cpg=0;
 
-while (<$summ_comm>) {
-	push (@POS_C, (split(/\t/, $_))[1]);
-	push (@NEWSUMM_C, $_);
-}
+# while (<$summ_comm>) {
+	# push (@POS_C, (split(/\t/, $_))[1]);
+	# push (@NEWSUMM_C, $_);
+# }
 
-foreach my $row (@NEWSUMM_C) {
-	chomp $row;
-	my @line=split(/\t/, $row);
-	my $pos=$line[1];
-	my $cpgi = &getCpGI($pos);
+# foreach my $row (@NEWSUMM_C) {
+	# chomp $row;
+	# my @line=split(/\t/, $row);
+	# my $pos=$line[1];
+	# my $cpgi = &getCpGI($pos);
 
-	print OUT_C "$row\t$cpgi\n";
-}
+	# print OUT_C "$row\t$cpgi\n";
+# }
 
 
 sub getCpGI {

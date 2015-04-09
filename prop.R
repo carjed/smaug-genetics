@@ -285,11 +285,12 @@ if (adj>=1) {
 	##############################################################################
 	# Plot relative rate heatmaps
 	##############################################################################
-	rrheat(map_a, levs_a, "v5")
-	suppressMessages(ggsave(at_map_out, width=12, height=24))
+	at_heat <- rrheat(map_a, levs_a, "v5")
+	gc_heat <- rrheat(map_g, levs_g, "v5")
 	
-	rrheat(map_g, levs_g, "v5")
-	suppressMessages(ggsave(gc_map_out, width=12, height=24))
+	png(at_map_out, width=24, height=24, units="in", res=300)
+	multiplot(at_heat, gc_heat, cols=2)
+	dev.off()
 	
 	##############################################################################
 	# Plot relative rate heatmaps for uncombined categories
@@ -319,17 +320,16 @@ if (adj>=1) {
 	levs_c <- as.character(lapply(as.vector(levels(map_c$v2a)), reverse_chars))
 	levs_t <- as.character(lapply(as.vector(levels(map_t$v2a)), reverse_chars))
 		
-	rrheat(map_a, levs_a, "v6")
-	suppressMessages(ggsave(a_map_out, width=12, height=24))
+	a_heat <- rrheat(map_a, levs_a, "v6")
+	t_heat <- rrheat(map_t, levs_t, "v6")
+	c_heat <- rrheat(map_c, levs_c, "v6")
+	g_heat <- rrheat(map_g, levs_g, "v6")
+	
+	png(a_map_out, width=48, height=24, units="in", res=300)
+	multiplot(a_heat, t_heat, c_heat, g_heat, cols=4)
+	dev.off()
 		
-	rrheat(map_g, levs_g, "v6")
-	suppressMessages(ggsave(g_map_out, width=12, height=24))
-		
-	rrheat(map_c, levs_c, "v6")
-	suppressMessages(ggsave(c_map_out, width=12, height=24))
-		
-	rrheat(map_t, levs_t, "v6")
-	suppressMessages(ggsave(t_map_out, width=12, height=24))
+
 	
 	##############################################################################
 	# Plot count barcharts

@@ -432,6 +432,7 @@ if (@useannos) {
 } else {
 	print "No annotation subset selected. Using all data...\n";
 	while (<$summ>) {
+		next unless $_ =~ /^[^,]*$/;
 		push (@POS, (split(/\t/, $_))[1]);
 		push (@NEWSUMM, $_);
 	}

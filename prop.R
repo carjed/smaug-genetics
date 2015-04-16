@@ -19,7 +19,10 @@ source("init_titles.R")
 ##############################################################################
 
 {
+	# chr22 <- read.table("/net/bipolar/jedidiah/mutation/output/chr20.expanded.summary", header=T, stringsAsFactors=F)
+	# bins <- read.table("/net/bipolar/jedidiah/mutation/output/chr20.bin_out.txt", header=T, stringsAsFactors=F)
 	chr22 <- read.table(summ, header=T, stringsAsFactors=F)
+	chr22 <- chr22[-grep(",", chr22$ALT),]
 	bins <- read.table(bin1, header=T, stringsAsFactors=F, check.names=F)
 
 	chr22$BIN <- ceiling(chr22$POS/binw)
@@ -168,7 +171,7 @@ if (adj>=1) {
 	pcm <- merge(bins, pc, by="BIN", all=TRUE)
 	pcm <- pcm[,names(pc)]
 	
-	write.csv(pcm, "tri_counts_100kb.csv", row.names=F)
+	# write.csv(pcm, "tri_counts_100kb.csv", row.names=F)
 	
 	log.pcm <- as.matrix(log(pcm[-1]+1,2))
 	ybreaks <- names(pcm[-1])[seq(8,96,16)]
@@ -205,7 +208,7 @@ if (adj>=1) {
 	
 	catnames <- substr(names(pc),1,8)
 	
-	write.csv(pc1, "tri_rel_mut_rate_100kb.csv", row.names=F)
+	# write.csv(pc1, "tri_rel_mut_rate_100kb.csv", row.names=F)
 	
 	log.pc1 <- as.matrix(log(pc1[-1]*10000+1,2))
 	
@@ -246,6 +249,36 @@ if (adj>=1) {
 
 	aggseq <- count(chr22, c("Sequence", "Category", "CAT", "COUNT", "SEQ"))
 	aggseq$rel_prop <- aggseq$freq/aggseq$COUNT
+	
+	# Test for uniformity of 5bp motifs that share a 3bp motif
+	b<-c("A", "C", "G", "T")
+	cats<-unique(aggseq$Category)
+
+	for(i in 1:6){
+
+		aggcat<-aggseq[aggseq$Category==cats[i],]
+		# print(head(aggcat))
+
+		for(j in 1:4){
+			for(k in 1:4){
+				ref<-unique(substr(aggcat$Sequence,3,3))
+				motif<-paste0(b[j],ref,b[k])
+				dat<-aggcat[substr(aggcat$Sequence,2,4)==motif,]
+				
+				dat$exp<-dat$COUNT*(sum(dat$freq)/sum(dat$COUNT))
+				# print(head(dat))
+				cat<-cats[i]
+
+				test<-chisq.test(dat$freq, p=dat$exp/sum(dat$exp))
+				if(test$p.value>0.05/96){
+					print(cat)
+					print(motif)
+					print(test$p.value)
+					# print(dat)
+				}
+			}
+		}
+	}
 
 	aggseq_a <- aggseq[grep("^A", aggseq$Category),]
 	aggseq_g <- aggseq[grep("^G", aggseq$Category),]

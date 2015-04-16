@@ -67,27 +67,38 @@ if (-e $casefile && -e $controlfile && -e $subjfile) {
 }	
 
 my $projdir="/net/bipolar/jedidiah/testpipe";
-my $vcfloc="$projdir/vcfs/mask";
+my $vcfloc="$projdir/vcfs";
 make_path("$projdir/summaries/doubletons", "$projdir/summaries/cases", "$projdir/summaries/controls");
 # my $summloc="$projdir/summaries";
-my $summloc="$projdir/vcfs/mask";
+my $summloc="$projdir/summaries";
 my $summloc2="$projdir/summaries/doubletons";
 
 my $bcftools="/net/bipolar/jedidiah/bcftools/bcftools";
 my $vcftools="/net/bipolar/jedidiah/vcftools_0.1.10/bin/vcftools";
 
 my $vcfin=1;
-my @vcfs = </net/bipolar/lockeae/freeze4/vcfs/anno/final/*.vcf.gz>;
+# my @vcfs = </net/bipolar/lockeae/freeze4/vcfs/anno/final/*.vcf.gz>;
+my @vcfs;
+my @chrindex=(1..22);
+foreach my $chr (@chrindex){
+	push(@vcfs, "/net/bipolar/lockeae/final_freeze/snps/vcfs/chr$chr/chr$chr.filtered.sites.modified.vcf.gz");
+}
+# my @vcfs = </net/bipolar/lockeae/final_freeze/snps/vcfs/*.vcf.gz>;
 
 if ($vcfin!=1) {
 	print "Copying VCFs to project directory and updating headers...\n";
 	foreach my $file (@vcfs) {
 		my $filename=fileparse($file);
-		my $subfile = substr($filename, index($filename, 'chr'), index($filename, 'anno'));
+		# my $subfile = substr($filename, index($filename, 'chr'), index($filename, 'anno'));
+		my $subfile = substr($filename, index($filename, 'chr'), index($filename, 'modified'));
 		my $chr = substr($subfile, 0, index($subfile, '.'));
 		#print "$chr\n";
-		my $tabix ="tabix -r newheader.txt $file > $vcfloc/$chr.anno.vcf.gz";
-		&forkExecWait($tabix);
+		# my $tabix ="tabix -r newheader.txt $file > $vcfloc/$chr.anno.vcf.gz";
+		# &forkExecWait($tabix);
+		
+		# my $tabix="tabix -p vcf $file"
+		my $cpvcf="cp $file $vcfloc/$chr.vcf.gz";
+		&forkExecWait($cpvcf);
 	}
 	print "Done\n";
 }
@@ -135,14 +146,19 @@ if ($script==1){
 	
 		my $filename=fileparse($file);
 		my $chr = substr($filename, 0, index($filename, '.'));
-		my $outfile = "$path/$chr.singletons.anno.vcf.gz";
-		
-		if (-e $outfile) {
-			print "$outfile already exists\n";
-		} else {
-			my $cmd="$bcftools view -x -c 1 -C 1 -s $subjfile -o $outfile -O z $file &";
-			&forkExecWait($cmd);
-		}
+		my $outfile = "$path/$chr.singletons.vcf.gz";
+	
+		my $cmd="bcftools query -i AC=1 -f '%CHROM\t%POS\t%REF\t%ALT\t%DP\t%AN\t.\n' $file > $summloc/$chr.summary &";
+		&forkExecWait($cmd);
+	
+	
+		# if (-e $outfile) {
+			# print "$outfile already exists\n";
+		# } else {
+			# my $cmd="$bcftools view -x -c 1 -C 1 -s $subjfile -o $outfile -O z $file &";
+			# my $cmd="bcftools query -i AC=1 -f '%CHROM\t%POS\t%REF\t%ALT\t%ID\n' -o $outfile -O z $file &";
+			# &forkExecWait($cmd);
+		# }
 	}
 	
 	print "Files are being processed in the background. Monitor progress via top command.\n";
@@ -237,23 +253,23 @@ if ($script==3){
 		&forkExecWait($cmd);
 	}
 	
-	my @cases = <$vcfloc/singletons/cases/*.vcf.gz>;
-	foreach my $file (@cases) {
-        my $filename=fileparse($file);
-        my $path=dirname($file);
-		my $chr = substr($filename, 0, index($filename, '.'));
-		my $cmd="$bcftools query -f '%CHROM\t%POS\t%REF\t%ALT\t%INFO/DP\t%INFO/AN\t%INFO/ANNO\n' $file > $summloc/cases/$chr.cases.summary &";
-		&forkExecWait($cmd);
-	}
+	# my @cases = <$vcfloc/singletons/cases/*.vcf.gz>;
+	# foreach my $file (@cases) {
+        # my $filename=fileparse($file);
+        # my $path=dirname($file);
+		# my $chr = substr($filename, 0, index($filename, '.'));
+		# my $cmd="$bcftools query -f '%CHROM\t%POS\t%REF\t%ALT\t%INFO/DP\t%INFO/AN\t%INFO/ANNO\n' $file > $summloc/cases/$chr.cases.summary &";
+		# &forkExecWait($cmd);
+	# }
 	
-	my @controls = <$vcfloc/singletons/controls/*.vcf.gz>;
-	foreach my $file (@controls) {
-        my $filename=fileparse($file);
-        my $path=dirname($file);
-		my $chr = substr($filename, 0, index($filename, '.'));
-		my $cmd="$bcftools query -f '%CHROM\t%POS\t%REF\t%ALT\t%INFO/DP\t%INFO/AN\t%INFO/ANNO\n' $file > $summloc/controls/$chr.controls.summary &";
-		&forkExecWait($cmd);
-	}	
+	# my @controls = <$vcfloc/singletons/controls/*.vcf.gz>;
+	# foreach my $file (@controls) {
+        # my $filename=fileparse($file);
+        # my $path=dirname($file);
+		# my $chr = substr($filename, 0, index($filename, '.'));
+		# my $cmd="$bcftools query -f '%CHROM\t%POS\t%REF\t%ALT\t%INFO/DP\t%INFO/AN\t%INFO/ANNO\n' $file > $summloc/controls/$chr.controls.summary &";
+		# &forkExecWait($cmd);
+	# }	
 }
 
 ##########################################################################################

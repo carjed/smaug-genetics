@@ -2,8 +2,7 @@
 
 for my $i (1 .. 10) {
 	my $cmd = "perl ref5.pl --chr $i --mac 1 --adj 2 &";
-
-&forkExecWait($cmd);
+	&forkExecWait($cmd);
 }
 
 

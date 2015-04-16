@@ -421,6 +421,7 @@ my $a_nu_start_cpg=0;
 if (@useannos) {
 	print "subsetting sites by selected annotation(s)...\n";
 	while (<$summ>) {
+		next unless $_ =~ /^[^,]*$/;
 		push (@POS, (split(/\t/, $_))[1]);
 		foreach my $anno (@useannos) {
 			if ($_ =~ /$anno/) {

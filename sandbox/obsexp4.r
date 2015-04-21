@@ -19,7 +19,7 @@ g<-myPaletteG(6)[1:3]
 chr22 <- read.table("/net/bipolar/jedidiah/mutation/output/chr20.5bp.expanded.summary", header=T, stringsAsFactors=F)
 bins <- read.table("/net/bipolar/jedidiah/mutation/output/chr20.bin_out_5bp.txt", header=T, stringsAsFactors=F)
 chr22 <- chr22[-grep(",", chr22$ALT),]
-source("get_functions.R")
+source("/net/bipolar/jedidiah/mutation/smaug-genetics/get_functions.R")
 binw<-100000
 
 ##############################################################################
@@ -136,8 +136,11 @@ oe2.ord<-oe2[order(oe2$Category, oe2$odds),]
 # oe2.ord$rk<-rep(1:length(unique(oe2.ord$BIN)),6)
 oe2.ord <- ddply(oe2.ord, .(Category), transform, rk=seq_along(Category))
 
-# Plot OR profiles of each category
-ggplot(oe2.ord, aes(x=rk, y=odds))+geom_point()+facet_wrap(~Category)
+# Plot odds profiles of each category
+ggplot(oe2.ord, aes(x=rk, y=odds))+
+	geom_point()+
+	facet_wrap(~Category)
+ggsave("/net/bipolar/jedidiah/mutation/images/odds_profiles.png")
 
 # nbp<-adj*2+1
 # oe2.ord$res<-paste0(nbp,"bp")
@@ -148,8 +151,97 @@ ggplot(oe2.ord, aes(x=rk, y=odds))+geom_point()+facet_wrap(~Category)
 # oe3<-read.table("oe_3bp.txt", sep="\t", header=T, stringsAsFactors=F)
 # oe.full<-rbind(oe3, oe5)
 
-
 # oe.full2<-oe.full[(oe.full$odds>0.5 & oe.full$odds<2),]
 # ggplot(oe.full2, aes(x=rk, y=odds, group=res, colour=res))+geom_line()+facet_wrap(~Category)
 # ggsave("3bp_vs_5bp.png")
+
+cats<-unique(aggseq$Category)
+
+# Test for uniformity 
+# order by bins
+oe2.ord2<-oe2[order(oe2$BIN),]
+
+for(i in 1:6){
+
+	# aggcat<-oe5[oe5$Category==cats[i],]
+	aggcat<-oe2.ord2[oe2.ord2$Category==cats[i],]
+	aggcat<-aggcat[aggcat$obs>25,]
+	test<-chisq.test(aggcat$obs, p=aggcat$exp/sum(aggcat$exp))
+	cat<-cats[i]
+	print(cat)
+	print(test$p.value)
+}
+
+# Test for uniformity of 5bp motifs that share a 3bp motif
+
+
+b<-c("A", "C", "G", "T")
+
+for(i in 1:6){
+	
+	aggcat<-aggseq[aggseq$Category==cats[i],]
+	aggcat<-aggcat[aggcat$freq>25,]
+	# test<-chisq.test(aggcat$obs, p=aggcat$exp/sum(aggcat$exp))
+	cat<-cats[i]
+	msg<-paste0("checking category ",cat)
+	print(msg)
+	# print(cat)
+	# print(test$p.value)
+
+	# print(head(aggcat))
+
+	for(j in 1:4){
+		for(k in 1:4){
+			ref<-unique(substr(aggcat$Sequence,3,3))
+			motif<-paste0(b[j],ref,b[k])
+			dat<-aggcat[substr(aggcat$Sequence,2,4)==motif,]
+			
+			dat$exp<-dat$COUNT*(sum(dat$freq)/sum(dat$COUNT))
+			# print(head(dat))
+			cat<-cats[i]
+
+			test<-chisq.test(dat$freq, p=dat$exp/sum(dat$exp))
+			if(test$p.value>0.05/96){
+				print(cat)
+				print(motif)
+				print(test$p.value)
+				# print(dat)
+			}
+		}
+	}
+}
+
+oe2.ord2$diff<-oe2.ord2$obs-oe2.ord2$exp
+
+# Plot residual spatial variation after 5bp estimate
+ggplot(oe2.ord2, aes(x=BIN, y=diff))+geom_bar(stat="identity", position="identity")+facet_wrap(~Category)
+ggsave("/net/bipolar/jedidiah/mutation/images/diffs.png")
+
+# [1] "AT_CG"
+# [1] 1.060231e-05
+# [1] "AT_GC"
+# [1] 9.193585e-60
+# [1] "AT_TA"
+# [1] 8.038046e-54
+# [1] "GC_AT"
+# [1] 0
+# [1] "GC_CG"
+# [1] 5.570329e-33
+# [1] "GC_TA"
+# [1] 4.950446e-271
+# [1] "checking category AT_CG"
+# [1] "checking category AT_GC"
+# [1] "checking category AT_TA"
+# [1] "AT_TA"
+# [1] "TAC"
+# [1] 0.1405975
+# [1] "checking category GC_AT"
+# [1] "checking category GC_CG"
+# [1] "checking category GC_TA"
+# [1] "GC_TA"
+# [1] "CCG"
+# [1] 0.03218077
+
+
+
 

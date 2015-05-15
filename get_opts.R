@@ -1,5 +1,5 @@
 options(warn=-1)
-sink("R.log")
+# sink("R.log")
 
 {
 	# Load packages
@@ -9,7 +9,7 @@ sink("R.log")
 	suppressMessages(require(RColorBrewer))
 	suppressMessages(require(grid))
 
-	args<-commandArgs(TRUE)
+	# args<-commandArgs(TRUE)
 
 	# Read args
 	chr<-as.character(args[1])

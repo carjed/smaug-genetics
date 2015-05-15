@@ -22,7 +22,7 @@ source("init_titles.R")
 	# chr22 <- read.table("/net/bipolar/jedidiah/mutation/output/chr20.expanded.summary", header=T, stringsAsFactors=F)
 	# bins <- read.table("/net/bipolar/jedidiah/mutation/output/chr20.bin_out.txt", header=T, stringsAsFactors=F)
 	chr22 <- read.table(summ, header=T, stringsAsFactors=F)
-	chr22 <- chr22[-grep(",", chr22$ALT),]
+	# chr22 <- chr22[-grep(",", chr22$ALT),]
 	bins <- read.table(bin1, header=T, stringsAsFactors=F, check.names=F)
 
 	chr22$BIN <- ceiling(chr22$POS/binw)
@@ -60,17 +60,21 @@ source("init_titles.R")
 ##############################################################################
 	ggplot(chr22, aes(x=POS, colour=Category, fill=Category))+
 		geom_histogram(binwidth=binw, position="identity", alpha=0.5)+
-		facet_wrap(~Category)+
+		facet_wrap(~Category, scales="free")+
 		scale_fill_manual(values=rb)+
 		scale_colour_manual(values=rb)+
-		ggtitle(main_dist_title)+
+		# ggtitle(main_dist_title)+
+		xlab("Position")+
 		theme_bw()+
 		# scale_y_log10()+
 		theme(panel.border=element_blank(),
 			legend.position="none",
-			axis.text.x = element_text(angle = 90, hjust = 0.5),
-			axis.text.y = element_text(angle = 90, hjust = 0.5))
-	suppressMessages(ggsave(main_dist_out))
+			strip.text.x = element_text(size=14),
+			axis.text.x = element_text(size=14, angle = 90, hjust = 0.5),
+			axis.text.y = element_text(size=14, angle = 90, hjust = 0.5),
+			axis.title.y = element_text(size=16),
+			axis.title.x = element_text(size=16))
+	suppressMessages(ggsave(main_dist_out, width=15.25, height=8.75))
 
 ##############################################################################
 # Plot distribution of counts for all singletons together
@@ -124,20 +128,20 @@ source("init_titles.R")
 	count2$prop[count2$prop>0.5] <- 0
 
 	p1 <- ggplot(count2, aes(x=BIN, y=prop, colour=Category, fill=Category))+
-		geom_bar(position="identity", stat="identity", alpha=0.5)+
-		facet_wrap(~Category)+
-		scale_fill_manual(values=rb)+
-		scale_colour_manual(values=rb)+
-		#ggtitle(main_rel_title)+
-		theme_bw()+
-		theme(panel.border=element_blank(),
-			  legend.position="none",
-			  axis.text.x = element_text(angle = 90, hjust = 0.5))
+			geom_bar(position="identity", stat="identity", alpha=0.5)+
+			facet_wrap(~Category, scales="free")+
+			scale_fill_manual(values=rb)+
+			scale_colour_manual(values=rb)+
+			#ggtitle(main_rel_title)+
+			theme_bw()+
+			theme(panel.border=element_blank(),
+				legend.position="none",
+				axis.text.x = element_text(angle = 90, hjust = 0.5))
 	
 	mainplot <- p1+
-			coord_cartesian(ylim = c(0, 0.015))+
-			xlab("Bin")+
-			ylab("Relative Mutation Rate")
+				coord_cartesian(ylim = c(0, 0.015))+
+				xlab("Bin")+
+				ylab("Relative Mutation Rate")
 			
 	subplot <- p1+
 			   ggtitle("full scale")+
@@ -186,9 +190,9 @@ if (adj>=1) {
 			breaks=c(min(log.pcm, na.rm=T),max(log.pcm, na.rm=T)),
 			labels=c(min(pcm[2:ncol(pcm)], na.rm=T), max(pcm[2:ncol(pcm)], na.rm=T)))+
 		theme_bw()+
-		theme(panel.border=element_blank(),
-			axis.text.x = element_text(angle = 90, hjust = 0.5),
-			axis.text.y = element_text(angle = 90, hjust = 0.5))+
+		theme(panel.border = element_blank(),
+			  axis.text.x = element_text(angle = 90, hjust = 0.5),
+			  axis.text.y = element_text(angle = 90, hjust = 0.5))+
 		xlab(NULL)+
 		ylab(NULL)+
 		ggtitle(count_heat_title)+
@@ -253,28 +257,30 @@ if (adj>=1) {
 	# Test for uniformity of 5bp motifs that share a 3bp motif
 	b<-c("A", "C", "G", "T")
 	cats<-unique(aggseq$Category)
+	
+	if(adj==2){
+		for(i in 1:6){
 
-	for(i in 1:6){
+			aggcat<-aggseq[aggseq$Category==cats[i],]
+			# print(head(aggcat))
 
-		aggcat<-aggseq[aggseq$Category==cats[i],]
-		# print(head(aggcat))
+			for(j in 1:4){
+				for(k in 1:4){
+					ref<-unique(substr(aggcat$Sequence,3,3))
+					motif<-paste0(b[j],ref,b[k])
+					dat<-aggcat[substr(aggcat$Sequence,2,4)==motif,]
+					
+					dat$exp<-dat$COUNT*(sum(dat$freq)/sum(dat$COUNT))
+					# print(head(dat))
+					cat<-cats[i]
 
-		for(j in 1:4){
-			for(k in 1:4){
-				ref<-unique(substr(aggcat$Sequence,3,3))
-				motif<-paste0(b[j],ref,b[k])
-				dat<-aggcat[substr(aggcat$Sequence,2,4)==motif,]
-				
-				dat$exp<-dat$COUNT*(sum(dat$freq)/sum(dat$COUNT))
-				# print(head(dat))
-				cat<-cats[i]
-
-				test<-chisq.test(dat$freq, p=dat$exp/sum(dat$exp))
-				if(test$p.value>0.05/96){
-					print(cat)
-					print(motif)
-					print(test$p.value)
-					# print(dat)
+					test<-chisq.test(dat$freq, p=dat$exp/sum(dat$exp))
+					if(test$p.value>0.05/96){
+						print(cat)
+						print(motif)
+						print(test$p.value)
+						# print(dat)
+					}
 				}
 			}
 		}
@@ -290,7 +296,7 @@ if (adj>=1) {
 	map_a$v2a <- factor(map_a$v2a)
 	map_a$v3 <- substr(map_a$v1,adj+2,adj*2+1)
 	map_a$v4 <- aggseq_a$rel_prop
-	map_a$v5 <- aggseq_a$Category
+	map_a$v5 <- factor(aggseq_a$Category)
 	map_a$v6 <- aggseq_a$CAT
 
 	g_seqs <- aggseq_g$Sequence
@@ -300,11 +306,14 @@ if (adj>=1) {
 	map_g$v2a <- factor(map_g$v2a)
 	map_g$v3 <- substr(map_g$v1,adj+2,adj*2+1)
 	map_g$v4 <- aggseq_g$rel_prop
-	map_g$v5 <- aggseq_g$Category
+	map_g$v5 <- factor(aggseq_g$Category)
 	map_g$v6 <- aggseq_g$CAT
 	
 	levs_a <- as.character(lapply(as.vector(levels(map_a$v2a)), reverse_chars))
 	levs_g <- as.character(lapply(as.vector(levels(map_g$v2a)), reverse_chars))
+	
+	levels(map_a$v5) <- c("A>C", "A>G", "A>T")
+	levels(map_g$v5) <- c("C>T", "C>G", "C>A")
 	
 	# Define parameters for grouping 3bp motifs
 	nbox<-length(unique(map_g$v2a))
@@ -362,7 +371,29 @@ if (adj>=1) {
 	multiplot(a_heat, t_heat, c_heat, g_heat, cols=4)
 	dev.off()
 		
-
+	cats<-unique(aggseq$Category)
+	seqs<-unique(aggseq$Sequence)
+	
+	if(adj==2){
+		for(i in 1:6){
+			for(j in 1:512){
+				cat<-cats[i]
+				seq<-seqs[j]
+				dat<-aggseq[(aggseq$Sequence==seqs[j] & aggseq$Category==cats[i]),]
+				if(nrow(dat)==2){
+					test<-prop.test(dat$freq, dat$COUNT)
+					if(test$p.value<0.05/1536){
+						print(cat)
+						print(seq)
+						print(dat)
+						print(test)
+						print(test$p.value)
+						# print(dat)
+					}
+				}
+			}
+		}
+	}
 	
 	##############################################################################
 	# Plot count barcharts

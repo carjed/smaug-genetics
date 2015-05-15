@@ -34,6 +34,7 @@ rrheat <- function(dat, levels, facetvar){
 	xlab("5' flank")+
 	ylab("3' flank")+
 	theme(legend.position="none",
+		  strip.text.x = element_text(size=14),
 	      axis.text.y = element_text(size=14),
 		  axis.text.x = element_text(size=14))+
 	scale_x_discrete(labels=levels)+
@@ -41,6 +42,21 @@ rrheat <- function(dat, levels, facetvar){
 	
 	return(p)
 }	
+
+# QQ plot in ggplot2 with qqline
+ggQQ <- function (vec) # argument: vector of numbers
+{
+  # following four lines from base R's qqline()
+  y <- quantile(vec[!is.na(vec)], c(0.25, 0.75))
+  x <- qnorm(c(0.25, 0.75))
+  slope <- diff(y)/diff(x)
+  int <- y[1L] - slope * x[1L]
+
+  d <- data.frame(resids = vec)
+
+  ggplot(d, aes(sample = resids)) + stat_qq() + geom_abline(slope = slope, intercept = int)
+
+}
 
 # Multiple plot function
 #

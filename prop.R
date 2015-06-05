@@ -4,14 +4,11 @@
 # Process Options/Args
 # Define color palettes
 # Define functions
+# Initialize strings for titles and file output
 ##############################################################################
 
 source("get_opts.R")
 source("get_functions.R")
-
-##############################################################################
-# Initialize strings for titles and file output
-##############################################################################
 source("init_titles.R")
 
 ##############################################################################
@@ -19,11 +16,18 @@ source("init_titles.R")
 ##############################################################################
 
 {
+	chr22 <- read.table(summ, header=T, stringsAsFactors=F)
+	bins <- read.table(bin1, header=T, stringsAsFactors=F, check.names=F)
+	
+	### Specify input files without using args
 	# chr22 <- read.table("/net/bipolar/jedidiah/mutation/output/chr20.expanded.summary", header=T, stringsAsFactors=F)
 	# bins <- read.table("/net/bipolar/jedidiah/mutation/output/chr20.bin_out.txt", header=T, stringsAsFactors=F)
-	chr22 <- read.table(summ, header=T, stringsAsFactors=F)
-	# chr22 <- chr22[-grep(",", chr22$ALT),]
-	bins <- read.table(bin1, header=T, stringsAsFactors=F, check.names=F)
+	
+	### Use full input files with all autosomes
+	# chr22 <- read.table("/net/bipolar/jedidiah/mutation/output/full.summary", header=T, stringsAsFactors=F)
+	# bins <- read.table("/net/bipolar/jedidiah/mutation/output/full_bin.txt", header=T, stringsAsFactors=F, check.names=F)
+	
+	# chr22 <- chr22[-grep(",", chr22$ALT),] #<-remove multiallelic sites, if not already filtered
 
 	chr22$BIN <- ceiling(chr22$POS/binw)
 	chr22$CAT <- paste(chr22$REF, chr22$ALT, sep="")
@@ -39,18 +43,18 @@ source("init_titles.R")
 	chr22$Category[chr22$CAT=="GT" | chr22$CAT=="CA"] <- "GC_TA"
 	
 	chr22$Sequence <- ifelse(
-		substr(chr22$SEQ,adj+1,adj+1)<substr(chr22$ALTSEQ,adj+1,adj+1),
+		substr(chr22$SEQ,adj+1,adj+1) < substr(chr22$ALTSEQ,adj+1,adj+1),
 		paste0(chr22$SEQ,"(",chr22$ALTSEQ,")"),
 		paste0(chr22$ALTSEQ,"(",chr22$SEQ,")")
 	)
 
 	# get complement of sequence columns in bin file and remove duplicates
-	for(i in 5:((4^(adj*2+1))+4)){
+	for(i in 6:ncol(bins)){
 		names(bins)[i] <- paste0(names(bins)[i], "(", revcomp(names(bins)[i]), ")" )
 	}
 	
 	bins2 <- bins[,names(bins)%in%unique(chr22$Sequence)]
-	bins <- cbind(bins[,1:4],bins2)
+	bins <- cbind(bins[,1:5],bins2)
 
 	xmax <- floor(max(chr22$BIN)/100)*100
 }
@@ -139,7 +143,7 @@ source("init_titles.R")
 				axis.text.x = element_text(angle = 90, hjust = 0.5))
 	
 	mainplot <- p1+
-				coord_cartesian(ylim = c(0, 0.015))+
+				coord_cartesian(ylim = c(0, 0.03))+
 				xlab("Bin")+
 				ylab("Relative Mutation Rate")
 			
@@ -163,7 +167,6 @@ source("init_titles.R")
 
 ##############################################################################
 # Local Sequence Analysis
-# -currently only for tri-nucleotide sequences
 ##############################################################################
 
 if (adj>=1) {
@@ -204,7 +207,7 @@ if (adj>=1) {
 	#Relative mutation rate per bin
 	pc1 <- pcm
 	bins[bins==0] <- 1
-	bins_r <- bins[pcm$BIN,4:ncol(bins)]
+	bins_r <- bins[pcm$BIN,5:ncol(bins)]
 	
 	for (i in 2:ncol(pc1))  {
 		pc1[,i] <- round(pc1[,i]/bins_r[,substr(names(pc1)[i], 7, nchar(names(pc1)[i]))], 4)
@@ -235,7 +238,7 @@ if (adj>=1) {
 	ggsave(rel_rate_out)
 	
 	# Get counts of each subsequence across whole chromosome
-	bins2 <- melt(bins[,4:((4^(adj*2+1))/2+4)], id="BIN")
+	bins2 <- melt(bins[,5:ncol(bins)], id="BIN")
 	bins2 <- aggregate(data=bins2, value ~ variable, sum)
 	names(bins2) <- c("Sequence", "COUNT")
 	bins2$Sequence <- sub("[.]", "(", bins2$Sequence)
@@ -315,6 +318,14 @@ if (adj>=1) {
 	levels(map_a$v5) <- c("A>C", "A>G", "A>T")
 	levels(map_g$v5) <- c("C>T", "C>G", "C>A")
 	
+	map_a1<-aggregate(v4~v1+v2+v2a+v3+v5, map_a, mean)
+	map_a1$v4a <- round(map_a1$v4, 3)
+	map_a1$v4a[map_a1$v4a<0.001]<-"<0.001"
+	
+	map_g1<-aggregate(v4~v1+v2+v2a+v3+v5, map_g, mean)
+	map_g1$v4a <- round(map_g1$v4, 3)
+	map_g1$v4a[map_g1$v4a<0.001]<-"<0.001"
+	
 	# Define parameters for grouping 3bp motifs
 	nbox<-length(unique(map_g$v2a))
 	nint<-nbox/4
@@ -327,151 +338,20 @@ if (adj>=1) {
 	##############################################################################
 	# Plot relative rate heatmaps
 	##############################################################################
-	at_heat <- rrheat(map_a, levs_a, "v5")
-	gc_heat <- rrheat(map_g, levs_g, "v5")
+	at_heat <- rrheat(map_a1, levs_a, "v5")
+	gc_heat <- rrheat(map_g1, levs_g, "v5")
 	
 	png(at_map_out, width=24, height=24, units="in", res=300)
 	multiplot(at_heat, gc_heat, cols=2)
 	dev.off()
 	
-	##############################################################################
-	# Plot relative rate heatmaps for uncombined categories
-	##############################################################################
-	##### Redo data subsets for 12 individual mutations
-	a_seqs <- aggseq_a$SEQ
-	map_a$v1 <- a_seqs
-	map_a$v2 <- substr(map_a$v1,1,adj)
-	map_a$v2a <- as.character(lapply(as.vector(map_a$v2), reverse_chars))
-	map_a$v2a <- factor(map_a$v2a)
-	map_a$v3 <- substr(map_a$v1,adj+2,adj*2+1)
-	
-	g_seqs <- aggseq_g$SEQ
-	map_g$v1 <- g_seqs
-	map_g$v2 <- substr(map_g$v1,1,adj)
-	map_g$v2a <- as.character(lapply(as.vector(map_g$v2), reverse_chars))
-	map_g$v2a <- factor(map_g$v2a)
-	map_g$v3 <- substr(map_g$v1,adj+2,adj*2+1)
-	
-	map_t <- map_a[grep("^T", map_a$v6),]
-	map_a <- map_a[grep("^A", map_a$v6),]
-	map_c <- map_g[grep("^C", map_g$v6),]
-	map_g <- map_g[grep("^G", map_g$v6),]
-	
-	levs_a <- as.character(lapply(as.vector(levels(map_a$v2a)), reverse_chars))
-	levs_g <- as.character(lapply(as.vector(levels(map_g$v2a)), reverse_chars))
-	levs_c <- as.character(lapply(as.vector(levels(map_c$v2a)), reverse_chars))
-	levs_t <- as.character(lapply(as.vector(levels(map_t$v2a)), reverse_chars))
-		
-	a_heat <- rrheat(map_a, levs_a, "v6")
-	t_heat <- rrheat(map_t, levs_t, "v6")
-	c_heat <- rrheat(map_c, levs_c, "v6")
-	g_heat <- rrheat(map_g, levs_g, "v6")
-	
-	png(a_map_out, width=48, height=24, units="in", res=300)
-	multiplot(a_heat, t_heat, c_heat, g_heat, cols=4)
-	dev.off()
-		
-	cats<-unique(aggseq$Category)
-	seqs<-unique(aggseq$Sequence)
-	
-	if(adj==2){
-		for(i in 1:6){
-			for(j in 1:512){
-				cat<-cats[i]
-				seq<-seqs[j]
-				dat<-aggseq[(aggseq$Sequence==seqs[j] & aggseq$Category==cats[i]),]
-				if(nrow(dat)==2){
-					test<-prop.test(dat$freq, dat$COUNT)
-					if(test$p.value<0.05/1536){
-						print(cat)
-						print(seq)
-						print(dat)
-						print(test)
-						print(test$p.value)
-						# print(dat)
-					}
-				}
-			}
-		}
-	}
-	
-	##############################################################################
-	# Plot count barcharts
-	# TODO: Fix error bars?
-	##############################################################################
-	# y <- apply(pc, 2, std)
-	# z <- apply(pc1, 2, std)
-	# aggseq$std_count <- y[2:ncol(pc1)]
-	# aggseq$std_prop <- z[2:ncol(pc1)]
-	
-	# limits_count <- aes(ymax=freq+std_count, ymin=freq-std_count)
-	# limits_prop <- aes(ymax=rel_prop+std_prop, ymin=rel_prop-std_prop)
-	
-	
-	ggplot(aggseq_a, aes(x=Category, y=freq, fill=Sequence))+
-		geom_bar(position="dodge", stat="identity")+
-		# geom_errorbar(limits_count, position="dodge")+
-		scale_fill_manual(values=myPalette((ncol(pc1)-1)/6))+
-		ggtitle(at_seq_title)+
-		theme_bw()+
-		theme(panel.border=element_blank(),
-			axis.ticks.x=element_blank(),
-			legend.position="none",
-			panel.grid.major.y=element_blank())
-		# guides(col = guide_legend(nrow = 40, byrow = TRUE))
-	suppressMessages(ggsave(at_seq_out, width=12, height=7))
 
-	ggplot(aggseq_g, aes(x=Category, y=freq, fill=Sequence))+
-		geom_bar(position="dodge", stat="identity")+
-		# geom_errorbar(limits_count, position="dodge")+
-		scale_fill_manual(values=myPalette((ncol(pc1)-1)/6))+
-		ggtitle(gc_seq_title)+
-		theme_bw()+
-		theme(panel.border=element_blank(),
-			axis.ticks.x=element_blank(),
-			legend.position="none",
-			panel.grid.major.y=element_blank())
-		# guides(col = guide_legend(nrow = 40, byrow = TRUE))
-	suppressMessages(ggsave(gc_seq_out, width=12, height=7))
-
-	##############################################################################
-	# Plot relative rate barcharts
-	##############################################################################
-	ggplot(aggseq_a, aes(x=Sequence, y=rel_prop, fill=Sequence))+
-		geom_bar(position="dodge", stat="identity")+
-		# geom_errorbar(limits_prop, position="dodge")+
-		scale_fill_manual(values=myPalette((ncol(pc1)-1)/6))+
-		#ggtitle(at_rel_prop_title)+
-		ylab("Relative Mutation Rate")+
-		theme_bw()+
-		theme(panel.border=element_blank(),
-			axis.ticks.x=element_blank(),
-			axis.text.x = element_text(angle = 90, hjust = 0.5),
-			legend.position="none",
-			panel.grid.major.y=element_blank())+
-		facet_wrap(~Category, ncol=1)
-		# guides(col = guide_legend(nrow = 40, byrow = TRUE))
-	suppressMessages(ggsave(at_rel_out, width=24, height=12))
-	
-	ggplot(aggseq_g, aes(x=Category, y=rel_prop, fill=Sequence))+
-		geom_bar(position="dodge", stat="identity")+
-		# geom_errorbar(limits_prop, position="dodge")+
-		scale_fill_manual(values=myPalette((ncol(pc1)-1)/6))+
-		#ggtitle(gc_rel_prop_title)+
-		ylab("Relative Mutation Rate")+
-		theme_bw()+
-		theme(panel.border=element_blank(),
-			axis.ticks.x=element_blank(),
-			legend.position="none",
-			panel.grid.major.y=element_blank())
-		# guides(col = guide_legend(nrow = 40, byrow = TRUE))
-	suppressMessages(ggsave(gc_rel_out, width=12, height=7))
 }
 
 ##############################################################################
 # Run various statistical tests of interest and print to output
 ##############################################################################
-source("stat_tests.R")
+# source("stat_tests.R")
 
 ##############################################################################
 # CpG Analysis

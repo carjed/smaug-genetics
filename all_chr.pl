@@ -1,7 +1,12 @@
 #!/usr/local/bin/perl
 
-for my $i (1 .. 10) {
-	my $cmd = "perl ref5.pl --chr $i --mac 1 --adj 2 &";
+##############################################################################
+# Run ref5.pl on all chromosomes--
+# update local nucleotide (adj) and binwidth (b) parameters as necesary
+##############################################################################
+
+for my $i (11 .. 22) {
+	my $cmd = "perl ref5.pl --chr $i --mac 1 --adj 1 --mf &";
 	&forkExecWait($cmd);
 }
 

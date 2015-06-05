@@ -9,7 +9,7 @@ options(warn=-1)
 	suppressMessages(require(RColorBrewer))
 	suppressMessages(require(grid))
 
-	# args<-commandArgs(TRUE)
+	args<-commandArgs(TRUE)
 
 	# Read args
 	chr<-as.character(args[1])
@@ -25,6 +25,8 @@ options(warn=-1)
 
 	if (macl=="singletons") mac<-"Singleton"
 	if (macl=="doubletons") mac<-"Doubleton"
+	
+	nbp<-adj*2+1
 
 	# Define palettes
 	myPaletteCat <- colorRampPalette(rev(brewer.pal(8, "Dark2")), space="Lab")

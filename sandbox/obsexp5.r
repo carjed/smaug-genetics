@@ -24,15 +24,15 @@ myPaletteG <- colorRampPalette(rev(brewer.pal(9, "Greens")), space="Lab")
 rb <- c(myPaletteB(6)[1:3],myPaletteR(6)[1:3])
 g <- myPaletteG(6)[1:3]
 
-summfile <- paste0("/net/bipolar/jedidiah/mutation/output/chr20.",nbp,"bp.expanded.summary")
-binfile <- paste0("/net/bipolar/jedidiah/mutation/output/chr20.bin_out_",nbp,"bp.txt")
+summfile <- paste0("/net/bipolar/jedidiah/mutation/output/5bp_100k/chr20.expanded.summary")
+binfile <- paste0("/net/bipolar/jedidiah/mutation/output/5bp_100k/chr20.bin_out.txt")
 chr22 <- read.table(summfile, header=T, stringsAsFactors=F)
 bins <- read.table(binfile, header=T, stringsAsFactors=F)
 
 # chr22 <- read.table("/net/bipolar/jedidiah/mutation/output/chr20.expanded.summary", header=T, stringsAsFactors=F)
 # bins <- read.table("/net/bipolar/jedidiah/mutation/output/chr20.bin_out.txt", header=T, stringsAsFactors=F)
 
-chr22 <- chr22[-grep(",", chr22$ALT),]
+# chr22 <- chr22[-grep(",", chr22$ALT),]
 
 ##############################################################################
 # Add columns to data
@@ -56,15 +56,15 @@ chr22$Sequence <- ifelse(
 )
 
 # get complement of sequence columns in bin file and remove duplicates
-for(i in 5:((4^(adj*2+1))+4)){
+for(i in 6:((4^(adj*2+1))+4)){
 	names(bins)[i] <- paste0(names(bins)[i], "(", revcomp(names(bins)[i]), ")" )
 }
 
 bins2 <- bins[,names(bins)%in%unique(chr22$Sequence)]
-bins <- cbind(bins[,1:4],bins2)
+bins <- cbind(bins[,1:5],bins2)
 xmax <- floor(max(chr22$BIN)/100)*100
 
-bins2 <- melt(bins[,4:((4^(adj*2+1))/2+4)], id="BIN")
+bins2 <- melt(bins[,5:((4^(adj*2+1))/2+4)], id="BIN")
 bins2 <- aggregate(data=bins2, value ~ variable, sum)
 names(bins2) <- c("Sequence", "COUNT")
 bins2$Sequence <- sub("[.]", "(", bins2$Sequence)

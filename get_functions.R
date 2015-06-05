@@ -27,18 +27,30 @@ reverse_chars <- function(string){
 
 rrheat <- function(dat, levels, facetvar){
 	p <- ggplot()+
-	geom_tile(data=dat, aes(x=v2a, y=v3, fill=log(v4*10000+1,2)))+
-	geom_text(data=dat, aes(x=v2a, y=v3, label=round(v4,3), family="Courier", size=0.1))+
+	# log(v4*10000+1,2)
+	# limits=c(min(dat$v4), max(dat$v4))
+	geom_tile(data=dat, aes(x=v2a, y=v3, fill=v4))+
+	# geom_text(data=dat, aes(x=v2a, y=v3, label=v4a, family="Courier", size=0.1))+
 	geom_rect(data=f, size=1.4, colour="grey30", aes(xmin=xlo, xmax=xhi, ymin=ylo, ymax=yhi), fill=NA)+
-	scale_fill_gradientn(colours=myPalette((ncol(pc1)-1)/6))+
+	scale_fill_gradientn("Relative Rate\n", 
+						 colours=myPalette((nbp-1)^4), 
+						 trans="log", 
+						 breaks=c(min(dat$v4), mean(dat$v4), max(dat$v4)),
+						 labels=c(round(min(dat$v4), 5), round(mean(dat$v4), 4), round(max(dat$v4), 3)),
+						 limits=c(min(dat$v4), max(dat$v4)))+
 	xlab("5' flank")+
 	ylab("3' flank")+
-	theme(legend.position="none",
-		  strip.text.x = element_text(size=14),
-	      axis.text.y = element_text(size=14),
-		  axis.text.x = element_text(size=14))+
+	theme(
+		  # legend.position="none",
+		  legend.title = element_text(size=18),
+		  legend.text = element_text(size=16),
+		  strip.text.x = element_text(size=40),
+		  axis.title.x = element_text(size=20),
+		  axis.title.y = element_text(size=20),
+	      axis.text.y = element_text(size=16, colour="black"),
+		  axis.text.x = element_text(size=16, colour="black"))+
 	scale_x_discrete(labels=levels)+
-	facet_wrap(as.formula(paste("~", facetvar)), ncol=1)
+	facet_wrap(as.formula(paste("~", facetvar)), ncol=1, scales="free_x")
 	
 	return(p)
 }	

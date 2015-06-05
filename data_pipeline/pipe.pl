@@ -276,14 +276,14 @@ if ($script==3){
 #Per-subject singleton counts
 ##########################################################################################
 if ($script==4){
-	my @files = <$vcfloc/*.vcf.gz>;
+	my @files = </net/bipolar/lockeae/final_freeze/snps/vcfs/chr*/chr*.filtered.modified.vcf.gz>;
 	make_path("$projdir/singletons");
 	my $singdir="$projdir/singletons";
 	
 	foreach my $file (@files) {
 		my $filename=fileparse($file);
 		my $chr = substr($filename, 0, index($filename, '.'));
-		my $cmd= "$vcftools --gzvcf $file --singletons --out $singdir/$chr &";
+		my $cmd= "$vcftools --gzvcf $file --singletons --out $singdir/$chr";
 		&forkExecWait($cmd);
 	}
 }

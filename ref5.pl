@@ -186,7 +186,12 @@ open(BIN, '>', $bin_out) or die "can't write to $bin_out: $!\n";
 my $seq=&getRef();
 
 sub getRef{
-	my $f_fasta = "$parentdir/reference_data/human_g1k_v37.fasta";
+	my $f_fasta;
+	if($mask_flag){
+		$f_fasta = "$parentdir/reference_data/human_g1k_v37.mask.fasta";
+	} else {
+		$f_fasta = "$parentdir/reference_data/human_g1k_v37.fasta";
+	}
 
 	if (-e $f_fasta) {
 		print "Using reference genome: $f_fasta\n";
@@ -218,28 +223,28 @@ sub getRef{
 	my $seq;
 	while (<$fasta>) {
 		chomp;
-		if (/>$chr/../>$nextchr/) {
-			next if />$chr/ || />$nextchr/;
+		if (/^>$chr$/../^>$nextchr$/) {
+			next if /^>$chr$/ || /^>$nextchr$/;
 			$seq .=$_;
 		}
 	}
 
-	if($mask_flag){
-		print "Applying mask to ref genome...\n";
-		my $mask_file = "$parentdir/reference_data/testmask2.bed";
-		open my $mask, '<', $mask_file or die "can't open $mask_file: $!";
+	# if($mask_flag){
+		# print "Applying mask to ref genome...\n";
+		# my $mask_file = "$parentdir/reference_data/testmask2.bed";
+		# open my $mask, '<', $mask_file or die "can't open $mask_file: $!";
 		
-		readline($mask);
-
-		while (<$mask>){
-			my @line=split(/\t/, $_);
-			if($line[0] eq "$chr"){
-				my $c1=$line[1]-1;
-				my $c2=$line[2];
-				my $newseq=substr($seq, $c1, $c2-$c1, "N" x ($c2-$c1));
-			}
-		}
-	}
+		# readline($mask);
+		
+		# while (<$mask>){
+			# my @line=split(/\t/, $_);
+			# if($line[0] =~ /^$chr$/){
+				# my $c1=$line[1]-1;
+				# my $c2=$line[2];
+				# substr($seq, $c1, $c2-$c1, "N" x ($c2-$c1));
+			# }
+		# }
+	# }
 
 	return $seq;
 }
@@ -247,6 +252,8 @@ sub getRef{
 my $altseq=$seq;
 $altseq =~ tr/ACGT/TGCA/;
 
+my $seqlength=length($seq);
+print "seqlength: $seqlength\n";
 print "Done\n";
 
 ##############################################################################
@@ -286,6 +293,7 @@ if ($cpg && $adj==0) {
 sub binCounts{
 	print "Getting bin counts...\n";
 	my $length=length($seq);
+	print "seqlength: $length\n";
 	my $numbins=ceil($length/$binwidth);
 	my $bin;
 
@@ -297,7 +305,7 @@ sub binCounts{
 		# &countSubSeq(@a, @b);
 
 		print "Processing BIN1 header\n";
-		print BIN "AT\tCG\tprop_GC\tBIN\t";
+		print BIN "CHR\tAT\tCG\tprop_GC\tBIN\t";
 		foreach my $tri (@a) {
 			my $alttri=$tri;
 			$alttri =~ tr/ACGT/TGCA/;
@@ -334,7 +342,7 @@ sub binCounts{
 			
 			$bin=$i+1;
 
-			print BIN "$sum_at\t$sum_cg\t$GC\t$bin\t";
+			print BIN "chr$chr\t$sum_at\t$sum_cg\t$GC\t$bin\t";
 			#print BIN "$_:$tri_count{$_}\t" for sort keys(%tri_count);
 			foreach my $count (sort keys %tri_count) {
 				# if ($count !~ /N|^G|^T/) {
@@ -349,7 +357,7 @@ sub binCounts{
 		}
 	} else {
 
-		print BIN "AT\tCG\tprop_GC\tBIN\n";
+		print BIN "CHR\tAT\tCG\tprop_GC\tBIN\n";
 
 		for my $i (0 .. $numbins-1) {
 		
@@ -368,7 +376,7 @@ sub binCounts{
 			
 			$bin=$i+1;
 
-			print BIN "$sum_at\t$sum_cg\t$GC\t$bin\n";
+			print BIN "chr$chr\t$sum_at\t$sum_cg\t$GC\t$bin\n";
 		}
 	}
 

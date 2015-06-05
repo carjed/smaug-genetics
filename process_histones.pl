@@ -19,7 +19,7 @@ foreach my $file (@bedfiles){
 	print "Binning $name ...\n";
 	# print "$filename\n";
 	
-	my $cmd= "/net/bipolar/jedidiah/bin/bedmap --echo --count --fraction-map 0.51 /net/bipolar/jedidiah/mutation/reference_data/genome.100kb.bed $file > /net/bipolar/jedidiah/mutation/reference_data/histone_marks/binned/$name.100kb.bed";
+	my $cmd= "/net/bipolar/jedidiah/bin/bedmap --delim '\t' --echo --count --fraction-map 0.51 /net/bipolar/jedidiah/mutation/reference_data/genome.100kb.sorted.bed $file > /net/bipolar/jedidiah/mutation/reference_data/histone_marks/binned/$name.100kb.bed";
 	
 	&forkExecWait($cmd);
 	

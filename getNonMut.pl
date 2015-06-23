@@ -18,13 +18,29 @@ use Benchmark;
 
 # Set options and inputs
 my $wdir=getcwd;
-my $parentdir=dirname($wdir);
+my $parentdir="/net/bipolar/jedidiah/mutation";
+
+my $baseopt;
+my $chr;
+my $categ;
+
+GetOptions ('b=s'=> \$baseopt,
+'chr=s'=> \$chr,
+'categ=s' => \$categ) or pod2usage(1);
+
+my $b1;
+my $b2;
+if($baseopt eq "AT"){
+	$b1="A";
+	$b2="T";
+} else {
+	$b1="C";
+	$b2="G";
+}
 
 my $mask_flag=1;
 my $adj=2;
 my $binwidth=100000;
-
-my $chr=20;
 
 my $nextchr;
 if ($chr<22) {
@@ -38,8 +54,28 @@ if ($adj!=0) {
 	$subseq = $adj*2+1;
 }
 
-my $outfile = "/net/bipolar/jedidiah/mutation/smaug-genetics/negative_examples.txt";
+my $outfile = "/net/bipolar/jedidiah/mutation/smaug-genetics/sandbox/chr${chr}_${categ}_negative_examples.txt";
 open(OUT, '>', $outfile) or die "can't write to $outfile: $!\n";
+
+my $f_covs = "/net/bipolar/jedidiah/mutation/smaug-genetics/sandbox/mut_cov2.txt"; #main line for full processing
+open my $covs, '<', $f_covs or die "can't open $f_covs: $!";
+
+# Create hash keyed by Chr/Bin pairs, with row of PCs as value
+my %hash=();
+while (<$covs>){
+	my @line=split(/\t/, $_);
+	my $key=join("\t", @line[0 .. 1]);
+	my $pcs=join("\t", @line[2 .. $#line]);
+	
+	# print "$key \t $pcs \n";
+	
+	$hash{$key}=$pcs;
+	
+	# print "$hash{$key}\n";
+}
+
+# my $testkey="20\t153";
+# print "$hash{$testkey}\n";
 
 # my $seq="ACGTAAGCCGTAAC";
 # 2,3,7,8,9,10,14
@@ -51,28 +87,37 @@ $altseq =~ tr/ACGT/TGCA/;
 my $min=5;
 my $max=length($seq)-5;
 
-print "seqlength: $max\n";
+print "seqlength of chr$chr: $max\n";
 
-print OUT "CHR \t POS \t BIN \t Sequence \n";
+# print OUT "CHR \t POS \t BIN \t Sequence \t mut \n";
 
 # Read in file with positions to exclude from analyses
 my @POS;
 
-my $f_positions = "/net/bipolar/jedidiah/mutation/smaug-genetics/exclusion_list.txt"; #main line for full processing
+my $f_positions = "/net/bipolar/jedidiah/mutation/smaug-genetics/chr${chr}_${categ}_exclusion_list.txt"; #main line for full processing
 open my $positions, '<', $f_positions or die "can't open $f_positions: $!";
 
+print "Reading chr${chr}: ${categ} exclusion list...\n";
+
 while (<$positions>) {
-	next unless $_ =~ /^[^,]*$/;
+	# next unless $_ =~ /^[^,]*$/;
 	push (@POS, $_);
 }
 
-for my $i (1 .. 1000) {
+print "Done\n";
 
-	my $pos = $min + int(rand($max - $min));
+print "Writing chr${chr}: ${categ} data file...\n";
+for my $i ($min .. $max){
+# for my $i (1 .. 100) {
+
+	# my $pos = $min + int(rand($max - $min));
+	# my $base = substr($seq, $pos-1, 1);
+	
+	my $pos = $i;
 	my $base = substr($seq, $pos-1, 1);
 
-	if(($base =~ /G|C/) & !(grep(/^$pos$/, @POS))){
-		push (@POS, $pos); # add position to exclusion list
+	if(($base =~ /$b1|$b2/) & ($pos !~ @POS)){
+		# push (@POS, $pos); # add position to exclusion list
 		my $localseq = substr($seq, $pos-$adj-1, $subseq);
 		my $altlocalseq = reverse substr($altseq, $pos-$adj-1, $subseq);
 		my $bin = ceil($pos/$binwidth);
@@ -84,12 +129,21 @@ for my $i (1 .. 1000) {
 		} else {
 			$sequence = $altlocalseq . '(' . $localseq . ')';
 		}
-		if ($sequence !~ /N/) {
-			print OUT "$chr\t$pos\t$bin\t$sequence\n";
+		
+		my $key2=join("\t", $chr, $bin);
+		
+		if (($sequence !~ /N/) & (defined($hash{$key2}))) {
+			my $key2=join("\t", $chr, $bin);
+			# my $pcs2=$hash{$key2};
+			
+			# print "Key: $key2\n";
+			# print "$pcs2\n";
+		
+			print OUT "$chr\t$bin\t$pos\t$sequence\t 0 \t $hash{$key2}";	
 		} 
 	}
 }
-
+print "Done\n";
 
 sub getRef{
 	my $f_fasta;

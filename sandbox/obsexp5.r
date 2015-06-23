@@ -24,8 +24,8 @@ myPaletteG <- colorRampPalette(rev(brewer.pal(9, "Greens")), space="Lab")
 rb <- c(myPaletteB(6)[1:3],myPaletteR(6)[1:3])
 g <- myPaletteG(6)[1:3]
 
-summfile <- paste0("/net/bipolar/jedidiah/mutation/output/5bp_100k/chr20.expanded.summary")
-binfile <- paste0("/net/bipolar/jedidiah/mutation/output/5bp_100k/chr20.bin_out.txt")
+summfile <- paste0("/net/bipolar/jedidiah/mutation/output/5bp_100k/chr2.expanded.summary")
+binfile <- paste0("/net/bipolar/jedidiah/mutation/output/5bp_100k/chr2.bin_out.txt")
 chr22 <- read.table(summfile, header=T, stringsAsFactors=F)
 bins <- read.table(binfile, header=T, stringsAsFactors=F)
 
@@ -353,9 +353,9 @@ rcrate$POS <- (rcrate$START+rcrate$END)/2
 rcrate$BIN <- ceiling(rcrate$POS/binw)
 rcagg <- aggregate(RATE~CHR+BIN, rcrate, mean)
 
-rtagg20 <- rtagg[rtagg$CHR==20,]
-rcagg20 <- rcagg[rcagg$CHR==20,]
-gc20 <- bins[,3:4]
+rtagg20 <- rtagg[rtagg$CHR==2,]
+rcagg20 <- rcagg[rcagg$CHR==2,]
+gc20 <- bins[,4:5]
 
 mut.cov <- merge(ct.ord, rcagg20, by="BIN")
 mut.cov <- merge(mut.cov, rtagg20, by="BIN")

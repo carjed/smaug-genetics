@@ -25,7 +25,7 @@ reverse_chars <- function(string){
 	paste(reversed_split, collapse="")
 }
 
-rrheat <- function(dat, levels, facetvar){
+rrheat <- function(dat, f, levels, facetvar, nbp){
 	p <- ggplot()+
 	# log(v4*10000+1,2)
 	# limits=c(min(dat$v4), max(dat$v4))

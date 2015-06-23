@@ -19,13 +19,13 @@ rbg<-c(myPaletteB(6)[1:3],myPaletteR(6)[1:3], myPaletteG(6)[1:3])
 ##############################################################################
 # Read data
 ##############################################################################
-sing<-read.table("/net/bipolar/jedidiah/mutation/output/chr10.cpgi.expanded.summary_S", stringsAsFactors=F)
+sing<-read.table("/net/bipolar/jedidiah/mutation/output/supp/chr10.cpgi.expanded.summary_S", stringsAsFactors=F)
 names(sing)<-c("CHR", "POS", "REF", "ALT", "DP", "AN", "ANNO", "SEQ", "ALTSEQ", "GC", "cpgi")
-spec<-read.table("/net/bipolar/jedidiah/mutation/output/chr10.cpgi.expanded.summary_C", stringsAsFactors=F)
+spec<-read.table("/net/bipolar/jedidiah/mutation/output/supp/chr10.cpgi.expanded.summary_C", stringsAsFactors=F)
 names(spec)<-c("CHR", "POS", "REF", "ALT", "DP", "AN", "ANNO", "SEQ", "ALTSEQ", "GC", "cpgi")
 
-sing_bin<-read.table("/net/bipolar/jedidiah/mutation/output/chr10.bin_out.txt_S", header=T, stringsAsFactors=F, check.names=F)
-spec_bin<-read.table("/net/bipolar/jedidiah/mutation/output/chr10.bin_out.txt_C", header=T, stringsAsFactors=F, check.names=F)
+sing_bin<-read.table("/net/bipolar/jedidiah/mutation/output/supp/chr10.bin_out.txt_S", header=T, stringsAsFactors=F, check.names=F)
+spec_bin<-read.table("/net/bipolar/jedidiah/mutation/output/supp/chr10.bin_out.txt_C", header=T, stringsAsFactors=F, check.names=F)
 
 # chr10<-read.table("chr10.expanded.summary", header=T)
 # chr10$gp<-sample(0:1, nrow(chr10), replace=T)
@@ -182,7 +182,7 @@ names(dat)<-c("x", "y", "Category", "val")
   # gp=gpar(col="blue", fontsize=12, fontface="italic")))
 
 ggplot()+
-	geom_point(data=fullcount, aes(x=sing_count, y=spec_count, colour=Category, group=Category), alpha=0.4)+
+	geom_point(data=fullcount, aes(x=sing_count, y=spec_count, colour=Category, group=Category, size=prop_GC.y), alpha=0.4)+
 	scale_colour_manual(values=rbg)+
 	xlab("Singletons")+
 	ylab("Common Variants (MAC>10)")+
@@ -192,5 +192,16 @@ ggplot()+
 	geom_text(data=dat, aes(x=-Inf,y=Inf, label=val, hjust=0, vjust=1))+
 	facet_wrap(~Category, scales="free")
 ggsave("/net/bipolar/jedidiah/mutation/images/sing_com_corr.png", width=12.4, height=8.4)
+
+ggplot()+
+	geom_point(data=fullcount[fullcount$Category=="AT_GC",], aes(x=sing_count, y=spec_count, colour=prop_GC.y, size=5), alpha=0.6)+
+	scale_colour_gradientn(colours=myPalette(9))+
+	xlab("Singletons")+
+	ylab("Common Variants (MAC>10)")+
+	# xlab("Group 1 Relative Rate")+
+	# ylab("Group 2 Relative Rate")+
+	theme_bw()+
+	geom_text(data=dat, aes(x=-Inf,y=Inf, label=val, hjust=0, vjust=1))+
+ggsave("/net/bipolar/jedidiah/mutation/images/sing_com_corr_bgc.png", width=12.4, height=8.4)
 
 

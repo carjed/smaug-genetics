@@ -8,10 +8,12 @@
 # Define functions
 ##############################################################################
 suppressMessages(require(ggplot2))
+suppressMessages(require(scales))
 suppressMessages(require(plyr))
 suppressMessages(require(reshape2))
 suppressMessages(require(RColorBrewer))
 suppressMessages(require(MASS))
+suppressMessages(require(speedglm))
 suppressMessages(require(grid))
 suppressMessages(require(ggbio))
 data(hg19IdeogramCyto, package = "biovizBase")
@@ -34,6 +36,9 @@ g <- myPaletteG(6)[1:3]
 # bins <- read.table("/net/bipolar/jedidiah/mutation/output/chr20.bin_out.txt", header=T, stringsAsFactors=F)
 
 summ_5bp_100k <- read.table("/net/bipolar/jedidiah/mutation/output/5bp_100k/full.summary", header=T, stringsAsFactors=F)
+
+summ_5bp_100k$BIN <- ceiling(summ_5bp_100k$POS/binw)
+
 bins_5bp_100k <- read.table("/net/bipolar/jedidiah/mutation/output/5bp_100k/full_bin.txt", header=T, stringsAsFactors=F, check.names=F)
 
 # summ_5bp_10k <- read.table("/net/bipolar/jedidiah/mutation/output/5bp_10k/full.summary", header=T, stringsAsFactors=F)
@@ -53,7 +58,7 @@ updateData <- function(summfile, binfile, adj){
 
 	nbp <- adj*2+1
 
-	summfile$BIN <- ceiling(summfile$POS/binw)
+	# summfile$BIN <- ceiling(summfile$POS/binw)
 	summfile$CAT <- paste(summfile$REF, summfile$ALT, sep="")
 
 	# Manually remove bins near chr20 centromere
@@ -105,6 +110,7 @@ updateData <- function(summfile, binfile, adj){
 }
 
 dat_5bp_100k <- updateData(summ_5bp_100k, bins_5bp_100k, 2)
+dat_5bp_2 <- updateData(summ_5bp_100k[summ_5bp_100k$CHR==2 & summ_5bp_100k$BIN>=300 & summ_5bp_100k$BIN<600,], bins_5bp_100k[bins_5bp_100k$CHR=="chr2" & bins_5bp_100k$BIN>=300 & bins_5bp_100k$BIN<600,], 2)
 rm(summ_5bp_100k)
 rm(bins_5bp_100k)
 # gc()
@@ -119,18 +125,24 @@ aggData <- function(datfile, adj){
 	
 	summfile <- datfile$summ
 	binfile <- datfile$bin
+	nbp <- adj*2+1
 	
 	# summfile <- dat_5bp_100k$summ
 	# binfile <- dat_5bp_100k$bin
 	
-	nbp <- adj*2+1
+	# summfile <- dat_5bp_2$summ
+	# binfile <- dat_5bp_2$bin
 	
-	aggseq <- count(summfile, c("Sequence", "Category", "CAT", "COUNT", "SEQ"))
-	aggseq$rel_prop <- aggseq$freq/aggseq$COUNT
+	# summfile <-summfile[summfile$CHR==2 & summfile$BIN<=600 & summfile$BIN>=300,]
+	# binfile <- binfile[binfile$CHR=="chr2" & binfile$BIN<=600 & binfile$BIN>=300,]
 	
 	# Plot genome-wide motif heatmaps
-	plot_heatmap <- 1
+	plot_heatmap <- 0
 	if(plot_heatmap==1){
+	
+		aggseq <- count(summfile, c("Sequence", "Category", "CAT", "COUNT", "SEQ"))
+		aggseq$rel_prop <- aggseq$freq/aggseq$COUNT
+	
 		aggseq_a <- aggseq[grep("^A", aggseq$Category),]
 		aggseq_g <- aggseq[grep("^G", aggseq$Category),]
 
@@ -178,8 +190,8 @@ aggData <- function(datfile, adj){
 		f <- data.frame(xlo,xhi,ylo,yhi)
 		
 		# Plot relative rate heatmaps
-		at_heat <- rrheat(map_a1, levs_a, "v5")
-		gc_heat <- rrheat(map_g1, levs_g, "v5")
+		at_heat <- rrheat(map_a1, f, levs_a, "v5", nbp)
+		gc_heat <- rrheat(map_g1, f, levs_g, "v5", nbp)
 		
 		png("/net/bipolar/jedidiah/mutation/smaug-genetics/gw_map.png", width=18, height=24, units="in", res=300)
 		multiplot(at_heat, gc_heat, cols=2)
@@ -220,10 +232,10 @@ aggData <- function(datfile, adj){
 		levs_c <- as.character(lapply(as.vector(levels(map_c$v2a)), reverse_chars))
 		levs_t <- as.character(lapply(as.vector(levels(map_t$v2a)), reverse_chars))
 			
-		a_heat <- rrheat(map_a, levs_a, "v6", nbp)
-		t_heat <- rrheat(map_t, levs_t, "v6", nbp)
-		c_heat <- rrheat(map_c, levs_c, "v6", nbp)
-		g_heat <- rrheat(map_g, levs_g, "v6", nbp)
+		a_heat <- rrheat(map_a, f, levs_a, "v6", nbp)
+		t_heat <- rrheat(map_t, f, levs_t, "v6", nbp)
+		c_heat <- rrheat(map_c, f, levs_c, "v6", nbp)
+		g_heat <- rrheat(map_g, f, levs_g, "v6", nbp)
 		
 		png("/net/bipolar/jedidiah/mutation/images/gw_map_uncollapsed.png", width=48, height=24, units="in", res=300)
 		multiplot(a_heat, t_heat, c_heat, g_heat, cols=4)
@@ -300,20 +312,32 @@ aggData <- function(datfile, adj){
 		oe2 <- data.frame(CHR, BIN, Category2=catrep, exp)
 		oe2 <- merge(oe2,ct.ord, by=c("CHR","Category2","BIN"))
 		names(oe2)[5] <- "obs"
+		oe2$res <- paste0(nbp,"bp")
 
 		# get odds ratio for each bin/category
 		oe2$odds <- oe2$obs/oe2$exp
 
 		# order by OR and add column of ranks
-		oe2.ord <- oe2[order(oe2$Category2, oe2$odds),]
-		oe2.ord <- ddply(oe2.ord, .(Category2), transform, rk=seq_along(Category2))
-		oe2.ord$res <- paste0(nbp,"bp")
+		# oe2.ord <- oe2[order(oe2$Category2, oe2$odds),]
+		# oe2.ord <- ddply(oe2.ord, .(Category2), transform, rk=seq_along(Category2))
+		# oe2.ord$res <- paste0(nbp,"bp")
 
-		return(oe2.ord)
+		# return(oe2.ord)
+		
+		datalist<- list("agg"=aggseq, "oe"=oe2)
+		return(datalist)
 	}
 }
 
-agg_5bp_100k <- aggData(dat_5bp_100k, 2)
+aggV <- aggData(dat_5bp_100k, 2)
+aggV2 <- aggData(dat_5bp_2, 2)
+
+agg_5bp_100k <- aggV$oe
+rates1 <- aggV$agg
+agg_5bp_2 <- aggV2$oe
+rates2 <- aggV2$agg
+
+agg_5bp_100k2 <- rbind(agg_5bp_100k[!(agg_5bp_100k$CHR %in% agg_5bp_2$CHR & agg_5bp_100k$BIN %in% agg_5bp_2$BIN),], agg_5bp_2)
 # agg_5bp_10k<-aggData(dat_5bp_10k, 2)
 # agg_3bp_100k<-aggData(dat_3bp_100k, 1)
 # agg_3bp_10k<-aggData(dat_3bp_10k, 1)
@@ -321,6 +345,36 @@ agg_5bp_100k <- aggData(dat_5bp_100k, 2)
 agg_5bp_100k <- agg_5bp_100k[order(agg_5bp_100k$BIN),]
 agg_5bp_100k$diff <- agg_5bp_100k$obs-agg_5bp_100k$exp
 agg_5bp_100k$Category2 <- as.character(agg_5bp_100k$Category2)
+
+
+##############################################################################
+# Test if rates on chr2p are significantly different than genomewide
+##############################################################################
+mut_cats <- unique(rates1$Category2)
+
+sigmotifs<-data.frame()
+for(i in 1:6){
+	mut_seqs <- unique(rates1[rates1$Category2==mut_cats[i],]$Sequence)
+	for(j in 1:256){
+
+		mut <- c(rates1[rates1$Category2==mut_cats[i] & rates1$Sequence==mut_seqs[j],]$freq, rates2[rates2$Category2==mut_cats[i] & rates2$Sequence==mut_seqs[j],]$freq)
+		sites <- c(rates1[rates1$Category2==mut_cats[i] & rates1$Sequence==mut_seqs[j],]$COUNT, rates2[rates2$Category2==mut_cats[i] & rates2$Sequence==mut_seqs[j],]$COUNT)
+		
+		if(!is.na(mut)){
+			z<-prop.test(mut, sites)
+			
+			if(z$p.value<0.05/1536){
+			
+				mut_cat<-mut_cats[i]
+				mut_seq<-mut_seqs[j]
+				
+				motifrow<-data.frame(mut_cat, mut_seq, z$p.value)
+				
+				sigmotifs<-rbind(sigmotifs, motifrow)
+			}
+		}
+	}
+}
 
 ##############################################################################
 # Compare 3bp/5bp motifs at 100kb resolution
@@ -344,9 +398,10 @@ agg_5bp_100k$Category2 <- as.character(agg_5bp_100k$Category2)
 ##############################################################################
 # Get 1bp predictions
 ##############################################################################
-{
-	aggseq6<-ddply(agg_5bp_100k, .(Category2), summarize, COUNT=sum(COUNT), freq=sum(freq))
-	aggseq6$rel_prop<-aggseq6$freq/aggseq6$COUNT
+singlebp<-0
+if(singlebp==1){
+	aggseq6<-ddply(agg_5bp_100k, .(Category2), summarize, COUNT=sum(obs), freq=sum(freq))
+	aggseq6$rel_prop<-aggseq6$freq/aggseq6$obs
 
 	atcg<-aggseq6[1,4]*bins[,1]
 	atgc<-aggseq6[2,4]*bins[,1]
@@ -446,30 +501,94 @@ agg_5bp_100k$Category2 <- as.character(agg_5bp_100k$Category2)
 	mut_cov <- merge(mut_cov, rtagg, by=c("CHR", "BIN"))
 	mut_cov <- merge(mut_cov, rcagg, by=c("CHR", "BIN"))
 	mut_cov <- merge(mut_cov, pctgc, by=c("CHR", "BIN"))
+	
+	pc.dat <- prcomp(mut_cov[,3:ncol(mut_cov)], center=T, scale=T)
+	scores <- as.data.frame(round(pc.dat$x, 3))
+		
+	mut_cov2<-cbind(mut_cov[,1:2], scores)
+	write.table(mut_cov2, "/net/bipolar/jedidiah/mutation/smaug-genetics/sandbox/mut_cov2.txt", sep="\t", col.names=F, row.names=F, quote=F) 
 }
 
 ##############################################################################
 # Logistic regression model
 ##############################################################################
-log_model <- 0
+
+make.data<-function(filename, chunksize,...){
+	conn<-NULL
+	function(reset=FALSE){
+		if(reset){
+			if(!is.null(conn)) close(conn)
+			conn<<-file(filename,open="r")
+		} else{
+			rval<-read.table(conn, nrows=chunksize,...)
+			if ((nrow(rval)==0)) {
+				close(conn)
+				conn<<-NULL
+				rval<-NULL
+			}
+			return(rval)
+		}
+	}
+}
+
+logit<-function(x){
+	out<-exp(x)/(1+exp(x))
+	return(out)
+}
+
+log_model <- 1
+plots<-data.frame()
+mut_cats<-unique(dat_5bp_100k$summ$Category)
 if(log_model==1){
-	summfile1 <- dat_5bp_100k$summ[(dat_5bp_100k$summ$CHR=="20" & dat_5bp_100k$summ$Category=="AT_GC"), c("CHR", "POS", "BIN", "Sequence")]
-	summfile1$mut <- 1
 
-	z <- summfile1$POS
-	write.table(z, "/net/bipolar/jedidiah/mutation/smaug-genetics/exclusion_list.txt", col.names=F, row.names=F, quote=F)
-	system("perl getNonMut.pl")
+	for(i in 1:6){
+		categ<-mut_cats[i]
+		catopt<-substr(categ,0,2)
+		# summfile1 <- dat_5bp_100k$summ[(dat_5bp_100k$summ$POS>=6000000 & dat_5bp_100k$summ$POS<=7000000 & dat_5bp_100k$summ$CHR=="20" & dat_5bp_100k$summ$Category==categ), c("CHR", "POS", "BIN", "Sequence")]
+		
+		# Get summary file for category i; merge with covariates
+		summfile1 <- dat_5bp_100k$summ[dat_5bp_100k$summ$Category==categ, c("CHR", "BIN", "POS", "Sequence")]
+		summfile1$mut <- 1
+		summfile1 <- merge(summfile1, mut_cov2, by=c("CHR", "BIN"))
+		
+		posfile<-paste0("/net/bipolar/jedidiah/mutation/smaug-genetics/sandbox/",categ,"_pos_examples.txt")
+		write.table(summfile1, "/net/bipolar/jedidiah/mutation/smaug-genetics/sandbox/pos_examples.txt", col.names=F, row.names=F, quote=F, sep="\t")
 
-	summfile1neg <- read.table("/net/bipolar/jedidiah/mutation/smaug-genetics/negative_examples.txt", header=T, stringsAsFactors=F)
-	summfile1neg$mut <- 0
+		# Run perl script to get negative examples with covariates from mut_cov2
+		for(chr in 1:22){	
+			# Extract positions from each chromosome to exclude from negative examples
+			z <- summfile1[summfile1$CHR==chr,]$POS
+			exclfile<-paste0("/net/bipolar/jedidiah/mutation/smaug-genetics/chr",chr,"_",categ,"_exclusion_list.txt")
+			write.table(z, exclfile, col.names=F, row.names=F, quote=F)
+			
+			perlcmd <- paste0("perl /net/bipolar/jedidiah/mutation/smaug-genetics/getNonMut.pl --b ", catopt, " --chr ", chr, " --categ ", categ)
+			system(perlcmd)
+		}
+		
+		# Run cat command to combine +/- data
+		catcmd1 <- paste0("cat /net/bipolar/jedidiah/mutation/smaug-genetics/sandbox/chr*_",categ,"_negative_examples.txt > /net/bipolar/jedidiah/mutation/smaug-genetics/sandbox/",categ,"_negative_examples.txt")
+		system(catcmd1)
+		catcmd2 <- paste0("cat /net/bipolar/jedidiah/mutation/smaug-genetics/sandbox/",categ,"_pos_examples.txt /net/bipolar/jedidiah/mutation/smaug-genetics/sandbox/",categ,"_negative_examples.txt > /net/bipolar/jedidiah/mutation/smaug-genetics/sandbox/",categ,"_full.txt")
+		system(catcmd2)
+		
+		danames<-c("CHR", "BIN", "POS", "Sequence", "mut", "PC1", "PC2", "PC3", "PC4", "PC5", "PC6", "PC7", "PC8", "PC9", "PC10", "PC11", "PC12")
+		
+		fullfile<-paste0("/net/bipolar/jedidiah/mutation/smaug-genetics/sandbox/",categ,"_full.txt")
+		da<-make.data(fullfile,chunksize=1000000,col.names=danames)
+
+		log_mod<-shglm(mut~factor(Sequence)+PC1+PC2+PC3+PC4+PC5+PC6+PC7+PC8+PC9+PC10+PC11+PC12, datafun=da, family=binomial(), fitted=T)
+		
+		z<-data.frame(V=logit(log_mod$linear.predictors))
+		z$cat<-categ
+		
+		# fithist<-ggplot(z, aes(x=V))+geom_histogram()+ggtitle(categ)+xlab("P(singleton)")
+
+		plots<-rbind(plots, z)
+	}
 	
-	summfile1<-rbind(summfile1, summfile1neg)
-
-	summfile1 <- merge(summfile1[,c("CHR", "POS", "BIN", "Sequence")], mut_cov[mut_cov$CHR=="20",], by=c("CHR", "BIN"))
-	pc.dat <- prcomp(summfile1[,5:16], center=T, scale=T)
-	scores <- as.data.frame(pc.dat$x)
-
-	A <- model.matrix(CHR ~ POS+Sequence, summfile2)
+	# multiplot(plots[1], plots[2], plots[3], plots[4], plots[5], plots[6], cols=3)
+	fithist<-ggplot(plots, aes(x=V))+geom_histogram()+ggtitle("mutation distributions")+xlab("P(singleton)")+facet_wrap(~cat, scales="free")
+	ggsave("/net/bipolar/jedidiah/mutation/images/fitted_hist.png")
 }
 
 ##############################################################################
@@ -477,14 +596,14 @@ if(log_model==1){
 # TO-DO:
 # -add category of CpG mutations and run model on 9 categories instead of 6
 ##############################################################################
-mut_cov <- merge(agg_5bp_100k[,c(1,2,3,4,5)], mut_cov, by=c("CHR", "BIN"))
+agg_cov <- merge(agg_5bp_100k[,c(1,2,3,4,5)], mut_cov, by=c("CHR", "BIN"))
 
 # Motifs + genomic features
 compare.all <- data.frame()
 mut_cats <- unique(agg_5bp_100k$Category2)
 for(i in 1:length(mut_cats)){
 	cat1 <- mut_cats[i]
-	aggcat <- mut_cov[mut_cov$Category==mut_cats[i],]
+	aggcat <- agg_cov[agg_cov$Category==mut_cats[i],]
 	pc.dat <- prcomp(aggcat[,6:17], center=T, scale=T)
 	scores <- as.data.frame(pc.dat$x)
 	
@@ -537,21 +656,20 @@ for(i in 1:length(mut_cats)){
 
 # compare.all<-rbind(agg_5bp_100k[,c(1,2,3,4,5,8)], d, d1) #<- this version uses direct estimates from motif rates; not fair comparison
 compare.all$res <- factor(compare.all$res, levels = c("features", "5bp", "5bp+features"))
+compare.all$diff <- compare.all$obs-compare.all$exp
 
 compare.all$Category2 <- factor(compare.all$Category2)
 levels(compare.all$Category2) <- c("AT>CG", "AT>GC", "AT>TA", "(CpG)GC>AT", "(CpG)GC>CG", "(CpG)GC>TA",  "GC>AT", "GC>CG", "GC>TA")
 
+# Function to compute standard error for correlations
 corSE<-function(corval, ct){
 	sqrt((1-corval^2)/(ct-2))
 }
 
-mod.corr <- ddply(compare.all, .(Category2, res), summarize, num=length(exp), cor=cor(exp, obs, method="spearman"))
-mod.corr$SE <- corSE(mod.corr$cor, mod.corr$num)
-limits <- aes(ymax = mod.corr$cor + mod.corr$SE, ymin=mod.corr$cor - mod.corr$SE)
-
-p2 <- ggplot(compare.all[compare.all$CHR==10 & compare.all$diff>-150,], aes(x=BIN, y=diff, colour=res))+
+# Plot scatterplot across chr of model errors (using negbin motif predictions)
+p2 <- ggplot(compare.all[compare.all$CHR==2 & compare.all$diff>-150,], aes(x=BIN, y=diff, colour=res))+
 	# geom_bar(stat="identity", position="identity")+
-	geom_point(alpha=0.2, size=1)+
+	geom_point(alpha=0.1, size=4)+
 	scale_colour_manual("Model", values=myPaletteCat(8)[6:8], labels=c("exp"="5bp+features", "obs"="5bp only"))+
 	facet_wrap(~Category2, scales="free", ncol=1)+
 	# scale_x_discrete(labels=c("exp"="5bp+features", "obs"="5bp only"))+
@@ -566,8 +684,12 @@ p2 <- ggplot(compare.all[compare.all$CHR==10 & compare.all$diff>-150,], aes(x=BI
 		  axis.ticks.x=element_blank())
 ggsave("/net/bipolar/jedidiah/mutation/images/hier_diffs_pt5.png", width=9, height=18)
 
-
+# Plot barcharts comparing obs/exp correlation for different models
+mod.corr <- ddply(compare.all, .(Category2, res), summarize, num=length(exp), cor=cor(exp, obs, method="spearman"))
+mod.corr$SE <- corSE(mod.corr$cor, mod.corr$num)
+limits <- aes(ymax = mod.corr$cor + mod.corr$SE, ymin=mod.corr$cor - mod.corr$SE)
 dodge <- position_dodge(width=0.9)
+
 ggplot(mod.corr, aes(x=Category2, y=cor, fill=res))+
 	geom_bar(stat="identity", position=dodge)+
 	scale_colour_brewer("Predictor", palette="Dark2")+
@@ -592,7 +714,7 @@ for(i in 1:length(mut_cats)){
 	cat1 <- mut_cats[i]
 	aggcat <- mut.diff[mut.diff$Category2==cat1,]
 	
-	pc.dat <- prcomp(aggcat[,10:21], center=T, scale=T)
+	pc.dat <- prcomp(aggcat[,9:20], center=T, scale=T)
 	scores <- as.data.frame(pc.dat$x)
 	
 	aggcat <- cbind(aggcat, scores)
@@ -631,19 +753,19 @@ for(i in 1:length(mut_cats)){
 # with ideogram track
 ##############################################################################
 diffm <- melt(d.diff[,1:5], id.vars=c("CHR", "Category2", "BIN"), value.var=c("exp", "obs"))
-diffm <- diffm[diffm$CHR==6,]
+diffm <- diffm[diffm$CHR==2,]
 diffm$BIN2 <- diffm$BIN*100000
 
 p <- plotIdeogram(hg19IdeogramCyto, "chr2", xlabel=TRUE, alpha=0, 
 				  zoom.region=c(min(diffm[diffm$Category=="AT_GC",]$BIN2),max(diffm[diffm$Category=="AT_GC",]$BIN2)))
 
 # p2 <- ggplot(diffm[diffm$Category=="GC_AT",], aes(x=BIN2, y=value, colour=variable))+
-p2 <- ggplot(diffm, aes(x=BIN2, y=value, colour=variable))+
+p2 <- ggplot(diffm, aes(x=BIN, y=value, colour=variable))+
 	# geom_bar(stat="identity", position="identity")+
 	geom_point(alpha=0.2, size=3)+
 	scale_colour_manual("Model", values=myPaletteCat(8)[6:7], labels=c("exp"="5bp+features", "obs"="5bp only"))+
 	facet_wrap(~Category2, scales="free", ncol=1)+
-	# scale_x_discrete(labels=c("exp"="5bp+features", "obs"="5bp only"))+
+	scale_x_continuous(breaks=pretty_breaks(n=25))+
 	ylab("Error")+
 	xlab(NULL)+
 	theme_bw()+

@@ -1,17 +1,28 @@
 #!/usr/local/bin/perl
 
 ##############################################################################
-# Run ref5.pl on all chromosomes--
-# update local nucleotide (adj) and binwidth (b) parameters as necesary
-# 
-# Can be modified to a slurm array job
+# Script concatenates chromosome vcfs from GotCloud output
 ##############################################################################
 
-for my $i (11 .. 22) {
-	my $cmd = "perl ref5.pl --chr $i --mac 1 --adj 1 --b 100000 &";
-	&forkExecWait($cmd);
+my @vcfs;
+
+my $root="/net/bipolar/jedidiah/sardinia/80x-gw/beagle";
+
+for my $i (1 .. 22) {
+	push (@vcfs, "$root/chr$i/chr$i.filtered.PASS.beagled.vcf.gz");
 }
 
+my $input;
+foreach (@vcfs) {
+	#chomp;
+	$input .= "$_ ";
+}
+
+#print "$input\n";
+
+my $cmd = "/net/bipolar/jedidiah/bcftools/bcftools concat -O z $input > /net/bipolar/jedidiah/sardinia/80x_full.vcf.gz";
+
+&forkExecWait($cmd);
 
 ##############################################################################
 # fork-exec-wait subroutine

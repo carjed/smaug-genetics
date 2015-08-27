@@ -1,6 +1,12 @@
 #! /usr/bin/env Rscript
 
 ##############################################################################
+# Compare correlation between 100kb windowed distribution of singletons
+# and common variants.
+# -Uses data now stored in /net/bipolar/jedidiah/mutation/output/supp/
+##############################################################################
+
+##############################################################################
 # Load packages and define color palettes
 ##############################################################################
 suppressMessages(require(ggplot2))

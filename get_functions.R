@@ -1,4 +1,6 @@
+##############################################################################
 # Function to get reverse complement
+##############################################################################
 revcomp <- function(DNAstr) {
 	step1 <- chartr("ACGT","TGCA",DNAstr)
 	step2 <- unlist(strsplit(step1, split=""))
@@ -7,7 +9,9 @@ revcomp <- function(DNAstr) {
 	return(step4)
 }
 
+##############################################################################
 # Display plot with inset
+##############################################################################
 insetPlot <- function(main, inset, loc) {
 	 print(main)
 	 theme_set(theme_bw(base_size = 4))
@@ -15,16 +19,60 @@ insetPlot <- function(main, inset, loc) {
 	 theme_set(theme_bw())
  }
 
+##############################################################################
 # Get standard error estimate 
+##############################################################################
 std <- function(x) sqrt(var(x,na.rm=TRUE)/length(na.omit(x)))
 
-# Function to reverse sequence--used to correctly plot right flank in subsequence heatmaps
+##############################################################################
+# Function to reverse sequence--used to correctly plot right flank in 
+# subsequence heatmaps
+##############################################################################
 reverse_chars <- function(string){
 	string_split = strsplit(as.character(string), split = "")
 	reversed_split = string_split[[1]][nchar(string):1]
 	paste(reversed_split, collapse="")
 }
 
+##############################################################################
+# Function to install and load packages
+##############################################################################
+usePackage <- function(p) {
+	
+	p <- as.character(substitute(p))
+
+    if (!is.element(p, installed.packages()[,1])){
+        install.packages(p, dep = TRUE)
+		require(p, character.only = TRUE)
+	} else {
+		require(p, character.only = TRUE)
+	}
+}
+
+##############################################################################
+# Function to read file from disk
+##############################################################################
+make.data<-function(filename, chunksize, skiprows,...){
+	conn<-NULL
+	function(reset=FALSE){
+		if(reset){
+			if(!is.null(conn)) close(conn)
+			conn<<-file(filename,open="r")
+		} else{
+			rval<-read.table(conn, nrows=chunksize, skip=skiprows,...)
+			if ((nrow(rval)==0)) {
+				close(conn)
+				conn<<-NULL
+				rval<-NULL
+			}
+			return(rval)
+		}
+	}
+}
+
+##############################################################################
+# plot nbp heatmaps
+##############################################################################
 rrheat <- function(dat, f, levels, facetvar, nbp){
 	p <- ggplot()+
 	# log(v4*10000+1,2)
@@ -41,7 +89,7 @@ rrheat <- function(dat, f, levels, facetvar, nbp){
 	xlab("5' flank")+
 	ylab("3' flank")+
 	theme(
-		  # legend.position="none",
+		  legend.position="none",
 		  legend.title = element_text(size=18),
 		  legend.text = element_text(size=16),
 		  strip.text.x = element_text(size=40),
@@ -54,8 +102,9 @@ rrheat <- function(dat, f, levels, facetvar, nbp){
 	
 	return(p)
 }	
-
+##############################################################################
 # QQ plot in ggplot2 with qqline
+##############################################################################
 ggQQ <- function (vec) # argument: vector of numbers
 {
   # following four lines from base R's qqline()
@@ -70,6 +119,7 @@ ggQQ <- function (vec) # argument: vector of numbers
 
 }
 
+##############################################################################
 # Multiple plot function
 #
 # ggplot objects can be passed in ..., or to plotlist (as a list of ggplot objects)
@@ -79,7 +129,7 @@ ggQQ <- function (vec) # argument: vector of numbers
 # If the layout is something like matrix(c(1,2,3,3), nrow=2, byrow=TRUE),
 # then plot 1 will go in the upper left, 2 will go in the upper right, and
 # 3 will go all the way across the bottom.
-#
+##############################################################################
 multiplot <- function(..., plotlist=NULL, file, cols=1, layout=NULL) {
   library(grid)
 

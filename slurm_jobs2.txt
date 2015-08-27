@@ -1,0 +1,14 @@
+#!/bin/sh
+
+#SBATCH --mail-type=ALL
+#SBATCH --mail-user=jedidiah@umich.edu
+#SBATCH --ntasks=1
+#SBATCH --mem=10000
+#SBATCH --time 02:00:00
+#SBATCH --job-name=chr_15-19_rerun
+#SBATCH --partition=bipolar
+#SBATCH --array=18-22
+#SBATCH --output="/net/bipolar/jedidiah/mutation/output/slurm/slurmJob-%J.out" --error="/net/bipolar/jedidiah/mutation/output/slurm/slurmJob-%J.err"
+
+
+srun perl /net/bipolar/jedidiah/mutation/smaug-genetics/ref5.pl --chr $SLURM_ARRAY_TASK_ID --mac 1 --adj 2 --b 10000

@@ -81,7 +81,7 @@ my $vcfin=1;
 my @vcfs;
 my @chrindex=(1..22);
 foreach my $chr (@chrindex){
-	push(@vcfs, "/net/bipolar/lockeae/final_freeze/snps/vcfs/chr$chr/chr$chr.filtered.sites.modified.vcf.gz");
+	push(@vcfs, "/net/bipolar/lockeae/final_freeze/snps/vcfs/chr$chr/chr$chr.filtered.sites.vcf.gz");
 }
 # my @vcfs = </net/bipolar/lockeae/final_freeze/snps/vcfs/*.vcf.gz>;
 
@@ -244,14 +244,24 @@ if ($script==2){
 #Produce summary files of singleton sites for cases, controls, and combined vcfs
 ##########################################################################################
 if ($script==3){
-	my @files = <$vcfloc/singletons/*.vcf.gz>;
-	foreach my $file (@files) {
-        my $filename=fileparse($file);
-        my $path=dirname($file);
-		my $chr = substr($filename, 0, index($filename, '.'));
-		my $cmd="$bcftools query -f '%CHROM\t%POS\t%REF\t%ALT\t%INFO/DP\t%INFO/AN\t%INFO/ANNO\n' $file > $summloc/$chr.summary &";
+	foreach my $chr (1..22) {
+        # my $filename=fileparse($file);
+        # my $path=dirname($file);
+		# my $chr = substr($filename, 0, index($filename, '.'));
+		my $file = "/net/bipolar/jedidiah/testpipe/vcfs/merged.str.rs.vcf.gz";
+		my $cmd="bcftools query -i 'FILTER=\"PASS\"' -r $chr -f '%CHROM\t%POS\t%REF\t%ALT\t%INFO/DP\t%INFO/AN\n' $file > $summloc/chr$chr.summary";
 		&forkExecWait($cmd);
 	}
+	
+	
+	# my @files = <$vcfloc/singletons/*.vcf.gz>;
+	# foreach my $file (@files) {
+        # my $filename=fileparse($file);
+        # my $path=dirname($file);
+		# my $chr = substr($filename, 0, index($filename, '.'));
+		# my $cmd="$bcftools query -f '%CHROM\t%POS\t%REF\t%ALT\t%INFO/DP\t%INFO/AN\t%INFO/ANNO\n' $file > $summloc/$chr.summary &";
+		# &forkExecWait($cmd);
+	# }
 	
 	# my @cases = <$vcfloc/singletons/cases/*.vcf.gz>;
 	# foreach my $file (@cases) {

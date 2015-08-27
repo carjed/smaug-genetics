@@ -1,5 +1,9 @@
 #!/usr/local/bin/perl
 
+##############################################################################
+# Script to annotate singleton summary file with inside/outside CpGI status
+##############################################################################
+
 use strict;
 use warnings;
 use POSIX;

@@ -18,15 +18,9 @@ suppressMessages(require(grid))
 suppressMessages(require(ggbio))
 data(hg19IdeogramCyto, package = "biovizBase")
 
-parentdir<-"/net/bipolar/jedidiah/mutation"
-
-functionfile<-paste0(parentdir, "/smaug-genetics/get_functions.R")
-source(functionfile)
+source("/net/bipolar/jedidiah/mutation/smaug-genetics/get_functions.R")
 
 binw <- 100000
-bink <- binw/1000
-adj <- 2
-nbp <- adj*2+1
 
 myPaletteCat <- colorRampPalette(rev(brewer.pal(8, "Dark2")), space="Lab")
 myPalette <- colorRampPalette(rev(brewer.pal(11, "Spectral")), space="Lab")
@@ -41,13 +35,11 @@ g <- myPaletteG(6)[1:3]
 # chr22 <- read.table("/net/bipolar/jedidiah/mutation/output/chr20.expanded.summary", header=T, stringsAsFactors=F)
 # bins <- read.table("/net/bipolar/jedidiah/mutation/output/chr20.bin_out.txt", header=T, stringsAsFactors=F)
 
-summfile <- paste0(parentdir, "/output/", nbp, "bp_", bink, "k/full.summary")
-summ_5bp_100k <- read.table(summfile, header=T, stringsAsFactors=F)
+summ_5bp_100k <- read.table("/net/bipolar/jedidiah/mutation/output/5bp_100k/full.summary", header=T, stringsAsFactors=F)
 
 summ_5bp_100k$BIN <- ceiling(summ_5bp_100k$POS/binw)
 
-binfile <- paste0(parentdir, "/output/", nbp, "bp_", bink, "k/full_bin.txt")
-bins_5bp_100k <- read.table(binfile, header=T, stringsAsFactors=F, check.names=F)
+bins_5bp_100k <- read.table("/net/bipolar/jedidiah/mutation/output/5bp_100k/full_bin.txt", header=T, stringsAsFactors=F, check.names=F)
 
 # summ_5bp_10k <- read.table("/net/bipolar/jedidiah/mutation/output/5bp_10k/full.summary", header=T, stringsAsFactors=F)
 # bins_5bp_10k <- read.table("/net/bipolar/jedidiah/mutation/output/5bp_10k/full_bin.txt", header=T, stringsAsFactors=F, check.names=F)
@@ -117,7 +109,8 @@ updateData <- function(summfile, binfile, adj){
 	return(datalist)
 }
 
-dat_5bp_100k <- updateData(summ_5bp_100k, bins_5bp_100k, adj)
+dat_5bp_100k <- updateData(summ_5bp_100k, bins_5bp_100k, 2)
+# dat_5bp_2 <- updateData(summ_5bp_100k[summ_5bp_100k$CHR==2 & summ_5bp_100k$BIN>=300 & summ_5bp_100k$BIN<600,], bins_5bp_100k[bins_5bp_100k$CHR=="chr2" & bins_5bp_100k$BIN>=300 & bins_5bp_100k$BIN<600,], 2)
 rm(summ_5bp_100k)
 rm(bins_5bp_100k)
 # gc()
@@ -200,8 +193,7 @@ aggData <- function(datfile, adj){
 		at_heat <- rrheat(map_a1, f, levs_a, "v5", nbp)
 		gc_heat <- rrheat(map_g1, f, levs_g, "v5", nbp)
 		
-		gwmapfile<-paste0(parentdir, "/images/gw_map.png")
-		png(gwmapfile, width=18, height=24, units="in", res=300)
+		png("/net/bipolar/jedidiah/mutation/smaug-genetics/gw_map.png", width=18, height=24, units="in", res=300)
 		multiplot(at_heat, gc_heat, cols=2)
 		dev.off()
 		
@@ -245,8 +237,7 @@ aggData <- function(datfile, adj){
 		c_heat <- rrheat(map_c, f, levs_c, "v6", nbp)
 		g_heat <- rrheat(map_g, f, levs_g, "v6", nbp)
 		
-		gwmapfile2<-paste0(parentdir, "/images/gw_map_uncollapsed.png")
-		png(gwmapfile2, width=48, height=24, units="in", res=300)
+		png("/net/bipolar/jedidiah/mutation/images/gw_map_uncollapsed.png", width=48, height=24, units="in", res=300)
 		multiplot(a_heat, t_heat, c_heat, g_heat, cols=4)
 		dev.off()
 			
@@ -339,13 +330,51 @@ aggData <- function(datfile, adj){
 }
 
 aggV <- aggData(dat_5bp_100k, 2)
+aggV2 <- aggData(dat_5bp_2, 2)
 
 agg_5bp_100k <- aggV$oe
 rates1 <- aggV$agg
+agg_5bp_2 <- aggV2$oe
+rates2 <- aggV2$agg
+
+agg_5bp_100k2 <- rbind(agg_5bp_100k[!(agg_5bp_100k$CHR %in% agg_5bp_2$CHR & agg_5bp_100k$BIN %in% agg_5bp_2$BIN),], agg_5bp_2)
+# agg_5bp_10k<-aggData(dat_5bp_10k, 2)
+# agg_3bp_100k<-aggData(dat_3bp_100k, 1)
+# agg_3bp_10k<-aggData(dat_3bp_10k, 1)
 
 agg_5bp_100k <- agg_5bp_100k[order(agg_5bp_100k$BIN),]
 agg_5bp_100k$diff <- agg_5bp_100k$obs-agg_5bp_100k$exp
 agg_5bp_100k$Category2 <- as.character(agg_5bp_100k$Category2)
+
+
+##############################################################################
+# Test if rates on chr2p are significantly different than genomewide
+##############################################################################
+mut_cats <- unique(rates1$Category2)
+
+sigmotifs<-data.frame()
+for(i in 1:6){
+	mut_seqs <- unique(rates1[rates1$Category2==mut_cats[i],]$Sequence)
+	for(j in 1:256){
+
+		mut <- c(rates1[rates1$Category2==mut_cats[i] & rates1$Sequence==mut_seqs[j],]$freq, rates2[rates2$Category2==mut_cats[i] & rates2$Sequence==mut_seqs[j],]$freq)
+		sites <- c(rates1[rates1$Category2==mut_cats[i] & rates1$Sequence==mut_seqs[j],]$COUNT, rates2[rates2$Category2==mut_cats[i] & rates2$Sequence==mut_seqs[j],]$COUNT)
+		
+		if(!is.na(mut)){
+			z<-prop.test(mut, sites)
+			
+			if(z$p.value<0.05/1536){
+			
+				mut_cat<-mut_cats[i]
+				mut_seq<-mut_seqs[j]
+				
+				motifrow<-data.frame(mut_cat, mut_seq, z$p.value)
+				
+				sigmotifs<-rbind(sigmotifs, motifrow)
+			}
+		}
+	}
+}
 
 ##############################################################################
 # Compare 3bp/5bp motifs at 100kb resolution
@@ -423,44 +452,32 @@ if(singlebp==1){
 
 		return(data[,c(1,4,5)])
 	}
-	
-	H3K4me1file <- paste0(parentdir, "/reference_data/histone_marks/binned/H3K4me1.", bink, "kb.bed")
-	H3K4me3file <- paste0(parentdir, "/reference_data/histone_marks/binned/H3K4me3.", bink, "kb.bed")
-	H3K9acfile <- paste0(parentdir, "/reference_data/histone_marks/binned/H3K9ac.", bink, "kb.bed")
-	H3K9me3file <- paste0(parentdir, "/reference_data/histone_marks/binned/H3K9me3.", bink, "kb.bed")
-	H3K27acfile <- paste0(parentdir, "/reference_data/histone_marks/binned/H3K27ac.", bink, "kb.bed")
-	H3K27me3file <- paste0(parentdir, "/reference_data/histone_marks/binned/H3K27me3.", bink, "kb.bed")
-	H3K36me3file <- paste0(parentdir, "/reference_data/histone_marks/binned/H3K36me3.", bink, "kb.bed")
 
 	# Number of reads per histone mark
-	H3K4me1 <- getHistBins(H3K4me1file, "H3K4me1")
-	H3K4me3 <- getHistBins(H3K4me3file, "H3K4me3")
-	H3K9ac <- getHistBins(H3K9acfile, "H3K9ac")
-	H3K9me3 <- getHistBins(H3K9me3file, "H3K9me3")
-	H3K27ac <- getHistBins(H3K27acfile, "H3K27ac")
-	H3K27me3 <- getHistBins(H3K27me3file, "H3K27me3")
-	H3K36me3 <- getHistBins(H3K36me3file, "H3K36me3")
+	H3K4me1 <- getHistBins("/net/bipolar/jedidiah/mutation/reference_data/histone_marks/binned/H3K4me1.100kb.bed", "H3K4me1")
+	H3K4me3 <- getHistBins("/net/bipolar/jedidiah/mutation/reference_data/histone_marks/binned/H3K4me3.100kb.bed", "H3K4me3")
+	H3K9ac <- getHistBins("/net/bipolar/jedidiah/mutation/reference_data/histone_marks/binned/H3K9ac.100kb.bed", "H3K9ac")
+	H3K9me3 <- getHistBins("/net/bipolar/jedidiah/mutation/reference_data/histone_marks/binned/H3K9me3.100kb.bed", "H3K9me3")
+	H3K27ac <- getHistBins("/net/bipolar/jedidiah/mutation/reference_data/histone_marks/binned/H3K27ac.100kb.bed", "H3K27ac")
+	H3K27me3 <- getHistBins("/net/bipolar/jedidiah/mutation/reference_data/histone_marks/binned/H3K27me3.100kb.bed", "H3K27me3")
+	H3K36me3 <- getHistBins("/net/bipolar/jedidiah/mutation/reference_data/histone_marks/binned/H3K36me3.100kb.bed", "H3K36me3")
 
 	# Pct in CpG island
-	CPGIfile <- paste0(parentdir, "/reference_data/cpg_islands_", bink, "kb.bed")
-	CPGI <- getHistBins(CPGIfile, "CPGI")
+	CPGI <- getHistBins("/net/bipolar/jedidiah/mutation/reference_data/cpg_islands_100kb.bed", "CPGI")
 	CPGI$CPGI <- CPGI$CPGI/binw
 
 	# Pct exonic 
-	EXONfile <- paste0(parentdir, "/reference_data/coding_exon_", bink, "kb.bed")
-	EXON <- getHistBins(EXONfile, "EXON")
+	EXON <- getHistBins("/net/bipolar/jedidiah/mutation/reference_data/coding_exon_100kb.bed", "EXON")
 	EXON$EXON <- EXON$EXON/binw
 
 	# Replication timing
-	repfile <- paste0(parentdir, "/reference_data/lymph_rep_time.txt")
-	reptime <- read.table(repfile, header=F, stringsAsFactors=F, sep="\t")
+	reptime <- read.table("/net/bipolar/jedidiah/mutation/reference_data/lymph_rep_time.txt", header=F, stringsAsFactors=F, sep="\t")
 	names(reptime) <- c("CHR", "POS", "TIME")
 	reptime$BIN <- ceiling(reptime$POS/binw)
 	rtagg <- aggregate(TIME~CHR+BIN, reptime, mean)
 
 	# Recombination rate
-	rcfile <- paste0(parentdir, "/reference_data/recomb_rate.bed")
-	rcrate <- read.table(rcfile, header=T, stringsAsFactors=F, sep="\t")
+	rcrate <- read.table("/net/bipolar/jedidiah/mutation/reference_data/recomb_rate.bed", header=T, stringsAsFactors=F, sep="\t")
 	rcrate$CHR <- as.integer(substring(rcrate$CHR, 4))
 	rcrate$POS <- (rcrate$START+rcrate$END)/2
 	rcrate$BIN <- ceiling(rcrate$POS/binw)
@@ -489,8 +506,7 @@ if(singlebp==1){
 	scores <- as.data.frame(round(pc.dat$x, 3))
 		
 	mut_cov2<-cbind(mut_cov[,1:2], scores)
-	mutcov2file<-paste0(parentdir, "/output/logmod_data/", bink, "kb_mut_cov2.txt")
-	write.table(mut_cov2, mutcov2file, sep="\t", col.names=F, row.names=F, quote=F) 
+	write.table(mut_cov2, "/net/bipolar/jedidiah/mutation/smaug-genetics/sandbox/mut_cov2.txt", sep="\t", col.names=F, row.names=F, quote=F) 
 }
 
 ##############################################################################
@@ -584,11 +600,7 @@ p2 <- ggplot(compare.all[compare.all$CHR==2 & compare.all$diff>-150,], aes(x=BIN
 		  legend.text=element_text(size=14),
 		  axis.text.x=element_blank(), 
 		  axis.ticks.x=element_blank())
-
-hierfile5<-paste0(parentdir, "/images/hier_diffs_pt5.png")
-ggsave(hierfile5, width=9, height=18)
-
-
+ggsave("/net/bipolar/jedidiah/mutation/images/hier_diffs_pt5.png", width=9, height=18)
 
 # Plot barcharts comparing obs/exp correlation for different models
 mod.corr <- ddply(compare.all, .(Category2, res), summarize, num=length(exp), cor=cor(exp, obs, method="spearman"))
@@ -610,9 +622,8 @@ ggplot(mod.corr, aes(x=Category2, y=cor, fill=res))+
 		  axis.title.y = element_text(size=20),
 		  axis.text.y = element_text(size=16), 
 		  axis.text.x = element_text(size=16, angle = 45,  vjust=1, hjust=1.01))
+ggsave("/net/bipolar/jedidiah/mutation/images/gw_5bp_vs_mod.png", width=7, height=7)
 
-modelbar<-paste0(parentdir, "/images/gw_5bp_vs_mod.png")		  
-ggsave(modelbar, width=7, height=7)
 
 mut.diff<-merge(agg_5bp_100k, mut_cov, by=c("CHR", "BIN"))
 
@@ -667,30 +678,12 @@ p <- plotIdeogram(hg19IdeogramCyto, "chr2", xlabel=TRUE, alpha=0,
 				  zoom.region=c(min(diffm[diffm$Category=="AT_GC",]$BIN2),max(diffm[diffm$Category=="AT_GC",]$BIN2)))
 
 # p2 <- ggplot(diffm[diffm$Category=="GC_AT",], aes(x=BIN2, y=value, colour=variable))+
-# p2 <- ggplot(diffm, aes(x=BIN, y=value, colour=variable))+
-	# geom_point(alpha=0.2, size=3)+
-	# scale_colour_manual("Model", values=myPaletteCat(8)[6:7], labels=c("exp"="5bp+features", "obs"="5bp only"))+
-	# facet_wrap(~Category2, scales="free", ncol=1)+
-	# scale_x_continuous(breaks=pretty_breaks(n=25))+
-	# ylab("Error")+
-	# xlab(NULL)+
-	# theme_bw()+
-	# theme(axis.title.y=element_text(size=16), 
-	      # axis.text.y=element_text(size=14),
-		  # legend.title=element_text(size=16),
-		  # legend.text=element_text(size=14))
-		  
-		  # ,
-		  # axis.text.x=element_blank(), 
-		  # axis.ticks.x=element_blank()
-
-c2b<-diffm[diffm$Category=="AT_GC" & diffm$variable=="obs",]
-fixed(p)<-FALSE
-p2 <- ggplot(c2b, aes(x=BIN, y=value, colour=variable))+
-	geom_point(alpha=0.4, size=4)+
-	scale_colour_manual("Model", values=myPaletteCat(8)[7], labels=c("obs"="5bp"))+
-	# facet_wrap(~Category2, scales="free", ncol=1)+
-	# scale_x_discrete(labels=c("exp"="5bp+features", "obs"="5bp only"))+
+p2 <- ggplot(diffm, aes(x=BIN, y=value, colour=variable))+
+	# geom_bar(stat="identity", position="identity")+
+	geom_point(alpha=0.2, size=3)+
+	scale_colour_manual("Model", values=myPaletteCat(8)[6:7], labels=c("exp"="5bp+features", "obs"="5bp only"))+
+	facet_wrap(~Category2, scales="free", ncol=1)+
+	scale_x_continuous(breaks=pretty_breaks(n=25))+
 	ylab("Error")+
 	xlab(NULL)+
 	theme_bw()+
@@ -698,14 +691,10 @@ p2 <- ggplot(c2b, aes(x=BIN, y=value, colour=variable))+
 	      axis.text.y=element_text(size=14),
 		  legend.title=element_text(size=16),
 		  legend.text=element_text(size=14))
-
-labeled(p2)<-FALSE
-labeled(p)<-FALSE
-tracks(p2,p, heights=c(6,2))		  
-hierfile6<-paste0(parentdir, "/images/hier_diffs_pt6.png")
-ggsave(hierfile6, width=16, height=8)		  
-
-
-
-hierfile3<-paste0(parentdir, "/images/hier_diffs_pt3.png")
-ggsave(hierfile3, width=9, height=18)
+		  
+		  # ,
+		  # axis.text.x=element_blank(), 
+		  # axis.ticks.x=element_blank()
+	
+# tracks(p,p2, heights=c(1.5,7))
+ggsave("/net/bipolar/jedidiah/mutation/images/hier_diffs_pt3.png", width=9, height=18)

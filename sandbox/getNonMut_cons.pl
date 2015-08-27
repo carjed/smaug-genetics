@@ -1,9 +1,9 @@
 #!/usr/local/bin/perl
 
 ##############################################################################
-# Used to obtain full data from logistic regression model
-# loops through reference genome and outputs 1 line per base, as long as 
-# valid covariate data exists
+# Old version of getNonMut.pl, using sequence conservation scores as an 
+# additional covariate for logistic regression.  Drops too many sites to be
+# useful
 ##############################################################################
 
 use strict;
@@ -81,7 +81,7 @@ my $seq=&getRef();
 my $altseq=$seq;
 $altseq =~ tr/ACGT/TGCA/;
 
-my $seqlength=length($seq);
+# my $seqlength=length($seq);
 # print "seqlength of chr$chr: $max\n"; #<-used to validate that getRef() returns correct seq length
 
 my $printheader=0;
@@ -101,8 +101,8 @@ while (<$covs>){
 	$hash{$key}=$pcs;
 }
 
-# my $key=join("\t", 20, 100);
-# print "$hash{$key}\n";
+my $key=join("\t", 20, 100);
+print "$hash{$key}\n";
 
 # Create hash keyed by singleton positions, with input line as value
 print "Indexing chr${chr}: ${categ} singleton positions...\n";
@@ -119,18 +119,23 @@ while (<$positions>) {
 
 # Reads conservation score data, writes line of output if site meets criteria
 print "Writing chr${chr}: ${categ} data file...\n";
-for my $strpos (0 .. $seqlength){
-	my $base = substr($seq, $strpos, 1);
-	my $pos = $strpos+1;
+my $pos;
+while (<$cons>){
+	chomp;
 	
-	my $bin = ceil($pos/$binwidth);
-	my $key2=join("\t", $chr, $bin);
-	
-	if(defined $hash{$key2}){
+	# Reads descriptor line of wigFix file and extracts starting position
+	if($_ =~ /fixedStep/){
+		my @head = split(/[=,\s]+/, $_);
+		$pos=$head[4];
+	}elsif($pos>1){
+		my $base = substr($seq, $pos-1, 1);
+
+		# if statement evaluated for sites not in singleton list; elsif statement evaluated for singletons
 		if(($base =~ /$b1|$b2/) & (!exists $poshash{$pos})){
 			# push (@POS, $pos); # add position to exclusion list
 			my $localseq = substr($seq, $pos-$adj-1, $subseq);
 			my $altlocalseq = reverse substr($altseq, $pos-$adj-1, $subseq);
+			my $bin = ceil($pos/$binwidth);
 			
 			# Coerce local sequence info to format used in R
 			my $sequence;
@@ -140,18 +145,33 @@ for my $strpos (0 .. $seqlength){
 				$sequence = $altlocalseq . '(' . $localseq . ')';
 			}
 			
-			# write line if site has non-N context
-			if ($sequence !~ /N/) {
+			my $key2=join("\t", $chr, $bin);
+			
+			# write line if site has non-N context and exists in covariate data
+			if (($sequence !~ /N/) && (exists $hash{$key2})) {
+				# my $key2=join("\t", $chr, $bin);
+				# my $hv=$hash{$key2};
+				# print "$key2\t$hv\n";
 				my $covs=&updateCovs($chr, $bin, $pos);
-				print OUT "$chr\t$bin\t$pos\t$sequence\t 0 \t$covs\n";	 
-			}
-		}elsif(exists $poshash{$pos}){
-			my $covs=&updateCovs($chr, $bin, $pos);
-			print OUT "$poshash{$pos}\t$covs\n";
-		}		
+				# my $covs=$hv;
+				print OUT "$chr\t$bin\t$pos\t$sequence\t 0 \t$covs\t$_\n";	 
+			} 
+		} elsif((exists $poshash{$pos})){
+			my $bin = ceil($pos/$binwidth);
+			# print "$bin\t$pos\n";
+			# my $covs=&updateCovs($chr, $bin, $pos);
+			my $key2=join("\t", $chr, $bin);
+			# my $covs=$hash{$key2};
+			if(exists $hash{$key2}){
+				print "$key2 exists \n";
+				my $covs=&updateCovs($chr, $bin, $pos);
+				print OUT "$poshash{$pos}\t$covs\t$_\n";
+			}		
+		}
+		
+		$pos++;
 	}
 }
-
 print "Done\n";
 
 sub getRef{
@@ -254,12 +274,10 @@ sub updateCovs{
 		my @n_feats = split(/\t/, $hash{$n_linekey});
 		foreach my $x (@n_feats) { $x = $x * $prop_n_bin; }
 		@sum = pairwise { $a + $b } @c_feats, @n_feats;
-	} else{
-		@sum = @c_feats;
 	}
 	
 	my $covs=join("\t", @sum[0 .. $#sum]);
-	# print "$covs\n";
+	print "$covs\n";
 	return $covs;
 }
 

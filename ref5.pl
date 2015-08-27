@@ -4,7 +4,7 @@
 # SMAUG: Singleton Mutation Analysis Utility with Graphics
 #
 # Jedidiah Carlson
-# Department of Biostatistics
+# Department of Bioinformatics
 # The University of Michigan
 # Last Revision: 07/02/2014
 #
@@ -55,7 +55,7 @@ use Cwd;
 use Benchmark;
 
 my $wdir=getcwd;
-my $parentdir=dirname($wdir);
+my $parentdir="/net/bipolar/jedidiah/mutation";
 
 my $help=0;
 my $man=0;
@@ -66,6 +66,7 @@ my $adj=0;
 my $cpg='';
 my $hot='';
 my $mask_flag='';
+my $rscript=0;
 my @annoin;
 
 GetOptions ('chr=i'=> \$chr,
@@ -75,6 +76,7 @@ GetOptions ('chr=i'=> \$chr,
 'cpg' => \$cpg,
 'hot' => \$hot,
 'mf' => \$mask_flag,
+'rs=i' => \$rscript,
 'anno=s' => \@annoin,
 'help|?'=> \$help,
 man => \$man) or pod2usage(1);
@@ -168,6 +170,7 @@ my $f_summ = "/net/bipolar/jedidiah/testpipe/summaries/$macl/chr$chr.summary"; #
 # my $f_summ = "/net/bipolar/jedidiah/testpipe/summaries/chr10.common.summary";
 # my $f_summ = "/net/bipolar/jedidiah/cur_vs_anc.summary";
 # my $f_summ = "/net/bipolar/jedidiah/testpipe/vcfs/mask/summary/chr20.summary";
+# my $f_summ = "/net/bipolar/jedidiah/testpipe/vcfs/chr20.rq.summary";
 open my $summ, '<', $f_summ or die "can't open $f_summ: $!";
 
 my $outfile = "$parentdir/output/chr$chr.expanded.summary";
@@ -196,7 +199,7 @@ sub getRef{
 	if (-e $f_fasta) {
 		print "Using reference genome: $f_fasta\n";
 	} else {
-		print "Reference genome not found in parent directory. Would you like to download one? (y/n): ";
+		print "Reference genome not found in directory. Would you like to download one? (y/n): ";
 		my $choice = <>;
 		chomp $choice;
 		if ($choice eq "y") {
@@ -205,47 +208,22 @@ sub getRef{
 			my $unzipcmd="gunzip $parentdir/human_g1k_v37.fasta";
 			&forkExecWait($unzipcmd);
 		} else {
-			die "Please upload an appropriate reference genome to the parent directory\n";
+			die "Please upload an appropriate reference genome to $parentdir/reference_data/ \n";
 		}
 	}
 
 	open my $fasta, '<', $f_fasta or die "can't open $f_fasta: $!";
-
-
-
-	##############################################################################
-	# Retrieve reference sequence for selected chromosome
-	# -also returns symmetric sequence to be used in local sequence analysis
-	##############################################################################
-
 	print "Getting reference sequence for chromosome $chr...\n";
 
 	my $seq;
 	while (<$fasta>) {
 		chomp;
-		if (/^>$chr$/../^>$nextchr$/) {
-			next if /^>$chr$/ || /^>$nextchr$/;
+		if (/>$chr /../>$nextchr /) {
+			next if />$chr / || />$nextchr /;
 			$seq .=$_;
 		}
 	}
-
-	# if($mask_flag){
-		# print "Applying mask to ref genome...\n";
-		# my $mask_file = "$parentdir/reference_data/testmask2.bed";
-		# open my $mask, '<', $mask_file or die "can't open $mask_file: $!";
-		
-		# readline($mask);
-		
-		# while (<$mask>){
-			# my @line=split(/\t/, $_);
-			# if($line[0] =~ /^$chr$/){
-				# my $c1=$line[1]-1;
-				# my $c2=$line[2];
-				# substr($seq, $c1, $c2-$c1, "N" x ($c2-$c1));
-			# }
-		# }
-	# }
-
+	
 	return $seq;
 }
 
@@ -506,13 +484,14 @@ print "Runtime: ", timestr($difference), "\n";
 #Run selected R script
 ##############################################################################
 
-my $args="$chr $macl $binwidth $cpg_flag $outfile $adj $hot_flag $imgdir $bin_out";
-my $cmd="Rscript prop.R $args";
+if($rscript==1){
+	my $args="$chr $macl $binwidth $cpg_flag $outfile $adj $hot_flag $imgdir $bin_out";
+	my $cmd="Rscript prop.R $args";
 
-print "Running R script...\n";
-&forkExecWait($cmd);
-print "Done. See images folder for output.\n";
-
+	print "Running R script...\n";
+	&forkExecWait($cmd);
+	print "Done. See images folder for output.\n";
+}
 ##############################################################################
 #Clean up temp files
 ##############################################################################

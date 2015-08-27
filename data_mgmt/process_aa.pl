@@ -1,5 +1,9 @@
 #!/usr/local/bin/perl
 
+##############################################################################
+# Script for filling ancestral allele in BRIDGES vcfs
+##############################################################################
+
 for my $i (1 .. 22) {
 	# my $refcmd = "cat /net/bipolar/jedidiah/mutation/reference_data/human_ancestor_GRCh37_e59/human_ancestor_$i.fa  | sed 's,>.*,>$i,' | bgzip -c > /net/bipolar/jedidiah/mutation/reference_data/human_ancestor_GRCh37_e59/human_ancestor_$i.fa.gz";
 	# &forkExecWait($refcmd);

@@ -2,41 +2,7 @@
 # Script for running genome-wide models
 ##############################################################################
 
-##############################################################################
-# Function to install and load packages
-##############################################################################
-usePackage <- function(p) {
-	
-	p <- as.character(substitute(p))
 
-    if (!is.element(p, installed.packages()[,1])){
-        install.packages(p, dep = TRUE)
-		require(p, character.only = TRUE)
-	} else {
-		require(p, character.only = TRUE)
-	}
-}
-
-##############################################################################
-# Function to read file from disk
-##############################################################################
-make.data<-function(filename, chunksize,...){
-	conn<-NULL
-	function(reset=FALSE){
-		if(reset){
-			if(!is.null(conn)) close(conn)
-			conn<<-file(filename,open="r")
-		} else{
-			rval<-read.table(conn, nrows=chunksize,...)
-			if ((nrow(rval)==0)) {
-				close(conn)
-				conn<<-NULL
-				rval<-NULL
-			}
-			return(rval)
-		}
-	}
-}
 
 suppressMessages(usePackage(ggplot2))
 suppressMessages(usePackage(scales))
@@ -210,6 +176,9 @@ write.table(mut_cov2, "/net/bipolar/jedidiah/mutation/smaug-genetics/sandbox/mut
 log_model <- 1
 plots<-data.frame()
 mut_cats<-unique(dat_5bp_100k$summ$Category)
+
+datadir<-"/net/bipolar/jedidiah/mutation/smaug-genetics/output/"
+
 if(log_model==1){
 
 	for(i in 1:1){
@@ -236,17 +205,20 @@ if(log_model==1){
 			system(perlcmd)
 		}
 		
-		# Run cat command to combine +/- data
-		catcmd1 <- paste0("cat /net/bipolar/jedidiah/mutation/smaug-genetics/sandbox/chr*_",categ,"_negative_examples.txt > /net/bipolar/jedidiah/mutation/smaug-genetics/sandbox/",categ,"_negative_examples.txt")
-		system(catcmd1)
-		catcmd2 <- paste0("cat /net/bipolar/jedidiah/mutation/smaug-genetics/sandbox/",categ,"_pos_examples.txt /net/bipolar/jedidiah/mutation/smaug-genetics/sandbox/",categ,"_negative_examples.txt > /net/bipolar/jedidiah/mutation/smaug-genetics/sandbox/",categ,"_full.txt")
+		# Run Unix cmds to combine and sort +/- data
+		
+		fullfile<-paste0("/net/bipolar/jedidiah/mutation/smaug-genetics/sandbox/",categ,"_full.txt")
+		
+		# catcmd1 <- paste0("cat /net/bipolar/jedidiah/mutation/smaug-genetics/sandbox/chr*_",categ,"_negative_examples.txt > /net/bipolar/jedidiah/mutation/smaug-genetics/sandbox/",categ,"_negative_examples.txt")
+		# system(catcmd1)
+		catcmd2 <- paste0("cat ", posfile, "/net/bipolar/jedidiah/mutation/smaug-genetics/sandbox/chr*_" ,categ, "_negative_examples.txt > ", fullfile)
 		system(catcmd2)
+		sortcmd <- paste0("sort --key=1,1 --key=3,3 ", fullfile, "-o ", fullfile)
+		system(sortcmd)
 		
 		# Read in full dataset for category i and run logistic regression model
 		danames<-c("CHR", "BIN", "POS", "Sequence", "mut", "PC1", "PC2", "PC3", "PC4", "PC5", "PC6", "PC7", "PC8", "PC9", "PC10", "PC11", "PC12")
-		fullfile<-paste0("/net/bipolar/jedidiah/mutation/smaug-genetics/sandbox/",categ,"_full.txt")
 		da<-make.data(fullfile,chunksize=1000000,col.names=danames)
-
 		log_mod<-shglm(mut~factor(Sequence)+PC1+PC2+PC3+PC4+PC5+PC6+PC7+PC8+PC9+PC10+PC11+PC12, datafun=da, family=binomial())
 		
 		# Read small subset for dummy model
@@ -255,39 +227,41 @@ if(log_model==1){
 
 		# Further reduce data sample for glm, ensuring all 256 sequence factors are represented in dataset
 		numseqs<-0
-		
 		while(numseqs!=256){
 			da3<-da2[sample(nrow(da2), 20000),]
 			numseqs<-length(unique(da3$Sequence))
 		}
 		
-		# Run dummy model
+		# Run dummy model, create copy, and update coefficient estimates with those from full model
 		log_mod_null<-glm(mut~Sequence+PC1+PC2+PC3+PC4+PC5+PC6+PC7+PC8+PC9+PC10+PC11+PC12, data=da3, family=binomial)
-		
-		# Create copy of dummy model
 		log_mod_null2<-log_mod_null
-		
-		# Update coefficient estimates with those from full model
 		log_mod_null2$coefficients<-log_mod$coefficients
 		
 		# Iterate over full data 1MB at a time and output predicted relative rates for each site
 		chunksize<-1000000
 		numsites<-1146613132 #<- need to update numsites for each of the 6 categories
 		numchunks<-ceil(numsites/chunksize)
+		
+		mu<-1e-8
+		nbases<-5.8e9 #<- number of non-N bases
+		nind<-3612 #<- number of individuals in sample
+		indmuts<-mu*nbases #<- estimated number of mutations per generation--58 corresponds to a rate of ~1e-8 per Michaelson et al.
+		nsing<-10000 #<- mean number of singletons per individual
+		numgens<-ceiling(nsing/indmuts) #<- estimate of maximum age (in generations) of a singleton
+		meangens<-mean(1:numgens) #<- estimate average age of singleton (~100 gens)
+		denom<-nind*meangens
 
-		# fullfile2<-"/net/bipolar/jedidiah/mutation/smaug-genetics/sandbox/AT_CG_full.txt"
+		# fullfile2<-"/net/bipolar/jedidiah/mutation/smaug-genetics/sandbox/AT_CG_full.txt" #<-placeholder for testing on AT_CG category
 
-		for(i in 1:numchunks){
+		for(i in 1:5){
 
 			tmp<-read.table(fullfile, header=F, stringsAsFactors=F, nrows=chunksize, skip=((i-1)*chunksize))
 			names(tmp)<-danames
 			
 			preds<-plogis(predict(log_mod_null3, tmp))
-			
-			out<-cbind(tmp[,1:3], preds)
-			
+			preds<-round((preds/denom)*1e8, 4) #<- 
+			out<-cbind(tmp[,c(1,3)], preds)
 			outpath<-paste0("/net/bipolar/jedidiah/mutation/smaug-genetics/sandbox/", categ, "_", i, ".txt")
-			
 			write.table(out, outpath, col.names=F, row.names=F, quote=F, sep="\t")
 		}
 		

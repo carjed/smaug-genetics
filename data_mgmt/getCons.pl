@@ -1,15 +1,23 @@
 #!/usr/local/bin/perl
 
 ##############################################################################
-# Run ref5.pl on all chromosomes--
-# update local nucleotide (adj) and binwidth (b) parameters as necesary
-# 
-# Can be modified to a slurm array job
+# Script downloads and unzips phastCons46way conservation score data
 ##############################################################################
 
-for my $i (11 .. 22) {
-	my $cmd = "perl ref5.pl --chr $i --mac 1 --adj 1 --b 100000 &";
-	&forkExecWait($cmd);
+my $outfile = "/net/bipolar/jedidiah/mutation/reference_data/phastconsfiles.txt";
+open(OUT, '>', $outfile) or die "can't write to $outfile: $!\n";
+
+
+# for my $i (1 .. 22) {
+	# print OUT "http://hgdownload-test.cse.ucsc.edu/goldenPath/hg19/phastCons46way/primates/chr$i.phastCons46way.primates.wigFix.gz\n";
+# }
+
+# my $getcmd="wget -P /net/bipolar/jedidiah/mutation/reference_data/ -i $outfile";
+# &forkExecWait($getcmd);
+
+for my $i (1 .. 22) {
+	my $unzipcmd="gunzip /net/bipolar/jedidiah/mutation/reference_data/chr$i.phastCons46way.primates.wigFix.gz";
+	&forkExecWait($unzipcmd);
 }
 
 

@@ -1,5 +1,5 @@
 options(warn=-1)
-# sink("R.log")
+sink("R.log")
 
 {
 	# Load packages

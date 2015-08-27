@@ -1,9 +1,8 @@
 #!/usr/local/bin/perl
 
 ##############################################################################
-# Used to obtain full data from logistic regression model
-# loops through reference genome and outputs 1 line per base, as long as 
-# valid covariate data exists
+# Script used by obsexp6.r to obtain negative (i.e., non-mutated) examples
+# used in logistic regression
 ##############################################################################
 
 use strict;
@@ -14,7 +13,6 @@ use Pod::Usage;
 use File::Basename;
 use File::Path qw(make_path);
 use List::Util qw(first max maxstr min minstr reduce shuffle sum);
-use List::MoreUtils 'pairwise';
 use Cwd;
 use Benchmark;
 use Tie::File;
@@ -26,14 +24,12 @@ my $parentdir="/net/bipolar/jedidiah/mutation";
 my $baseopt;
 my $chr;
 my $categ;
-my $bw = 100;
-my $f_covs = "$parentdir/output/logmod_data/${bw}kb_mut_cov2.txt";
+my $bw;
 
 GetOptions ('b=s'=> \$baseopt,
 'chr=s'=> \$chr,
 'categ=s' => \$categ,
-'bw=i' => \$bw,
-'covs=s' => \$f_covs) or pod2usage(1);
+'bw=i' => \$bw) or pod2usage(1);
 
 my $b1;
 my $b2;
@@ -47,7 +43,7 @@ if($baseopt eq "AT"){
 
 my $mask_flag=0;
 my $adj=2;
-my $binwidth=$bw*1000;
+my $binwidth=100000;
 
 my $nextchr;
 if ($chr<22) {
@@ -62,14 +58,15 @@ if ($adj!=0) {
 }
 
 # initialize output file
-my $outfile = "$parentdir/output/logmod_data/chr${chr}_${categ}_sites.txt";
+my $outfile = "outdat.txt";
 open(OUT, '>', $outfile) or die "can't write to $outfile: $!\n";
 
 # initialize covariate data
+my $f_covs = "$parentdir/output/logmod_data/${bw}kb_mut_cov2.txt";
 open my $covs, '<', $f_covs or die "can't open $f_covs: $!";
 
-# initialize singleton file
-my $f_positions = "$parentdir/output/logmod_data/chr${chr}_${categ}_pos_examples.txt"; #main line for full processing
+# initialize input file
+my $f_positions = "$parentdir/output/logmod_data/test.mpf";
 open my $positions, '<', $f_positions or die "can't open $f_positions: $!";
 
 # initialize phastCons data
@@ -81,7 +78,7 @@ my $seq=&getRef();
 my $altseq=$seq;
 $altseq =~ tr/ACGT/TGCA/;
 
-my $seqlength=length($seq);
+# my $seqlength=length($seq);
 # print "seqlength of chr$chr: $max\n"; #<-used to validate that getRef() returns correct seq length
 
 my $printheader=0;
@@ -91,7 +88,7 @@ if($printheader==1){
 
 # Create hash keyed by Chr/Bin pairs, with row of PCs as value
 print "Indexing chr${chr} covariate data...\n";
-our %hash=();
+my %hash=();
 while (<$covs>){
 	chomp;
 	my @line=split(/\t/, $_);
@@ -101,58 +98,78 @@ while (<$covs>){
 	$hash{$key}=$pcs;
 }
 
-# my $key=join("\t", 20, 100);
-# print "$hash{$key}\n";
-
 # Create hash keyed by singleton positions, with input line as value
-print "Indexing chr${chr}: ${categ} singleton positions...\n";
+print "Writing output...\n";
 my @POS;
 my %poshash=();
 while (<$positions>) {
 	chomp;
 	my @line=split(/\t/, $_);
-	my $key=$line[2];
-	push (@POS, $key);
+	my $chr=$line[0];
+	my $pos=$line[1];
+	my $base = substr($seq, $pos-1, 1);
 	
-	$poshash{$key}=$_;
-}
-
-# Reads conservation score data, writes line of output if site meets criteria
-print "Writing chr${chr}: ${categ} data file...\n";
-for my $strpos (0 .. $seqlength){
-	my $base = substr($seq, $strpos, 1);
-	my $pos = $strpos+1;
-	
+	my $localseq = substr($seq, $pos-$adj-1, $subseq);
+	my $altlocalseq = reverse substr($altseq, $pos-$adj-1, $subseq);
 	my $bin = ceil($pos/$binwidth);
+	
+	# Coerce local sequence info to format used in R
+	my $sequence;
+	if(substr($localseq,$adj,1) lt substr($altlocalseq,$adj,1)){
+		$sequence = $localseq . '(' . $altlocalseq . ')';
+	} else {
+		$sequence = $altlocalseq . '(' . $localseq . ')';
+	}
+	
 	my $key2=join("\t", $chr, $bin);
 	
-	if(defined $hash{$key2}){
-		if(($base =~ /$b1|$b2/) & (!exists $poshash{$pos})){
-			# push (@POS, $pos); # add position to exclusion list
-			my $localseq = substr($seq, $pos-$adj-1, $subseq);
-			my $altlocalseq = reverse substr($altseq, $pos-$adj-1, $subseq);
-			
-			# Coerce local sequence info to format used in R
-			my $sequence;
-			if(substr($localseq,$adj,1) lt substr($altlocalseq,$adj,1)){
-				$sequence = $localseq . '(' . $altlocalseq . ')';
-			} else {
-				$sequence = $altlocalseq . '(' . $localseq . ')';
-			}
-			
-			# write line if site has non-N context
-			if ($sequence !~ /N/) {
-				my $covs=&updateCovs($chr, $bin, $pos);
-				print OUT "$chr\t$bin\t$pos\t$sequence\t 0 \t$covs\n";	 
-			}
-		}elsif(exists $poshash{$pos}){
-			my $covs=&updateCovs($chr, $bin, $pos);
-			print OUT "$poshash{$pos}\t$covs\n";
-		}		
-	}
+	# write line if site has non-N context and exists in covariate data
+	if (($sequence !~ /N/) & (defined($hash{$key2}))) {
+		print "getting data for position: $pos...\n";
+		my $key2=join("\t", $chr, $bin);
+		print "getting conservation score for: $pos...\n";
+		my $score=&getCons($pos);
+		print OUT "$chr\t$bin\t$pos\t$sequence\t 0 \t$hash{$key2}\t$score\n";	 
+	} 
 }
 
-print "Done\n";
+sub getCons{
+
+	my $pos=shift;
+	my $score;
+	my $start;
+
+	my $startpos=0;
+	my $indexpos1=0;
+	my $indexpos2;
+	my $row=0;
+	my @positions;
+	while (<$cons>){
+		chomp;
+		# my $key;
+		if($_ =~ /fixedStep/){
+			my @head = split(/[=,\s]+/, $_);
+			$startpos=$head[4]; # start position of next rows
+			
+			$row=$.; # row where header located
+			$indexpos1=$pos-$startpos+1; # number of rows past header where score for site should be located, if within range
+			$indexpos2=0;
+
+		} else {
+			$indexpos2++;
+		}
+		
+		if($indexpos1==$indexpos2){
+			print "Using start position: $startpos at row: $row\n";
+			$score=$_;
+			last;
+		}
+	}
+	
+
+
+	return $score;
+}
 
 sub getRef{
 	my $f_fasta;
@@ -208,58 +225,3 @@ sub getRef{
 	
 	return $seq;
 }
-
-
-sub updateCovs{
-	
-	my $CHR=shift;
-	my $BIN=shift;
-	my $pos=shift;
-	
-	# Get keys for current and neighboring bins
-	my $c_linekey=join("\t", $CHR, $BIN);
-	my $p_linekey=join("\t", $CHR, $BIN-1);
-	my $n_linekey=join("\t", $CHR, $BIN+1);
-	
-	# my $pos=$line[2];
-	my $posmin=$BIN*$binwidth-$binwidth;
-	
-	# Get relative position
-	my $relpos = ($pos-$posmin)/$binwidth;
-
-	# Calculate proportion 
-	my $prop_c_bin = -abs($relpos-0.5)+1;
-	
-	# Get covariates of containing bin
-	my $o_line = $hash{$c_linekey};
-	
-	# print "$c_linekey\n";
-	# print "$o_line\n";
-	
-	my @c_feats = split(/\t/, $o_line);
-	
-	# Calculate covariates in current bin proportional to position
-	foreach my $x (@c_feats) { $x = $x * $prop_c_bin; }
-
-	my @sum;
-	# Repeat for adjacent window
-	if(($relpos-0.5<=0) && exists($hash{$p_linekey})){
-		my $prop_p_bin = -$relpos+0.5;
-		my @p_feats = split(/\t/, $hash{$p_linekey});
-		foreach my $x (@p_feats) { $x = $x * $prop_p_bin; }
-		@sum = pairwise { $a + $b } @c_feats, @p_feats;
-		
-	} elsif(($relpos-0.5>0) && exists($hash{$n_linekey})){
-		my $prop_n_bin = $relpos-0.5;
-		my @n_feats = split(/\t/, $hash{$n_linekey});
-		foreach my $x (@n_feats) { $x = $x * $prop_n_bin; }
-		@sum = pairwise { $a + $b } @c_feats, @n_feats;
-	} else{
-		@sum = @c_feats;
-	}
-	
-	my $covs=join("\t", @sum[0 .. $#sum]);
-	# print "$covs\n";
-	return $covs;
-}
-

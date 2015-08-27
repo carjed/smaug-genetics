@@ -1,5 +1,7 @@
 ##############################################################################
 # Read in .mpf data, subset by 6 main categories, and plot 5bp mutation sigs
+# using pmsignature packaged developed by Shiraishi et al. (2015)
+# http://biorxiv.org/content/early/2015/06/01/019901
 ##############################################################################
 
 source("http://bioconductor.org/biocLite.R")

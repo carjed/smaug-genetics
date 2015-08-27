@@ -1,6 +1,12 @@
 #! /usr/bin/env Rscript
 
 ##############################################################################
+# Compare correlation between 100kb windowed distribution of singletons
+# and common variants.
+# -Should be merged with mutation_method_corr.R
+##############################################################################
+
+##############################################################################
 # Load packages and define color palettes
 ##############################################################################
 suppressMessages(require(ggplot2))

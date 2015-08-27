@@ -27,7 +27,7 @@ parentdir<-"/net/bipolar/jedidiah/mutation"
 functionfile<-paste0(parentdir, "/smaug-genetics/get_functions.R")
 source(functionfile)
 
-binw <- 100000
+binw <- 1000000
 bink <- binw/1000
 adj <- 2
 nbp <- adj*2+1

@@ -116,9 +116,6 @@ ggsave("/net/bipolar/jedidiah/mutation/images/rel_ct_cor.png")
 
 a3<-a2 %>% group_by(Category2) %>% summarise(cor=cor(rel, nmotifs))
 
-
-
-
 plotdat<-compare.all[abs(compare.all$diff)<300 & compare.all$res=="5bp",]
 p2 <- ggplot(plotdat, aes(x=obs, y=exp, colour=res))+
 	# geom_bar(stat="identity", position="identity")+
@@ -215,23 +212,15 @@ ggplot(mod.corr, aes(x=Category2, y=cor, fill=res))+
 modelbar<-paste0(parentdir, "/images/gw_5bp_vs_mod.png")		  
 ggsave(modelbar, width=7, height=7)
 
-# model motif error as function of features
+# old code--model motif error as function of features
 mut.diff<-merge(agg_5bp_100k, mut_cov, by=c("CHR", "BIN"))
 d.diff <- data.frame()
 for(i in 1:length(mut_cats)){
 	cat1 <- mut_cats[i]
 	aggcat <- mut.diff[mut.diff$Category2==cat1,]
 	
-	# pc.dat <- prcomp(aggcat[,9:20], center=T, scale=T)
-	# scores <- as.data.frame(pc.dat$x)
-	
-	# aggcat <- cbind(aggcat, scores)
-	
 	negbin_mod_formula<-as.formula(paste("diff~", paste(covnames[1:12], collapse="+")))
 	mut.lm <- lm(negbin_mod_formula, data=aggcat)
-
-	# mut.lm <- lm(diff~H3K4me1+H3K4me3+H3K9ac+H3K9me3+H3K27ac+H3K27me3+H3K36me3+
-					  # CPGI+EXON+TIME+RATE+prop_GC, data=aggcat)
 	
 	fits <- mut.lm$fitted.values
 	names(fits) <- paste0(aggcat$CHR,".",aggcat$BIN)
@@ -304,7 +293,6 @@ labeled(p)<-FALSE
 tracks(p2,p, heights=c(6,2))		  
 hierfile6<-paste0(parentdir, "/images/hier_diffs_pt6.png")
 ggsave(hierfile6, width=16, height=8)		  
-
 
 c2b<-diffm[diffm$Category2=="AT_GC",]
 

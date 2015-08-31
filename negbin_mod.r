@@ -10,8 +10,8 @@ for(i in 1:length(mut_cats)){
 	cat1 <- mut_cats[i]
 	aggcat <- agg_cov[agg_cov$Category2==mut_cats[i],]
 
-	feat_mod_formula<-as.formula(paste("obs~", paste(covnames[1:12], collapse="+")))
-	full_mod_formula<-as.formula(paste("obs~exp+", paste(covnames[1:12], collapse="+")))
+	feat_mod_formula<-as.formula(paste("obs~", paste(covnames, collapse="+")))
+	full_mod_formula<-as.formula(paste("obs~exp+", paste(covnames, collapse="+")))
 	mut_lm_feat <- glm.nb(feat_mod_formula, data=aggcat)
 	mut_lm_motif <- glm.nb(obs~exp, data=aggcat)
 	mut_lm_full <- glm.nb(full_mod_formula, data=aggcat)

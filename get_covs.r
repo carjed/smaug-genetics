@@ -65,6 +65,15 @@ rcagg <- aggregate(RATE~CHR+BIN, rcrate, mean)
 pctgc <- dat_5bp_100k$bin[,c(1,5,4)]
 pctgc$CHR <- as.integer(substring(pctgc$CHR, 4))
 
+# Lamin B1
+lamfile <- paste0(parentdir, "/reference_data/laminB1m.bed")
+lam <- read.table(lamfile, header=F, stringsAsFactors=F, sep="\t")
+names(lam)<-c("CHR", "START", "END", "VAL")
+lam$CHR <- as.integer(substring(lam$CHR, 4))
+lam$POS <- (lam$START+lam$END)/2
+lam$BIN <- ceiling(lam$POS/binw)
+lamagg <- aggregate(VAL~CHR+BIN, lam, mean)
+
 # Merge all data and sort
 
 # Old Version--reduce-merge
@@ -79,6 +88,7 @@ names(mut_cov) <- c("CHR", "H3K4me1", "BIN", "H3K4me3", "H3K9ac", "H3K9me3",
 mut_cov <- merge(mut_cov, rtagg, by=c("CHR", "BIN"))
 mut_cov <- merge(mut_cov, rcagg, by=c("CHR", "BIN"))
 mut_cov <- merge(mut_cov, pctgc, by=c("CHR", "BIN"))
+mut_cov <- merge(mut_cov, lamagg, by=c("CHR", "BIN"))
 
 if(pcs==1){
 	pc.dat <- prcomp(mut_cov[,3:ncol(mut_cov)], center=T, scale=T)

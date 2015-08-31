@@ -48,6 +48,7 @@ suppressMessages(usePackage(reshape2))
 suppressMessages(usePackage(RColorBrewer))
 suppressMessages(usePackage(MASS))
 suppressMessages(usePackage(speedglm))
+suppressMessages(usePackage(boot))
 suppressMessages(usePackage(devtools))
 suppressMessages(usePackage(ggbio))
 
@@ -182,13 +183,12 @@ if(!file.exists(mutcov2file)){
 }
 
 if(pcs==1){
-	names(mut_cov)<-c("CHR", "BIN", "PC1", "PC2", "PC3", "PC4", "PC5", "PC6", "PC7", "PC8", "PC9", "PC10", "PC11", "PC12")
-	danames<-c("CHR", "BIN", "POS", "Sequence", "mut", "PC1", "PC2", "PC3", "PC4", "PC5", "PC6", "PC7", "PC8", "PC9", "PC10", "PC11", "PC12", "cons")
+	names(mut_cov)<-c("CHR", "BIN", "PC1", "PC2", "PC3", "PC4", "PC5", "PC6", "PC7", "PC8", "PC9", "PC10", "PC11", "PC12", "PC13")
 } else {
-	names(mut_cov)<-c("CHR", "BIN", "H3K4me1", "H3K4me3", "H3K9ac", "H3K9me3", "H3K27ac", "H3K27me3", "H3K36me3", "CPGI", "EXON", "TIME", "RATE", "prop_GC")
-	danames<-c("CHR", "BIN", "POS", "Sequence", "mut", "H3K4me1", "H3K4me3", "H3K9ac", "H3K9me3", "H3K27ac", "H3K27me3", "H3K36me3", "CPGI", "EXON", "TIME", "RATE", "prop_GC", "cons")
+	names(mut_cov)<-c("CHR", "BIN", "H3K4me1", "H3K4me3", "H3K9ac", "H3K9me3", "H3K27ac", "H3K27me3", "H3K36me3", "CPGI", "EXON", "TIME", "RATE", "prop_GC", "LAMIN")
 }
 
+danames<-names(mut_cov)
 covnames<-danames[-c(1:5)]
 
 tottime<-(proc.time()-ptm)[3]

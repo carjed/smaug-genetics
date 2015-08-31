@@ -15,7 +15,7 @@ use Cwd;
 # my $vcftools="/net/bipolar/jedidiah/vcftools_0.1.10/bin/vcftools";
 
 my $refdir="/net/bipolar/jedidiah/mutation/reference_data";
-my $binwidth="10kb";
+my $binwidth="1000kb";
 my $bedmap="/net/bipolar/jedidiah/bin/bedmap";
 
 my @bedfiles=</net/bipolar/jedidiah/mutation/reference_data/histone_marks/*.bed>;

@@ -2,42 +2,13 @@
 
 ##############################################################################
 # SMAUG: Singleton Mutation Analysis Utility with Graphics
+##############################################################################
+# SMAUG uses extremely rare variants to visualize changes in mutation rates
+# across the genome. The ref5.pl script takes bcftools summary files and 
 #
 # Jedidiah Carlson
 # Department of Bioinformatics
 # The University of Michigan
-# Last Revision: 07/02/2014
-#
-##############################################################################
-# SUMMARY:
-# SMAUG uses extremely rare variants to visualize changes in mutation rates
-# across the genome. The following genomic features are currently implemented
-# or are in development:
-# -local sequence (+/- 1 adjacent nucleotide)
-# -CpG status
-# -Distance to nearest recombination hotspot
-# -Fuctional annotation
-# -GC content
-# -Average read depth
-# 
-# CURRENT RESTRICTIONS:
-# -Only works with singleton summary files (--mac 1); expanded doubleton
-# 	summary files are not yet created
-# -only takes tri-nucleotide sequences (--adj 1)
-#
-# TO-DO:
-# -update directories here and in R script to be consistent with pipe.pl
-# -Integrate with pipe.pl
-# -stitch together heatmaps for multiple chromosomes
-# -directly integrate call to bcftools for summary files?
-# -create directory for per-chromosome sequence files
-# -pass appropriate titles to R script for annotation subsets
-#
-# LONG-TERM GOALS:
-# -Integrate somatic mutation info
-# -Better integration of different frequency class info (e.g. shared plots)
-# -Hidden Markov Model
-#
 ##############################################################################
 
 ##############################################################################
@@ -63,6 +34,7 @@ my $chr;
 my $mac;
 my $binwidth=100000;
 my $adj=0;
+my $data="full";
 my $cpg='';
 my $hot='';
 my $mask_flag='';
@@ -73,6 +45,7 @@ GetOptions ('chr=i'=> \$chr,
 'mac=i'=> \$mac,
 'b=i' => \$binwidth,
 'adj=i' => \$adj,
+'data=s' => \$data,
 'cpg' => \$cpg,
 'hot' => \$hot,
 'mf' => \$mask_flag,
@@ -149,6 +122,8 @@ if ($adj!=0) {
 	$subseq = $adj*2+1;
 }
 
+my $bw=$binwidth/1000;
+
 my $nextchr;
 if ($chr<22) {
 	$nextchr=$chr+1;
@@ -159,13 +134,10 @@ if ($chr<22) {
 ##############################################################################
 # Read in files and initialize outputs
 # download hg37 from nih.gov if missing
-# -Will eventually update summary file location to match pipe.pl
-# 
-# For human-chimp, comment/uncomment line 184 and line 192
 ##############################################################################
 ####OLD####my $f_summ = "/net/bipolar/jedidiah/bcftools/summaries/$macl/all/chr$chr.$macl.summary.txt";
 
-my $f_summ = "/net/bipolar/jedidiah/testpipe/summaries/$macl/chr$chr.summary"; #main line for full processing
+my $f_summ = "/net/bipolar/jedidiah/testpipe/summaries/${macl}_${data}/chr$chr.summary"; #main line for full processing
 # my $f_summ = "$parentdir/smaug-sandbox/scripts/human_chimp_chr10.summary";
 # my $f_summ = "/net/bipolar/jedidiah/testpipe/summaries/chr10.common.summary";
 # my $f_summ = "/net/bipolar/jedidiah/cur_vs_anc.summary";
@@ -173,7 +145,7 @@ my $f_summ = "/net/bipolar/jedidiah/testpipe/summaries/$macl/chr$chr.summary"; #
 # my $f_summ = "/net/bipolar/jedidiah/testpipe/vcfs/chr20.rq.summary";
 open my $summ, '<', $f_summ or die "can't open $f_summ: $!";
 
-my $outfile = "$parentdir/output/chr$chr.expanded.summary";
+my $outfile = "$parentdir/output/${subseq}bp_${bw}k/chr$chr.expanded.summary";
 open(OUT, '>', $outfile) or die "can't write to $outfile: $!\n";
 
 if ($mac==1) {
@@ -183,7 +155,7 @@ if ($mac==1) {
 	print OUT "CHR\tPOS\tREF\tALT\tANNO\t";
 }
 
-my $bin_out = "$parentdir/output/chr$chr.bin_out.txt";
+my $bin_out = "$parentdir/output/${subseq}bp_${bw}k/chr$chr.bin_out.txt";
 open(BIN, '>', $bin_out) or die "can't write to $bin_out: $!\n";
 
 my $seq=&getRef();
@@ -837,6 +809,7 @@ ref5.pl - SMAUG: Singleton Mutation Analysis Utility with Graphics
 		--mac			minor allele count
 		--b			binwidth
 		--adj			number of adjacent nucleotides
+		--data			data subset to use
 		--cpg			CpG site analysis?
 		--hot			recombination hotspots?
 		--anno			annotation(s)
@@ -865,6 +838,10 @@ specify bin width for histograms (default is 100,000)
 
 specify number of adjacent nucleotides in either direction from the variant to include in analysis
 default includes only the adjacent 3' nucleotide for CpG distinction
+
+=item B<--data>
+
+specify whether to use summaries from all singletons (full) or those that pass the strict filters (strict)
 
 =item B<--cpg>
 
@@ -897,12 +874,12 @@ Normal_Splice_Site
 
 =head1 DESCRIPTION
 
-B<my-prog.pl> is doing something.
+B<ref5.pl> annotates summary files and counts motifs in genome over fixed-width windows
 
 =head1 AUTHOR
 
 =over
 
-Jedidiah Carlson E<10> Department of Biostatistics E<10> University of Michigan
+Jedidiah Carlson E<10> Department of Bioinformatics E<10> University of Michigan
 
 =cut

@@ -133,3 +133,10 @@ names(coefdat)<-c("Sequence", "(Intercept)", covnames)
 coeffile <- paste0(parentdir, "/output/logmod_data/", categ, "_", bink, "kb_coefs.txt")
 write.table(coefdat, coeffile, col.names=F, row.names=F, quote=F, sep="\t")
 
+
+if(run_predict){
+	outfile<-paste0(parentdir, "/output/predicted/", categ, "_", bink, "kb_out.txt")
+	predictcmd<-paste0("perl predict.pl --coefs ", coeffile, " --data ", fullfile, " --out ", outfile)
+	system(predictcmd)
+}
+

@@ -48,6 +48,7 @@ suppressMessages(usePackage(reshape2))
 suppressMessages(usePackage(RColorBrewer))
 suppressMessages(usePackage(MASS))
 suppressMessages(usePackage(speedglm))
+suppressMessages(usePackage(boot))
 suppressMessages(usePackage(devtools))
 suppressMessages(usePackage(ggbio))
 

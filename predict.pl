@@ -14,17 +14,20 @@ use File::Basename;
 use File::Path qw(make_path);
 use List::Util qw(first max maxstr min minstr reduce shuffle sum);
 use Math::Round;
-# use Parallel::ForkManager;
 
 my $parentdir="/net/bipolar/jedidiah/mutation";
 
-my $f_coefs = "$parentdir/output/logmod_data/coefs_odd_10_10kb_chr.txt";
-my $f_data = "$parentdir/output/logmod_data/AT_GC_full.txt";
-my $outfile = "$parentdir/output/predicted/AT_GC_out2.txt";
+my $chr;
+my $cat='';
+my $binw='';
 
-GetOptions('coefs=s' => \$f_coefs,
-'data=s' => \$f_data,
-'out=s' => \$outfile);
+GetOptions('chr' => \$chr,
+			'cat' => \$cat,
+			'binw' => \$binw);
+			
+my $f_coefs = "$parentdir/output/logmod_data/${cat}_${binw}_coefs.txt";
+my $f_data = "$parentdir/output/logmod_data/chr${chr}_${cat}_sites.txt";
+my $outfile = "$parentdir/output/predicted/chr${chr}_${cat}_predicted.txt";
 
 # initialize covariate data
 open my $coefs, '<', $f_coefs or die "can't open $f_coefs: $!";

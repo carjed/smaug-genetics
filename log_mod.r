@@ -9,9 +9,6 @@ suppressMessages(require(foreach))
 suppressMessages(require(doSNOW))
 
 # Set parameters
-chunksize<-10000000
-numsites<-50306358  #<- need to update numsites for each of the 6 categories
-numchunks<-ceiling(numsites/chunksize)
 mu<-1e-8
 nbases<-5.8e9 #<- number of non-N bases
 nind<-3612 #<- number of individuals in sample
@@ -21,10 +18,10 @@ numgens<-ceiling(nsing/indmuts) #<- estimate of maximum age (in generations) of 
 meangens<-mean(1:numgens) #<- estimate average age of singleton (~100 gens)
 denom<-nind*meangens
 
-plots<-data.frame()
-mut_cats<-unique(dat_5bp_100k$summ$Category)
+# Fast list of 6 basic categories from agg_5bp_100k data
+mut_cats<-unique(agg_5bp_100k$Category2[nchar(agg_5bp_100k$Category2)==5])
 
-catopt<-substr(categ,0,2)
+catopt<-substr(categ,0,2) # used to subset reference data to only AT or GC bases
 # summfile1 <- dat_5bp_100k$summ[(dat_5bp_100k$summ$POS>=6000000 & dat_5bp_100k$summ$POS<=7000000 & dat_5bp_100k$summ$CHR=="20" & dat_5bp_100k$summ$Category==categ), c("CHR", "POS", "BIN", "Sequence")]
 
 ##############################################################################
@@ -45,6 +42,7 @@ if(!exists("summfile1")){
 ##############################################################################
 # trainchr <- seq(1,10,2)
 trainchr <- c(20:22)
+trainstr<-paste(trainchr, collapse=",")
 nchr<-length(trainchr)
 
 fullfile <- paste0(parentdir, "/output/logmod_data/",categ,"_full.txt")
@@ -74,8 +72,9 @@ if(!file.exists(fullfile)){
 }
 
 ##############################################################################
-# Subset data by motif (using grep in system command) and run motif-specific model,
-# creating data frame of parameter estimates (to be passed to prediction function)
+# Subset data by motif (using grep in system command) and run motif-specific 
+# model, creating data frame of parameter estimates 
+# (to be passed to prediction function)
 ##############################################################################
 cat("Running model...\n")
 
@@ -104,39 +103,21 @@ for(i in 1:length(motifs)){
 	cat("Finished category", i, "of 256", " (", tottime, "s)\n")
 }
 
-# in progress: parallelizing logisitic regression model
-# coefdat<-foreach(i=1:length(motifs), .combine="rbind") %dopar%{
-	# motif<-substr(motifs[i], 0, 5)
-	# cat("Running model", i, "on", motif, "sites...\n")
-	# modtime <- proc.time()
-
-	# tmpfile <- paste0(parentdir, "/output/logmod_data/", categ, "_tmp.txt")
-	# grepcmd <- paste0("grep ", motif, " ", fullfile, " > ", tmpfile)
-	# system(grepcmd)
-
-	# da1<-read.table(tmpfile, header=F, stringsAsFactors=F)
-	# names(da1)<-danames
-
-	# log_mod<-speedglm(mut~PC1+PC2+PC3+PC4+PC5+PC6+PC7+PC8+PC9+PC10+PC11+PC12+cons, data=da1, family=binomial(), maxit=50)
-
-	# z<-as.numeric(log_mod$coefficients)
-	
-	# coefdat<-rbind(coefdat, z)
-	
-	# tottime<-(proc.time()-modtime)[3]
-	# cat("Done (", tottime, "s)\n")
-# }
-
 coefdat<-cbind(motifs, coefdat)
 names(coefdat)<-c("Sequence", "(Intercept)", covnames)
 
 coeffile <- paste0(parentdir, "/output/logmod_data/", categ, "_", bink, "kb_coefs.txt")
 write.table(coefdat, coeffile, col.names=F, row.names=F, quote=F, sep="\t")
 
-
+##############################################################################
+# If prediction is specified, creates and executes a slurm batch file 
+# to run predictions over all chromosomes specified in set
+##############################################################################
 if(run_predict){
-	outfile<-paste0(parentdir, "/output/predicted/", categ, "_", bink, "kb_out.txt")
-	predictcmd<-paste0("perl predict.pl --coefs ", coeffile, " --data ", fullfile, " --out ", outfile)
-	system(predictcmd)
+	buildbatchcmd<-paste0("perl ", parentdir, "/smaug-genetics/build_batch.pl --trchr ", trainstr, " --cat ", categ)
+	system(buildbatchcmd)
+	
+	slurmcmd<-paste0("sbatch ", parentdir, "/smaug-genetics/slurm_predict.txt")
+	system(slurmcmd)
 }
 

@@ -38,7 +38,7 @@ if(!exists("summfile1")){
 # Run perl script to build input data for model
 # -outputs 1 row per site with reference base same as category
 # -singletons have mut=1, otherwise 0
-# -covariates are PCs from the mut_cov2 file; script adds conservation score
+# -covariates are PCs from the 100kb mut_cov2 file; script adds conservation score
 ##############################################################################
 # trainchr <- seq(1,10,2)
 trainchr <- c(20:22)
@@ -49,8 +49,10 @@ fullfile <- paste0(parentdir, "/output/logmod_data/",categ,"_full.txt")
 
 if(!file.exists(fullfile)){
 
-	cat("Building data from training set...\n")
 	modtime<-proc.time()
+	cat("Building data from training set...\n")
+	
+	mutcov2file<-paste0(parentdir, "/output/logmod_data/100kb_mut_cov2.txt")
 	
 	for(chr in trainchr){	
 

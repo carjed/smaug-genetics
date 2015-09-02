@@ -44,6 +44,7 @@ args <- getArgs(
 # from default CRAN repository
 suppressMessages(usePackage(ggplot2))
 suppressMessages(usePackage(dplyr))
+suppressMessages(usePackage(tidyr))
 suppressMessages(usePackage(reshape2))
 suppressMessages(usePackage(RColorBrewer))
 suppressMessages(usePackage(MASS))
@@ -189,7 +190,7 @@ if(pcs==1){
 }
 
 danames<-names(mut_cov)
-covnames<-danames[-c(1:5)]
+covnames<-danames[-c(1:2, 14)]
 
 tottime<-(proc.time()-ptm)[3]
 cat("Done (", tottime, "s)\n")

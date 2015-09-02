@@ -29,8 +29,11 @@ for(i in 1:length(mut_cats)){
 	full_cv <- cv.glm(data = aggcat, glmfit = mut_lm_full, K = 10)
 	
 	mspe <- c(feat_cv$delta[2], motif_cv$delta[2], full_cv$delta[2])
+	rmse <- sqrt(mspe)
+	meanct <- mean(aggcat$obs)
+	pcterr <- rmse/meanct
 	mspe.res <- c("features", "5bp", "5bp+features")
-	mspe.dat <- data.frame(Category2=cat1, res=mspe.res, mspe)
+	mspe.dat <- data.frame(Category2=cat1, res=mspe.res, mspe, rmse, meanct, pcterr)
 	compare.err <-rbind(compare.err, mspe.dat)
 	
 	fits_feat <- mut_lm_feat$fitted.values
@@ -184,7 +187,9 @@ ggsave(hierfile5, width=18, height=18)
 # Plot barcharts comparing obs/exp correlation for different models
 mod.corr <- compare.all %>% 
 			group_by(Category2, res) %>%
-			summarise(num=length(exp), cor=cor(exp, obs, method="pearson"))
+			summarise(num=length(exp), 
+				cor=cor(exp, obs, method="pearson"),
+				cor.p=cor.test(exp, obs, method="pearson")$p.value)
 mod.corr$SE <- corSE(mod.corr$cor, mod.corr$num)
 limits <- aes(ymax = mod.corr$cor + mod.corr$SE, ymin=mod.corr$cor - mod.corr$SE)
 dodge <- position_dodge(width=0.9)

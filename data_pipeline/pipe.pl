@@ -248,8 +248,8 @@ if ($script==3){
         # my $filename=fileparse($file);
         # my $path=dirname($file);
 		# my $chr = substr($filename, 0, index($filename, '.'));
-		my $file = "/net/bipolar/jedidiah/testpipe/vcfs/merged.str.rs.vcf.gz";
-		my $cmd="bcftools query -i 'FILTER=\"PASS\"' -r $chr -f '%CHROM\t%POS\t%REF\t%ALT\t%INFO/DP\t%INFO/AN\n' $file > $summloc/chr$chr.summary";
+		my $file = "/net/bipolar/jedidiah/1000g.sing.sites.vcf.gz";
+		my $cmd="bcftools query -i 'FILTER=\"PASS\"' -r $chr -f '%CHROM\t%POS\t%REF\t%ALT\t%INFO/THETA\t%INFO/AN\n' $file > $summloc/chr$chr.summary";
 		&forkExecWait($cmd);
 	}
 	

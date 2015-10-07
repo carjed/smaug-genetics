@@ -19,7 +19,7 @@ aggData <- function(datfile, adj){
 	# binfile <- binfile[binfile$CHR=="chr2" & binfile$BIN<=600 & binfile$BIN>=300,]
 	
 	# Plot genome-wide motif heatmaps
-	plot_heatmap <- 1
+	plot_heatmap <- 0
 	if(plot_heatmap==1){
 	
 		# aggseq <- count(summfile, c("Sequence", "Category", "CAT", "COUNT", "SEQ"))
@@ -195,80 +195,53 @@ aggData <- function(datfile, adj){
 		aggseq$rel_prop <- aggseq$num/aggseq$COUNT
 		
 		# ct <- count(summfile,c("CHR","BIN","Category2")) #<-plyr
-		ct <- count(summfile, CHR, BIN, Category2) #<-dplyr
+		# ct <- count(summfile, CHR, BIN, Category2) #<-dplyr
 		# ct.ord <- arrange(ct, Category2)
 		
-		binfile$BIN <- paste0(binfile$CHR,".",binfile$BIN)
+		# NEW VERSION -- need to update so nmotifs is consistent for all 3 categories
+		# currently, motifs without a present singleton in a given bin are not accounted for
+		summagg <- summfile %>% 
+				dplyr::select(CHR, POS, BIN, Sequence, Category2) %>%
+				group_by(CHR, BIN, Sequence, Category2) %>% 
+				summarise(obs=n())
+				
+		summagg <- merge(summagg, aggseq[,c(1,2,7)], by=c("Sequence", "Category2"), all=TRUE) %>%
+					arrange(CHR, BIN)
+		binfile <- gather(binfile, Sequence, Count, 6:ncol(binfile))
+		binfile$CHR <- as.integer(substring(binfile$CHR, 4))
+		binfile <- binfile %>% arrange(substring(Sequence, adj+1, adj+1))
 		
-		binsT <- setNames(data.frame(t(binfile[,-c(1:5)])), binfile$BIN)
-		binsT$Sequence <- rownames(binsT)
-
-		# merge counts per sequence/category with counts of mutable motifs
-		aggseq.m <- merge(aggseq, binsT, by="Sequence")
-
-		# get number of mutable motifs per bin
-		atcg.s <- colSums(aggseq.m[aggseq.m$Category2=="AT_CG",-c(1:7)])
-		atgc.s <- colSums(aggseq.m[aggseq.m$Category2=="AT_GC",-c(1:7)])
-		atta.s <- colSums(aggseq.m[aggseq.m$Category2=="AT_TA",-c(1:7)])
-		gcat.s <- colSums(aggseq.m[aggseq.m$Category2=="GC_AT",-c(1:7)])
-		gccg.s <- colSums(aggseq.m[aggseq.m$Category2=="GC_CG",-c(1:7)])
-		gcta.s <- colSums(aggseq.m[aggseq.m$Category2=="GC_TA",-c(1:7)])
-		cpg_gcat.s <- colSums(aggseq.m[aggseq.m$Category2=="cpg_GC_AT",-c(1:7)])
-		cpg_gccg.s <- colSums(aggseq.m[aggseq.m$Category2=="cpg_GC_CG",-c(1:7)])
-		cpg_gcta.s <- colSums(aggseq.m[aggseq.m$Category2=="cpg_GC_TA",-c(1:7)])
+		b2 <- binfile[rep(seq_len(nrow(binfile)), each=3),]
+		b2$Category <- c(rep(c("AT_CG", "AT_GC", "AT_TA"), nrow(b2)/6),
+						  rep(c("GC_AT", "GC_CG", "GC_TA"), nrow(b2)/6))
+						  
+		b2$Category2 <- ifelse(substr(b2$Sequence,adj+1,adj+2)=="CG", 
+								paste0("cpg_",b2$Category), 
+								b2$Category)
+		b2 <- b2 %>% arrange(CHR, BIN)
+						 
+		# row.names(b2) <- paste0(b2$CHR, "_", b2$BIN, "_", b2$Sequence, "_", b2$Category2)
+		# row.names(summagg) <- paste0(summagg$CHR, "_", summagg$BIN, "_", summagg$Sequence, "_", summagg$Category2)
 		
-		# get expected counts for each row
-		aggseq.m[,8:ncol(aggseq.m)] <- aggseq.m$rel_prop*aggseq.m[,8:ncol(aggseq.m)]
+		# summagg2 <- cbind(summagg, count=b2[,"Count"][match(rownames(summagg), rownames(b2))])
+		summagg2 <- merge(b2, summagg, by=c("CHR", "BIN", "Category2", "Sequence"), all=T)
+		summagg2$exp <- summagg2$rel_prop*summagg2$Count
+				
+		s2 <- summagg2 %>%
+				group_by(CHR, BIN, Category2) %>%
+				summarise(exp=sum(exp, na.rm=T), 
+					obs=sum(obs, na.rm=T), 
+					nmotifs=sum(Count, na.rm=T),
+					motifvar=var(Count),
+					maxn=max(Count),
+					minn=min(Count))
+				
+		# summcor <- summagg2 %>%
+					# group_by(Category2, Sequence) %>%
+					# summarise(cor=cor(exp, obs, use="complete.obs"))
 
-		# sum all sequence combinations for each category/bin
-		atcg <- colSums(aggseq.m[aggseq.m$Category2=="AT_CG",-c(1:7)])
-		atgc <- colSums(aggseq.m[aggseq.m$Category2=="AT_GC",-c(1:7)])
-		atta <- colSums(aggseq.m[aggseq.m$Category2=="AT_TA",-c(1:7)])
-		gcat <- colSums(aggseq.m[aggseq.m$Category2=="GC_AT",-c(1:7)])
-		gccg <- colSums(aggseq.m[aggseq.m$Category2=="GC_CG",-c(1:7)])
-		gcta <- colSums(aggseq.m[aggseq.m$Category2=="GC_TA",-c(1:7)])
-		cpg_gcat <- colSums(aggseq.m[aggseq.m$Category2=="cpg_GC_AT",-c(1:7)])
-		cpg_gccg <- colSums(aggseq.m[aggseq.m$Category2=="cpg_GC_CG",-c(1:7)])
-		cpg_gcta <- colSums(aggseq.m[aggseq.m$Category2=="cpg_GC_TA",-c(1:7)])
 		
-		# aggseq.m<-aggseq.m[(aggseq.m$Category2=="GC_TA" & (substr(aggseq.m$Sequence,2,3)=="TC" | substr(aggseq.m$Sequence,2,3)=="AC")),]
-
-
-		# vector of expected counts
-		exp <- c(atcg, atgc, atta, gcat, gccg, gcta, cpg_gcat, cpg_gccg, cpg_gcta)
-		nmotifs <- c(atcg.s, atgc.s, atta.s, gcat.s, gccg.s, gcta.s, cpg_gcat.s, cpg_gccg.s, cpg_gcta.s)
-
-		# vector of categories
-		catrep <- c(rep("AT_CG",ncol(aggseq.m)-7), rep("AT_GC",ncol(aggseq.m)-7), rep("AT_TA",ncol(aggseq.m)-7), 
-				  rep("GC_AT",ncol(aggseq.m)-7), rep("GC_CG",ncol(aggseq.m)-7), rep("GC_TA",ncol(aggseq.m)-7),
-				  rep("cpg_GC_AT",ncol(aggseq.m)-7), rep("cpg_GC_CG",ncol(aggseq.m)-7), rep("cpg_GC_TA",ncol(aggseq.m)-7))
-				  
-		z<-unlist(strsplit(names(exp), "[.]"))
-		CHR<-substring(z[seq(1, length(z), 2)], 4)
-		BIN<-z[seq(2, length(z), 2)]
-		
-		# create data frame with observed, expected, and bin	
-		# BIN <- as.integer(gsub(".*\\.", "", names(exp)))
-		# CHR <- as.integer(substring(gsub("\\..*", "", names(exp)), 4))
-		
-		oe2 <- data.frame(CHR, BIN, Category2=catrep, exp, nmotifs)
-		oe2 <- merge(oe2,ct, by=c("CHR","Category2","BIN"))
-		names(oe2)[6] <- "obs"
-		oe2$res <- paste0(nbp,"bp")
-
-		# get odds ratio for each bin/category
-		oe2$odds <- oe2$obs/oe2$exp
-		oe2$diff <- oe2$obs-oe2$exp
-		oe2$Category2 <- as.character(oe2$Category2)
-
-		# order by OR and add column of ranks
-		# oe2.ord <- oe2[order(oe2$Category2, oe2$odds),]
-		# oe2.ord <- ddply(oe2.ord, .(Category2), transform, rk=seq_along(Category2))
-		# oe2.ord$res <- paste0(nbp,"bp")
-
-		# return(oe2.ord)
-		
-		datalist<- list("agg"=aggseq, "oe"=oe2)
+		datalist<- list("agg"=aggseq, "oe"=s2, "summagg2"=summagg2)
 		return(datalist)
 	}
 }

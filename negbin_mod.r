@@ -9,24 +9,25 @@ ggplot(agg_oe, aes(x=value, fill=var))+
 	geom_histogram(alpha=0.5, position="identity")+
 	facet_wrap(~Category2, scales="free")+
 	theme_bw()
-	
+
 cathistfile <- paste0(parentdir, "/images/obs_hist.png")
 ggsave(cathistfile)
 
 ##############################################################################
 # For each motif, calculates correlation between observed and mutable sites,
 # then plots this correlation against the motif frequency
-# 
-# In AT>NN and CpG GC>NN categories, appears to be a relationship where more 
+#
+# In AT>NN and CpG GC>NN categories, appears to be a relationship where more
 # common motifs are associated with negative or positive correlations,
-# respectively, e.g., for AT>CG mutations, more common motifs have a strong 
-# negative correlation with 
+# respectively, e.g., for AT>CG mutations, more common motifs have a strong
+# negative correlation with
 ##############################################################################
 agg_cov2 <- summagg2 %>%
-				group_by(Category2, Sequence) %>%
-				summarise(corgc=cor(obs, prop_GC, use="complete.obs"), 
-				cornm=cor(obs, Count, use="complete.obs"),
-				nmotifs=sum(Count), rel_prop=mean(rel_prop, na.rm=T))
+	group_by(Category2, Sequence) %>%
+		summarise(corgc=cor(obs, prop_GC, use="complete.obs"),
+		cornm=cor(obs, Count, use="complete.obs"),
+		nmotifs=sum(Count),
+		rel_prop=mean(rel_prop, na.rm=T))
 
 # agg_cov2 %>% summarise(cor=cor(cor, nmotifs, method="spearman"))
 
@@ -39,7 +40,7 @@ ggplot(agg_cov2, aes(x=corgc, y=cornm, colour=mgc, size=nmotifs))+
 	xlab("# mutable sites~singleton correlation")+
 	ylab("%GC~singleton correlation")+
 	theme_bw()
-	
+
 gccorfile <- paste0(parentdir, "/images/nmotifs_vs_gccor.png")
 ggsave(gccorfile)
 
@@ -63,34 +64,35 @@ agg_cov2 <- merge(summagg2, mut_cov, by=c("CHR", "BIN"))
 agg_cov2$diff <- agg_cov2$exp-agg_cov2$obs
 agg_cov2$err <- agg_cov2$diff/agg_cov2$obs
 
-err_motif <- agg_cov2 %>% 
-				group_by(Category, Sequence) %>% 
-				summarise(rel_prop=mean(rel_prop, na.rm=T), 
-					corgc=cor(err, prop_GC.x, use="complete.obs"), 
-					corrc=cor(err, RATE, use="complete.obs"), 
-					coroe=cor(obs, exp, use="complete.obs"), 
-					nmotifs=sum(Count),
-					meanerr=mean(err, na.rm=T)) %>% 
-				arrange(Category, corgc) %>% 
-				mutate(rank=rank(corgc))
+err_motif <- agg_cov2 %>%
+	group_by(Category, Sequence) %>%
+	summarise(rel_prop=mean(rel_prop, na.rm=T),
+		corgc=cor(err, prop_GC.x, use="complete.obs"),
+		corrc=cor(err, RATE, use="complete.obs"),
+		coroe=cor(obs, exp, use="complete.obs"),
+		nmotifs=sum(Count),
+		meanerr=mean(err, na.rm=T)) %>%
+	arrange(Category, corgc) %>%
+	mutate(rank=rank(corgc))
 
-				
-err_motif$Category2 <- ifelse(substr(err_motif$Sequence,adj+1,adj+2)=="CG", 
-								paste0("cpg_",err_motif$Category), 
+
+err_motif$Category2 <- ifelse(substr(err_motif$Sequence,adj+1,adj+2)=="CG",
+								paste0("cpg_",err_motif$Category),
 								err_motif$Category)
-				
-# plotdat<-err_motif[err_motif$Category2=="GC_AT",]		
+
+# plotdat<-err_motif[err_motif$Category2=="GC_AT",]
 plotdat<-err_motif
 ggplot(plotdat,
 		aes(x=rank, y=corgc, group=Category, colour=Category2, size=log(rel_prop)))+
 	geom_point(alpha=0.7)+
 	scale_y_continuous(breaks=seq(-0.8, 0.8, 0.1))+
 	scale_x_continuous(breaks=c(0,64,128,192,256))+
-	# scale_size_continuous(breaks=seq(log(min(plotdat$rel_prop)), log(max(plotdat$rel_prop)),by=1))+
+	# scale_size_continuous(breaks=seq(log(min(plotdat$rel_prop)),
+		# log(max(plotdat$rel_prop)),by=1))+
 	xlab("Motif")+
 	ylab("Error~GC Correlation")+
 	theme_bw()
-	
+
 gcerrfile <- paste0(parentdir, "/images/err-GC_cor.png")
 ggsave(gcerrfile)
 
@@ -99,10 +101,11 @@ ggplot(plotdat,
 	geom_boxplot()+
 	# scale_y_continuous(breaks=seq(-0.1, 0.8, 0.1))+
 	# scale_x_continuous(breaks=c(0,64,128,192,256))+
-	# scale_size_continuous(breaks=seq(log(min(plotdat$rel_prop)), log(max(plotdat$rel_prop)),by=1))+
+	# scale_size_continuous(breaks=seq(log(min(plotdat$rel_prop)),
+		# log(max(plotdat$rel_prop)),by=1))+
 	ylab("Mean % Error")+
 	theme_bw()
-	
+
 gcboxfile <- paste0(parentdir, "/images/err-GC_box.png")
 ggsave(gcboxfile)
 
@@ -131,11 +134,11 @@ ggsave(gcfile)
 ##############################################################################
 
 # Get 1bp relative rates
-sa2<-summagg2 %>% 
-	group_by(CHR, BIN, Category2) %>% 
+sa2<-summagg2 %>%
+	group_by(CHR, BIN, Category2) %>%
 	summarise(ct=sum(Count, na.rm=T), obs=sum(obs, na.rm=T))
-sa3<-sa2 %>% 
-	group_by(Category2) %>% 
+sa3<-sa2 %>%
+	group_by(Category2) %>%
 	summarise(ct=sum(ct), obs=sum(obs), rel_prop=obs/ct)
 
 a3<-merge(agg_cov, sa3[,c(1,2,4)], by="Category2")
@@ -147,11 +150,14 @@ ggplot(plotdat, aes(x=prop_GC, y=obs))+
 	geom_point(alpha=0.3)+
 	facet_wrap(~Category2, scales="free")+
 	theme_bw()
-	
+
 gcobsfile <- paste0(parentdir, "/images/gc_vs_obs.png")
 ggsave(gcobsfile, width=12, heigh=12)
 
-mc2<-a3 %>% group_by(Category2) %>% summarise(cor1=cor(exp, obs, method="pearson"), cor2=cor(exp1, obs, method="pearson"))
+mc2 <- a3 %>%
+	group_by(Category2) %>%
+	summarise(cor1=cor(exp, obs, method="pearson"),
+		cor2=cor(exp1, obs, method="pearson"))
 
 # Motifs + genomic features
 compare.all <- data.frame()
@@ -162,9 +168,9 @@ mut_cats <- unique(agg_5bp_100k$Category2)
 for(i in 1:length(mut_cats)){
 	cat1 <- mut_cats[i]
 	aggcat <- a3[a3$Category2==mut_cats[i],]
-	
+
 	aggcat$exp_s <- sample(aggcat$obs, length(aggcat$obs), replace=T)
-	
+
 	# Fit models with all data
 	feat_mod_formula <- as.formula(paste("obs~", paste(covnames, collapse="+")))
 	full_mod_formula <- as.formula(paste("obs~exp+", paste(covnames, collapse="+")))
@@ -174,20 +180,19 @@ for(i in 1:length(mut_cats)){
 	mut_lm_1bp <- glm.nb(obs~exp1, data=aggcat)
 	# mut_lm_3bp <- glm.nb(obs~exp3, data=aggcat)
 	mut_lm_full <- glm.nb(full_mod_formula, data=aggcat)
-	
+
 	ll_5bp <- data.frame(Category2=cat1, params=256, ll=summary(mut_lm_motif)$twologlik)
 	ll_1bp <- data.frame(Category2=cat1, params=6, ll=summary(mut_lm_1bp)$twologlik)
-	
+
 	logliks <- rbind(logliks, ll_5bp, ll_1bp)
-	
-	
-	# 10-fold cross-validation--may need to update so expected counts are re-calculated 
-	# for each 1/N subset
+
+	# 10-fold cross-validation--may need to update so expected counts are
+	# re-calculated for each 1/N subset
 	gc_cv <- cv.glm(data=aggcat, glmfit=mut_lm_gc, K=10)
 	feat_cv <- cv.glm(data=aggcat, glmfit=mut_lm_feat, K=10)
 	motif_cv <- cv.glm(data=aggcat, glmfit=mut_lm_motif, K=10)
 	full_cv <- cv.glm(data=aggcat, glmfit=mut_lm_full, K=10)
-	
+
 	mspe <- c(gc_cv$delta[2], feat_cv$delta[2], motif_cv$delta[2], full_cv$delta[2])
 	rmse <- sqrt(mspe)
 	meanct <- mean(aggcat$obs)
@@ -195,52 +200,56 @@ for(i in 1:length(mut_cats)){
 	mspe.res <- c("GC", "features", "motifs", "motifs+features")
 	mspe.dat <- data.frame(Category2=cat1, res=mspe.res, mspe, rmse, meanct, pcterr)
 	compare.err <-rbind(compare.err, mspe.dat)
-	
+
 	fits_gc <- mut_lm_gc$fitted.values
 	names(fits_gc) <- paste0(aggcat$CHR,".",aggcat$BIN)
-	
+
 	fits_feat <- mut_lm_feat$fitted.values
 	names(fits_feat) <- paste0(aggcat$CHR,".",aggcat$BIN)
-	
+
 	fits_motif <- mut_lm_motif$fitted.values
 	names(fits_motif) <- paste0(aggcat$CHR,".",aggcat$BIN)
-	
+
 	fits_full <- mut_lm_full$fitted.values
 	names(fits_full) <- paste0(aggcat$CHR,".",aggcat$BIN)
-	
+
 	BIN <- as.integer(gsub(".*\\.", "", names(fits_feat)))
 	CHR <- as.integer(gsub("\\..*", "", names(fits_feat)))
-	
-	model_dat_gc <- data.frame(CHR,Category2=cat1, BIN, 
-				   exp=fits_gc,
-				   obs=aggcat$obs,
-				   exp_s=aggcat$exp_s,
-				   stringsAsFactors=F)			   
+
+	model_dat_gc <- data.frame(CHR,Category2=cat1, BIN,
+		exp=fits_gc,
+		obs=aggcat$obs,
+		exp_s=aggcat$exp_s,
+		stringsAsFactors=F)
 	model_dat_gc$res <- "GC"
-	
-	model_dat_feat <- data.frame(CHR,Category2=cat1, BIN, 
-				   exp=fits_feat,
-				   obs=aggcat$obs,
-				   exp_s=aggcat$exp_s,
-				   stringsAsFactors=F)			   
+
+	model_dat_feat <- data.frame(CHR,Category2=cat1, BIN,
+		exp=fits_feat,
+		obs=aggcat$obs,
+		exp_s=aggcat$exp_s,
+		stringsAsFactors=F)
 	model_dat_feat$res <- "features"
-	
-	model_dat_motif <- data.frame(CHR,Category2=cat1, BIN, 
-				   exp=fits_motif, 
-				   # exp=aggcat$exp,
-				   obs=aggcat$obs,
-				   exp_s=aggcat$exp_s,
-				   stringsAsFactors=F)		   
+
+	model_dat_motif <- data.frame(CHR,Category2=cat1, BIN,
+		exp=fits_motif,
+		# exp=aggcat$exp,
+		obs=aggcat$obs,
+		exp_s=aggcat$exp_s,
+		stringsAsFactors=F)
 	model_dat_motif$res <- "motifs"
-	
-	model_dat_full <- data.frame(CHR,Category2=cat1, BIN, 
-				   exp=fits_full, 
-				   obs=aggcat$obs,
-				   exp_s=aggcat$exp_s,
-				   stringsAsFactors=F)			   
+
+	model_dat_full <- data.frame(CHR,Category2=cat1, BIN,
+		exp=fits_full,
+		obs=aggcat$obs,
+		exp_s=aggcat$exp_s,
+		stringsAsFactors=F)
 	model_dat_full$res <- "motifs+features"
-	
-	compare.all <- rbind(compare.all, model_dat_gc, model_dat_feat, model_dat_motif, model_dat_full)
+
+	compare.all <- rbind(compare.all,
+		model_dat_gc,
+		model_dat_feat,
+		model_dat_motif,
+		model_dat_full)
 
 	# z <- summary(mut_lm_full)
 	# print(cat1)
@@ -252,15 +261,20 @@ ggplot(logliks, aes(x=params, y=ll, group=Category2, colour=Category2))+
 	theme_bw()+
 	xlab("# parameters")+
 	ylab("2 log likelihood")+
-ggsave("/net/bipolar/jedidiah/mutation/images/ll.png") 
+ggsave("/net/bipolar/jedidiah/mutation/images/ll.png")
 
 # Update comparison data frame
-# compare.all<-rbind(agg_5bp_100k[,c(1,2,3,4,5,8)], d, d1) #<- this version uses direct estimates from motif rates; not fair comparison
-compare.all$res <- factor(compare.all$res, levels = c("GC", "features", "motifs", "motifs+features"))
+# compare.all<-rbind(agg_5bp_100k[,c(1,2,3,4,5,8)], d, d1)
+#^ this version uses direct estimates from motif rates; not fair comparison
+compare.all$res <- factor(compare.all$res,
+	levels = c("GC", "features", "motifs", "motifs+features"))
 compare.all$diff <- compare.all$obs-compare.all$exp
 compare.all$diff_s <- compare.all$obs-compare.all$exp_s
 compare.all$Category2 <- factor(compare.all$Category2)
-# levels(compare.all$Category2) <- c("AT>CG", "AT>GC", "AT>TA", "(CpG)GC>AT", "(CpG)GC>CG", "(CpG)GC>TA", "GC>AT", "GC>CG", "GC>TA")
+# levels(compare.all$Category2) <- c(
+	# "AT>CG", "AT>GC", "AT>TA",
+	# "(CpG)GC>AT", "(CpG)GC>CG", "(CpG)GC>TA",
+	# "GC>AT", "GC>CG", "GC>TA")
 
 ca.gp <- group_by(compare.all, Category2, res)
 compare.all <- mutate(ca.gp, dm=mean(diff), dsd=sd(diff), zscore=(diff-dm)/dsd)
@@ -268,21 +282,26 @@ compare.all$err <- abs(compare.all$diff)/compare.all$obs
 compare.all$err_s <- abs(compare.all$diff_s)/compare.all$obs
 
 # get mean absolute error for each category/model
-ca <- compare.all %>% 
-		group_by(Category2, res) %>%
-		summarise(meanerr_s=mean(err_s), meanerr=mean(err), sderr=std(err), meanobs=mean(obs), sdobs=std(obs), fold=meanerr_s/meanerr)
-		
-# Get mean fold-improvement of model error vs. error from random draws from distributions
+ca <- compare.all %>%
+	group_by(Category2, res) %>%
+	summarise(meanerr_s=mean(err_s),
+		meanerr=mean(err),
+		sderr=std(err),
+		meanobs=mean(obs),
+		sdobs=std(obs),
+		fold=meanerr_s/meanerr)
+
+# Get mean fold-improvement of model error vs. error from random draws from dist
 ca.fold <- ca %>% group_by(res) %>% summarise(mean=mean(fold))
 
 caout <- paste0(parentdir, "/output/", nbp, "bp_err.txt")
 write.table(ca, caout, col.names=T, row.names=F, quote=F, sep="\t")
 cad <- dcast(data.frame(ca), Category2~res, value.var="meanerr")
 
-# ac2 <- merge(compare.all, mut_cov, by=c("CHR", "BIN")) %>% 
+# ac2 <- merge(compare.all, mut_cov, by=c("CHR", "BIN")) %>%
 	# group_by("Category2") %>%
 	# summarise(corgc=cor(diff, prop_GC))
-	
+
 
 # Function to compute standard error for correlations
 corSE<-function(corval, ct){
@@ -297,12 +316,12 @@ p2 <- ggplot(agg_5bp_100k, aes(x=obs, y=nmotifs))+
 	ylab("Mutable motifs")+
 	xlab("Observed count")+
 	theme_bw()+
-	theme(axis.title.y=element_text(size=16), 
-	      axis.text.y=element_text(size=14),
-		  axis.title.x=element_text(size=16), 
-	      axis.text.x=element_text(size=14),
-		  legend.title=element_text(size=16),
-		  legend.text=element_text(size=14))
+	theme(axis.title.y=element_text(size=16),
+		axis.text.y=element_text(size=14),
+		axis.title.x=element_text(size=16),
+		axis.text.x=element_text(size=14),
+		legend.title=element_text(size=16),
+		legend.text=element_text(size=14))
 
 hierfile8 <- paste0(parentdir, "/images/raw_motif_pred_vs_obs.png")
 ggsave(hierfile8, width=18, height=18)
@@ -324,12 +343,12 @@ p2 <- ggplot(plotdat, aes(x=obs, y=exp, colour=res))+
 	ylab("Predicted count")+
 	xlab("Observed count")+
 	theme_bw()+
-	theme(axis.title.y=element_text(size=16), 
-	      axis.text.y=element_text(size=14),
-		  axis.title.x=element_text(size=16), 
-	      axis.text.x=element_text(size=14),
-		  legend.title=element_text(size=16),
-		  legend.text=element_text(size=14))
+	theme(axis.title.y=element_text(size=16),
+		axis.text.y=element_text(size=14),
+		axis.title.x=element_text(size=16),
+		axis.text.x=element_text(size=14),
+		legend.title=element_text(size=16),
+		legend.text=element_text(size=14))
 
 hierfile7 <- paste0(parentdir, "/images/negbin_motif_pred_vs_obs.png")
 ggsave(hierfile7, width=18, height=18)
@@ -344,12 +363,12 @@ p2 <- ggplot(compare.all, aes(x=obs, y=exp, colour=res))+
 	ylab("Predicted count")+
 	xlab("Observed count")+
 	theme_bw()+
-	theme(axis.title.y=element_text(size=16), 
-	      axis.text.y=element_text(size=14),
-		  axis.title.x=element_text(size=16), 
-	      axis.text.x=element_text(size=14),
-		  legend.title=element_text(size=16),
-		  legend.text=element_text(size=14))
+	theme(axis.title.y=element_text(size=16),
+		axis.text.y=element_text(size=14),
+		axis.title.x=element_text(size=16),
+		axis.text.x=element_text(size=14),
+		legend.title=element_text(size=16),
+		legend.text=element_text(size=14))
 
 hierfile4 <- paste0(parentdir, "/images/negbin_all_pred_vs_obs.png")
 ggsave(hierfile4, width=18, height=18)
@@ -365,23 +384,23 @@ p2 <- ggplot(plotdat, aes(x=BIN, y=zscore, colour=res))+
 	ylab("Error")+
 	xlab(NULL)+
 	theme_bw()+
-	theme(axis.title.y=element_text(size=16), 
-	      axis.text.y=element_text(size=14),
-		  legend.title=element_text(size=16),
-		  legend.text=element_text(size=14),
-		  axis.text.x=element_blank(), 
-		  axis.ticks.x=element_blank())
+	theme(axis.title.y=element_text(size=16),
+		axis.text.y=element_text(size=14),
+		legend.title=element_text(size=16),
+		legend.text=element_text(size=14),
+		axis.text.x=element_blank(),
+		axis.ticks.x=element_blank())
 
 hierfile5 <- paste0(parentdir, "/images/hier_diffs_pt5.png")
 ggsave(hierfile5, width=18, height=18)
 
 # Plot barcharts comparing obs/exp correlation for different models
-mod.corr <- compare.all %>% 
-			filter(exp>100) %>%
-			group_by(Category2, res) %>%
-			summarise(num=length(exp), 
-				cor=cor(exp, obs, method="pearson"),
-				cor.p=cor.test(exp, obs, method="pearson")$p.value)
+mod.corr <- compare.all %>%
+	filter(exp>100) %>%
+	group_by(Category2, res) %>%
+	summarise(num=length(exp),
+		cor=cor(exp, obs, method="pearson"),
+		cor.p=cor.test(exp, obs, method="pearson")$p.value)
 mod.corr$SE <- corSE(mod.corr$cor, mod.corr$num)
 limits <- aes(ymax = mod.corr$cor + mod.corr$SE, ymin=mod.corr$cor - mod.corr$SE)
 dodge <- position_dodge(width=0.9)
@@ -395,17 +414,19 @@ ggplot(mod.corr, aes(x=Category2, y=cor, fill=res))+
 	geom_errorbar(limits, position=dodge, width=0.25)+
 	theme_bw()+
 	theme(legend.title = element_text(size=18),
-		  legend.text = element_text(size=16),
-		  axis.title.x = element_text(size=20),
-		  axis.title.y = element_text(size=20),
-		  axis.text.y = element_text(size=16), 
-		  axis.text.x = element_text(size=16, angle = 45,  vjust=1, hjust=1.01))
+		legend.text = element_text(size=16),
+		axis.title.x = element_text(size=20),
+		axis.title.y = element_text(size=20),
+		axis.text.y = element_text(size=16),
+		axis.text.x = element_text(size=16, angle = 45,  vjust=1, hjust=1.01))
 
-modelbar <- paste0(parentdir, "/images/gw_5bp_vs_mod.png")		  
+modelbar <- paste0(parentdir, "/images/gw_5bp_vs_mod.png")
 ggsave(modelbar, width=7, height=7)
 
 # Plot barcharts comparing 10-fold cross validation MSPE
-compare.err$res <- factor(compare.err$res, levels = c("GC", "features", "motifs", "motifs+features"))
+compare.err$res <- factor(compare.err$res,
+	levels = c("GC", "features", "motifs", "motifs+features"))
+
 ggplot(compare.err, aes(x=Category2, y=mspe, fill=res))+
 	geom_bar(stat="identity", position=dodge)+
 	scale_colour_manual("Predictor", values=myPaletteCat(8)[5:8])+
@@ -414,12 +435,12 @@ ggplot(compare.err, aes(x=Category2, y=mspe, fill=res))+
 	ylab("MSPE")+
 	theme_bw()+
 	theme(legend.title = element_text(size=18),
-		  legend.text = element_text(size=16),
-		  axis.title.y = element_text(size=20),
-		  axis.title.x = element_blank(),
-		  axis.text.y = element_text(size=16),
-		  axis.text.x = element_blank(),
-		  axis.ticks.x = element_blank())
+		legend.text = element_text(size=16),
+		axis.title.y = element_text(size=20),
+		axis.title.x = element_blank(),
+	  axis.text.y = element_text(size=16),
+	  axis.text.x = element_blank(),
+	  axis.ticks.x = element_blank())
 
-mspebar <- paste0(parentdir, "/images/compare_mspe.png")		  
+mspebar <- paste0(parentdir, "/images/compare_mspe.png")
 ggsave(mspebar, width=12, height=12)

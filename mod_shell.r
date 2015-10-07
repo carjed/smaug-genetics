@@ -4,7 +4,7 @@
 # Script for running genome-wide models
 # Built under R version 3.2.2
 #
-# Usage: 
+# Usage:
 # ./mod_shell.r --summfile="/path/to/summaryfile"
 #				--binfile="/path/to/binfile"
 #				--binw=binwidth (integer)
@@ -29,16 +29,16 @@ source("get_functions.R")
 
 # Get args from command line; defaults defined below
 args <- getArgs(
-			defaults=list(adj=2,
-				binw=1000000,
-				summfile=paste0(parentdir, "/output/5bp_1000k/full.summary"),
-				binfile=paste0(parentdir, "/output/5bp_1000k/full_bin.txt"),
-				run_agg=TRUE,
-				pcs=FALSE,
-				categ="AT_GC",
-				negbin_model=TRUE,
-				log_model=FALSE,
-				run_predict=FALSE))
+	defaults=list(adj=2,
+	binw=1000000,
+	summfile=paste0(parentdir, "/output/5bp_1000k/full.summary"),
+	binfile=paste0(parentdir, "/output/5bp_1000k/full_bin.txt"),
+	run_agg=TRUE,
+	pcs=FALSE,
+	categ="AT_GC",
+	negbin_model=TRUE,
+	log_model=FALSE,
+	run_predict=FALSE))
 
 # The usePackage function loads packages if they already exist, otherwise installs
 # from default CRAN repository
@@ -55,9 +55,10 @@ suppressMessages(usePackage(ggbio))
 
 # Manual toggle for installing ggbio package
 # Uses the install_github() function from devtools to pull latest version,
-# due to issue on some clusters where using source("https://bioconductor.org/biocLite.R")
+# due to issue on some clusters where using
+# "source("https://bioconductor.org/biocLite.R")"
 # does not properly update the installer
-# 
+#
 # If this is not an issue, can simply run:
 # source("https://bioconductor.org/biocLite.R")
 # biocLite("ggbio", suppressUpdates=TRUE)
@@ -81,10 +82,10 @@ for(i in 1:length(args)){
 	##first extract the object value
 	tempobj=unlist(args[i])
 	varname=names(args[i])
-	
+
 	# optional: print args
 	cat(varname, ":", tempobj, "\n")
-	
+
 	##now create a new variable with the original name of the list item
 	eval(parse(text=paste(names(args)[i],"= tempobj")))
 }
@@ -108,7 +109,7 @@ myPaletteR <- colorRampPalette(rev(brewer.pal(9, "Reds")), space="Lab")
 myPaletteG <- colorRampPalette(rev(brewer.pal(9, "Greens")), space="Lab")
 rb <- c(myPaletteB(6)[1:3],myPaletteR(6)[1:3])
 g <- myPaletteG(6)[1:3]
- 
+
 tottime<-(proc.time()-ptm)[3]
 cat("Done (", tottime, "s)\n")
 
@@ -119,8 +120,10 @@ ptm <- proc.time()
 
 if(!file.exists(summfile)){
 	cat("Merged summary/bin files do not exist---Merging now...\n")
-	combinecmd <- paste0("awk 'FNR==1 && NR!=1{while(/^CHR/) getline; } 1 {print} ' ", datadir, "/chr*.expanded.summary > ", datadir, "/full.summary")
-	combinecmd2 <- paste0("awk 'FNR==1 && NR!=1{while(/^CHR/) getline; } 1 {print} ' ", datadir, "/chr*.bin_out.txt > ", datadir, "/full_bin.txt")
+	combinecmd <- paste0("awk 'FNR==1 && NR!=1{while(/^CHR/) getline; } 1 {print} ' ",
+		datadir, "/chr*.expanded.summary > ", datadir, "/full.summary")
+	combinecmd2 <- paste0("awk 'FNR==1 && NR!=1{while(/^CHR/) getline; } 1 {print} ' ",
+		datadir, "/chr*.bin_out.txt > ", datadir, "/full_bin.txt")
 	system(combinecmd)
 	system(combinecmd2)
 }
@@ -163,7 +166,7 @@ if(run_agg){
 	agg_5bp_100k <- aggV$oe
 	rates1 <- aggV$agg
 	summagg2 <- aggV$summagg2
-	
+
 	ratefile <- paste0(parentdir, "/output/", nbp, "bp_", bink, "k_rates.txt")
 	write.table(rates1, ratefile, col.names=T, row.names=F, quote=F, sep="\t")
 
@@ -185,9 +188,12 @@ if(!file.exists(mutcov2file)){
 }
 
 if(pcs==1){
-	names(mut_cov)<-c("CHR", "BIN", "PC1", "PC2", "PC3", "PC4", "PC5", "PC6", "PC7", "PC8", "PC9", "PC10", "PC11", "PC12", "PC13")
+	names(mut_cov)<-c("CHR", "BIN", "PC1", "PC2", "PC3", "PC4", "PC5", "PC6",
+		"PC7", "PC8", "PC9", "PC10", "PC11", "PC12", "PC13")
 } else {
-	names(mut_cov)<-c("CHR", "BIN", "H3K4me1", "H3K4me3", "H3K9ac", "H3K9me3", "H3K27ac", "H3K27me3", "H3K36me3", "CPGI", "EXON", "TIME", "RATE", "prop_GC", "LAMIN")
+	names(mut_cov)<-c("CHR", "BIN", "H3K4me1", "H3K4me3", "H3K9ac", "H3K9me3",
+		"H3K27ac", "H3K27me3", "H3K36me3", "CPGI", "EXON", "TIME", "RATE",
+		"prop_GC", "LAMIN")
 }
 
 danames<-names(mut_cov)

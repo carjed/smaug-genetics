@@ -74,8 +74,7 @@ if ($script==1){
         # my $path=dirname($file);
 		# my $chr = substr($filename, 0, index($filename, '.'));
 		my $file = "/net/bipolar/jedidiah/testpipe/vcfs/merged.ma.vcf.gz";
-		my $cmd="bcftools query -i 'FILTER=\"PASS\"' -r $chr
-			-f '%CHROM\t%POS\t%REF\t%ALT\t%INFO/THETA\t%INFO/AN\n'
+		my $cmd="bcftools query -i 'FILTER=\"PASS\"' -r $chr -f '%CHROM\t%POS\t%REF\t%ALT\t%INFO/THETA\t%INFO/AN\n'
 			$file > $summloc/chr$chr.summary";
 		&forkExecWait($cmd);
 	}

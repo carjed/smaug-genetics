@@ -130,7 +130,7 @@ if(!file.exists(summfile)){
 
 cat("Reading summary file:", summfile, "...\n")
 summ_5bp_100k <- read.table(summfile, header=F, stringsAsFactors=F, skip=1)
-names(summ_5bp_100k)<-c("CHR", "POS", "REF", "ALT", "DP", "AN", "SEQ", "ALTSEQ", "GC")
+names(summ_5bp_100k)<-c("CHR", "POS", "REF", "ALT", "DP", "AN", "ANNO", "SEQ", "ALTSEQ", "GC")
 summ_5bp_100k$BIN <- ceiling(summ_5bp_100k$POS/binw)
 
 cat("Reading bin file:", binfile, "...\n")

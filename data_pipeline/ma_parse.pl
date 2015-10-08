@@ -1,19 +1,21 @@
 #!/usr/local/bin/perl
 
+##############################################################################
+# This script reads a vcf and extracts singletons that pass specified filter(s)
+# Singletons within multiallelic sites are included
+#
+# Under development:
+#   -read both compressed and uncompressed vcfs
+#   -allow multiple filters to be specified on cmd line
+##############################################################################
+
 use strict;
 use warnings;
 use POSIX;
 use Getopt::Long;
 use Pod::Usage;
-use File::Basename;
-use File::Path qw(make_path);
-use List::Util qw(first max maxstr min minstr reduce shuffle sum);
-use Cwd;
-use Benchmark;
 use Compress::Zlib;
-
-my $wdir=getcwd;
-my $parentdir="/net/bipolar/jedidiah/mutation";
+use IO::Compress::Gzip;
 
 my $help=0;
 my $man=0;
@@ -25,73 +27,71 @@ GetOptions ('i=s'=> \$invcf,
 'help|?'=> \$help,
 man => \$man) or pod2usage(1);
 
+# Read uncompressed vcf
 # open my $vcf, '<', $invcf or die "can't open $invcf: $!";
-my $vcf = gzopen($invcf, "rb") or die "can't open $invcf: $gzerrno";
 
-open(OUT, '>', $outvcf) or die "can't write to $outvcf: $!\n";
+# Read compressed vcf
+my $vcf = gzopen($invcf, "rb") or
+  die "can't open $invcf: $gzerrno";
+
+# Initialize gzipped output
+open(my $OUT, "| gzip -c > $outvcf") or
+  die "Could not write to $outvcf: $!";
 
 while($vcf->gzreadline($_) > 0){
   chomp;
   if($_ =~ /^#/){
-    print OUT "$_\n";
+    print $OUT "$_\n";
   } else {
     my @line = split(/\s+/, $_);
-    my $ALT = $line[4];
 
-    # Check and process multiallelic sites
-    if($ALT =~ /(,)/){
+    # Only process sites that pass filter
+    # can add other conditions; e.g., QUAL/MQ filters
+    if($line[6] eq "PASS"){
 
-      # Get coerce alternate allele field into array
-      my @ALTS = split(',', $ALT);
+      # Get alternate allele(s)
+      my $ALT = $line[4];
 
-      # Get string of allele counts from info field
-      my ($AC) = $line[7] =~ /AC=([(\d+),]+(\d+));/;
+      # Check and process multiallelic sites
+      if($ALT =~ /(,)/){
 
-      # coerce allele counts to array
-      my @ACS = split(',', $AC);
+        # Coerce alternate allele field into array
+        my @ALTS = split(',', $ALT);
 
-      # Loop through alts and extract singletons
-      for my $i (0 .. $#ACS){
-        my $iAC = $ACS[$i];
+        # Get string of allele counts from info field
+        my ($AC) = $line[7] =~ /AC=([(\d+),]+(\d+));/;
 
-        if($iAC == 1){
-          my $oldline = $_;
-          my $maAC = "AC=$AC;";
-          my $newAC = "AC=1;";
-          my $newALT = $ALTS[$i];
+        # Coerce allele counts to array
+        my @ACS = split(',', $AC);
 
-          (my $newline = $oldline) =~ s/$maAC/$newAC/;
-          $newline =~ s/$ALT/$newALT/g;
-          print OUT "$newline\n";
+        # Loop through alts and extract singletons
+        for my $i (0 .. $#ACS){
+          my $iAC = $ACS[$i];
+
+          if($iAC == 1){
+            my $oldline = $_;
+            my $maAC = "AC=$AC;";
+            my $newAC = "AC=1;";
+            my $newALT = $ALTS[$i];
+
+            (my $newline = $oldline) =~ s/$maAC/$newAC/;
+            $newline =~ s/$ALT/$newALT/g;
+            print $OUT "$newline\n";
+          }
         }
-      }
-    } else {
-      my ($AC) = $line[7] =~ /AC=(\d+);/;
+      } else {
+        my ($AC) = $line[7] =~ /AC=(\d+);/;
 
-      if($AC == 1){
-        print OUT "$_\n";
+        if($AC == 1){
+          print $OUT "$_\n";
+        }
       }
     }
   }
 }
 
 $vcf -> gzclose();
-
-sub forkExecWait {
-    my $cmd = shift;
-    #print "forkExecWait(): $cmd\n";
-    my $kidpid;
-    if ( !defined($kidpid = fork()) ) {
-	die "Cannot fork: $!";
-    }
-    elsif ( $kidpid == 0 ) {
-	exec($cmd);
-	die "Cannot exec $cmd: $!";
-    }
-    else {
-	waitpid($kidpid,0);
-    }
-}
+close $OUT;
 
 __END__
 =head1 NAME

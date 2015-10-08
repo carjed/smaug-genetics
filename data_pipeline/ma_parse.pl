@@ -96,21 +96,14 @@ close $OUT;
 __END__
 =head1 NAME
 
-ref5.pl - SMAUG: Singleton Mutation Analysis Utility with Graphics
+ma_parse.pl: parse multiallelic sites in vcf
 
 =head1 SYNOPSIS
 
-        ref5.pl [OPTIONS]
+        ma_parse.pl [OPTIONS]
         Options:
-		--help			program documentation
-		--chr			chromosome
-		--mac			minor allele count
-		--b			binwidth
-		--adj			number of adjacent nucleotides
-		--data			data subset to use
-		--cpg			CpG site analysis?
-		--hot			recombination hotspots?
-		--anno			annotation(s)
+		--i			input.vcf
+		--o			output.vcf
 
 =head1 OPTIONS
 
@@ -120,53 +113,13 @@ ref5.pl - SMAUG: Singleton Mutation Analysis Utility with Graphics
 
 Display this documentation
 
-=item B<--chr>
+=item B<--i>
 
-MANDATORY: specify chromosome for analysis
+MANDATORY: specify input vcf
 
-=item B<--mac>
+=item B<--o>
 
-MANDATORY: specify minor allele count of sites in existing summary file
-
-=item B<--b>
-
-specify bin width for histograms (default is 100,000)
-
-=item B<--adj>
-
-specify number of adjacent nucleotides in either direction from the variant to include in analysis
-default includes only the adjacent 3' nucleotide for CpG distinction
-
-=item B<--data>
-
-specify whether to use summaries from all singletons (full) or those that pass the strict filters (strict)
-
-=item B<--cpg>
-
-toggles extra analysis specific to CpG sites
-
-=item B<--hot>
-
-toggles extra analysis for distance to nearest recombination hotspot
-
-=item B<--anno>
-
-comma-separated list consisting of any of the following annotations:
-
-Intergenic
-Intron
-Nonsynonymous
-Exon
-Synonymous
-Utr3
-Utr5
-Upstream
-Downstream
-Stop_Gain
-Stop_Loss
-Start_Loss
-Essential_Splice_Site
-Normal_Splice_Site
+MANDATORY: specify output vcf
 
 =back
 

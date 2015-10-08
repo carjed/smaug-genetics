@@ -1,0 +1,6 @@
+#before decomposition
+#CHROM  POS     ID   REF     ALT         QUAL   FILTER  INFO
+1 2759889 . A  GAA,GAAA  . PASS  AC=1,2;AN=2
+1 3759889 . T  TAA,TAAA,T  . PASS  AC=1,2,1;AN=2
+1 4759889 . T  G  . PASS  AC=5;AN=2
+1 5759889 . C  A  . PASS  AC=1;AN=2

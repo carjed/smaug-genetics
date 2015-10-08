@@ -30,15 +30,15 @@ source("get_functions.R")
 # Get args from command line; defaults defined below
 args <- getArgs(
 	defaults=list(adj=2,
-	binw=1000000,
-	summfile=paste0(parentdir, "/output/5bp_1000k/full.summary"),
-	binfile=paste0(parentdir, "/output/5bp_1000k/full_bin.txt"),
-	run_agg=TRUE,
-	pcs=FALSE,
-	categ="AT_GC",
-	negbin_model=TRUE,
-	log_model=FALSE,
-	run_predict=FALSE))
+		binw=1000000,
+		summfile=paste0(parentdir, "/output/5bp_1000k/full.summary"),
+		binfile=paste0(parentdir, "/output/5bp_1000k/full_bin.txt"),
+		run_agg=TRUE,
+		pcs=FALSE,
+		categ="AT_GC",
+		negbin_model=TRUE,
+		log_model=FALSE,
+		run_predict=FALSE))
 
 # The usePackage function loads packages if they already exist, otherwise installs
 # from default CRAN repository

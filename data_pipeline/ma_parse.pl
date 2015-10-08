@@ -33,7 +33,7 @@ open(OUT, '>', $outvcf) or die "can't write to $outvcf: $!\n";
 while($vcf->gzreadline($_) > 0){
   chomp;
   if($_ =~ /^#/){
-    print OUT "$_";
+    print OUT "$_\n";
   } else {
     my @line = split(/\s+/, $_);
     my $ALT = $line[4];
@@ -62,14 +62,14 @@ while($vcf->gzreadline($_) > 0){
 
           (my $newline = $oldline) =~ s/$maAC/$newAC/;
           $newline =~ s/$ALT/$newALT/g;
-          print OUT "$newline";
+          print OUT "$newline\n";
         }
       }
     } else {
       my ($AC) = $line[7] =~ /AC=(\d+);/;
 
       if($AC == 1){
-        print OUT "$_";
+        print OUT "$_\n";
       }
     }
   }

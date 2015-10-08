@@ -96,7 +96,7 @@ close $OUT;
 __END__
 =head1 NAME
 
-ma_parse.pl: parse multiallelic sites in vcf
+ma_parse.pl: parse multiallelic singletons in vcf
 
 =head1 SYNOPSIS
 

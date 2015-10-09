@@ -75,10 +75,11 @@ err_motif <- agg_cov2 %>%
 	arrange(Category, corgc) %>%
 	mutate(rank=rank(corgc))
 
-
-err_motif$Category2 <- ifelse(substr(err_motif$Sequence,adj+1,adj+2)=="CG",
-								paste0("cpg_",err_motif$Category),
-								err_motif$Category)
+# Create separate categories of CpG-specific motifs
+err_motif$Category2 <- ifelse(
+	substr(err_motif$Sequence,adj+1,adj+2) == "CG",
+	paste0("cpg_",err_motif$Category),
+	err_motif$Category)
 
 # plotdat<-err_motif[err_motif$Category2=="GC_AT",]
 plotdat<-err_motif
@@ -181,8 +182,14 @@ for(i in 1:length(mut_cats)){
 	# mut_lm_3bp <- glm.nb(obs~exp3, data=aggcat)
 	mut_lm_full <- glm.nb(full_mod_formula, data=aggcat)
 
-	ll_5bp <- data.frame(Category2=cat1, params=256, ll=summary(mut_lm_motif)$twologlik)
-	ll_1bp <- data.frame(Category2=cat1, params=6, ll=summary(mut_lm_1bp)$twologlik)
+	ll_5bp <- data.frame(
+		Category2=cat1,
+		params=256,
+		ll=summary(mut_lm_motif)$twologlik)
+	ll_1bp <- data.frame(
+		Category2=cat1,
+		params=6,
+		ll=summary(mut_lm_1bp)$twologlik)
 
 	logliks <- rbind(logliks, ll_5bp, ll_1bp)
 

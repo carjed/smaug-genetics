@@ -40,8 +40,8 @@ args <- getArgs(
 		log_model=FALSE,
 		run_predict=FALSE))
 
-# The usePackage function loads packages if they already exist, otherwise installs
-# from default CRAN repository
+# The usePackage function loads packages if they already exist,
+# otherwise installs from default CRAN repository
 suppressMessages(usePackage(ggplot2))
 suppressMessages(usePackage(dplyr))
 suppressMessages(usePackage(tidyr))
@@ -120,9 +120,11 @@ ptm <- proc.time()
 
 if(!file.exists(summfile)){
 	cat("Merged summary/bin files do not exist---Merging now...\n")
-	combinecmd <- paste0("awk 'FNR==1 && NR!=1{while(/^CHR/) getline; } 1 {print} ' ",
+	combinecmd <- paste0(
+		"awk 'FNR==1 && NR!=1{while(/^CHR/) getline; } 1 {print} ' ",
 		datadir, "/chr*.expanded.summary > ", datadir, "/full.summary")
-	combinecmd2 <- paste0("awk 'FNR==1 && NR!=1{while(/^CHR/) getline; } 1 {print} ' ",
+	combinecmd2 <- paste0(
+		"awk 'FNR==1 && NR!=1{while(/^CHR/) getline; } 1 {print} ' ",
 		datadir, "/chr*.bin_out.txt > ", datadir, "/full_bin.txt")
 	system(combinecmd)
 	system(combinecmd2)
@@ -130,7 +132,8 @@ if(!file.exists(summfile)){
 
 cat("Reading summary file:", summfile, "...\n")
 summ_5bp_100k <- read.table(summfile, header=F, stringsAsFactors=F, skip=1)
-names(summ_5bp_100k)<-c("CHR", "POS", "REF", "ALT", "DP", "AN", "ANNO", "SEQ", "ALTSEQ", "GC")
+names(summ_5bp_100k)<-c(
+	"CHR", "POS", "REF", "ALT", "DP", "AN", "ANNO", "SEQ", "ALTSEQ", "GC")
 summ_5bp_100k$BIN <- ceiling(summ_5bp_100k$POS/binw)
 
 cat("Reading bin file:", binfile, "...\n")

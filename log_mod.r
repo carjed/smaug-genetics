@@ -1,7 +1,5 @@
 ##############################################################################
-##############################################################################
 # Logistic regression model
-##############################################################################
 ##############################################################################
 
 suppressMessages(require(data.table))
@@ -34,7 +32,9 @@ denom<-nind*meangens
 # Fast list of 6 basic categories from agg_5bp_100k data
 mut_cats<-unique(agg_5bp_100k$Category2[nchar(agg_5bp_100k$Category2)==5])
 
-catopt<-substr(categ,0,2) # used to subset reference data to only AT or GC bases
+# subset reference data to only AT or GC bases
+catopt<-substr(categ,0,2)
+
 # summfile1 <- dat_5bp_100k$summ[(dat_5bp_100k$summ$POS>=6000000 &
 	# dat_5bp_100k$summ$POS<=7000000 &
 	# dat_5bp_100k$summ$CHR=="20" &
@@ -55,7 +55,7 @@ if(!exists("summfile1")){
 # Run perl script to build input data for model
 # -outputs 1 row per site with reference base same as category
 # -singletons have mut=1, otherwise 0
-# -covariates are PCs from the 100kb mut_cov2 file; script adds conservation score
+# -covariates are PCs from the 100kb mut_cov2 file
 ##############################################################################
 # trainchr <- seq(1,10,2)
 trainchr <- c(20:22)

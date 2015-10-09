@@ -62,7 +62,7 @@ suppressMessages(usePackage(ggbio))
 # If this is not an issue, can simply run:
 # source("https://bioconductor.org/biocLite.R")
 # biocLite("ggbio", suppressUpdates=TRUE)
-install_ggbio<-0
+install_ggbio <- 0
 if(install_ggbio){
 	install_github("Bioconductor/BiocInstaller")
 	biocLite("ggbio", suppressUpdates=TRUE)
@@ -99,7 +99,7 @@ adj <- as.numeric(adj)
 bink <- binw/1000
 nbp <- adj*2+1
 
-datadir<-dirname(summfile)
+datadir <- dirname(summfile)
 
 # Define color palettes
 myPaletteCat <- colorRampPalette(rev(brewer.pal(8, "Dark2")), space="Lab")
@@ -110,7 +110,7 @@ myPaletteG <- colorRampPalette(rev(brewer.pal(9, "Greens")), space="Lab")
 rb <- c(myPaletteB(6)[1:3],myPaletteR(6)[1:3])
 g <- myPaletteG(6)[1:3]
 
-tottime<-(proc.time()-ptm)[3]
+tottime <- (proc.time()-ptm)[3]
 cat("Done (", tottime, "s)\n")
 
 ##############################################################################
@@ -139,7 +139,7 @@ summ_5bp_100k$BIN <- ceiling(summ_5bp_100k$POS/binw)
 cat("Reading bin file:", binfile, "...\n")
 bins_5bp_100k <- read.table(binfile, header=T, stringsAsFactors=F, check.names=F)
 
-tottime<-(proc.time()-ptm)[3]
+tottime <- (proc.time()-ptm)[3]
 cat("Done (", tottime, "s)\n")
 
 ##############################################################################
@@ -173,7 +173,7 @@ if(run_agg){
 	ratefile <- paste0(parentdir, "/output/", nbp, "bp_", bink, "k_rates.txt")
 	write.table(rates1, ratefile, col.names=T, row.names=F, quote=F, sep="\t")
 
-	tottime<-(proc.time()-ptm)[3]
+	tottime <- (proc.time()-ptm)[3]
 	cat("Done (", tottime, "s)\n")
 }
 
@@ -191,18 +191,18 @@ if(!file.exists(mutcov2file)){
 }
 
 if(pcs==1){
-	names(mut_cov)<-c("CHR", "BIN", "PC1", "PC2", "PC3", "PC4", "PC5", "PC6",
+	names(mut_cov) <- c("CHR", "BIN", "PC1", "PC2", "PC3", "PC4", "PC5", "PC6",
 		"PC7", "PC8", "PC9", "PC10", "PC11", "PC12", "PC13")
 } else {
-	names(mut_cov)<-c("CHR", "BIN", "H3K4me1", "H3K4me3", "H3K9ac", "H3K9me3",
+	names(mut_cov) <- c("CHR", "BIN", "H3K4me1", "H3K4me3", "H3K9ac", "H3K9me3",
 		"H3K27ac", "H3K27me3", "H3K36me3", "CPGI", "EXON", "TIME", "RATE",
 		"prop_GC", "LAMIN")
 }
 
-danames<-names(mut_cov)
-covnames<-danames[-c(1:2, 14)]
+danames <- names(mut_cov)
+covnames <- danames[-c(1:2, 14)]
 
-tottime<-(proc.time()-ptm)[3]
+tottime <- (proc.time()-ptm)[3]
 cat("Done (", tottime, "s)\n")
 
 ##############################################################################
@@ -212,7 +212,7 @@ if(negbin_model){
 	cat("Initializing negbin regression model...\n")
 	ptm <- proc.time()
 	source("negbin_mod.r")
-	tottime<-(proc.time()-ptm)[3]
+	tottime <- (proc.time()-ptm)[3]
 	cat("Done. Finished in", tottime, "seconds \n")
 }
 
@@ -223,6 +223,6 @@ if(log_model){
 	ptm <- proc.time()
 	cat("Initializing logistic regression model...\n")
 	source("log_mod.r")
-	tottime<-(proc.time()-ptm)[3]
+	tottime <- (proc.time()-ptm)[3]
 	cat("Done. Model and predictions finished in", tottime, "seconds \n")
 }

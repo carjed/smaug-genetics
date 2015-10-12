@@ -23,7 +23,7 @@ my $binw=100000;
 GetOptions('trchr=s' => \$trainchr,
 			'cat=s' => \$cat,
 			'binw' => \$binw);
-			
+
 print "$trainchr\n";
 print "$cat\n";
 

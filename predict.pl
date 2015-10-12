@@ -19,7 +19,7 @@ my $parentdir="/net/bipolar/jedidiah/mutation";
 
 my $chr;
 my $cat='';
-my $binw='';
+my $binw;
 
 GetOptions('chr' => \$chr,
 			'cat=s' => \$cat,

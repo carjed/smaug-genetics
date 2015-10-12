@@ -21,7 +21,7 @@ my $chr;
 my $cat='';
 my $bink='';
 
-GetOptions('chr' => \$chr,
+GetOptions('chr=s' => \$chr,
 			'cat=s' => \$cat,
 			'bink=s' => \$bink);
 

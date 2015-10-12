@@ -19,11 +19,11 @@ my $parentdir="/net/bipolar/jedidiah/mutation";
 
 my $chr;
 my $cat='';
-my $binw;
+my $binw='';
 
 GetOptions('chr' => \$chr,
 			'cat=s' => \$cat,
-			'binw' => \$binw);
+			'binw=s' => \$binw);
 
 my $f_coefs = "$parentdir/output/logmod_data/${cat}_${binw}kb_coefs.txt";
 my $f_data = "$parentdir/output/logmod_data/chr${chr}_${cat}_sites.txt";

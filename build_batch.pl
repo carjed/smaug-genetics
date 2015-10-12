@@ -41,4 +41,4 @@ print OUT "#SBATCH --job-name=predict \n";
 print OUT "#SBATCH --partition=nomosix \n";
 print OUT "#SBATCH --array=$trainchr \n";
 print OUT "#SBATCH --output=\"/net/bipolar/jedidiah/mutation/output/slurm/slurmJob-%J.out\" --error=\"/net/bipolar/jedidiah/mutation/output/slurm/slurmJob-%J.err\" \n";
-print OUT "srun perl /net/bipolar/jedidiah/mutation/smaug-genetics/predict.pl --chr \$SLURM_ARRAY_TASK_ID --cat $cat --binw $binw \n";
+print OUT "srun perl /net/bipolar/jedidiah/mutation/smaug-genetics/predict.pl --chr \$SLURM_ARRAY_TASK_ID --cat $cat --binw 100000 \n";

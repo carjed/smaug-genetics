@@ -58,7 +58,7 @@ if(!exists("summfile1")){
 # -covariates are PCs from the 100kb mut_cov2 file
 ##############################################################################
 # trainchr <- seq(1,10,2)
-trainchr <- c(1:22)
+trainchr <- c(20:22)
 trainstr<-paste(trainchr, collapse=",")
 nchr<-length(trainchr)
 

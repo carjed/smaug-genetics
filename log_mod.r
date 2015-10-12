@@ -119,7 +119,7 @@ for(i in 1:length(motifs)){
 	da1<-read.table(tmpfile, header=F, stringsAsFactors=F)
 	names(da1)<-danames
 
-	log_mod_int <- speedglm(mut~., data=da1, family=binomial(), maxit=50)
+	log_mod_int <- speedglm(mut~1, data=da1, family=binomial(), maxit=50)
 
 	log_mod_formula<-as.formula(paste("mut~", paste(covnames, collapse="+")))
 	log_mod<-speedglm(log_mod_formula, data=da1, family=binomial(), maxit=50)

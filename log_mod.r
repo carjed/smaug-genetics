@@ -6,7 +6,7 @@ suppressMessages(require(data.table))
 suppressMessages(require(foreach))
 suppressMessages(require(doSNOW))
 
-binw=1000000
+binw=100000
 bink <- binw/1000
 
 # Target mutation rate

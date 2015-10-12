@@ -105,10 +105,10 @@ if(!file.exists(fullfile)){
 ##############################################################################
 cat("Running model...\n")
 
-coefdat<-data.frame(stringsAsFactors=F)
-motifs<-sort(unique(summfile1$Sequence))
+coefdat <- data.frame(stringsAsFactors=F)
+motifs <- sort(unique(summfile1$Sequence))
 for(i in 1:length(motifs)){
-	motif<-substr(motifs[i], 0, 5)
+	motif <- substr(motifs[i], 0, 5)
 	# cat("Running model", i, "on", motif, "sites...\n")
 	modtime <- proc.time()
 
@@ -116,8 +116,8 @@ for(i in 1:length(motifs)){
 	grepcmd <- paste0("grep ", motif, " ", fullfile, " > ", tmpfile)
 	system(grepcmd)
 
-	da1<-read.table(tmpfile, header=F, stringsAsFactors=F)
-	names(da1)<-danames
+	da1 <- read.table(tmpfile, header=F, stringsAsFactors=F)
+	names(da1) <- c("CHR", "BIN", "POS", "Sequence", "mut", danames[-(1:2)])
 
 	log_mod_int <- speedglm(mut~1, data=da1, family=binomial(), maxit=50)
 

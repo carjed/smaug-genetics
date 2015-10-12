@@ -80,13 +80,7 @@ if(!file.exists(fullfile)){
 
 		write.table(dat, posfile, col.names=F, row.names=F, quote=F, sep="\t")
 
-		perlcmd <- paste0("perl ", parentdir,
-			"/smaug-genetics/getNonMut.pl
-				--b ", catopt,
-				" --chr ", chr,
-				" --categ ", categ,
-				" --bw ", bink,
-				" --covs ", mutcov2file)
+		perlcmd <- paste0("perl ", parentdir, "/smaug-genetics/getNonMut.pl --b ", catopt, " --chr ", chr, " --categ ", categ, " --bw ", bink, " --covs ", mutcov2file)
 		system(perlcmd)
 	}
 

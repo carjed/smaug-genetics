@@ -140,9 +140,7 @@ write.table(coefdat, coeffile, col.names=F, row.names=F, quote=F, sep="\t")
 # to run predictions over all chromosomes specified in set
 ##############################################################################
 if(run_predict){
-	buildbatchcmd<-paste0("perl ",
-		parentdir, "/smaug-genetics/build_batch.pl --trchr ",
-		trainstr, " --cat ", categ)
+	buildbatchcmd<-paste0("perl ", parentdir, "/smaug-genetics/build_batch.pl --trchr ", trainstr, " --cat ", categ, " --bink ", bink)
 	system(buildbatchcmd)
 
 	slurmcmd<-paste0("sbatch ", parentdir, "/smaug-genetics/slurm_predict.txt")

@@ -18,11 +18,11 @@ my $parentdir="/net/bipolar/jedidiah/mutation";
 
 my $trainchr='';
 my $cat='';
-my $binw=100000;
+my $bink='';
 
 GetOptions('trchr=s' => \$trainchr,
 			'cat=s' => \$cat,
-			'binw' => \$binw);
+			'bink=s' => \$bink);
 
 print "$trainchr\n";
 print "$cat\n";

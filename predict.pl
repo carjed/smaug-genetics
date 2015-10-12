@@ -19,13 +19,13 @@ my $parentdir="/net/bipolar/jedidiah/mutation";
 
 my $chr;
 my $cat='';
-my $binw='';
+my $bink='';
 
 GetOptions('chr' => \$chr,
 			'cat=s' => \$cat,
-			'binw=s' => \$binw);
+			'bink=s' => \$binw);
 
-my $f_coefs = "$parentdir/output/logmod_data/${cat}_${binw}kb_coefs.txt";
+my $f_coefs = "$parentdir/output/logmod_data/${cat}_${bink}kb_coefs.txt";
 my $f_data = "$parentdir/output/logmod_data/chr${chr}_${cat}_sites.txt";
 my $outfile = "$parentdir/output/predicted/chr${chr}_${cat}_predicted.txt";
 

@@ -25,7 +25,7 @@ GetOptions('chr' => \$chr,
 			'cat=s' => \$cat,
 			'binw' => \$binw);
 
-my $f_coefs = "$parentdir/output/logmod_data/${cat}_${binw}_coefs.txt";
+my $f_coefs = "$parentdir/output/logmod_data/${cat}_${binw}kb_coefs.txt";
 my $f_data = "$parentdir/output/logmod_data/chr${chr}_${cat}_sites.txt";
 my $outfile = "$parentdir/output/predicted/chr${chr}_${cat}_predicted.txt";
 

@@ -23,7 +23,7 @@ my $bink='';
 
 GetOptions('chr' => \$chr,
 			'cat=s' => \$cat,
-			'bink=s' => \$binw);
+			'bink=s' => \$bink);
 
 my $f_coefs = "$parentdir/output/logmod_data/${cat}_${bink}kb_coefs.txt";
 my $f_data = "$parentdir/output/logmod_data/chr${chr}_${cat}_sites.txt";

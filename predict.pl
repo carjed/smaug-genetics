@@ -22,9 +22,9 @@ my $cat='';
 my $binw='';
 
 GetOptions('chr' => \$chr,
-			'cat' => \$cat,
+			'cat=s' => \$cat,
 			'binw' => \$binw);
-			
+
 my $f_coefs = "$parentdir/output/logmod_data/${cat}_${binw}_coefs.txt";
 my $f_data = "$parentdir/output/logmod_data/chr${chr}_${cat}_sites.txt";
 my $outfile = "$parentdir/output/predicted/chr${chr}_${cat}_predicted.txt";
@@ -46,7 +46,7 @@ while (<$coefs>){
 	my @line=split(/\t/, $_);
 	my $key=$line[0];
 	my @betas=@line[1..$#line];
-	
+
 	$hash{$key}=[@betas];
 }
 
@@ -63,26 +63,26 @@ while (<$data>){
 	my $CHR=$line[0];
 	my $POS=$line[2];
 	my $SEQ=$line[3];
-	
+
 	if($SEQ !~ /[MNSW]/){
 		my @vals=(1,@line[5..$#line]);
 		my @betas=@{$hash{$SEQ}};
-		
+
 		# print "$vals[$_]\n" for 0 .. $#vals;
 		# print "$betas[$_]\n" for 0 .. $#betas;
-		
+
 		my $pred=0;
 		$pred+=$vals[$_]*$betas[$_] for 0 .. $#vals;
-		
+
 		$pred=nearest(0.001, ((exp($pred)/(exp($pred)+1))/314244)*1e8);
 		# $pred=nearest(0.001, ((exp($pred)/(exp($pred)+1))/314244)*1e8);
-		
+
 		print OUT "$CHR\t$POS\t$pred\n";
-		
+
 		$rownum++;
 		$sum+=$pred;
 		$mean=$sum/$rownum;
-		
+
 		if($rownum%10000000==0){
 			$mbnum+=10;
 			print "Finished $mbnum million bases (current mean rate: $mean)...\n";

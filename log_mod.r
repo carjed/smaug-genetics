@@ -6,6 +6,10 @@ suppressMessages(require(data.table))
 suppressMessages(require(foreach))
 suppressMessages(require(doSNOW))
 
+cluster <- makeCluster(4, type = "SOCK")
+registerDoSNOW(cluster)
+
+
 binw <- 100000
 bink <- binw/1000
 
@@ -61,9 +65,8 @@ if(!exists("summfile1")){
 # -covariates are PCs from the 100kb mut_cov2 file
 ##############################################################################
 # trainchr <- seq(1,10,2)
-trainchr <- c(1:22)
-trainstr <- paste(trainchr, collapse=",")
-nchr <- length(trainchr)
+trainchr1 <- c(8:22)
+nchr <- length(trainchr1)
 
 fullfile <- paste0(parentdir, "/output/logmod_data/",categ,"_full.txt")
 
@@ -74,7 +77,7 @@ if(!file.exists(fullfile)){
 
 	mutcov2file <- paste0(parentdir, "/output/logmod_data/100kb_mut_cov2.txt")
 
-	for(chr in trainchr){
+	foreach(chr in trainchr1) %dopar% {
 
 		posfile <- paste0(parentdir,
 				"/output/logmod_data/chr", chr, "_", categ,"_pos_examples.txt")
@@ -156,8 +159,12 @@ write.table(coefdat, coeffile, col.names=F, row.names=F, quote=F, sep="\t")
 # to run predictions over all chromosomes specified in set
 ##############################################################################
 if(run_predict){
+
+	predictchr <- c(1:22)
+	predictstr <- paste(predictchr, collapse=",")
+
 	buildbatchcmd <- paste0("perl ",
-		parentdir, "/smaug-genetics/build_batch.pl --trchr ", trainstr,
+		parentdir, "/smaug-genetics/build_batch.pl --trchr ", predictstr,
 		" --cat ", categ,
 		" --bink ", bink)
 	system(buildbatchcmd)

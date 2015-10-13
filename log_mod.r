@@ -77,7 +77,7 @@ if(!file.exists(fullfile)){
 
 	mutcov2file <- paste0(parentdir, "/output/logmod_data/100kb_mut_cov2.txt")
 
-	foreach(chr in trainchr1) %dopar% {
+	foreach(chr=8:22) %dopar% {
 
 		posfile <- paste0(parentdir,
 				"/output/logmod_data/chr", chr, "_", categ,"_pos_examples.txt")

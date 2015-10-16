@@ -35,7 +35,7 @@ args <- getArgs(
 		binfile=paste0(parentdir, "/output/5bp_1000k/full_bin.txt"),
 		run_agg=TRUE,
 		pcs=FALSE,
-		categ="AT_GC",
+		categ="AT_CG",
 		negbin_model=TRUE,
 		log_model=TRUE,
 		run_predict=TRUE))

@@ -37,8 +37,8 @@ args <- getArgs(
 		pcs=FALSE,
 		categ="AT_CG",
 		negbin_model=TRUE,
-		log_model=TRUE,
-		run_predict=TRUE))
+		log_model=FALSE,
+		run_predict=FALSE))
 
 # The usePackage function loads packages if they already exist,
 # otherwise installs from default CRAN repository

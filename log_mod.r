@@ -6,7 +6,7 @@ suppressMessages(require(data.table))
 suppressMessages(require(foreach))
 suppressMessages(require(doSNOW))
 
-cluster <- makeCluster(4, type = "SOCK")
+cluster <- makeCluster(8, type = "SOCK")
 registerDoSNOW(cluster)
 
 
@@ -65,7 +65,7 @@ if(!exists("summfile1")){
 # -covariates are PCs from the 100kb mut_cov2 file
 ##############################################################################
 # trainchr <- seq(1,10,2)
-trainchr1 <- c(8:22)
+trainchr1 <- c(1:22)
 nchr <- length(trainchr1)
 
 fullfile <- paste0(parentdir, "/output/logmod_data/",categ,"_full.txt")
@@ -77,7 +77,7 @@ if(!file.exists(fullfile)){
 
 	mutcov2file <- paste0(parentdir, "/output/logmod_data/100kb_mut_cov2.txt")
 
-	foreach(chr=8:22) %dopar% {
+	foreach(chr=1:22) %dopar% {
 
 		posfile <- paste0(parentdir,
 				"/output/logmod_data/chr", chr, "_", categ,"_pos_examples.txt")
@@ -115,12 +115,12 @@ coefdat <- data.frame(stringsAsFactors=F)
 int_only_rates <- data.frame(stringsAsFactors=F)
 
 motifs <- sort(unique(summfile1$Sequence))
-for(i in 1:length(motifs)){
+foreach(i=1:length(motifs)) %dopar% {
 	motif <- substr(motifs[i], 0, 5)
 	# cat("Running model", i, "on", motif, "sites...\n")
 	modtime <- proc.time()
 
-	tmpfile <- paste0(parentdir, "/output/logmod_data/", categ, "_tmp.txt")
+	tmpfile <- paste0(parentdir, "/output/logmod_data/", categ, "_tmp", i, ".txt")
 	grepcmd <- paste0("grep ", motif, " ", fullfile, " > ", tmpfile)
 	system(grepcmd)
 
@@ -138,6 +138,8 @@ for(i in 1:length(motifs)){
 
 	z <- as.numeric(log_mod$coefficients)
 	coefdat <- rbind(coefdat, z)
+
+	unlink(tmpfile)
 
 	tottime <- (proc.time()-modtime)[3]
 	cat("Finished category", i, "of 256", " (", tottime, "s)\n")

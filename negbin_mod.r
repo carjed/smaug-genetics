@@ -269,6 +269,9 @@ for(i in 1:length(mut_cats)){
 	BIN <- as.integer(gsub(".*\\.", "", names(fits_feat)))
 	CHR <- as.integer(gsub("\\..*", "", names(fits_feat)))
 
+	BINA <- as.integer(gsub(".*\\.", "", names(fits_motif2)))
+	CHRA <- as.integer(gsub("\\..*", "", names(fits_motif2)))
+
 	model_dat_gc <- data.frame(CHR,Category2=cat1, BIN,
 		exp=fits_gc,
 		obs=aggcat$obs,
@@ -291,7 +294,7 @@ for(i in 1:length(mut_cats)){
 		stringsAsFactors=F)
 	model_dat_motif$res <- "motifs"
 
-	model_dat_motif2 <- data.frame(CHR,Category2=cat1, BIN,
+	model_dat_motif2 <- data.frame(CHRA,Category2=cat1, BINA,
 		exp=fits_motif2,
 		# exp=aggcat$exp,
 		obs=aggcatm$obs,

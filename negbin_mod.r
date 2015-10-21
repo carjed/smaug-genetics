@@ -162,7 +162,7 @@ mc2 <- a3 %>%
 
 # Initialize data of motif counts to use directly as covariates
 # in negbin model
-dat_5bp_100k$bin$CHR <- as.integer(substring(dat_5bp_100k$bin$CHR, 4))
+# dat_5bp_100k$bin$CHR <- as.integer(substring(dat_5bp_100k$bin$CHR, 4))
 
 names(dat_5bp_100k$bin) <- gsub('\\(', '_', names(dat_5bp_100k$bin))
 names(dat_5bp_100k$bin) <- gsub('\\)', '_', names(dat_5bp_100k$bin))
@@ -212,6 +212,7 @@ for(i in 1:length(mut_cats)){
 	}
 
 	aggcat$exp_s <- sample(aggcat$obs, length(aggcat$obs), replace=T)
+	aggcatm$exp_s <- sample(aggcatm$obs, length(aggcatm$obs), replace=T)
 
 	# Fit models with all data
 	feat_mod_formula <- as.formula(paste("obs~", paste(covnames, collapse="+")))

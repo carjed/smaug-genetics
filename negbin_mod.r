@@ -218,7 +218,7 @@ for(i in 1:length(mut_cats)){
 	feat_mod_formula <- as.formula(paste("obs~",
 		paste(covnames, collapse="+")))
 	full_mod_formula <- as.formula(paste("obs~",
-		paste(mcols[-(1:5)], collapse="+"), "+ prop_GC",
+		paste(mcols[-(1:5)], collapse="+"), "+prop_GC+",
 		paste(covnames, collapse="+")))
 	motif_mod_formula <- as.formula(paste("obs~",
 		paste(mcols[-(1:5)], collapse="+")))

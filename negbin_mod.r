@@ -218,7 +218,7 @@ for(i in 1:length(mut_cats)){
 	feat_mod_formula <- as.formula(paste("obs~",
 		paste(covnames, collapse="+")))
 	full_mod_formula <- as.formula(paste("obs~",
-		paste(mcols[-(1:5)], collapse="+"), "+",
+		paste(mcols[-(1:5)], collapse="+"), "+ prop_GC",
 		paste(covnames, collapse="+")))
 	motif_mod_formula <- as.formula(paste("obs~",
 		paste(mcols[-(1:5)], collapse="+")))
@@ -305,14 +305,14 @@ for(i in 1:length(mut_cats)){
 		obs=aggcatm$obs,
 		exp_s=aggcatm$exp_s,
 		stringsAsFactors=F)
-	model_dat_motif2$res <- "motifs2"
+	model_dat_motif2$res <- "motifs_ext"
 
 	model_dat_full <- data.frame(CHR=CHRA,Category2=cat1, BIN=BINA,
 		exp=fits_full,
 		obs=aggcatm$obs,
 		exp_s=aggcatm$exp_s,
 		stringsAsFactors=F)
-	model_dat_full$res <- "motifs+features"
+	model_dat_full$res <- "motif_ext+features"
 
 	compare.all <- rbind(compare.all,
 		model_dat_gc,

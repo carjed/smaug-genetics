@@ -215,16 +215,20 @@ for(i in 1:length(mut_cats)){
 	aggcatm$exp_s <- sample(aggcatm$obs, length(aggcatm$obs), replace=T)
 
 	# Fit models with all data
-	feat_mod_formula <- as.formula(paste("obs~", paste(covnames, collapse="+")))
-	full_mod_formula <- as.formula(paste("obs~exp+", paste(covnames, collapse="+")))
-	motif_mod_formula <- as.formula(paste("obs~", paste(mcols[-(1:5)], collapse="+")))
+	feat_mod_formula <- as.formula(paste("obs~",
+		paste(covnames, collapse="+")))
+	full_mod_formula <- as.formula(paste("obs~",
+		paste(mcols[-(1:5)], collapse="+"), "+",
+		paste(covnames, collapse="+")))
+	motif_mod_formula <- as.formula(paste("obs~",
+		paste(mcols[-(1:5)], collapse="+")))
 	mut_lm_gc <- glm.nb(obs~prop_GC, data=aggcat)
 	mut_lm_feat <- glm.nb(feat_mod_formula, data=aggcat)
 	mut_lm_motif <- glm.nb(obs~exp, data=aggcat)
 	mut_lm_motif2 <- glm.nb(motif_mod_formula, data=aggcatm)
 	mut_lm_1bp <- glm.nb(obs~exp1, data=aggcat)
 	# mut_lm_3bp <- glm.nb(obs~exp3, data=aggcat)
-	mut_lm_full <- glm.nb(full_mod_formula, data=aggcat)
+	mut_lm_full <- glm.nb(full_mod_formula, data=aggcatm)
 
 	ll_5bp <- data.frame(
 		Category2=cat1,
@@ -242,7 +246,7 @@ for(i in 1:length(mut_cats)){
 	gc_cv <- cv.glm(data=aggcat, glmfit=mut_lm_gc, K=10)
 	feat_cv <- cv.glm(data=aggcat, glmfit=mut_lm_feat, K=10)
 	motif_cv <- cv.glm(data=aggcat, glmfit=mut_lm_motif, K=10)
-	full_cv <- cv.glm(data=aggcat, glmfit=mut_lm_full, K=10)
+	full_cv <- cv.glm(data=aggcatm, glmfit=mut_lm_full, K=10)
 
 	mspe <- c(gc_cv$delta[2], feat_cv$delta[2], motif_cv$delta[2], full_cv$delta[2])
 	rmse <- sqrt(mspe)
@@ -265,7 +269,7 @@ for(i in 1:length(mut_cats)){
 	names(fits_motif2) <- paste0(aggcatm$CHR,".",aggcatm$BIN)
 
 	fits_full <- mut_lm_full$fitted.values
-	names(fits_full) <- paste0(aggcat$CHR,".",aggcat$BIN)
+	names(fits_full) <- paste0(aggcatm$CHR,".",aggcatm$BIN)
 
 	BIN <- as.integer(gsub(".*\\.", "", names(fits_feat)))
 	CHR <- as.integer(gsub("\\..*", "", names(fits_feat)))
@@ -303,7 +307,7 @@ for(i in 1:length(mut_cats)){
 		stringsAsFactors=F)
 	model_dat_motif2$res <- "motifs2"
 
-	model_dat_full <- data.frame(CHR,Category2=cat1, BIN,
+	model_dat_full <- data.frame(CHR=CHRA,Category2=cat1, BIN=BINA,
 		exp=fits_full,
 		obs=aggcat$obs,
 		exp_s=aggcat$exp_s,
@@ -445,7 +449,7 @@ p2 <- ggplot(plotdat, aes(x=BIN, y=zscore, colour=res))+
 	geom_point(alpha=0.4, size=4)+
 	geom_point(alpha=0.4, size=4, data=filter(plotdat, res=="features"))+
 	geom_point(alpha=0.4, size=4, data=filter(plotdat, res=="motifs+features"))+
-	scale_colour_manual("Model", values=myPaletteCat(8)[5:8])+
+	scale_colour_manual("Model", values=myPaletteCat(8)[4:8])+
 	facet_wrap(~Category2, scales="free", ncol=3)+
 	ylab("Error")+
 	xlab(NULL)+

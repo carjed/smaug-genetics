@@ -295,7 +295,7 @@ for(i in 1:length(mut_cats)){
 		stringsAsFactors=F)
 	model_dat_motif$res <- "motifs"
 
-	model_dat_motif2 <- data.frame(CHRA,Category2=cat1, BINA,
+	model_dat_motif2 <- data.frame(CHRA,Category2=cat1, BIN=BINA,
 		exp=fits_motif2,
 		# exp=aggcat$exp,
 		obs=aggcatm$obs,

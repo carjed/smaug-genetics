@@ -309,8 +309,8 @@ for(i in 1:length(mut_cats)){
 
 	model_dat_full <- data.frame(CHR=CHRA,Category2=cat1, BIN=BINA,
 		exp=fits_full,
-		obs=aggcat$obs,
-		exp_s=aggcat$exp_s,
+		obs=aggcatm$obs,
+		exp_s=aggcatm$exp_s,
 		stringsAsFactors=F)
 	model_dat_full$res <- "motifs+features"
 
@@ -428,7 +428,7 @@ p2 <- ggplot(compare.all, aes(x=obs, y=exp, colour=res))+
 	geom_point(alpha=0.2, size=3)+
 	geom_point(alpha=0.2, size=3, data=filter(plotdat, res=="features"))+
 	geom_point(alpha=0.2, size=3, data=filter(plotdat, res=="motifs+features"))+
-	scale_colour_manual("Model", values=myPaletteCat(8)[5:8])+
+	scale_colour_manual("Model", values=myPaletteCat(8)[4:8])+
 	facet_wrap(~Category2, ncol=3, scales="free")+
 	ylab("Predicted count")+
 	xlab("Observed count")+

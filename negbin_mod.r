@@ -160,6 +160,33 @@ mc2 <- a3 %>%
 	summarise(cor1=cor(exp, obs, method="pearson"),
 		cor2=cor(exp1, obs, method="pearson"))
 
+# Initialize data of motif counts to use directly as covariates
+# in negbin model
+dat_5bp_100k$bin$CHR <- as.integer(substring(dat_5bp_100k$bin$CHR, 4))
+
+names(dat_5bp_100k$bin) <- gsub('\\(', '_', names(dat_5bp_100k$bin))
+names(dat_5bp_100k$bin) <- gsub('\\)', '_', names(dat_5bp_100k$bin))
+
+atcols <- c(names(dat_5bp_100k$bin)[1:5],
+  names(dat_5bp_100k$bin)[which(substr(names(dat_5bp_100k$bin), 3, 3)=="A")])
+
+binsAT <- dat_5bp_100k$bin %>%
+  select_(.dots = atcols)
+
+gcdn <- c("CA", "CC", "CT")
+
+gccols <- c(names(dat_5bp_100k$bin)[1:5],
+  names(dat_5bp_100k$bin)[which(substr(names(dat_5bp_100k$bin), 3, 4) %in% gcdn)])
+
+binsGC <- dat_5bp_100k$bin %>%
+  select_(.dots = gccols)
+
+cpggccols <- c(names(dat_5bp_100k$bin)[1:5],
+  names(dat_5bp_100k$bin)[which(substr(names(dat_5bp_100k$bin), 3, 4)=="CG")])
+
+binscpgGC <- dat_5bp_100k$bin %>%
+  select_(.dots = cpggccols)
+
 # Motifs + genomic features
 compare.all <- data.frame()
 compare.err <- data.frame()
@@ -170,14 +197,27 @@ for(i in 1:length(mut_cats)){
 	cat1 <- mut_cats[i]
 	aggcat <- a3[a3$Category2==mut_cats[i],]
 
+	if(grepl("^AT", cat1)){
+		aggcatm <- merge(aggcat, binsAT, by=c("CHR", "BIN"))
+		mcols <- atcols
+	} else if (grepl("^GC", cat1)){
+		aggcatm <- merge(aggcat, binsGC, by=c("CHR", "BIN"))
+		mcols <- gccols
+	} else{
+		aggcatm <- merge(aggcat, binscpgGC, by=c("CHR", "BIN"))
+		mcols <- cpggccols
+	}
+
 	aggcat$exp_s <- sample(aggcat$obs, length(aggcat$obs), replace=T)
 
 	# Fit models with all data
 	feat_mod_formula <- as.formula(paste("obs~", paste(covnames, collapse="+")))
 	full_mod_formula <- as.formula(paste("obs~exp+", paste(covnames, collapse="+")))
+	motif_mod_formula <- as.formula(paste("obs~", paste(mcols[-(1:5)], collapse="+")))
 	mut_lm_gc <- glm.nb(obs~prop_GC, data=aggcat)
 	mut_lm_feat <- glm.nb(feat_mod_formula, data=aggcat)
 	mut_lm_motif <- glm.nb(obs~exp, data=aggcat)
+	mut_lm_motif2 <- glm.nb(motif_mod_formula, data=aggcatm)
 	mut_lm_1bp <- glm.nb(obs~exp1, data=aggcat)
 	# mut_lm_3bp <- glm.nb(obs~exp3, data=aggcat)
 	mut_lm_full <- glm.nb(full_mod_formula, data=aggcat)
@@ -217,6 +257,9 @@ for(i in 1:length(mut_cats)){
 	fits_motif <- mut_lm_motif$fitted.values
 	names(fits_motif) <- paste0(aggcat$CHR,".",aggcat$BIN)
 
+	fits_motif2 <- mut_lm_motif2$fitted.values
+	names(fits_motif2) <- paste0(aggcatm$CHR,".",aggcatm$BIN)
+
 	fits_full <- mut_lm_full$fitted.values
 	names(fits_full) <- paste0(aggcat$CHR,".",aggcat$BIN)
 
@@ -245,6 +288,14 @@ for(i in 1:length(mut_cats)){
 		stringsAsFactors=F)
 	model_dat_motif$res <- "motifs"
 
+	model_dat_motif2 <- data.frame(CHR,Category2=cat1, BIN,
+		exp=fits_motif2,
+		# exp=aggcat$exp,
+		obs=aggcatm$obs,
+		exp_s=aggcatm$exp_s,
+		stringsAsFactors=F)
+	model_dat_motif2$res <- "motifs2"
+
 	model_dat_full <- data.frame(CHR,Category2=cat1, BIN,
 		exp=fits_full,
 		obs=aggcat$obs,
@@ -256,6 +307,7 @@ for(i in 1:length(mut_cats)){
 		model_dat_gc,
 		model_dat_feat,
 		model_dat_motif,
+		model_dat_motif2,
 		model_dat_full)
 
 	# z <- summary(mut_lm_full)
@@ -274,7 +326,7 @@ ggsave("/net/bipolar/jedidiah/mutation/images/ll.png")
 # compare.all<-rbind(agg_5bp_100k[,c(1,2,3,4,5,8)], d, d1)
 #^ this version uses direct estimates from motif rates; not fair comparison
 compare.all$res <- factor(compare.all$res,
-	levels = c("GC", "features", "motifs", "motifs+features"))
+	levels = c("GC", "features", "motifs", "motifs2", "motifs+features"))
 compare.all$diff <- compare.all$obs-compare.all$exp
 compare.all$diff_s <- compare.all$obs-compare.all$exp_s
 compare.all$Category2 <- factor(compare.all$Category2)
@@ -409,13 +461,14 @@ mod.corr <- compare.all %>%
 		cor=cor(exp, obs, method="pearson"),
 		cor.p=cor.test(exp, obs, method="pearson")$p.value)
 mod.corr$SE <- corSE(mod.corr$cor, mod.corr$num)
-limits <- aes(ymax = mod.corr$cor + mod.corr$SE, ymin=mod.corr$cor - mod.corr$SE)
+limits <- aes(ymax = mod.corr$cor + mod.corr$SE,
+	ymin=mod.corr$cor - mod.corr$SE)
 dodge <- position_dodge(width=0.9)
 
 ggplot(mod.corr, aes(x=Category2, y=cor, fill=res))+
 	geom_bar(stat="identity", position=dodge)+
-	scale_colour_manual("Predictor", values=myPaletteCat(8)[5:8])+
-	scale_fill_manual("Predictor", values=myPaletteCat(8)[5:8])+
+	scale_colour_manual("Predictor", values=myPaletteCat(8)[4:8])+
+	scale_fill_manual("Predictor", values=myPaletteCat(8)[4:8])+
 	xlab("Category")+
 	ylab("Correlation with observed count")+
 	geom_errorbar(limits, position=dodge, width=0.25)+

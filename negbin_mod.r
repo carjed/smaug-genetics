@@ -171,7 +171,8 @@ atcols <- c(names(dat_5bp_100k$bin)[1:5],
   names(dat_5bp_100k$bin)[which(substr(names(dat_5bp_100k$bin), 3, 3)=="A")])
 
 binsAT <- dat_5bp_100k$bin %>%
-  select_(.dots = atcols)
+  select_(.dots = atcols) %>%
+	arrange(CHR, BIN)
 
 gcdn <- c("CA", "CC", "CT")
 
@@ -179,13 +180,15 @@ gccols <- c(names(dat_5bp_100k$bin)[1:5],
   names(dat_5bp_100k$bin)[which(substr(names(dat_5bp_100k$bin), 3, 4) %in% gcdn)])
 
 binsGC <- dat_5bp_100k$bin %>%
-  select_(.dots = gccols)
+  select_(.dots = gccols) %>%
+	arrange(CHR, BIN)
 
 cpggccols <- c(names(dat_5bp_100k$bin)[1:5],
   names(dat_5bp_100k$bin)[which(substr(names(dat_5bp_100k$bin), 3, 4)=="CG")])
 
 binscpgGC <- dat_5bp_100k$bin %>%
-  select_(.dots = cpggccols)
+  select_(.dots = cpggccols) %>%
+	arrange(CHR, BIN)
 
 # Motifs + genomic features
 compare.all <- data.frame()

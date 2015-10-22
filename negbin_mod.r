@@ -337,7 +337,7 @@ ggsave("/net/bipolar/jedidiah/mutation/images/ll.png")
 # compare.all<-rbind(agg_5bp_100k[,c(1,2,3,4,5,8)], d, d1)
 #^ this version uses direct estimates from motif rates; not fair comparison
 compare.all$res <- factor(compare.all$res,
-	levels = c("GC", "features", "motifs", "motifs2", "motifs+features"))
+	levels = c("GC", "features", "motifs", "motifs_ext", "motifs_ext+features"))
 compare.all$diff <- compare.all$obs-compare.all$exp
 compare.all$diff_s <- compare.all$obs-compare.all$exp_s
 compare.all$Category2 <- factor(compare.all$Category2)
@@ -405,23 +405,23 @@ ggsave("/net/bipolar/jedidiah/mutation/images/rel_ct_cor.png")
 a3 <- a2 %>% group_by(Category2) %>% summarise(cor=cor(rel, nmotifs))
 
 # plot negbin model 5bp motif predictions vs observed
-plotdat <- compare.all[compare.all$res=="motifs",]
-p2 <- ggplot(plotdat, aes(x=obs, y=exp, colour=res))+
-	geom_point(alpha=0.2, size=3)+
-	scale_colour_manual("Model", values=myPaletteCat(8)[7])+
-	facet_wrap(~Category2, ncol=3, scales="free")+
-	ylab("Predicted count")+
-	xlab("Observed count")+
-	theme_bw()+
-	theme(axis.title.y=element_text(size=16),
-		axis.text.y=element_text(size=14),
-		axis.title.x=element_text(size=16),
-		axis.text.x=element_text(size=14),
-		legend.title=element_text(size=16),
-		legend.text=element_text(size=14))
-
-hierfile7 <- paste0(parentdir, "/images/negbin_motif_pred_vs_obs.png")
-ggsave(hierfile7, width=18, height=18)
+# plotdat <- compare.all[compare.all$res=="motifs",]
+# p2 <- ggplot(plotdat, aes(x=obs, y=exp, colour=res))+
+# 	geom_point(alpha=0.2, size=3)+
+# 	scale_colour_manual("Model", values=myPaletteCat(8)[7])+
+# 	facet_wrap(~Category2, ncol=3, scales="free")+
+# 	ylab("Predicted count")+
+# 	xlab("Observed count")+
+# 	theme_bw()+
+# 	theme(axis.title.y=element_text(size=16),
+# 		axis.text.y=element_text(size=14),
+# 		axis.title.x=element_text(size=16),
+# 		axis.text.x=element_text(size=14),
+# 		legend.title=element_text(size=16),
+# 		legend.text=element_text(size=14))
+#
+# hierfile7 <- paste0(parentdir, "/images/negbin_motif_pred_vs_obs.png")
+# ggsave(hierfile7, width=18, height=18)
 
 # plot negbin model 5bp motif predictions vs observed
 p2 <- ggplot(compare.all, aes(x=obs, y=exp, colour=res))+

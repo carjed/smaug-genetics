@@ -312,7 +312,7 @@ for(i in 1:length(mut_cats)){
 		obs=aggcatm$obs,
 		exp_s=aggcatm$exp_s,
 		stringsAsFactors=F)
-	model_dat_full$res <- "motif_ext+features"
+	model_dat_full$res <- "motifs_ext+features"
 
 	compare.all <- rbind(compare.all,
 		model_dat_gc,
@@ -402,7 +402,9 @@ ggplot(a2, aes(x=rel, y=nmotifs))+
 	facet_wrap(~Category2, scales="free")
 ggsave("/net/bipolar/jedidiah/mutation/images/rel_ct_cor.png")
 
-a3 <- a2 %>% group_by(Category2) %>% summarise(cor=cor(rel, nmotifs))
+a3 <- a2 %>%
+	group_by(Category2) %>%
+	summarise(cor=cor(rel, nmotifs, use="complete.obs"))
 
 # plot negbin model 5bp motif predictions vs observed
 # plotdat <- compare.all[compare.all$res=="motifs",]

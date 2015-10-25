@@ -162,7 +162,7 @@ mc2 <- a3 %>%
 
 # Initialize data of motif counts to use directly as covariates
 # in negbin model
-# dat_5bp_100k$bin$CHR <- as.integer(substring(dat_5bp_100k$bin$CHR, 4))
+dat_5bp_100k$bin$CHR <- as.integer(substring(dat_5bp_100k$bin$CHR, 4))
 
 names(dat_5bp_100k$bin) <- gsub('\\(', '_', names(dat_5bp_100k$bin))
 names(dat_5bp_100k$bin) <- gsub('\\)', '_', names(dat_5bp_100k$bin))

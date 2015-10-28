@@ -265,7 +265,6 @@ aggData <- function(datfile, adj){
 					# group_by(Category2, Sequence) %>%
 					# summarise(cor=cor(exp, obs, use="complete.obs"))
 
-
 		datalist<- list("agg"=aggseq, "oe"=s2, "summagg2"=summagg2)
 		return(datalist)
 	}

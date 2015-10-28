@@ -1,167 +1,108 @@
-##############################################################################
-# Negative binomial regression models and plots
-##############################################################################
-
-# First plot paneled histograms of each mutation category
-agg_oe <- gather(agg_5bp_100k, var, value, c(obs,exp))
-
-ggplot(agg_oe, aes(x=value, fill=var))+
-	geom_histogram(alpha=0.5, position="identity")+
-	facet_wrap(~Category2, scales="free")+
-	theme_bw()
-
-cathistfile <- paste0(parentdir, "/images/obs_hist.png")
-ggsave(cathistfile)
+extra_plots <- 0
+if(extra_plots){source("expl_plots.r")}
 
 ##############################################################################
-# For each motif, calculates correlation between observed and mutable sites,
-# then plots this correlation against the motif frequency
-#
-# In AT>NN and CpG GC>NN categories, appears to be a relationship where more
-# common motifs are associated with negative or positive correlations,
-# respectively, e.g., for AT>CG mutations, more common motifs have a strong
-# negative correlation with
+# Merge aggregate data with covariate data
 ##############################################################################
-agg_cov2 <- summagg2 %>%
-	group_by(Category2, Sequence) %>%
-		summarise(corgc=cor(obs, prop_GC, use="complete.obs"),
-		cornm=cor(obs, Count, use="complete.obs"),
-		nmotifs=sum(Count),
-		rel_prop=mean(rel_prop, na.rm=T))
-
-# agg_cov2 %>% summarise(cor=cor(cor, nmotifs, method="spearman"))
-
-agg_cov2$mgc <- nchar(gsub("[AT]", "", agg_cov2$Sequence))-2
-
-ggplot(agg_cov2, aes(x=corgc, y=cornm, colour=mgc, size=nmotifs))+
-	geom_point(alpha=0.3)+
-	scale_colour_continuous(name="Relative Mutation Rate")+
-	facet_wrap(~Category2, scales="free")+
-	xlab("# mutable sites~singleton correlation")+
-	ylab("%GC~singleton correlation")+
-	theme_bw()
-
-gccorfile <- paste0(parentdir, "/images/nmotifs_vs_gccor.png")
-ggsave(gccorfile)
-
-##############################################################################
-# Plots %GC against variance of motifs in each bin
-##############################################################################
-ggplot(agg_cov2, aes(x=nmotifs, y=corgc))+
-	geom_point(alpha=0.3)+
-	facet_wrap(~Category2, scales="free")+
-	xlab("# mutable sites")+
-	ylab("Singleton~GC correlation")+
-	theme_bw()
-gccorfile <- paste0(parentdir, "/images/nmotifs_vs_gccor.png")
-ggsave(gccorfile)
-
-##############################################################################
-# Plots %GC against observed mutations, colored by motif
-##############################################################################
-agg_cov2 <- merge(summagg2, mut_cov, by=c("CHR", "BIN"))
-
-agg_cov2$diff <- agg_cov2$exp-agg_cov2$obs
-agg_cov2$err <- agg_cov2$diff/agg_cov2$obs
-
-err_motif <- agg_cov2 %>%
-	group_by(Category, Sequence) %>%
-	summarise(rel_prop=mean(rel_prop, na.rm=T),
-		corgc=cor(err, prop_GC.x, use="complete.obs"),
-		corrc=cor(err, RATE, use="complete.obs"),
-		coroe=cor(obs, exp, use="complete.obs"),
-		nmotifs=sum(Count),
-		meanerr=mean(err, na.rm=T)) %>%
-	arrange(Category, corgc) %>%
-	mutate(rank=rank(corgc))
-
-# Create separate categories of CpG-specific motifs
-err_motif$Category2 <- ifelse(
-	substr(err_motif$Sequence,adj+1,adj+2) == "CG",
-	paste0("cpg_",err_motif$Category),
-	err_motif$Category)
-
-# plotdat<-err_motif[err_motif$Category2=="GC_AT",]
-plotdat<-err_motif
-ggplot(plotdat,
-		aes(x=rank, y=corgc, group=Category, colour=Category2, size=log(rel_prop)))+
-	geom_point(alpha=0.7)+
-	scale_y_continuous(breaks=seq(-0.8, 0.8, 0.1))+
-	scale_x_continuous(breaks=c(0,64,128,192,256))+
-	# scale_size_continuous(breaks=seq(log(min(plotdat$rel_prop)),
-		# log(max(plotdat$rel_prop)),by=1))+
-	xlab("Motif")+
-	ylab("Error~GC Correlation")+
-	theme_bw()
-
-gcerrfile <- paste0(parentdir, "/images/err-GC_cor.png")
-ggsave(gcerrfile)
-
-ggplot(plotdat,
-		aes(x=Category2, y=meanerr, group=Category2, fill=Category2))+
-	geom_boxplot()+
-	# scale_y_continuous(breaks=seq(-0.1, 0.8, 0.1))+
-	# scale_x_continuous(breaks=c(0,64,128,192,256))+
-	# scale_size_continuous(breaks=seq(log(min(plotdat$rel_prop)),
-		# log(max(plotdat$rel_prop)),by=1))+
-	ylab("Mean % Error")+
-	theme_bw()
-
-gcboxfile <- paste0(parentdir, "/images/err-GC_box.png")
-ggsave(gcboxfile)
-
-# [err_motif$Category2!="cpg_GC_AT",]
-
 agg_cov <- merge(agg_5bp_100k, mut_cov, by=c("CHR", "BIN"))
-
 agg_cov$ratio <- agg_cov$exp/agg_cov$obs
 agg_cov <- filter(agg_cov, ratio<5) %>% mutate(med=(maxn+minn)/2)
 
+##############################################################################
+# Get relative rates for 1bp and 3bp motifs and compare likelihoods
+##############################################################################
+rates5$Seq3 <- substr(rates5$Sequence, 2, 4)
+
+rates1 <- rates5 %>%
+  dplyr::select(Sequence, Category2, COUNT, num) %>%
+  group_by(Category2) %>%
+  summarise(COUNT1=sum(COUNT), num1=sum(num), rel_prop1=num1/COUNT1)
+
+rates3 <- rates5 %>%
+  dplyr::select(Seq3, Category2, COUNT, num) %>%
+  group_by(Seq3, Category2) %>%
+  summarise(COUNT3=sum(COUNT), num3=sum(num), rel_prop3=num3/COUNT3)
+
+rates_full <- merge(rates5, rates1, by="Category2")
+rates_full <- merge(rates_full, rates3, by=c("Seq3", "Category2"))
+
+rates_full$logLik1 <- dbinom(rates_full$num,
+  rates_full$COUNT,
+  rates_full$rel_prop1, log=T)
+rates_full$logLik3 <- dbinom(rates_full$num,
+  rates_full$COUNT,
+  rates_full$rel_prop3, log=T)
+rates_full$logLik5 <- dbinom(rates_full$num,
+  rates_full$COUNT,
+  rates_full$rel_prop, log=T)
+
+ra1<-rates_full %>%
+  group_by(Category2) %>%
+  summarise(L1=-2*sum(logLik1),
+    L3=-2*sum(logLik3),
+    L5=-2*sum(logLik5))
+
+ra1a<-gather(ra1, model, log, L1:L5)
+
+ra1a$k <- c(rep(1,9),
+  c(rep(16,3), rep(12,3), rep(4,3)),
+  c(rep(256,3), rep(192,3), rep(64,3)))
+
+ra1a$AIC <- 2*ra1a$k+2*ra1a$log
+
+ra1b <- gather(ra1a, stat, L, c(log, AIC))
+levels(ra1b$model) <- c("1", "3", "5")
+levels(ra1b$stat) <- c("-2ln(L)", "AIC")
+names(ra1b) <- c("Category", "Motif_Length", "k", "Stat", "L")
+
+# Plot AIC and -2log(L) for each category
+ggplot(ra1b, aes(x=Motif_Length, y=L, group=Stat, colour=Stat))+
+  scale_colour_brewer(palette="Set1")+
+  geom_point()+
+  geom_line()+
+  facet_wrap(~Category, scales="free")+
+  theme_bw()+
+  xlab("Motif Length")+
+  theme(axis.title.y=element_blank(),
+    legend.title=element_blank())
+
+ggsave("/net/bipolar/jedidiah/mutation/images/compare_AIC.png")
 
 ##############################################################################
-# Plots %GC against variance of motifs in each bin
-##############################################################################
-ggplot(agg_cov, aes(x=prop_GC, y=motifvar))+
-	geom_point(alpha=0.3, colour=myPaletteCat(8)[3])+
-	# geom_errorbar(aes(ymax=maxn, ymin=minn))+
-	facet_wrap(~Category2, scales="free")+
-	theme_bw()
-
-gcfile <- paste0(parentdir, "/images/gc_vs_var.png")
-ggsave(gcfile)
-
-##############################################################################
-# Run negbin models
+# Run combined negbin model
 ##############################################################################
 
-# Get 1bp relative rates
-sa2<-summagg2 %>%
-	group_by(CHR, BIN, Category2) %>%
-	summarise(ct=sum(Count, na.rm=T), obs=sum(obs, na.rm=T))
-sa3<-sa2 %>%
-	group_by(Category2) %>%
-	summarise(ct=sum(ct), obs=sum(obs), rel_prop=obs/ct)
+# Testing--use this to calculate weighted means for all 3 motif lengths
+rates_full_s <- rates_full %>%
+	dplyr::select(Sequence, Category2, rel_prop, rel_prop1, rel_prop3)
 
-a3<-merge(agg_cov, sa3[,c(1,2,4)], by="Category2")
-a3$exp1<-a3$nmotifs*a3$rel_prop
+# Add expected #singletons per bin using 1bp motifs
+# -used in comparing category-specific models with weighted mean method
+a3 <- merge(agg_cov, rates1[,c(1,2,4)], by="Category2")
+a3$exp1 <- a3$nmotifs*a3$rel_prop1
 
-# plotdat<-filter(a3, Category2=="GC_TA" & EXON<0.1)
-plotdat<-filter(a3, Category2=="GC_TA")
-ggplot(plotdat, aes(x=prop_GC, y=obs))+
-	geom_point(alpha=0.3)+
-	facet_wrap(~Category2, scales="free")+
-	theme_bw()
+# Aggregate across categories for total #singletons per bin
+a3a <- a3 %>%
+  group_by_(.dots=lapply(names(a3)[c(2,3,10:22)], as.symbol)) %>%
+  summarise(obs=sum(obs))
 
-gcobsfile <- paste0(parentdir, "/images/gc_vs_obs.png")
-ggsave(gcobsfile, width=12, heigh=12)
+# Add motif counts per bin
+a3a1 <- merge(a3a, dat_5bp_100k$bin, by=c("CHR", "BIN"))
 
-mc2 <- a3 %>%
-	group_by(Category2) %>%
-	summarise(cor1=cor(exp, obs, method="pearson"),
-		cor2=cor(exp1, obs, method="pearson"))
+motif_mod_form <- as.formula(paste("obs~",
+	paste(names(a3a1)[-c(1,2,16:19)], collapse="+")))
 
-# Initialize data of motif counts to use directly as covariates
-# in negbin model
+# Uses poisson regression instead of negbin, since negbin fails to converge
+# with default parameters of glm.nb()
+mut_lm_dens <- glm(motif_mod_form, data=a3a1, family="poisson")
+
+# Calculate McFadden's pseudo R-squared (unadjusted)
+rsq <- 1-mut_lm_dens$deviance/mut_lm_dens$null.deviance
+cat("Combined model R-squared: ", rsq, "\n")
+
+##############################################################################
+# Initialize data of motif counts to use as covariates in negbin model
+##############################################################################
 dat_5bp_100k$bin$CHR <- as.integer(substring(dat_5bp_100k$bin$CHR, 4))
 
 names(dat_5bp_100k$bin) <- gsub('\\(', '_', names(dat_5bp_100k$bin))
@@ -175,7 +116,6 @@ binsAT <- dat_5bp_100k$bin %>%
 	arrange(CHR, BIN)
 
 gcdn <- c("CA", "CC", "CT")
-
 gccols <- c(names(dat_5bp_100k$bin)[1:5],
   names(dat_5bp_100k$bin)[which(substr(names(dat_5bp_100k$bin), 3, 4) %in% gcdn)])
 
@@ -190,23 +130,25 @@ binscpgGC <- dat_5bp_100k$bin %>%
   select_(.dots = cpggccols) %>%
 	arrange(CHR, BIN)
 
-# Motifs + genomic features
+##############################################################################
+# Model each category independently
+##############################################################################
 compare.all <- data.frame()
 compare.err <- data.frame()
 logliks <- data.frame()
 mut_cats <- unique(agg_5bp_100k$Category2)
 
-for(i in 1:length(mut_cats)){
+for(i in 1:length(mut_cats)) {
 	cat1 <- mut_cats[i]
 	aggcat <- a3[a3$Category2==mut_cats[i],]
 
-	if(grepl("^AT", cat1)){
+	if(grepl("^AT", cat1)) {
 		aggcatm <- merge(aggcat, binsAT, by=c("CHR", "BIN"))
 		mcols <- atcols
-	} else if (grepl("^GC", cat1)){
+	} else if(grepl("^GC", cat1)) {
 		aggcatm <- merge(aggcat, binsGC, by=c("CHR", "BIN"))
 		mcols <- gccols
-	} else{
+	} else {
 		aggcatm <- merge(aggcat, binscpgGC, by=c("CHR", "BIN"))
 		mcols <- cpggccols
 	}
@@ -320,12 +262,11 @@ for(i in 1:length(mut_cats)){
 		model_dat_motif,
 		model_dat_motif2,
 		model_dat_full)
-
-	# z <- summary(mut_lm_full)
-	# print(cat1)
-	# print(z)
 }
 
+##############################################################################
+# Plot model log-likelihoods
+##############################################################################
 ggplot(logliks, aes(x=params, y=ll, group=Category2, colour=Category2))+
 	geom_line()+
 	theme_bw()+
@@ -333,13 +274,14 @@ ggplot(logliks, aes(x=params, y=ll, group=Category2, colour=Category2))+
 	ylab("2 log likelihood")+
 ggsave("/net/bipolar/jedidiah/mutation/images/ll.png")
 
+##############################################################################
+# Process resulting data from models
+##############################################################################
 # Update comparison data frame
-# compare.all<-rbind(agg_5bp_100k[,c(1,2,3,4,5,8)], d, d1)
-#^ this version uses direct estimates from motif rates; not fair comparison
 compare.all$res <- factor(compare.all$res,
 	levels = c("GC", "features", "motifs", "motifs_ext", "motifs_ext+features"))
 compare.all$diff <- compare.all$obs-compare.all$exp
-compare.all$diff_s <- compare.all$obs-compare.all$exp_s
+compare.all$diff_s <- compare.all$obs-compare.all$exp_s # based on random sample
 compare.all$Category2 <- factor(compare.all$Category2)
 # levels(compare.all$Category2) <- c(
 	# "AT>CG", "AT>GC", "AT>TA",
@@ -361,112 +303,20 @@ ca <- compare.all %>%
 		sdobs=std(obs),
 		fold=meanerr_s/meanerr)
 
-# Get mean fold-improvement of model error vs. error from random draws from dist
-ca.fold <- ca %>% group_by(res) %>% summarise(mean=mean(fold))
-
 caout <- paste0(parentdir, "/output/", nbp, "bp_err.txt")
 write.table(ca, caout, col.names=T, row.names=F, quote=F, sep="\t")
+
 cad <- dcast(data.frame(ca), Category2~res, value.var="meanerr")
 
-# ac2 <- merge(compare.all, mut_cov, by=c("CHR", "BIN")) %>%
-	# group_by("Category2") %>%
-	# summarise(corgc=cor(diff, prop_GC))
-
-
-# Function to compute standard error for correlations
-corSE<-function(corval, ct){
-	sqrt((1-corval^2)/(ct-2))
-}
-
-# plot raw 5bp motif predictions vs observed
-p2 <- ggplot(agg_5bp_100k, aes(x=obs, y=nmotifs))+
-	geom_point(alpha=0.2, size=3)+
-	scale_colour_manual("Model", values=myPaletteCat(8)[6:7])+
-	facet_wrap(~Category2, scales="free", ncol=3)+
-	ylab("Mutable motifs")+
-	xlab("Observed count")+
-	theme_bw()+
-	theme(axis.title.y=element_text(size=16),
-		axis.text.y=element_text(size=14),
-		axis.title.x=element_text(size=16),
-		axis.text.x=element_text(size=14),
-		legend.title=element_text(size=16),
-		legend.text=element_text(size=14))
-
-hierfile8 <- paste0(parentdir, "/images/raw_motif_pred_vs_obs.png")
-ggsave(hierfile8, width=18, height=18)
-
-a2 <- mutate(agg_5bp_100k, rel=obs/nmotifs)
-ggplot(a2, aes(x=rel, y=nmotifs))+
-	geom_point()+
-	facet_wrap(~Category2, scales="free")
-ggsave("/net/bipolar/jedidiah/mutation/images/rel_ct_cor.png")
-
-a3 <- a2 %>%
+# Calculate correlation between relative rates and #motifs
+rate_motif_cor <- agg_5bp_100k %>%
+	mutate(rel=obs/nmotifs) %>%
 	group_by(Category2) %>%
 	summarise(cor=cor(rel, nmotifs, use="complete.obs"))
 
-# plot negbin model 5bp motif predictions vs observed
-# plotdat <- compare.all[compare.all$res=="motifs",]
-# p2 <- ggplot(plotdat, aes(x=obs, y=exp, colour=res))+
-# 	geom_point(alpha=0.2, size=3)+
-# 	scale_colour_manual("Model", values=myPaletteCat(8)[7])+
-# 	facet_wrap(~Category2, ncol=3, scales="free")+
-# 	ylab("Predicted count")+
-# 	xlab("Observed count")+
-# 	theme_bw()+
-# 	theme(axis.title.y=element_text(size=16),
-# 		axis.text.y=element_text(size=14),
-# 		axis.title.x=element_text(size=16),
-# 		axis.text.x=element_text(size=14),
-# 		legend.title=element_text(size=16),
-# 		legend.text=element_text(size=14))
-#
-# hierfile7 <- paste0(parentdir, "/images/negbin_motif_pred_vs_obs.png")
-# ggsave(hierfile7, width=18, height=18)
-
-# plot negbin model 5bp motif predictions vs observed
-p2 <- ggplot(compare.all, aes(x=obs, y=exp, colour=res))+
-	geom_point(alpha=0.2, size=3)+
-	geom_point(alpha=0.2, size=3, data=filter(plotdat, res=="features"))+
-	geom_point(alpha=0.2, size=3, data=filter(plotdat, res=="motifs+features"))+
-	scale_colour_manual("Model", values=myPaletteCat(8)[4:8])+
-	facet_wrap(~Category2, ncol=3, scales="free")+
-	ylab("Predicted count")+
-	xlab("Observed count")+
-	theme_bw()+
-	theme(axis.title.y=element_text(size=16),
-		axis.text.y=element_text(size=14),
-		axis.title.x=element_text(size=16),
-		axis.text.x=element_text(size=14),
-		legend.title=element_text(size=16),
-		legend.text=element_text(size=14))
-
-hierfile4 <- paste0(parentdir, "/images/negbin_all_pred_vs_obs.png")
-ggsave(hierfile4, width=18, height=18)
-
-# Plot scatterplot across chr of model errors (using negbin motif predictions)
-plotdat <- compare.all[compare.all$CHR==2 & compare.all$diff>-150,]
-p2 <- ggplot(plotdat, aes(x=BIN, y=zscore, colour=res))+
-	geom_point(alpha=0.4, size=4)+
-	geom_point(alpha=0.4, size=4, data=filter(plotdat, res=="features"))+
-	geom_point(alpha=0.4, size=4, data=filter(plotdat, res=="motifs+features"))+
-	scale_colour_manual("Model", values=myPaletteCat(8)[4:8])+
-	facet_wrap(~Category2, scales="free", ncol=3)+
-	ylab("Error")+
-	xlab(NULL)+
-	theme_bw()+
-	theme(axis.title.y=element_text(size=16),
-		axis.text.y=element_text(size=14),
-		legend.title=element_text(size=16),
-		legend.text=element_text(size=14),
-		axis.text.x=element_blank(),
-		axis.ticks.x=element_blank())
-
-hierfile5 <- paste0(parentdir, "/images/hier_diffs_pt5.png")
-ggsave(hierfile5, width=18, height=18)
-
+##############################################################################
 # Plot barcharts comparing obs/exp correlation for different models
+##############################################################################
 mod.corr <- compare.all %>%
 	filter(exp>100) %>%
 	group_by(Category2, res) %>%
@@ -496,7 +346,9 @@ ggplot(mod.corr, aes(x=Category2, y=cor, fill=res))+
 modelbar <- paste0(parentdir, "/images/gw_5bp_vs_mod.png")
 ggsave(modelbar, width=7, height=7)
 
+##############################################################################
 # Plot barcharts comparing 10-fold cross validation MSPE
+##############################################################################
 compare.err$res <- factor(compare.err$res,
 	levels = c("GC", "features", "motifs", "motifs+features"))
 

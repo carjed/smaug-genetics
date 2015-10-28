@@ -167,11 +167,11 @@ if(run_agg){
 	aggV <- aggData(dat_5bp_100k, adj) #<-modify the adj value for 3bp data
 
 	agg_5bp_100k <- aggV$oe
-	rates1 <- aggV$agg
+	rates5 <- aggV$agg
 	summagg2 <- aggV$summagg2
 
 	ratefile <- paste0(parentdir, "/output/", nbp, "bp_", bink, "k_rates.txt")
-	write.table(rates1, ratefile, col.names=T, row.names=F, quote=F, sep="\t")
+	write.table(rates5, ratefile, col.names=T, row.names=F, quote=F, sep="\t")
 
 	tottime <- (proc.time()-ptm)[3]
 	cat("Done (", tottime, "s)\n")

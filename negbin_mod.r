@@ -69,6 +69,36 @@ ggplot(ra1b, aes(x=Motif_Length, y=L, group=Stat, colour=Stat))+
 ggsave("/net/bipolar/jedidiah/mutation/images/compare_AIC.png")
 
 ##############################################################################
+# Initialize data of motif counts to use as covariates in negbin model
+##############################################################################
+dat_5bp_100k$bin$CHR <- as.integer(substring(dat_5bp_100k$bin$CHR, 4))
+
+names(dat_5bp_100k$bin) <- gsub('\\(', '_', names(dat_5bp_100k$bin))
+names(dat_5bp_100k$bin) <- gsub('\\)', '_', names(dat_5bp_100k$bin))
+
+atcols <- c(names(dat_5bp_100k$bin)[1:5],
+  names(dat_5bp_100k$bin)[which(substr(names(dat_5bp_100k$bin), 3, 3)=="A")])
+
+binsAT <- dat_5bp_100k$bin %>%
+  select_(.dots = atcols) %>%
+	arrange(CHR, BIN)
+
+gcdn <- c("CA", "CC", "CT")
+gccols <- c(names(dat_5bp_100k$bin)[1:5],
+  names(dat_5bp_100k$bin)[which(substr(names(dat_5bp_100k$bin), 3, 4) %in% gcdn)])
+
+binsGC <- dat_5bp_100k$bin %>%
+  select_(.dots = gccols) %>%
+	arrange(CHR, BIN)
+
+cpggccols <- c(names(dat_5bp_100k$bin)[1:5],
+  names(dat_5bp_100k$bin)[which(substr(names(dat_5bp_100k$bin), 3, 4)=="CG")])
+
+binscpgGC <- dat_5bp_100k$bin %>%
+  select_(.dots = cpggccols) %>%
+	arrange(CHR, BIN)
+
+##############################################################################
 # Run combined negbin model
 ##############################################################################
 
@@ -102,36 +132,6 @@ maic <- AIC(mut_lm_dens)
 
 cat("Adjusted R-squared of combined model: ", rsq, "\n")
 cat("AIC of combined model: ", maic, "\n")
-
-##############################################################################
-# Initialize data of motif counts to use as covariates in negbin model
-##############################################################################
-dat_5bp_100k$bin$CHR <- as.integer(substring(dat_5bp_100k$bin$CHR, 4))
-
-names(dat_5bp_100k$bin) <- gsub('\\(', '_', names(dat_5bp_100k$bin))
-names(dat_5bp_100k$bin) <- gsub('\\)', '_', names(dat_5bp_100k$bin))
-
-atcols <- c(names(dat_5bp_100k$bin)[1:5],
-  names(dat_5bp_100k$bin)[which(substr(names(dat_5bp_100k$bin), 3, 3)=="A")])
-
-binsAT <- dat_5bp_100k$bin %>%
-  select_(.dots = atcols) %>%
-	arrange(CHR, BIN)
-
-gcdn <- c("CA", "CC", "CT")
-gccols <- c(names(dat_5bp_100k$bin)[1:5],
-  names(dat_5bp_100k$bin)[which(substr(names(dat_5bp_100k$bin), 3, 4) %in% gcdn)])
-
-binsGC <- dat_5bp_100k$bin %>%
-  select_(.dots = gccols) %>%
-	arrange(CHR, BIN)
-
-cpggccols <- c(names(dat_5bp_100k$bin)[1:5],
-  names(dat_5bp_100k$bin)[which(substr(names(dat_5bp_100k$bin), 3, 4)=="CG")])
-
-binscpgGC <- dat_5bp_100k$bin %>%
-  select_(.dots = cpggccols) %>%
-	arrange(CHR, BIN)
 
 ##############################################################################
 # Model each category independently

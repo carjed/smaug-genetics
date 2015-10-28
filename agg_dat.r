@@ -184,6 +184,7 @@ aggData <- function(datfile, adj){
 		seqs<-unique(aggseq$Sequence)
 
 		# Test for differences in proportions on opposite strands
+		pvals<-data.frame()
 		if(adj==2){
 			for(i in 1:6){
 				for(j in 1:512){
@@ -192,18 +193,16 @@ aggData <- function(datfile, adj){
 					dat<-aggseq[(aggseq$Sequence==seqs[j] & aggseq$Category==cats[i]),]
 					if(nrow(dat)==2){
 						test<-prop.test(dat$n, dat$COUNT)
-						if(test$p.value<0.05/1536){
-							print(cat)
-							print(seq)
-							print(dat)
-							print(test)
-							print(test$p.value)
-							# print(dat)
-						}
+						row<-data.frame(cat, seq, test$p.value)
+						pvals<-rbind(pvals, row)
 					}
 				}
 			}
 		}
+
+		pvals$adj<-p.adjust(pvals$test.p.value, "BH")
+		head(pvals)
+
 	}
 
 	# Get dataframe of observed and predicted counts

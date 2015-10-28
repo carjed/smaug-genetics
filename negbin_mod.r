@@ -120,18 +120,27 @@ a3a <- a3 %>%
 a3a1 <- merge(a3a, dat_5bp_100k$bin, by=c("CHR", "BIN"))
 
 motif_mod_form <- as.formula(paste("obs~",
+	paste(names(a3a1)[-c(1:19)], collapse="+")))
+
+full_mod_form <- as.formula(paste("obs~",
 	paste(names(a3a1)[-c(1,2,16:19)], collapse="+")))
 
 # Uses poisson regression instead of negbin, since negbin fails to converge
 # with default parameters of glm.nb()
-mut_lm_dens <- glm(motif_mod_form, data=a3a1, family="poisson")
+mut_lm_m_all <- glm(motif_mod_form, data=a3a1, family="poisson")
+mut_lm_f_all <- glm(full_mod_form, data=a3a1, family="poisson")
 
 # Calculate McFadden's pseudo R-squared (unadjusted)
-rsq <- 1-mut_lm_dens$deviance/mut_lm_dens$null.deviance
-maic <- AIC(mut_lm_dens)
+mrsq <- 1-mut_lm_m_all$deviance/mut_lm_m_all$null.deviance
+frsq <- 1-mut_lm_f_all$deviance/mut_lm_f_all$null.deviance
+maic <- AIC(mut_lm_m_all)
+faic <- AIC(mut_lm_f_all)
 
-cat("Adjusted R-squared of combined model: ", rsq, "\n")
-cat("AIC of combined model: ", maic, "\n")
+cat("Adjusted R-squared of combined model (motifs): ", mrsq, "\n")
+cat("AIC of combined model (motifs): ", maic, "\n")
+
+cat("Adjusted R-squared of combined model (full): ", frsq, "\n")
+cat("AIC of combined model (full): ", faic, "\n")
 
 ##############################################################################
 # Model each category independently

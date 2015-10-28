@@ -98,7 +98,10 @@ mut_lm_dens <- glm(motif_mod_form, data=a3a1, family="poisson")
 
 # Calculate McFadden's pseudo R-squared (unadjusted)
 rsq <- 1-mut_lm_dens$deviance/mut_lm_dens$null.deviance
-cat("Combined model R-squared: ", rsq, "\n")
+maic <- AIC(mut_lm_dens)
+
+cat("Adjusted R-squared of combined model: ", rsq, "\n")
+cat("AIC of combined model: ", maic, "\n")
 
 ##############################################################################
 # Initialize data of motif counts to use as covariates in negbin model

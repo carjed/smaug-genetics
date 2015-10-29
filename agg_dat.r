@@ -45,7 +45,7 @@ aggData <- function(datfile, adj){
 	summfile2 <- summfile[!(summfile$IND %in% filterset$IND),]
 
 	# Plot genome-wide motif heatmaps
-	plot_heatmap <- 1
+	plot_heatmap <- 0
 	if(plot_heatmap==1){
 
 		# aggseq <- count(summfile, c("Sequence", "Category", "CAT", "COUNT", "SEQ"))

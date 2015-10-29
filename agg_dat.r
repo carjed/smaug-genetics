@@ -36,13 +36,17 @@ aggData <- function(datfile, adj){
 
 	# Cutoff of 1.5 removes 44Mb and ~500,000 variants
 	# 1.2 removes 3Mb and ~60,000 variants (mostly Chr8)
-	cutoff <- 1.2
-	filterset <- tstv[tstv$TSTV<cutoff,]
 
-	summfile$IND <- paste0(summfile$CHR, "_", summfile$BIN)
-	filterset$IND <- paste0(filterset$CHR, "_", filterset$BIN)
+	filter<-0
+	if(filter){
+		cutoff <- 1.2
+		filterset <- tstv[tstv$TSTV<cutoff,]
 
-	summfile2 <- summfile[!(summfile$IND %in% filterset$IND),]
+		summfile$IND <- paste0(summfile$CHR, "_", summfile$BIN)
+		filterset$IND <- paste0(filterset$CHR, "_", filterset$BIN)
+
+		summfile2 <- summfile[!(summfile$IND %in% filterset$IND),]
+	}
 
 	# Plot genome-wide motif heatmaps
 	plot_heatmap <- 0

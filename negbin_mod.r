@@ -11,7 +11,7 @@ agg_cov <- filter(agg_cov, ratio<5) %>% mutate(med=(maxn+minn)/2)
 ##############################################################################
 # Get relative rates for 1bp and 3bp motifs and compare likelihoods
 ##############################################################################
-rates5$Seq3 <- substr(rates5$Sequence, 2, 4)
+rates5$Seq3 <- substr(rates5$Sequence, adj, nbp-adj+1)
 
 rates1 <- rates5 %>%
   dplyr::select(Sequence, Category2, COUNT, num) %>%
@@ -23,35 +23,84 @@ rates3 <- rates5 %>%
   group_by(Seq3, Category2) %>%
   summarise(COUNT3=sum(COUNT), num3=sum(num), rel_prop3=num3/COUNT3)
 
+if(nbp==7){
+	rates5$Seq5 <- substr(rates5$Sequence, adj-1, nbp-1)
+
+	rates5a <- rates5 %>%
+	  dplyr::select(Seq5, Category2, COUNT, num) %>%
+	  group_by(Seq5, Category2) %>%
+	  summarise(COUNT5=sum(COUNT), num5=sum(num), rel_prop5=num5/COUNT5)
+}
+
 rates_full <- merge(rates5, rates1, by="Category2")
 rates_full <- merge(rates_full, rates3, by=c("Seq3", "Category2"))
+
+if(nbp==7){
+	rates_full <- merge(rates_full, rates5a, by=c("Seq5", "Category2"))
+}
 
 rates_full$logLik1 <- dbinom(rates_full$num,
   rates_full$COUNT,
   rates_full$rel_prop1, log=T)
+
 rates_full$logLik3 <- dbinom(rates_full$num,
   rates_full$COUNT,
   rates_full$rel_prop3, log=T)
-rates_full$logLik5 <- dbinom(rates_full$num,
-  rates_full$COUNT,
-  rates_full$rel_prop, log=T)
 
-ra1<-rates_full %>%
-  group_by(Category2) %>%
-  summarise(L1=-2*sum(logLik1),
-    L3=-2*sum(logLik3),
-    L5=-2*sum(logLik5))
+if(nbp==7){
+	rates_full$logLik5 <- dbinom(rates_full$num,
+	  rates_full$COUNT,
+	  rates_full$rel_prop5, log=T)
 
-ra1a<-gather(ra1, model, log, L1:L5)
+	rates_full$logLik7 <- dbinom(rates_full$num,
+	  rates_full$COUNT,
+	  rates_full$rel_prop, log=T)
 
-ra1a$k <- c(rep(1,9),
-  c(rep(16,3), rep(12,3), rep(4,3)),
-  c(rep(256,3), rep(192,3), rep(64,3)))
+} else {
+	rates_full$logLik5 <- dbinom(rates_full$num,
+	  rates_full$COUNT,
+	  rates_full$rel_prop, log=T)
+}
 
-ra1a$AIC <- 2*ra1a$k+2*ra1a$log
+if(nbp==7){
+	ra1<-rates_full %>%
+	  group_by(Category2) %>%
+	  summarise(L1=-2*sum(logLik1),
+	    L3=-2*sum(logLik3),
+	    L5=-2*sum(logLik5),
+			L7=-2*sum(logLik7))
 
-ra1b <- gather(ra1a, stat, L, c(log, AIC))
-levels(ra1b$model) <- c("1", "3", "5")
+	ra1a<-gather(ra1, model, log, L1:L7)
+
+	ra1a$k <- c(rep(1,9),
+	  c(rep(16,3), rep(12,3), rep(4,3)),
+	  c(rep(256,3), rep(192,3), rep(64,3)),
+		c(rep(4096,3), rep(3072,3), rep(1024,3)))
+
+	ra1a$AIC <- 2*ra1a$k+2*ra1a$log
+
+	ra1b <- gather(ra1a, stat, L, c(log, AIC))
+	levels(ra1b$model) <- c("1", "3", "5", "7")
+
+} else {
+	ra1<-rates_full %>%
+	  group_by(Category2) %>%
+	  summarise(L1=-2*sum(logLik1),
+	    L3=-2*sum(logLik3),
+	    L5=-2*sum(logLik5))
+
+	ra1a<-gather(ra1, model, log, L1:L5)
+
+	ra1a$k <- c(rep(1,9),
+	  c(rep(16,3), rep(12,3), rep(4,3)),
+	  c(rep(256,3), rep(192,3), rep(64,3)))
+
+	ra1a$AIC <- 2*ra1a$k+2*ra1a$log
+
+	ra1b <- gather(ra1a, stat, L, c(log, AIC))
+	levels(ra1b$model) <- c("1", "3", "5")
+}
+
 levels(ra1b$stat) <- c("-2ln(L)", "AIC")
 names(ra1b) <- c("Category", "Motif_Length", "k", "Stat", "L")
 
@@ -77,7 +126,7 @@ names(dat_5bp_100k$bin) <- gsub('\\(', '_', names(dat_5bp_100k$bin))
 names(dat_5bp_100k$bin) <- gsub('\\)', '_', names(dat_5bp_100k$bin))
 
 atcols <- c(names(dat_5bp_100k$bin)[1:5],
-  names(dat_5bp_100k$bin)[which(substr(names(dat_5bp_100k$bin), 3, 3)=="A")])
+  names(dat_5bp_100k$bin)[which(substr(names(dat_5bp_100k$bin), adj+1, adj+1)=="A")])
 
 binsAT <- dat_5bp_100k$bin %>%
   select_(.dots = atcols) %>%
@@ -85,14 +134,14 @@ binsAT <- dat_5bp_100k$bin %>%
 
 gcdn <- c("CA", "CC", "CT")
 gccols <- c(names(dat_5bp_100k$bin)[1:5],
-  names(dat_5bp_100k$bin)[which(substr(names(dat_5bp_100k$bin), 3, 4) %in% gcdn)])
+  names(dat_5bp_100k$bin)[which(substr(names(dat_5bp_100k$bin), adj+1, adj+2) %in% gcdn)])
 
 binsGC <- dat_5bp_100k$bin %>%
   select_(.dots = gccols) %>%
 	arrange(CHR, BIN)
 
 cpggccols <- c(names(dat_5bp_100k$bin)[1:5],
-  names(dat_5bp_100k$bin)[which(substr(names(dat_5bp_100k$bin), 3, 4)=="CG")])
+  names(dat_5bp_100k$bin)[which(substr(names(dat_5bp_100k$bin), adj+1, adj+2)=="CG")])
 
 binscpgGC <- dat_5bp_100k$bin %>%
   select_(.dots = cpggccols) %>%

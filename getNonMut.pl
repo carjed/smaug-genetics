@@ -2,7 +2,7 @@
 
 ##############################################################################
 # Used to obtain full data from logistic regression model
-# loops through reference genome and outputs 1 line per base, as long as 
+# loops through reference genome and outputs 1 line per base, as long as
 # valid covariate data exists
 ##############################################################################
 
@@ -73,8 +73,8 @@ my $f_positions = "$parentdir/output/logmod_data/chr${chr}_${categ}_pos_examples
 open my $positions, '<', $f_positions or die "can't open $f_positions: $!";
 
 # initialize phastCons data
-my $f_cons = "$parentdir/reference_data/chr$chr.phastCons46way.primates.wigFix";
-open my $cons, '<', $f_cons or die "can't open $f_cons: $!";
+# my $f_cons = "$parentdir/reference_data/chr$chr.phastCons46way.primates.wigFix";
+# open my $cons, '<', $f_cons or die "can't open $f_cons: $!";
 
 # Get reference sequence
 my $seq=&getRef();
@@ -97,7 +97,7 @@ while (<$covs>){
 	my @line=split(/\t/, $_);
 	my $key=join("\t", @line[0 .. 1]);
 	my $pcs=join("\t", @line[2 .. $#line]);
-	
+
 	$hash{$key}=$pcs;
 }
 
@@ -113,7 +113,7 @@ while (<$positions>) {
 	my @line=split(/\t/, $_);
 	my $key=$line[2];
 	push (@POS, $key);
-	
+
 	$poshash{$key}=$_;
 }
 
@@ -122,16 +122,16 @@ print "Writing chr${chr}: ${categ} data file...\n";
 for my $strpos (0 .. $seqlength){
 	my $base = substr($seq, $strpos, 1);
 	my $pos = $strpos+1;
-	
+
 	my $bin = ceil($pos/$binwidth);
 	my $key2=join("\t", $chr, $bin);
-	
+
 	if(defined $hash{$key2}){
 		if(($base =~ /$b1|$b2/) & (!exists $poshash{$pos})){
 			# push (@POS, $pos); # add position to exclusion list
 			my $localseq = substr($seq, $pos-$adj-1, $subseq);
 			my $altlocalseq = reverse substr($altseq, $pos-$adj-1, $subseq);
-			
+
 			# Coerce local sequence info to format used in R
 			my $sequence;
 			if(substr($localseq,$adj,1) lt substr($altlocalseq,$adj,1)){
@@ -139,16 +139,16 @@ for my $strpos (0 .. $seqlength){
 			} else {
 				$sequence = $altlocalseq . '(' . $localseq . ')';
 			}
-			
+
 			# write line if site has non-N context
 			if ($sequence !~ /N/) {
 				my $covs=&updateCovs($chr, $bin, $pos);
-				print OUT "$chr\t$bin\t$pos\t$sequence\t 0 \t$covs\n";	 
+				print OUT "$chr\t$bin\t$pos\t$sequence\t 0 \t$covs\n";
 			}
 		}elsif(exists $poshash{$pos}){
 			my $covs=&updateCovs($chr, $bin, $pos);
 			print OUT "$poshash{$pos}\t$covs\n";
-		}		
+		}
 	}
 }
 
@@ -205,39 +205,39 @@ sub getRef{
 			}
 		}
 	}
-	
+
 	return $seq;
 }
 
 
 sub updateCovs{
-	
+
 	my $CHR=shift;
 	my $BIN=shift;
 	my $pos=shift;
-	
+
 	# Get keys for current and neighboring bins
 	my $c_linekey=join("\t", $CHR, $BIN);
 	my $p_linekey=join("\t", $CHR, $BIN-1);
 	my $n_linekey=join("\t", $CHR, $BIN+1);
-	
+
 	# my $pos=$line[2];
 	my $posmin=$BIN*$binwidth-$binwidth;
-	
+
 	# Get relative position
 	my $relpos = ($pos-$posmin)/$binwidth;
 
-	# Calculate proportion 
+	# Calculate proportion
 	my $prop_c_bin = -abs($relpos-0.5)+1;
-	
+
 	# Get covariates of containing bin
 	my $o_line = $hash{$c_linekey};
-	
+
 	# print "$c_linekey\n";
 	# print "$o_line\n";
-	
+
 	my @c_feats = split(/\t/, $o_line);
-	
+
 	# Calculate covariates in current bin proportional to position
 	foreach my $x (@c_feats) { $x = $x * $prop_c_bin; }
 
@@ -248,7 +248,7 @@ sub updateCovs{
 		my @p_feats = split(/\t/, $hash{$p_linekey});
 		foreach my $x (@p_feats) { $x = $x * $prop_p_bin; }
 		@sum = pairwise { $a + $b } @c_feats, @p_feats;
-		
+
 	} elsif(($relpos-0.5>0) && exists($hash{$n_linekey})){
 		my $prop_n_bin = $relpos-0.5;
 		my @n_feats = split(/\t/, $hash{$n_linekey});
@@ -257,9 +257,8 @@ sub updateCovs{
 	} else{
 		@sum = @c_feats;
 	}
-	
+
 	my $covs=join("\t", @sum[0 .. $#sum]);
 	# print "$covs\n";
 	return $covs;
 }
-

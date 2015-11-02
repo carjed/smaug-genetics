@@ -20,12 +20,19 @@ insetPlot <- function(main, inset, loc) {
  }
 
 ##############################################################################
-# Get standard error estimate 
+# Get standard error estimate
 ##############################################################################
 std <- function(x) sqrt(var(x,na.rm=TRUE)/length(na.omit(x)))
 
 ##############################################################################
-# Function to reverse sequence--used to correctly plot right flank in 
+# Compute standard error for correlations
+##############################################################################
+corSE<-function(corval, ct){
+	sqrt((1-corval^2)/(ct-2))
+}
+
+##############################################################################
+# Function to reverse sequence--used to correctly plot right flank in
 # subsequence heatmaps
 ##############################################################################
 reverse_chars <- function(string){
@@ -38,7 +45,7 @@ reverse_chars <- function(string){
 # Function to install and load packages
 ##############################################################################
 usePackage <- function(p) {
-	
+
 	p <- as.character(substitute(p))
 
     if (!is.element(p, installed.packages()[,1])){
@@ -80,9 +87,9 @@ rrheat <- function(dat, f, levels, facetvar, nbp){
 	geom_tile(data=dat, aes(x=v2a, y=v3, fill=v4))+
 	# geom_text(data=dat, aes(x=v2a, y=v3, label=v4a, family="Courier", size=0.1))+
 	geom_rect(data=f, size=1.4, colour="grey30", aes(xmin=xlo, xmax=xhi, ymin=ylo, ymax=yhi), fill=NA)+
-	scale_fill_gradientn("Relative Rate\n", 
-						 colours=myPalette((nbp-1)^4), 
-						 trans="log", 
+	scale_fill_gradientn("Relative Rate\n",
+						 colours=myPalette((nbp-1)^4),
+						 trans="log",
 						 breaks=c(min(dat$v4), mean(dat$v4), max(dat$v4)),
 						 labels=c(round(min(dat$v4), 5), round(mean(dat$v4), 4), round(max(dat$v4), 3)),
 						 limits=c(min(dat$v4), max(dat$v4)))+
@@ -99,9 +106,9 @@ rrheat <- function(dat, f, levels, facetvar, nbp){
 		  axis.text.x = element_text(size=16, colour="black"))+
 	scale_x_discrete(labels=levels)+
 	facet_wrap(as.formula(paste("~", facetvar)), ncol=1, scales="free_x")
-	
+
 	return(p)
-}	
+}
 ##############################################################################
 # QQ plot in ggplot2 with qqline
 ##############################################################################
@@ -184,7 +191,7 @@ multiplot <- function(..., plotlist=NULL, file, cols=1, layout=NULL) {
 #' $ myarg: chr "something"
 #'
 #' @title getArgs
-#' @param verbose print verbage to screen 
+#' @param verbose print verbage to screen
 #' @param defaults a named list of defaults, optional
 #' @return a named list
 #' @author Chris Wallace

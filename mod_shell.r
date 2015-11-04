@@ -29,10 +29,10 @@ source("get_functions.R")
 
 # Get args from command line; defaults defined below
 args <- getArgs(
-	defaults=list(adj=2,
+	defaults=list(adj=3,
 		binw=1000000,
-		summfile=paste0(parentdir, "/output/5bp_1000k/full.summary"),
-		binfile=paste0(parentdir, "/output/5bp_1000k/full_bin.txt"),
+		summfile=paste0(parentdir, "/output/7bp_1000k/full.summary"),
+		binfile=paste0(parentdir, "/output/7bp_1000k/full_bin.txt"),
 		run_agg=TRUE,
 		pcs=FALSE,
 		categ="AT_CG",

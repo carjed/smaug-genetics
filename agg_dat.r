@@ -60,30 +60,27 @@ aggData <- function(datfile, adj){
 		aggseq <- merge(aggseq, mct, by="SEQMIN")
 		aggseq$rel_prop <- aggseq$n/aggseq$COUNT
 
-		b<-c("A", "C", "G", "T")
-		cats<-unique(aggseq$Category)
-		for(i in 1:6){
-			aggcat <- aggseq[aggseq$Category==cats[i],]
-			# aggcat <- aggcat[aggcat$freq>25,]
+		# Identify motifs whose components have most similar relative rates
+		cat("Checking for homogeneity of similar motifs...\n")
+		count<-0
+		for(i in unique(aggseq$Category)){
+			aggcat <- aggseq[aggseq$Category==i,]
 
-			# test <- chisq.test(aggcat$obs, p=aggcat$exp/sum(aggcat$exp))
+			for(j in unique(substr(aggcat$Sequence,2,nbp-1))){
 
-			for(j in 1:4){
-				for(k in 1:4){
-					ref <- unique(substr(aggcat$Sequence,3,3))
-					motif <- paste0(b[j],ref,b[k])
-					dat <- aggcat[substr(aggcat$Sequence,2,4)==motif,]
-					dat$exp <- dat$COUNT*(sum(dat$n)/sum(dat$COUNT))
-					# print(head(dat))
-					cat <- cats[i]
-					test <- chisq.test(dat$n, p=dat$exp/sum(dat$exp))
+				ref <- unique(substr(aggcat$Sequence,adj+1,adj+1))
+				dat <- aggcat[substr(aggcat$Sequence,2,nbp-1)==j,]
+				dat$exp <- dat$COUNT*(sum(dat$n)/sum(dat$COUNT))
 
-					if(test$p.value>0.05/96){
-						print(cat)
-						print(motif)
-						print(test$p.value)
-						# print(dat)
-					}
+				test <- chisq.test(dat$n, p=dat$exp/sum(dat$exp))
+
+				# Specify p-value threshold, adjusted for #motifs
+				if(test$p.value>(2e-100)/(4^(nbp-2)*3/2)){
+					# print(i)
+					# print(j)
+					# print(test$p.value)
+					count<-count+1
+					# print(dat)
 				}
 			}
 		}
@@ -233,14 +230,14 @@ aggData <- function(datfile, adj){
 		# NEW VERSION -- need to update so nmotifs is consistent for all 3 categories
 		# currently, motifs without a present singleton in a given bin are not
 		# accounted for
+		cat("Counting mutations per motif per bin...\n")
 		summagg <- summfile %>%
 				dplyr::select(CHR, POS, BIN, Sequence, Category2) %>%
 				group_by(CHR, BIN, Sequence, Category2) %>%
 				summarise(obs=n())
 
-		summagg <- merge(summagg, aggseq[,c(1,2,7)],
-			by=c("Sequence", "Category2"), all=TRUE) %>%
-					arrange(CHR, BIN)
+		summagg <- merge(summagg, aggseq[,c("Sequence", "Category2", "COUNT")],
+			by=c("Sequence", "Category2"), all=TRUE)
 
 		binfile <- gather(binfile, Sequence, Count, 6:ncol(binfile))
 		binfile$CHR <- as.integer(substring(binfile$CHR, 4))

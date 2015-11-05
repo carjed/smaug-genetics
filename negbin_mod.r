@@ -5,9 +5,12 @@ if(extra_plots){source("expl_plots.r")}
 # Merge aggregate data with covariate data
 ##############################################################################
 agg_cov <- merge(agg_5bp_100k, mut_cov, by=c("CHR", "BIN"))
-agg_cov$ratio <- agg_cov$exp/agg_cov$obs
-agg_cov <- filter(agg_cov, ratio<5) %>% mutate(med=(maxn+minn)/2)
 
+ratiofilter <- 0
+if(ratiofilter){
+  agg_cov$ratio <- agg_cov$exp/agg_cov$obs
+  agg_cov <- filter(agg_cov, ratio<5) %>% mutate(med=(maxn+minn)/2)
+}
 ##############################################################################
 # Get relative rates for 1bp and 3bp motifs and compare likelihoods
 ##############################################################################
@@ -152,17 +155,18 @@ binscpgGC <- dat_5bp_100k$bin %>%
 ##############################################################################
 
 # Testing--use this to calculate weighted means for all 3 motif lengths
-rates_full_s <- rates_full %>%
-	dplyr::select(Sequence, Category2, rel_prop, rel_prop1, rel_prop3)
+# rates_full_s <- rates_full %>%
+# 	dplyr::select(Sequence, Category2, rel_prop, rel_prop1, rel_prop3)
 
 # Add expected #singletons per bin using 1bp motifs
 # -used in comparing category-specific models with weighted mean method
 a3 <- merge(agg_cov, rates1[,c(1,2,4)], by="Category2")
-a3$exp1 <- a3$nmotifs*a3$rel_prop1
+# a3$exp1 <- a3$nmotifs*a3$rel_prop1
 
 # Aggregate across categories for total #singletons per bin
 a3a <- a3 %>%
-  group_by_(.dots=lapply(names(a3)[c(2,3,10:22)], as.symbol)) %>%
+  # group_by_(.dots=lapply(names(a3)[c(2,3,5:17)], as.symbol)) %>%
+  group_by_(.dots=lapply(danames, as.symbol)) %>%
   summarise(obs=sum(obs))
 
 # Add motif counts per bin
@@ -238,7 +242,7 @@ for(i in 1:length(mut_cats)) {
 	mut_lm_feat <- glm.nb(feat_mod_formula, data=aggcat)
 	mut_lm_motif <- glm.nb(obs~exp, data=aggcat)
 	mut_lm_motif2 <- glm.nb(motif_mod_formula, data=aggcatm)
-	mut_lm_1bp <- glm.nb(obs~exp1, data=aggcat)
+	# mut_lm_1bp <- glm.nb(obs~exp1, data=aggcat)
 	# mut_lm_3bp <- glm.nb(obs~exp3, data=aggcat)
 	mut_lm_full <- glm.nb(full_mod_formula, data=aggcatm)
 
@@ -379,10 +383,10 @@ write.table(ca, caout, col.names=T, row.names=F, quote=F, sep="\t")
 cad <- dcast(data.frame(ca), Category2~res, value.var="meanerr")
 
 # Calculate correlation between relative rates and #motifs
-rate_motif_cor <- agg_5bp_100k %>%
-	mutate(rel=obs/nmotifs) %>%
-	group_by(Category2) %>%
-	summarise(cor=cor(rel, nmotifs, use="complete.obs"))
+# rate_motif_cor <- agg_5bp_100k %>%
+# 	mutate(rel=obs/nmotifs) %>%
+# 	group_by(Category2) %>%
+# 	summarise(cor=cor(rel, nmotifs, use="complete.obs"))
 
 ##############################################################################
 # Plot barcharts comparing obs/exp correlation for different models

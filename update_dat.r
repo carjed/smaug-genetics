@@ -26,6 +26,8 @@ updateData <- function(summfile, binfile, adj){
 		paste0(summfile$ALTSEQ,"(",summfile$SEQ,")")
 	)
 
+	summfile$SEQMIN <- pmin(summfile$SEQ, summfile$ALTSEQ)
+
 	cat("Assigning summfile CpG categories...\n")
 	# Second category column to include +3 CpG categories
 	summfile$Category2 <- ifelse(substr(summfile$Sequence,adj+1,adj+2)=="CG",
@@ -59,7 +61,7 @@ updateData <- function(summfile, binfile, adj){
 		dplyr::select(SEQMIN, COUNT)
 	# Find a more efficient way to do this?
 	# cat("Updating summary file with motif counts...\n")
-	# summfile$SEQMIN <- pmin(summfile$SEQ, summfile$ALTSEQ)
+
 	# summfile <- left_join(summfile, bins2, by="SEQMIN")
 
 	datalist<- list("summ"=summfile, "bin"=binfile, "mct"=mct)

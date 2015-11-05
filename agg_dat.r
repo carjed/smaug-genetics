@@ -7,6 +7,7 @@ aggData <- function(datfile, adj){
 
 	summfile <- datfile$summ
 	binfile <- datfile$bin
+	mct <- datfile$mct
 	nbp <- adj*2+1
 
 	# summfile <- dat_5bp_100k$summ
@@ -20,6 +21,7 @@ aggData <- function(datfile, adj){
 
 	# Compute Ts/Tv by bin--can use as filter set to exclude windows with Ts/Tv
 	# below a certain threshold
+	cat("Computing Ts/Tv per bin...\n")
 	summfile$TS <- ifelse(
 		((summfile$REF=="A" | summfile$REF=="G") &
 			(summfile$ALT=="A" | summfile$ALT=="G")) |
@@ -39,6 +41,7 @@ aggData <- function(datfile, adj){
 
 	filter<-0
 	if(filter){
+		cat("Applying Ts/Tv filter...\n")
 		cutoff <- 1.2
 		filterset <- tstv[tstv$TSTV<cutoff,]
 
@@ -51,9 +54,10 @@ aggData <- function(datfile, adj){
 	# Plot genome-wide motif heatmaps
 	plot_heatmap <- 0
 	if(plot_heatmap==1){
-
+		cat("Generating data for relative rate heatmap...\n")
 		# aggseq <- count(summfile, c("Sequence", "Category", "CAT", "COUNT", "SEQ"))
-		aggseq <- count(summfile, Sequence, Category, CAT, COUNT, SEQ)
+		aggseq <- count(summfile, Sequence, Category, CAT, SEQMIN, SEQ)
+		aggseq <- merge(aggseq, mct, by="SEQMIN")
 		aggseq$rel_prop <- aggseq$n/aggseq$COUNT
 
 		b<-c("A", "C", "G", "T")
@@ -131,6 +135,7 @@ aggData <- function(datfile, adj){
 		f <- data.frame(xlo,xhi,ylo,yhi)
 
 		# Plot relative rate heatmaps
+		cat("Plotting heatmaps...\n")
 		at_heat <- rrheat(map_a1, f, levs_a, "v5", nbp)
 		gc_heat <- rrheat(map_g1, f, levs_g, "v5", nbp)
 
@@ -212,9 +217,12 @@ aggData <- function(datfile, adj){
 	# Get dataframe of observed and predicted counts
 	{
 		# aggseq <- count(summfile, c("Sequence", "Category2", "COUNT")) #<-plyr
-		agg.gp <- group_by(summfile, Sequence, Category2, COUNT, BIN)
-		aggseq <- summarise(agg.gp, n=n()) %>%
+		cat("Generating motif relative rates...\n")
+		aggseq <- summfile %>%
+			group_by(Sequence, Category2, SEQMIN, BIN) %>%
+			summarise(n=n()) %>%
 			summarise(num=sum(n), mean=mean(n), sd=sd(n))
+		aggseq <- merge(aggseq, mct, by="SEQMIN")
 		# aggseq2 <- count(summfile, Sequence, Category2, COUNT) #<-dplyr
 		aggseq$rel_prop <- aggseq$num/aggseq$COUNT
 
@@ -233,6 +241,7 @@ aggData <- function(datfile, adj){
 		summagg <- merge(summagg, aggseq[,c(1,2,7)],
 			by=c("Sequence", "Category2"), all=TRUE) %>%
 					arrange(CHR, BIN)
+
 		binfile <- gather(binfile, Sequence, Count, 6:ncol(binfile))
 		binfile$CHR <- as.integer(substring(binfile$CHR, 4))
 		binfile <- binfile %>% arrange(substring(Sequence, adj+1, adj+1))
@@ -256,13 +265,13 @@ aggData <- function(datfile, adj){
 		summagg2$exp <- summagg2$rel_prop*summagg2$Count
 
 		s2 <- summagg2 %>%
-				group_by(CHR, BIN, Category2) %>%
-				summarise(exp=sum(exp, na.rm=T),
-					obs=sum(obs, na.rm=T),
-					nmotifs=sum(Count, na.rm=T),
-					motifvar=var(Count),
-					maxn=max(Count),
-					minn=min(Count))
+			group_by(CHR, BIN, Category2) %>%
+			summarise(exp=sum(exp, na.rm=T),
+				obs=sum(obs, na.rm=T),
+				nmotifs=sum(Count, na.rm=T),
+				motifvar=var(Count),
+				maxn=max(Count),
+				minn=min(Count))
 
 		# summcor <- summagg2 %>%
 					# group_by(Category2, Sequence) %>%

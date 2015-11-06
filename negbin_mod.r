@@ -256,13 +256,13 @@ for(i in 1:length(mut_cats)) {
 	aggcat <- a3[a3$Category2==mut_cats[i],]
 
 	if(grepl("^AT", cat1)) {
-		aggcatm <- merge(aggcat, binsAT, by=c("CHR", "BIN", "prop_GC"))
+		aggcatm <- merge(aggcat, binsAT, by=c("CHR", "BIN", "prop_GC"), all.x=T)
 		mcols <- atcols
 	} else if(grepl("^GC", cat1)) {
-		aggcatm <- merge(aggcat, binsGC, by=c("CHR", "BIN", "prop_GC"))
+		aggcatm <- merge(aggcat, binsGC, by=c("CHR", "BIN", "prop_GC"), all.x=T)
 		mcols <- gccols
 	} else {
-		aggcatm <- merge(aggcat, binscpgGC, by=c("CHR", "BIN", "prop_GC"))
+		aggcatm <- merge(aggcat, binscpgGC, by=c("CHR", "BIN", "prop_GC"), all.x=T)
 		mcols <- cpggccols
 	}
 

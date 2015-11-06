@@ -348,8 +348,8 @@ for(i in 1:length(mut_cats)) {
 
 	# 5-fold cross-validation--may need to update so expected counts are
 	# re-calculated for each 1/N subset
-	gc_cv <- cv.glm(data=aggcat, glmfit=models$gc, K=5)
-	feat_cv <- cv.glm(data=aggcat, glmfit=models$feat, K=5)
+	gc_cv <- cv.glm(data=aggcatm, glmfit=models$gc, K=5)
+	feat_cv <- cv.glm(data=aggcatm, glmfit=models$feat, K=5)
 	motif_cv <- cv.glm(data=aggcatm, glmfit=models$motif, K=5)
 	full_cv <- cv.glm(data=aggcatm, glmfit=models$full, K=5)
 

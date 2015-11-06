@@ -217,28 +217,30 @@ full_mod_form <- as.formula(paste("obs~",
 
 # Uses poisson regression instead of negbin, since negbin fails to converge
 # with default parameters of glm.nb()
-cat("Running overall models...\n")
-mut_lm_m_all <- glm(motif_mod_form, data=a3a1, family="poisson")
-mut_lm_fe_all <- glm(feat_mod_form, data=a3a1, family="poisson")
-mut_lm_f_all <- glm(full_mod_form, data=a3a1, family="poisson")
+overall<-0
+if(overall){
+  cat("Running overall models...\n")
+  mut_lm_m_all <- glm(motif_mod_form, data=a3a1, family="poisson")
+  mut_lm_fe_all <- glm(feat_mod_form, data=a3a1, family="poisson")
+  mut_lm_f_all <- glm(full_mod_form, data=a3a1, family="poisson")
 
-# Calculate McFadden's pseudo R-squared (unadjusted)
-mrsq <- 1-mut_lm_m_all$deviance/mut_lm_m_all$null.deviance
-fersq <- 1-mut_lm_fe_all$deviance/mut_lm_fe_all$null.deviance
-frsq <- 1-mut_lm_f_all$deviance/mut_lm_f_all$null.deviance
-maic <- AIC(mut_lm_m_all)
-feaic <- AIC(mut_lm_fe_all)
-faic <- AIC(mut_lm_f_all)
+  # Calculate McFadden's pseudo R-squared (unadjusted)
+  mrsq <- 1-mut_lm_m_all$deviance/mut_lm_m_all$null.deviance
+  fersq <- 1-mut_lm_fe_all$deviance/mut_lm_fe_all$null.deviance
+  frsq <- 1-mut_lm_f_all$deviance/mut_lm_f_all$null.deviance
+  maic <- AIC(mut_lm_m_all)
+  feaic <- AIC(mut_lm_fe_all)
+  faic <- AIC(mut_lm_f_all)
 
-cat("Adjusted R-squared of combined model (motifs): ", mrsq, "\n")
-cat("AIC of combined model (motifs): ", maic, "\n")
+  cat("Adjusted R-squared of combined model (motifs): ", mrsq, "\n")
+  cat("AIC of combined model (motifs): ", maic, "\n")
 
-cat("Adjusted R-squared of combined model (features): ", fersq, "\n")
-cat("AIC of combined model (features): ", feaic, "\n")
+  cat("Adjusted R-squared of combined model (features): ", fersq, "\n")
+  cat("AIC of combined model (features): ", feaic, "\n")
 
-cat("Adjusted R-squared of combined model (full): ", frsq, "\n")
-cat("AIC of combined model (full): ", faic, "\n")
-
+  cat("Adjusted R-squared of combined model (full): ", frsq, "\n")
+  cat("AIC of combined model (full): ", faic, "\n")
+}
 ##############################################################################
 # Model each category independently
 ##############################################################################

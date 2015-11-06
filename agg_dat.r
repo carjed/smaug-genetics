@@ -60,31 +60,6 @@ aggData <- function(datfile, adj){
 		aggseq <- merge(aggseq, mct, by="SEQMIN")
 		aggseq$rel_prop <- aggseq$n/aggseq$COUNT
 
-		# Identify motifs whose components have most similar relative rates
-		cat("Checking for homogeneity of similar motifs...\n")
-		count<-0
-		for(i in unique(aggseq$Category)){
-			aggcat <- aggseq[aggseq$Category==i,]
-
-			for(j in unique(substr(aggcat$Sequence,2,nbp-1))){
-
-				ref <- unique(substr(aggcat$Sequence,adj+1,adj+1))
-				dat <- aggcat[substr(aggcat$Sequence,2,nbp-1)==j,]
-				dat$exp <- dat$COUNT*(sum(dat$n)/sum(dat$COUNT))
-
-				test <- chisq.test(dat$n, p=dat$exp/sum(dat$exp))
-
-				# Specify p-value threshold, adjusted for #motifs
-				if(test$p.value>(2e-100)/(4^(nbp-2)*3/2)){
-					# print(i)
-					# print(j)
-					# print(test$p.value)
-					count<-count+1
-					# print(dat)
-				}
-			}
-		}
-
 		aggseq_a <- aggseq[grep("^A", aggseq$Category),]
 		aggseq_g <- aggseq[grep("^G", aggseq$Category),]
 
@@ -236,45 +211,51 @@ aggData <- function(datfile, adj){
 				group_by(CHR, BIN, Sequence, Category2) %>%
 				summarise(obs=n())
 
-		summagg <- merge(summagg, aggseq[,c("Sequence", "Category2", "COUNT")],
-			by=c("Sequence", "Category2"), all=TRUE)
+		# summagg <- merge(summagg, aggseq[,c("Sequence", "Category2", "COUNT")],
+		# 	by=c("Sequence", "Category2"), all=TRUE)
 
-		binfile <- gather(binfile, Sequence, Count, 6:ncol(binfile))
-		binfile$CHR <- as.integer(substring(binfile$CHR, 4))
-		binfile <- binfile %>% arrange(substring(Sequence, adj+1, adj+1))
-
-		b2 <- binfile[rep(seq_len(nrow(binfile)), each=3),]
-		b2$Category <- c(rep(c("AT_CG", "AT_GC", "AT_TA"), nrow(b2)/6),
-						  rep(c("GC_AT", "GC_CG", "GC_TA"), nrow(b2)/6))
-
-		b2$Category2 <- ifelse(substr(b2$Sequence,adj+1,adj+2)=="CG",
-								paste0("cpg_",b2$Category),
-								b2$Category)
-		b2 <- b2 %>% arrange(CHR, BIN)
-
+		# binfile <- gather(binfile, Sequence, Count, 6:ncol(binfile))
+		# binfile$CHR <- as.integer(substring(binfile$CHR, 4))
+		# binfile <- binfile %>% arrange(substring(Sequence, adj+1, adj+1))
+		#
+		# b2 <- binfile[rep(seq_len(nrow(binfile)), each=3),]
+		# b2$Category <- c(rep(c("AT_CG", "AT_GC", "AT_TA"), nrow(b2)/6),
+		# 				  rep(c("GC_AT", "GC_CG", "GC_TA"), nrow(b2)/6))
+		#
+		# b2$Category2 <- ifelse(substr(b2$Sequence,adj+1,adj+2)=="CG",
+		# 						paste0("cpg_",b2$Category),
+		# 						b2$Category)
+		# b2 <- b2 %>% arrange(CHR, BIN)
+		# {
 		# row.names(b2) <- paste0(b2$CHR, "_", b2$BIN, "_", b2$Sequence, "_", b2$Category2)
 		# row.names(summagg) <- paste0(summagg$CHR, "_",
 			# summagg$BIN, "_", summagg$Sequence, "_", summagg$Category2)
 
 		# summagg2 <- cbind(summagg,
 			# count=b2[,"Count"][match(rownames(summagg), rownames(b2))])
-		summagg2 <- merge(b2, summagg, by=c("CHR", "BIN", "Category2", "Sequence"), all=T)
-		summagg2$exp <- summagg2$rel_prop*summagg2$Count
+		# }
+		# summagg2 <- merge(b2, summagg, by=c("CHR", "BIN", "Category2", "Sequence"), all=T)
+		# summagg2$exp <- summagg2$rel_prop*summagg2$Count
 
-		s2 <- summagg2 %>%
+		# Count observed singletons per bin per basic category
+		spbc <- summagg %>%
 			group_by(CHR, BIN, Category2) %>%
-			summarise(exp=sum(exp, na.rm=T),
-				obs=sum(obs, na.rm=T),
-				nmotifs=sum(Count, na.rm=T),
-				motifvar=var(Count),
-				maxn=max(Count),
-				minn=min(Count))
+			summarise(obs=sum(obs, na.rm=T))
+
+		# s2 <- summagg2 %>%
+		# 	group_by(CHR, BIN, Category2) %>%
+		# 	summarise(exp=sum(exp, na.rm=T),
+		# 		obs=sum(obs, na.rm=T),
+		# 		nmotifs=sum(Count, na.rm=T),
+		# 		motifvar=var(Count),
+		# 		maxn=max(Count),
+		# 		minn=min(Count))
 
 		# summcor <- summagg2 %>%
 					# group_by(Category2, Sequence) %>%
 					# summarise(cor=cor(exp, obs, use="complete.obs"))
 
-		datalist<- list("agg"=aggseq, "oe"=s2, "summagg2"=summagg2)
+		datalist<- list("agg"=aggseq, "oe"=spbc, "summagg2"=summagg)
 		return(datalist)
 	}
 }

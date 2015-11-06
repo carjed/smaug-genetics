@@ -14,6 +14,7 @@ if(ratiofilter){
 ##############################################################################
 # Get relative rates for 1bp and 3bp motifs and compare likelihoods
 ##############################################################################
+
 rates5$Seq3 <- substr(rates5$Sequence, adj, nbp-adj+1)
 
 rates1 <- rates5 %>%
@@ -120,6 +121,33 @@ ggplot(ra1b, aes(x=Motif_Length, y=L, group=Stat, colour=Stat))+
 
 ggsave("/net/bipolar/jedidiah/mutation/images/compare_AIC.png")
 
+# Identify motifs whose components have most similar relative rates
+cat("Checking for homogeneity of similar motifs...\n")
+count<-0
+results<-data.frame()
+
+for(i in unique(rates5$Category2)){
+  aggcat <- rates5[rates5$Category2==i,]
+  # names(aggcat)[1] <- "Sequence"
+  nbpt <- 7
+
+  tmpresults <- data.frame()
+  for(j in unique(substr(aggcat$Sequence,2,nbpt-1))){
+
+    ref <- unique(substr(aggcat$Sequence,adj+1,adj+1))
+    dat <- aggcat[substr(aggcat$Sequence,2,nbpt-1)==j,]
+    dat$exp <- dat$COUNT*(sum(dat$n)/sum(dat$COUNT))
+
+    test <- chisq.test(dat$n, p=dat$exp/sum(dat$exp))
+
+    datrow <- data.frame(Category2=i, Sequence=j, pval=test$p.value)
+    tmpresults <- rbind(tmpresults, datrow)
+  }
+
+  tmpresults$Q <- ntile(tmpresults$pval, 10)
+  results <- rbind(results, tmpresults)
+}
+
 ##############################################################################
 # Initialize data of motif counts to use as covariates in negbin model
 ##############################################################################
@@ -130,6 +158,8 @@ names(dat_5bp_100k$bin) <- gsub('\\)', '_', names(dat_5bp_100k$bin))
 
 atcols <- c(names(dat_5bp_100k$bin)[1:5],
   names(dat_5bp_100k$bin)[which(substr(names(dat_5bp_100k$bin), adj+1, adj+1)=="A")])
+
+# For binsAT, etc., must subselect variables
 
 binsAT <- dat_5bp_100k$bin %>%
   select_(.dots = atcols) %>%
@@ -170,16 +200,18 @@ a3a <- a3 %>%
   summarise(obs=sum(obs))
 
 # Add motif counts per bin
-a3a1 <- merge(a3a, dat_5bp_100k$bin, by=c("CHR", "BIN"))
+a3a1 <- merge(a3a, dat_5bp_100k$bin, by=c("CHR", "BIN", "prop_GC"))
 
+# Create model formulas
+# Must fix to use filtered motifs
 motif_mod_form <- as.formula(paste("obs~",
-	paste(names(a3a1)[-c(1:19)], collapse="+")))
+	paste(names(a3a1)[-c(1:18)], collapse="+")))
 
 feat_mod_form <- as.formula(paste("obs~",
-  paste(names(a3a1)[3:15], collapse="+")))
+  paste(c(covnames, "prop_GC"), collapse="+")))
 
 full_mod_form <- as.formula(paste("obs~",
-	paste(names(a3a1)[-c(1,2,16:19)], collapse="+")))
+	paste(names(a3a1)[-c(1,2,16:18)], collapse="+")))
 
 # Uses poisson regression instead of negbin, since negbin fails to converge
 # with default parameters of glm.nb()
@@ -209,7 +241,6 @@ cat("AIC of combined model (full): ", faic, "\n")
 ##############################################################################
 compare.all <- data.frame()
 compare.err <- data.frame()
-logliks <- data.frame()
 mut_cats <- unique(agg_5bp_100k$Category2)
 
 for(i in 1:length(mut_cats)) {
@@ -227,9 +258,6 @@ for(i in 1:length(mut_cats)) {
 		mcols <- cpggccols
 	}
 
-	aggcat$exp_s <- sample(aggcat$obs, length(aggcat$obs), replace=T)
-	aggcatm$exp_s <- sample(aggcatm$obs, length(aggcatm$obs), replace=T)
-
 	# Fit models with all data
 	feat_mod_formula <- as.formula(paste("obs~",
 		paste(covnames, collapse="+")))
@@ -240,29 +268,18 @@ for(i in 1:length(mut_cats)) {
 		paste(mcols[-(1:5)], collapse="+")))
 	mut_lm_gc <- glm.nb(obs~prop_GC, data=aggcat)
 	mut_lm_feat <- glm.nb(feat_mod_formula, data=aggcat)
-	mut_lm_motif <- glm.nb(obs~exp, data=aggcat)
-	mut_lm_motif2 <- glm.nb(motif_mod_formula, data=aggcatm)
+	# mut_lm_motif <- glm.nb(obs~exp, data=aggcat)
+	mut_lm_motif <- glm.nb(motif_mod_formula, data=aggcatm)
 	# mut_lm_1bp <- glm.nb(obs~exp1, data=aggcat)
 	# mut_lm_3bp <- glm.nb(obs~exp3, data=aggcat)
 	mut_lm_full <- glm.nb(full_mod_formula, data=aggcatm)
 
-	ll_5bp <- data.frame(
-		Category2=cat1,
-		params=256,
-		ll=summary(mut_lm_motif)$twologlik)
-	ll_1bp <- data.frame(
-		Category2=cat1,
-		params=6,
-		ll=summary(mut_lm_1bp)$twologlik)
-
-	logliks <- rbind(logliks, ll_5bp, ll_1bp)
-
-	# 10-fold cross-validation--may need to update so expected counts are
+	# 5-fold cross-validation--may need to update so expected counts are
 	# re-calculated for each 1/N subset
-	gc_cv <- cv.glm(data=aggcat, glmfit=mut_lm_gc, K=10)
-	feat_cv <- cv.glm(data=aggcat, glmfit=mut_lm_feat, K=10)
-	motif_cv <- cv.glm(data=aggcat, glmfit=mut_lm_motif, K=10)
-	full_cv <- cv.glm(data=aggcatm, glmfit=mut_lm_full, K=10)
+	gc_cv <- cv.glm(data=aggcat, glmfit=mut_lm_gc, K=5)
+	feat_cv <- cv.glm(data=aggcat, glmfit=mut_lm_feat, K=5)
+	motif_cv <- cv.glm(data=aggcatm, glmfit=mut_lm_motif, K=5)
+	full_cv <- cv.glm(data=aggcatm, glmfit=mut_lm_full, K=5)
 
 	mspe <- c(gc_cv$delta[2], feat_cv$delta[2], motif_cv$delta[2], full_cv$delta[2])
 	rmse <- sqrt(mspe)
@@ -278,11 +295,11 @@ for(i in 1:length(mut_cats)) {
 	fits_feat <- mut_lm_feat$fitted.values
 	names(fits_feat) <- paste0(aggcat$CHR,".",aggcat$BIN)
 
-	fits_motif <- mut_lm_motif$fitted.values
-	names(fits_motif) <- paste0(aggcat$CHR,".",aggcat$BIN)
+	# fits_motif <- mut_lm_motif$fitted.values
+	# names(fits_motif) <- paste0(aggcat$CHR,".",aggcat$BIN)
 
-	fits_motif2 <- mut_lm_motif2$fitted.values
-	names(fits_motif2) <- paste0(aggcatm$CHR,".",aggcatm$BIN)
+	fits_motif <- mut_lm_motif$fitted.values
+	names(fits_motif) <- paste0(aggcatm$CHR,".",aggcatm$BIN)
 
 	fits_full <- mut_lm_full$fitted.values
 	names(fits_full) <- paste0(aggcatm$CHR,".",aggcatm$BIN)
@@ -290,97 +307,78 @@ for(i in 1:length(mut_cats)) {
 	BIN <- as.integer(gsub(".*\\.", "", names(fits_feat)))
 	CHR <- as.integer(gsub("\\..*", "", names(fits_feat)))
 
-	BINA <- as.integer(gsub(".*\\.", "", names(fits_motif2)))
-	CHRA <- as.integer(gsub("\\..*", "", names(fits_motif2)))
+	BINA <- as.integer(gsub(".*\\.", "", names(fits_motif)))
+	CHRA <- as.integer(gsub("\\..*", "", names(fits_motif)))
 
 	model_dat_gc <- data.frame(CHR,Category2=cat1, BIN,
 		exp=fits_gc,
 		obs=aggcat$obs,
-		exp_s=aggcat$exp_s,
 		stringsAsFactors=F)
 	model_dat_gc$res <- "GC"
 
 	model_dat_feat <- data.frame(CHR,Category2=cat1, BIN,
 		exp=fits_feat,
 		obs=aggcat$obs,
-		exp_s=aggcat$exp_s,
 		stringsAsFactors=F)
 	model_dat_feat$res <- "features"
 
-	model_dat_motif <- data.frame(CHR,Category2=cat1, BIN,
-		exp=fits_motif,
-		# exp=aggcat$exp,
-		obs=aggcat$obs,
-		exp_s=aggcat$exp_s,
-		stringsAsFactors=F)
-	model_dat_motif$res <- "motifs"
+	# model_dat_motif <- data.frame(CHR,Category2=cat1, BIN,
+	# 	exp=fits_motif,
+	# 	obs=aggcat$obs,
+	# 	stringsAsFactors=F)
+	# model_dat_motif$res <- "motifs"
 
-	model_dat_motif2 <- data.frame(CHR=CHRA,Category2=cat1, BIN=BINA,
-		exp=fits_motif2,
-		# exp=aggcat$exp,
+	model_dat_motif <- data.frame(CHR=CHRA,Category2=cat1, BIN=BINA,
+		exp=fits_motif,
 		obs=aggcatm$obs,
-		exp_s=aggcatm$exp_s,
 		stringsAsFactors=F)
-	model_dat_motif2$res <- "motifs_ext"
+	model_dat_motif$res <- "motifs_5bp"
 
 	model_dat_full <- data.frame(CHR=CHRA,Category2=cat1, BIN=BINA,
 		exp=fits_full,
 		obs=aggcatm$obs,
-		exp_s=aggcatm$exp_s,
 		stringsAsFactors=F)
-	model_dat_full$res <- "motifs_ext+features"
+	model_dat_full$res <- "motifs_5bp+features"
 
 	compare.all <- rbind(compare.all,
 		model_dat_gc,
 		model_dat_feat,
+		# model_dat_motif,
 		model_dat_motif,
-		model_dat_motif2,
 		model_dat_full)
 }
-
-##############################################################################
-# Plot model log-likelihoods
-##############################################################################
-ggplot(logliks, aes(x=params, y=ll, group=Category2, colour=Category2))+
-	geom_line()+
-	theme_bw()+
-	xlab("# parameters")+
-	ylab("2 log likelihood")+
-ggsave("/net/bipolar/jedidiah/mutation/images/ll.png")
 
 ##############################################################################
 # Process resulting data from models
 ##############################################################################
 # Update comparison data frame
 compare.all$res <- factor(compare.all$res,
-	levels = c("GC", "features", "motifs", "motifs_ext", "motifs_ext+features"))
-compare.all$diff <- compare.all$obs-compare.all$exp
-compare.all$diff_s <- compare.all$obs-compare.all$exp_s # based on random sample
+	levels = c("GC", "features", "motifs_5bp", "motifs_5bp+features"))
 compare.all$Category2 <- factor(compare.all$Category2)
 # levels(compare.all$Category2) <- c(
 	# "AT>CG", "AT>GC", "AT>TA",
 	# "(CpG)GC>AT", "(CpG)GC>CG", "(CpG)GC>TA",
 	# "GC>AT", "GC>CG", "GC>TA")
 
-ca.gp <- group_by(compare.all, Category2, res)
-compare.all <- mutate(ca.gp, dm=mean(diff), dsd=sd(diff), zscore=(diff-dm)/dsd)
-compare.all$err <- abs(compare.all$diff)/compare.all$obs
-compare.all$err_s <- abs(compare.all$diff_s)/compare.all$obs
+# compare.all$diff <- compare.all$obs-compare.all$exp
+# ca.gp <- group_by(compare.all, Category2, res)
+# compare.all <- mutate(ca.gp, dm=mean(diff), dsd=sd(diff), zscore=(diff-dm)/dsd)
+# compare.all$err <- abs(compare.all$diff)/compare.all$obs
 
 # get mean absolute error for each category/model
-ca <- compare.all %>%
-	group_by(Category2, res) %>%
-	summarise(meanerr_s=mean(err_s),
-		meanerr=mean(err),
-		sderr=std(err),
-		meanobs=mean(obs),
-		sdobs=std(obs),
-		fold=meanerr_s/meanerr)
-
-caout <- paste0(parentdir, "/output/", nbp, "bp_err.txt")
-write.table(ca, caout, col.names=T, row.names=F, quote=F, sep="\t")
-
-cad <- dcast(data.frame(ca), Category2~res, value.var="meanerr")
+# ca <- compare.all %>%
+# 	group_by(Category2, res) %>%
+# 	summarise(meanerr_s=mean(err_s),
+# 		meanerr=mean(err),
+# 		sderr=std(err),
+# 		meanobs=mean(obs),
+# 		sdobs=std(obs),
+# 		fold=meanerr_s/meanerr)
+#
+# caout <- paste0(parentdir, "/output/", nbp, "bp_err.txt")
+# write.table(ca, caout, col.names=T, row.names=F, quote=F, sep="\t")
+#
+# cad <- dcast(data.frame(ca), Category2~res, value.var="meanerr")
 
 # Calculate correlation between relative rates and #motifs
 # rate_motif_cor <- agg_5bp_100k %>%
@@ -404,8 +402,10 @@ dodge <- position_dodge(width=0.9)
 
 ggplot(mod.corr, aes(x=Category2, y=cor, fill=res))+
 	geom_bar(stat="identity", position=dodge)+
-	scale_colour_manual("Predictor", values=myPaletteCat(8)[4:8])+
-	scale_fill_manual("Predictor", values=myPaletteCat(8)[4:8])+
+  scale_colour_brewer("Predictor",palette="Dark2")+
+  scale_fill_brewer("Predictor", palette="Dark2")+
+	# scale_colour_manual("Predictor", values=myPaletteCat(8)[4:8])+
+	# scale_fill_manual("Predictor", values=myPaletteCat(8)[4:8])+
 	xlab("Category")+
 	ylab("Correlation with observed count")+
 	geom_errorbar(limits, position=dodge, width=0.25)+
@@ -428,8 +428,10 @@ compare.err$res <- factor(compare.err$res,
 
 ggplot(compare.err, aes(x=Category2, y=mspe, fill=res))+
 	geom_bar(stat="identity", position=dodge)+
-	scale_colour_manual("Predictor", values=myPaletteCat(8)[5:8])+
-	scale_fill_manual("Predictor", values=myPaletteCat(8)[5:8])+
+  scale_colour_brewer("Predictor",palette="Dark2")+
+  scale_fill_brewer("Predictor", palette="Dark2")+
+	# scale_colour_manual("Predictor", values=myPaletteCat(8)[5:8])+
+	# scale_fill_manual("Predictor", values=myPaletteCat(8)[5:8])+
 	facet_wrap(~Category2, scales="free")+
 	ylab("MSPE")+
 	theme_bw()+

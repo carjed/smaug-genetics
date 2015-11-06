@@ -46,8 +46,14 @@ for(j in ((nbp-1)/2-1):1){
       select_(.dots=i)
     a3a1 <- cbind(a3a1, tripct)
   }
-
 }
+
+# Select motif columns matching the output set
+# from hierarchical selection
+a3a2 <- a3a1 %>%
+  select_(.dots=hierset)
+
+# Run model with this set vs. all 5bp motifs
 
 a3a1a<-colSums(a3a1[,c(16,20:ncol(a3a1))])
 

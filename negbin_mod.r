@@ -317,7 +317,7 @@ for(i in 1:length(mut_cats)) {
     filter(Category2==cat1, Q==1)
 
   # Expand significant set to 7
-  hierset <- apply(expand.grid(bases, pseteq1$Sequence, bases),
+  hierset <- apply(expand.grid(bases, psetq1$Sequence, bases),
     1, paste, collapse="")
   hiersetrev <- sapply(hierset, revcomp)
   hierset <- paste0(hierset, "_", hiersetrev, "_")

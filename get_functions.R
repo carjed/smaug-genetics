@@ -109,6 +109,7 @@ rrheat <- function(dat, f, levels, facetvar, nbp){
 
 	return(p)
 }
+
 ##############################################################################
 # QQ plot in ggplot2 with qqline
 ##############################################################################
@@ -124,6 +125,44 @@ ggQQ <- function (vec) # argument: vector of numbers
 
   ggplot(d, aes(sample = resids)) + stat_qq() + geom_abline(slope = slope, intercept = int)
 
+}
+
+##############################################################################
+# Negbin model processing functions
+##############################################################################
+
+# Run negbin model for each formula specified in formlist
+runMod <- function(formlist, data){
+	out <- lapply(formlist, function(x) glm.nb(x, data))
+	names(out) <- names(formlist)
+	return(out)
+}
+
+# Build list of fitted values (with CHR/BIN names) for each model
+getFits <- function(modlist, data){
+	out <- lapply(modlist,
+		function(x){
+			y <- fitted.values(x)
+			names(y) <- paste0(data$CHR, ".", data$BIN)
+			y
+		})
+	names(out) <- names(modlist)
+	return(out)
+}
+
+# Build list of dataframes for each model
+buildDF <- function(fitlist, data){
+	out <- lapply(fitlist,
+		function(x){
+			data.frame(CHR, Category2=cat1, BIN,
+				exp=x,
+				obs=data$obs,
+				# res=names(fitlist),
+				stringsAsFactors=F)
+		}
+	)
+	names(out) <- names(fitlist)
+	return(out)
 }
 
 ##############################################################################

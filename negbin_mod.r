@@ -4,6 +4,7 @@ if(extra_plots){source("expl_plots.r")}
 ##############################################################################
 # Merge aggregate data with covariate data
 ##############################################################################
+cat("Merging bin-wise data with covariate data...\n")
 agg_cov <- merge(agg_5bp_100k, mut_cov, by=c("CHR", "BIN"))
 
 ratiofilter <- 0
@@ -14,7 +15,7 @@ if(ratiofilter){
 ##############################################################################
 # Get relative rates for 1bp and 3bp motifs and compare likelihoods
 ##############################################################################
-
+cat("Getting relative rates for submotifs...\n")
 rates5$Seq3 <- substr(rates5$Sequence, adj, nbp-adj+1)
 
 rates1 <- rates5 %>%
@@ -43,6 +44,7 @@ if(nbp==7){
 	rates_full <- merge(rates_full, rates5a, by=c("Seq5", "Category2"))
 }
 
+cat("Calculating likelihoods under different motif lengths...\n")
 rates_full$logLik1 <- dbinom(rates_full$num,
   rates_full$COUNT,
   rates_full$rel_prop1, log=T)
@@ -109,6 +111,7 @@ levels(ra1b$stat) <- c("-2ln(L)", "AIC")
 names(ra1b) <- c("Category", "Motif_Length", "k", "Stat", "L")
 
 # Plot AIC and -2log(L) for each category
+cat("Plotting likelihood curves...\n")
 ggplot(ra1b, aes(x=Motif_Length, y=L, group=Stat, colour=Stat))+
   scale_colour_brewer(palette="Set1")+
   geom_point()+
@@ -151,13 +154,15 @@ for(i in unique(rates5$Category2)){
 ##############################################################################
 # Initialize data of motif counts to use as covariates in negbin model
 ##############################################################################
+cat("Initializing data for negbin models...\n")
 dat_5bp_100k$bin$CHR <- as.integer(substring(dat_5bp_100k$bin$CHR, 4))
 
 names(dat_5bp_100k$bin) <- gsub('\\(', '_', names(dat_5bp_100k$bin))
 names(dat_5bp_100k$bin) <- gsub('\\)', '_', names(dat_5bp_100k$bin))
 
 atcols <- c(names(dat_5bp_100k$bin)[1:5],
-  names(dat_5bp_100k$bin)[which(substr(names(dat_5bp_100k$bin), adj+1, adj+1)=="A")])
+  names(dat_5bp_100k$bin)[which(substr(names(dat_5bp_100k$bin),
+    adj+1, adj+1)=="A")])
 
 # For binsAT, etc., must subselect variables
 
@@ -167,14 +172,16 @@ binsAT <- dat_5bp_100k$bin %>%
 
 gcdn <- c("CA", "CC", "CT")
 gccols <- c(names(dat_5bp_100k$bin)[1:5],
-  names(dat_5bp_100k$bin)[which(substr(names(dat_5bp_100k$bin), adj+1, adj+2) %in% gcdn)])
+  names(dat_5bp_100k$bin)[which(substr(names(dat_5bp_100k$bin),
+    adj+1, adj+2) %in% gcdn)])
 
 binsGC <- dat_5bp_100k$bin %>%
   select_(.dots = gccols) %>%
 	arrange(CHR, BIN)
 
 cpggccols <- c(names(dat_5bp_100k$bin)[1:5],
-  names(dat_5bp_100k$bin)[which(substr(names(dat_5bp_100k$bin), adj+1, adj+2)=="CG")])
+  names(dat_5bp_100k$bin)[which(substr(names(dat_5bp_100k$bin),
+   adj+1, adj+2)=="CG")])
 
 binscpgGC <- dat_5bp_100k$bin %>%
   select_(.dots = cpggccols) %>%
@@ -183,11 +190,6 @@ binscpgGC <- dat_5bp_100k$bin %>%
 ##############################################################################
 # Run combined negbin model
 ##############################################################################
-
-# Testing--use this to calculate weighted means for all 3 motif lengths
-# rates_full_s <- rates_full %>%
-# 	dplyr::select(Sequence, Category2, rel_prop, rel_prop1, rel_prop3)
-
 # Add expected #singletons per bin using 1bp motifs
 # -used in comparing category-specific models with weighted mean method
 a3 <- merge(agg_cov, rates1[,c(1,2,4)], by="Category2")
@@ -215,6 +217,7 @@ full_mod_form <- as.formula(paste("obs~",
 
 # Uses poisson regression instead of negbin, since negbin fails to converge
 # with default parameters of glm.nb()
+cat("Running overall models...\n")
 mut_lm_m_all <- glm(motif_mod_form, data=a3a1, family="poisson")
 mut_lm_fe_all <- glm(feat_mod_form, data=a3a1, family="poisson")
 mut_lm_f_all <- glm(full_mod_form, data=a3a1, family="poisson")
@@ -239,40 +242,107 @@ cat("AIC of combined model (full): ", faic, "\n")
 ##############################################################################
 # Model each category independently
 ##############################################################################
+ptm <- proc.time()
+cat("Running per-category models...\n")
 compare.all <- data.frame()
 compare.err <- data.frame()
 mut_cats <- unique(agg_5bp_100k$Category2)
 
 for(i in 1:length(mut_cats)) {
 	cat1 <- mut_cats[i]
+  cat("Running ", cat1, "models...\n")
 	aggcat <- a3[a3$Category2==mut_cats[i],]
 
 	if(grepl("^AT", cat1)) {
-		aggcatm <- merge(aggcat, binsAT, by=c("CHR", "BIN"))
+		aggcatm <- merge(aggcat, binsAT, by=c("CHR", "BIN", "prop_GC"))
 		mcols <- atcols
 	} else if(grepl("^GC", cat1)) {
-		aggcatm <- merge(aggcat, binsGC, by=c("CHR", "BIN"))
+		aggcatm <- merge(aggcat, binsGC, by=c("CHR", "BIN", "prop_GC"))
 		mcols <- gccols
 	} else {
-		aggcatm <- merge(aggcat, binscpgGC, by=c("CHR", "BIN"))
+		aggcatm <- merge(aggcat, binscpgGC, by=c("CHR", "BIN", "prop_GC"))
 		mcols <- cpggccols
 	}
 
+  # Append columns to windowed count data for all motif lengths
+  bases <- c("A", "C", "G", "T")
+  nts <- ifelse(grepl("AT", cat1), "A", "C")
+  # Loop currently just runs for 7->5bp motif aggregation;
+  # can run over 7->5->3 by setting last index to :1
+  for(j in ((nbp-1)/2-1):2){
+
+    # Specify iteration motif length
+    mlength <- (j+1)*2+1
+
+    # Define rule for substring evaluation
+    griddef <- paste(c(rep("bases", j), "nts", rep("bases", j)), collapse=",")
+
+    # Evaluate substring rule and get vector of submotifs
+    tris <- apply(eval(parse(text=paste("expand.grid(",griddef,")"))),
+      1, paste, collapse="")
+
+    # Loop through each substring and append column of
+    # aggregated counts
+    for(k in tris){
+      # Generate regex string; j is fixed per iteration
+      # (e.g., looking for internal 3-mers or 5-mers)
+      # so we search for all 3-mers or 5-mers by allowing
+      # any base preceding or following the internal motif
+      # regtri <- paste0("^", "[A-Z]{", j, "}", i, "[A-Z]{", j, "}")
+      regtri <- paste0("^[A-Z]", k, "[A-Z]")
+
+      # Extract sequences matching this submotif
+      z <- names(aggcatm)[grepl(regtri, names(aggcatm))]
+
+      # Ensure motif match vector includes only sequences
+      # corresponding to the appropriate motif length
+      z <- z[nchar(head(gsub("_[A-Z]*", "", z)))==mlength]
+
+      # Create column and append to df
+      tripct <- aggcatm %>%
+        mutate_(.dots=setNames(paste(z, collapse="+"), k)) %>%
+        select_(.dots=k)
+      aggcatm <- cbind(aggcatm, tripct)
+    }
+  }
+
+  # Get all 5bp motifs to use
+  pset <- results %>%
+    filter(Category2==cat1, Q!=1)
+
+  # Get 5bp motifs to be expanded to constituents
+  psetq1 <- results %>%
+    filter(Category2==cat1, Q==1)
+
+  # Expand significant set to 7
+  hierset <- apply(expand.grid(bases, r2$Sequence, bases),
+    1, paste, collapse="")
+  hiersetrev <- sapply(hierset, revcomp)
+  hierset <- paste0(hierset, "_", hiersetrev, "_")
+
+  m5set <- c(as.character(pset$Sequence), as.character(psetq1$Sequence))
+  m7set <- c(as.character(pset$Sequence), hierset)
+
 	# Fit models with all data
-	feat_mod_formula <- as.formula(paste("obs~",
+  # wm_form <- as.formula("obs~exp")
+  # m1_form <- as.formula("obs~exp1")
+  gc_form <- as.formula("obs~prop_GC")
+	feat_form <- as.formula(paste("obs~",
 		paste(covnames, collapse="+")))
-	full_mod_formula <- as.formula(paste("obs~",
-		paste(mcols[-(1:5)], collapse="+"), "+prop_GC.x+",
+	full_form <- as.formula(paste("obs~",
+		paste(m5set, collapse="+"), "+prop_GC+",
 		paste(covnames, collapse="+")))
-	motif_mod_formula <- as.formula(paste("obs~",
-		paste(mcols[-(1:5)], collapse="+")))
-	mut_lm_gc <- glm.nb(obs~prop_GC, data=aggcat)
-	mut_lm_feat <- glm.nb(feat_mod_formula, data=aggcat)
-	# mut_lm_motif <- glm.nb(obs~exp, data=aggcat)
-	mut_lm_motif <- glm.nb(motif_mod_formula, data=aggcatm)
-	# mut_lm_1bp <- glm.nb(obs~exp1, data=aggcat)
-	# mut_lm_3bp <- glm.nb(obs~exp3, data=aggcat)
-	mut_lm_full <- glm.nb(full_mod_formula, data=aggcatm)
+	motif_form <- as.formula(paste("obs~",
+		paste(m5set, collapse="+")))
+  motif2_form <- as.formula(paste("obs~",
+		paste(m7set, collapse="+")))
+
+  # Add formulas to list
+  forms <- c(gc_form, feat_form, full_form, motif_form, motif2_form)
+  names(forms) <- c("gc", "feat", "full", "motif", "motif2")
+
+  # Run models for each formula in list
+  models <- runMod(forms, aggcatm)
 
 	# 5-fold cross-validation--may need to update so expected counts are
 	# re-calculated for each 1/N subset
@@ -289,108 +359,43 @@ for(i in 1:length(mut_cats)) {
 	mspe.dat <- data.frame(Category2=cat1, res=mspe.res, mspe, rmse, meanct, pcterr)
 	compare.err <-rbind(compare.err, mspe.dat)
 
-	fits_gc <- mut_lm_gc$fitted.values
-	names(fits_gc) <- paste0(aggcat$CHR,".",aggcat$BIN)
+  # Get fitted values from each model and name with CHR/BIN
+  fits <- getFits(models, aggcatm)
 
-	fits_feat <- mut_lm_feat$fitted.values
-	names(fits_feat) <- paste0(aggcat$CHR,".",aggcat$BIN)
+	BIN <- as.integer(gsub(".*\\.", "", names(fits$feat)))
+	CHR <- as.integer(gsub("\\..*", "", names(fits$feat)))
 
-	# fits_motif <- mut_lm_motif$fitted.values
-	# names(fits_motif) <- paste0(aggcat$CHR,".",aggcat$BIN)
+  # Build list of dataframes for each model
+  moddat <- buildDF(fits, aggcatm)
 
-	fits_motif <- mut_lm_motif$fitted.values
-	names(fits_motif) <- paste0(aggcatm$CHR,".",aggcatm$BIN)
+  # Add column specifying model
+  for(i in 1:length(names(moddat))){
+    moddat[[i]]$res <- names(moddat)[i]
+  }
 
-	fits_full <- mut_lm_full$fitted.values
-	names(fits_full) <- paste0(aggcatm$CHR,".",aggcatm$BIN)
-
-	BIN <- as.integer(gsub(".*\\.", "", names(fits_feat)))
-	CHR <- as.integer(gsub("\\..*", "", names(fits_feat)))
-
-	BINA <- as.integer(gsub(".*\\.", "", names(fits_motif)))
-	CHRA <- as.integer(gsub("\\..*", "", names(fits_motif)))
-
-	model_dat_gc <- data.frame(CHR,Category2=cat1, BIN,
-		exp=fits_gc,
-		obs=aggcat$obs,
-		stringsAsFactors=F)
-	model_dat_gc$res <- "GC"
-
-	model_dat_feat <- data.frame(CHR,Category2=cat1, BIN,
-		exp=fits_feat,
-		obs=aggcat$obs,
-		stringsAsFactors=F)
-	model_dat_feat$res <- "features"
-
-	# model_dat_motif <- data.frame(CHR,Category2=cat1, BIN,
-	# 	exp=fits_motif,
-	# 	obs=aggcat$obs,
-	# 	stringsAsFactors=F)
-	# model_dat_motif$res <- "motifs"
-
-	model_dat_motif <- data.frame(CHR=CHRA,Category2=cat1, BIN=BINA,
-		exp=fits_motif,
-		obs=aggcatm$obs,
-		stringsAsFactors=F)
-	model_dat_motif$res <- "motifs_5bp"
-
-	model_dat_full <- data.frame(CHR=CHRA,Category2=cat1, BIN=BINA,
-		exp=fits_full,
-		obs=aggcatm$obs,
-		stringsAsFactors=F)
-	model_dat_full$res <- "motifs_5bp+features"
-
-	compare.all <- rbind(compare.all,
-		model_dat_gc,
-		model_dat_feat,
-		# model_dat_motif,
-		model_dat_motif,
-		model_dat_full)
+  # Append model predictions to full df
+	compare.all <- rbind(compare.all, rbind_all(moddat))
 }
+tottime <- (proc.time()-ptm)[3]
+cat("Done (", tottime, "s)\n")
 
 ##############################################################################
 # Process resulting data from models
 ##############################################################################
 # Update comparison data frame
-compare.all$res <- factor(compare.all$res,
-	levels = c("GC", "features", "motifs_5bp", "motifs_5bp+features"))
+# compare.all$res <- factor(compare.all$res,
+# 	levels = c("GC", "features", "motifs_5bp", "motifs_5bp+features"))
 compare.all$Category2 <- factor(compare.all$Category2)
 # levels(compare.all$Category2) <- c(
 	# "AT>CG", "AT>GC", "AT>TA",
 	# "(CpG)GC>AT", "(CpG)GC>CG", "(CpG)GC>TA",
 	# "GC>AT", "GC>CG", "GC>TA")
 
-# compare.all$diff <- compare.all$obs-compare.all$exp
-# ca.gp <- group_by(compare.all, Category2, res)
-# compare.all <- mutate(ca.gp, dm=mean(diff), dsd=sd(diff), zscore=(diff-dm)/dsd)
-# compare.all$err <- abs(compare.all$diff)/compare.all$obs
-
-# get mean absolute error for each category/model
-# ca <- compare.all %>%
-# 	group_by(Category2, res) %>%
-# 	summarise(meanerr_s=mean(err_s),
-# 		meanerr=mean(err),
-# 		sderr=std(err),
-# 		meanobs=mean(obs),
-# 		sdobs=std(obs),
-# 		fold=meanerr_s/meanerr)
-#
-# caout <- paste0(parentdir, "/output/", nbp, "bp_err.txt")
-# write.table(ca, caout, col.names=T, row.names=F, quote=F, sep="\t")
-#
-# cad <- dcast(data.frame(ca), Category2~res, value.var="meanerr")
-
-# Calculate correlation between relative rates and #motifs
-# rate_motif_cor <- agg_5bp_100k %>%
-# 	mutate(rel=obs/nmotifs) %>%
-# 	group_by(Category2) %>%
-# 	summarise(cor=cor(rel, nmotifs, use="complete.obs"))
-
 ##############################################################################
 # Plot barcharts comparing obs/exp correlation for different models
 ##############################################################################
 mod.corr <- compare.all %>%
-	filter(exp>100) %>%
+	# filter(exp > 100) %>%
 	group_by(Category2, res) %>%
 	summarise(num=length(exp),
 		cor=cor(exp, obs, method="pearson"),

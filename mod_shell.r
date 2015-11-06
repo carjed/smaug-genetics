@@ -36,7 +36,7 @@ args <- getArgs(
 		run_agg=TRUE,
 		pcs=FALSE,
 		categ="AT_CG",
-		negbin_model=FALSE,
+		negbin_model=TRUE,
 		log_model=FALSE,
 		run_predict=FALSE))
 

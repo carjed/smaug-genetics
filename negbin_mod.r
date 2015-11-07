@@ -279,6 +279,15 @@ for(i in 1:length(mut_cats)) {
     # Define rule for substring evaluation
     griddef <- paste(c(rep("bases", j), "nts", rep("bases", j)), collapse=",")
 
+    b3 <- bases
+    if(grepl("^cpg", cat1)){
+      b3 <- c("G")
+    } else if (grepl("^GC", cat1)){
+      b3 <- c("A", "C", "T")
+    }
+    
+    griddef <- paste(c("bases", "bases", "nts", "b3", "bases"), collapse=",")
+
     # Evaluate substring rule and get vector of submotifs
     tris <- apply(eval(parse(text=paste("expand.grid(",griddef,")"))),
       1, paste, collapse="")

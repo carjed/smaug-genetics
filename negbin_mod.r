@@ -268,7 +268,7 @@ for(i in 1:length(mut_cats)) {
 
   # Append columns to windowed count data for all motif lengths
   bases <- c("A", "C", "G", "T")
-  nts <- ifelse(grepl("AT", cat1), "A", "C")
+  nts <- ifelse(grepl("^AT", cat1), "A", "C")
   # Loop currently just runs for 7->5bp motif aggregation;
   # can run over 7->5->3 by setting last index to :1
   for(j in ((nbp-1)/2-1):2){

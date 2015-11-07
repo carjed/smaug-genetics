@@ -348,18 +348,18 @@ for(i in 1:length(mut_cats)) {
 
 	# 5-fold cross-validation--may need to update so expected counts are
 	# re-calculated for each 1/N subset
-	gc_cv <- cv.glm(data=aggcatm, glmfit=models$gc, K=5)
-	feat_cv <- cv.glm(data=aggcatm, glmfit=models$feat, K=5)
-	motif_cv <- cv.glm(data=aggcatm, glmfit=models$motif, K=5)
-	full_cv <- cv.glm(data=aggcatm, glmfit=models$full, K=5)
-
-	mspe <- c(gc_cv$delta[2], feat_cv$delta[2], motif_cv$delta[2], full_cv$delta[2])
-	rmse <- sqrt(mspe)
-	meanct <- mean(aggcat$obs)
-	pcterr <- rmse/meanct
-	mspe.res <- c("GC", "features", "motifs", "motifs+features")
-	mspe.dat <- data.frame(Category2=cat1, res=mspe.res, mspe, rmse, meanct, pcterr)
-	compare.err <-rbind(compare.err, mspe.dat)
+	# gc_cv <- cv.glm(data=aggcatm, glmfit=models$gc, K=5)
+	# feat_cv <- cv.glm(data=aggcatm, glmfit=models$feat, K=5)
+	# motif_cv <- cv.glm(data=aggcatm, glmfit=models$motif, K=5)
+	# full_cv <- cv.glm(data=aggcatm, glmfit=models$full, K=5)
+  #
+	# mspe <- c(gc_cv$delta[2], feat_cv$delta[2], motif_cv$delta[2], full_cv$delta[2])
+	# rmse <- sqrt(mspe)
+	# meanct <- mean(aggcat$obs)
+	# pcterr <- rmse/meanct
+	# mspe.res <- c("GC", "features", "motifs", "motifs+features")
+	# mspe.dat <- data.frame(Category2=cat1, res=mspe.res, mspe, rmse, meanct, pcterr)
+	# compare.err <-rbind(compare.err, mspe.dat)
 
   # Get fitted values from each model and name with CHR/BIN
   fits <- getFits(models, aggcatm)
@@ -430,25 +430,25 @@ ggsave(modelbar, width=7, height=7)
 ##############################################################################
 # Plot barcharts comparing 10-fold cross validation MSPE
 ##############################################################################
-compare.err$res <- factor(compare.err$res,
-	levels = c("GC", "features", "motifs", "motifs+features"))
-
-ggplot(compare.err, aes(x=Category2, y=mspe, fill=res))+
-	geom_bar(stat="identity", position=dodge)+
-  scale_colour_brewer("Predictor",palette="Dark2")+
-  scale_fill_brewer("Predictor", palette="Dark2")+
-	# scale_colour_manual("Predictor", values=myPaletteCat(8)[5:8])+
-	# scale_fill_manual("Predictor", values=myPaletteCat(8)[5:8])+
-	facet_wrap(~Category2, scales="free")+
-	ylab("MSPE")+
-	theme_bw()+
-	theme(legend.title = element_text(size=18),
-		legend.text = element_text(size=16),
-		axis.title.y = element_text(size=20),
-		axis.title.x = element_blank(),
-	  axis.text.y = element_text(size=16),
-	  axis.text.x = element_blank(),
-	  axis.ticks.x = element_blank())
-
-mspebar <- paste0(parentdir, "/images/compare_mspe.png")
-ggsave(mspebar, width=12, height=12)
+# compare.err$res <- factor(compare.err$res,
+# 	levels = c("GC", "features", "motifs", "motifs+features"))
+#
+# ggplot(compare.err, aes(x=Category2, y=mspe, fill=res))+
+# 	geom_bar(stat="identity", position=dodge)+
+#   scale_colour_brewer("Predictor",palette="Dark2")+
+#   scale_fill_brewer("Predictor", palette="Dark2")+
+# 	# scale_colour_manual("Predictor", values=myPaletteCat(8)[5:8])+
+# 	# scale_fill_manual("Predictor", values=myPaletteCat(8)[5:8])+
+# 	facet_wrap(~Category2, scales="free")+
+# 	ylab("MSPE")+
+# 	theme_bw()+
+# 	theme(legend.title = element_text(size=18),
+# 		legend.text = element_text(size=16),
+# 		axis.title.y = element_text(size=20),
+# 		axis.title.x = element_blank(),
+# 	  axis.text.y = element_text(size=16),
+# 	  axis.text.x = element_blank(),
+# 	  axis.ticks.x = element_blank())
+#
+# mspebar <- paste0(parentdir, "/images/compare_mspe.png")
+# ggsave(mspebar, width=12, height=12)

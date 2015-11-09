@@ -246,9 +246,10 @@ if(overall){
 ##############################################################################
 ptm <- proc.time()
 cat("Running per-category models...\n")
+mut_cats <- unique(agg_5bp_100k$Category2)
 compare.all <- data.frame()
 compare.err <- data.frame()
-mut_cats <- unique(agg_5bp_100k$Category2)
+compare.aic <- data.frame()
 
 for(i in 1:length(mut_cats)) {
 	cat1 <- mut_cats[i]
@@ -285,7 +286,7 @@ for(i in 1:length(mut_cats)) {
     } else if (grepl("^GC", cat1)){
       b3 <- c("A", "C", "T")
     }
-    
+
     griddef <- paste(c("bases", "bases", "nts", "b3", "bases"), collapse=",")
 
     # Evaluate substring rule and get vector of submotifs
@@ -355,6 +356,9 @@ for(i in 1:length(mut_cats)) {
   # Run models for each formula in list
   models <- runMod(forms, aggcatm)
 
+  aics <- sapply(models, function(x) AIC(x))
+  aicdf <- data.frame(Category2=cat1, model=names(aics), AIC=aics)
+  compare.aic <- rbind(compare.aic, aicdf)
 	# 5-fold cross-validation--may need to update so expected counts are
 	# re-calculated for each 1/N subset
 	# gc_cv <- cv.glm(data=aggcatm, glmfit=models$gc, K=5)
@@ -435,6 +439,14 @@ ggplot(mod.corr, aes(x=Category2, y=cor, fill=res))+
 
 modelbar <- paste0(parentdir, "/images/gw_5bp_vs_mod.png")
 ggsave(modelbar, width=7, height=7)
+
+ggplot(compare.aic, aes(x=model, y=AIC))+
+  geom_bar(stat="identity", position="dodge")+
+  facet_wrap(~Category2)+
+  theme_bw()
+
+aicbar <- paste0(parentdir, "/images/gw_aic.png")
+ggsave(aicbar, width=7, height=7)
 
 ##############################################################################
 # Plot barcharts comparing 10-fold cross validation MSPE

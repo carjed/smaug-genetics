@@ -351,7 +351,7 @@ for(i in 1:length(mut_cats)) {
 
   # Add formulas to list
   forms <- c(gc_form, feat_form, full_form, motif_form, motif2_form)
-  names(forms) <- c("gc", "feat", "full", "motif", "motif2")
+  names(forms) <- c("gc", "features", "5bp_motifs", "5bp+7bp_motifs", "full")
 
   # Run models for each formula in list
   models <- runMod(forms, aggcatm)
@@ -398,6 +398,8 @@ cat("Done (", tottime, "s)\n")
 # Process resulting data from models
 ##############################################################################
 # Update comparison data frame
+compare.all$res <- factor(compare.all$res,
+  levels(compare.all$res)[names(forms)])
 # compare.all$res <- factor(compare.all$res,
 # 	levels = c("GC", "features", "motifs_5bp", "motifs_5bp+features"))
 compare.all$Category2 <- factor(compare.all$Category2)
@@ -441,8 +443,9 @@ modelbar <- paste0(parentdir, "/images/gw_5bp_vs_mod.png")
 ggsave(modelbar, width=7, height=7)
 
 ggplot(compare.aic, aes(x=model, y=AIC))+
-  geom_bar(stat="identity", position="dodge")+
-  facet_wrap(~Category2)+
+  # geom_bar(stat="identity", position="dodge")+
+  geom_point()+
+  facet_wrap(~Category2, scales="free")+
   theme_bw()
 
 aicbar <- paste0(parentdir, "/images/gw_aic.png")

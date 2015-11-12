@@ -16,8 +16,11 @@ if(ratiofilter){
 # Get relative rates for 1bp and 3bp motifs and compare likelihoods
 ##############################################################################
 cat("Getting relative rates for submotifs...\n")
+# Get submotifs
 rates5$Seq3 <- substr(rates5$Sequence, adj, nbp-adj+1)
+rates5$Seq5 <- substr(rates5$Sequence, adj-1, nbp-1)
 
+# Recalculate rates for submotifs
 rates1 <- rates5 %>%
   dplyr::select(Sequence, Category2, COUNT, num) %>%
   group_by(Category2) %>%
@@ -28,23 +31,18 @@ rates3 <- rates5 %>%
   group_by(Seq3, Category2) %>%
   summarise(COUNT3=sum(COUNT), num3=sum(num), rel_prop3=num3/COUNT3)
 
-if(nbp==7){
-	rates5$Seq5 <- substr(rates5$Sequence, adj-1, nbp-1)
+rates5a <- rates5 %>%
+  dplyr::select(Seq5, Category2, COUNT, num) %>%
+  group_by(Seq5, Category2) %>%
+  summarise(COUNT5=sum(COUNT), num5=sum(num), rel_prop5=num5/COUNT5)
 
-	rates5a <- rates5 %>%
-	  dplyr::select(Seq5, Category2, COUNT, num) %>%
-	  group_by(Seq5, Category2) %>%
-	  summarise(COUNT5=sum(COUNT), num5=sum(num), rel_prop5=num5/COUNT5)
-}
-
+# Merge to single data frame
 rates_full <- merge(rates5, rates1, by="Category2")
 rates_full <- merge(rates_full, rates3, by=c("Seq3", "Category2"))
-
-if(nbp==7){
-	rates_full <- merge(rates_full, rates5a, by=c("Seq5", "Category2"))
-}
+rates_full <- merge(rates_full, rates5a, by=c("Seq5", "Category2"))
 
 cat("Calculating likelihoods under different motif lengths...\n")
+# Calculate likelihoods
 rates_full$logLik1 <- dbinom(rates_full$num,
   rates_full$COUNT,
   rates_full$rel_prop1, log=T)
@@ -53,59 +51,32 @@ rates_full$logLik3 <- dbinom(rates_full$num,
   rates_full$COUNT,
   rates_full$rel_prop3, log=T)
 
-if(nbp==7){
-	rates_full$logLik5 <- dbinom(rates_full$num,
-	  rates_full$COUNT,
-	  rates_full$rel_prop5, log=T)
+rates_full$logLik5 <- dbinom(rates_full$num,
+  rates_full$COUNT,
+  rates_full$rel_prop5, log=T)
 
-	rates_full$logLik7 <- dbinom(rates_full$num,
-	  rates_full$COUNT,
-	  rates_full$rel_prop, log=T)
+rates_full$logLik7 <- dbinom(rates_full$num,
+  rates_full$COUNT,
+  rates_full$rel_prop, log=T)
 
-} else {
-	rates_full$logLik5 <- dbinom(rates_full$num,
-	  rates_full$COUNT,
-	  rates_full$rel_prop, log=T)
-}
+ra1<-rates_full %>%
+  group_by(Category2) %>%
+  summarise(L1=-2*sum(logLik1),
+    L3=-2*sum(logLik3),
+    L5=-2*sum(logLik5),
+		L7=-2*sum(logLik7))
 
-if(nbp==7){
-	ra1<-rates_full %>%
-	  group_by(Category2) %>%
-	  summarise(L1=-2*sum(logLik1),
-	    L3=-2*sum(logLik3),
-	    L5=-2*sum(logLik5),
-			L7=-2*sum(logLik7))
+ra1a<-gather(ra1, model, log, L1:L7)
 
-	ra1a<-gather(ra1, model, log, L1:L7)
+ra1a$k <- c(rep(1,9),
+  c(rep(16,3), rep(12,3), rep(4,3)),
+  c(rep(256,3), rep(192,3), rep(64,3)),
+	c(rep(4096,3), rep(3072,3), rep(1024,3)))
 
-	ra1a$k <- c(rep(1,9),
-	  c(rep(16,3), rep(12,3), rep(4,3)),
-	  c(rep(256,3), rep(192,3), rep(64,3)),
-		c(rep(4096,3), rep(3072,3), rep(1024,3)))
+ra1a$AIC <- 2*ra1a$k+2*ra1a$log
 
-	ra1a$AIC <- 2*ra1a$k+2*ra1a$log
-
-	ra1b <- gather(ra1a, stat, L, c(log, AIC))
-	levels(ra1b$model) <- c("1", "3", "5", "7")
-
-} else {
-	ra1<-rates_full %>%
-	  group_by(Category2) %>%
-	  summarise(L1=-2*sum(logLik1),
-	    L3=-2*sum(logLik3),
-	    L5=-2*sum(logLik5))
-
-	ra1a<-gather(ra1, model, log, L1:L5)
-
-	ra1a$k <- c(rep(1,9),
-	  c(rep(16,3), rep(12,3), rep(4,3)),
-	  c(rep(256,3), rep(192,3), rep(64,3)))
-
-	ra1a$AIC <- 2*ra1a$k+2*ra1a$log
-
-	ra1b <- gather(ra1a, stat, L, c(log, AIC))
-	levels(ra1b$model) <- c("1", "3", "5")
-}
+ra1b <- gather(ra1a, stat, L, c(log, AIC))
+levels(ra1b$model) <- c("1", "3", "5", "7")
 
 levels(ra1b$stat) <- c("-2ln(L)", "AIC")
 names(ra1b) <- c("Category", "Motif_Length", "k", "Stat", "L")
@@ -150,6 +121,74 @@ for(i in unique(rates5$Category2)){
   tmpresults$Q <- ntile(tmpresults$pval, 10)
   results <- rbind(results, tmpresults)
 }
+
+# ra1a %>% filter(model=="L5")
+
+rf2<-rates_full %>%
+  group_by(Category2, Seq3) %>%
+  summarise(s3=-2*sum(logLik3), s5=-2*sum(logLik5)) %>%
+  ungroup() %>%
+  arrange(Category2, desc(s5)) %>%
+  group_by(Category2) %>%
+  mutate(D3_5=s5-s3,s3s=sum(s3)) %>%
+  arrange(D3_5) %>%
+  mutate(D3_5c=cumsum(D3_5), L=s3s+D3_5c,
+    rk=rank(-L), rk2=max(rk)-rk+16*rk, gp="3>5")
+
+
+rf3<-rates_full %>%
+  group_by(Category2, Seq5) %>%
+  summarise(s5=-2*sum(logLik5), s7=-2*sum(logLik7)) %>%
+  ungroup() %>%
+  arrange(Category2, desc(s7)) %>%
+  group_by(Category2) %>%
+  mutate(D5_7=s7-s5,s5s=sum(s5)) %>%
+  arrange(D5_7) %>%
+  mutate(D5_7c=cumsum(D5_7), L=s5s+D5_7c,
+    rk=rank(-L), rk2=max(rk)-rk+16*rk, gp="5>7")
+
+rf3a<-rf3 %>%
+  mutate(rk2=min(rk2)+min(rk2)*rk2/max(rk2))
+# rf3a$rk2 <- 256+256*rf3a$rk2/1000
+rfc <- rbind(dplyr::select(rf2, Category2, L, rk2, gp),
+  dplyr::select(rf3a, Category2, L, rk2, gp))
+
+cat("Plotting likelihood curves...\n")
+ggplot(rf2, aes(x=rk2, y=L))+
+  scale_colour_brewer(palette="Set1")+
+  geom_point()+
+  geom_line()+
+  facet_wrap(~Category2, scales="free")+
+  theme_bw()+
+  theme(axis.title.y=element_blank(),
+    legend.title=element_blank())
+
+ggsave("/net/bipolar/jedidiah/mutation/images/compare_LL_int_5.png")
+
+ggplot(rf3, aes(x=rk2, y=L))+
+  scale_colour_brewer(palette="Set1")+
+  geom_point()+
+  geom_line()+
+  facet_wrap(~Category2, scales="free")+
+  theme_bw()+
+  theme(axis.title.y=element_blank(),
+    legend.title=element_blank())
+
+ggsave("/net/bipolar/jedidiah/mutation/images/compare_LL_int_7.png")
+
+ggplot(rfc, aes(x=rk2, y=L, group=gp, colour=gp))+
+  # scale_y_log10()+
+  # scale_x_log10()+
+  # scale_x_continuous(breaks=c(min(rk2), max(rk2)))+
+  scale_colour_brewer(palette="Set1")+
+  geom_point()+
+  geom_line()+
+  facet_wrap(~Category2, scales="free")+
+  theme_bw()+
+  theme(axis.title.y=element_blank(),
+    legend.title=element_blank())
+
+ggsave("/net/bipolar/jedidiah/mutation/images/compare_LL_full.png")
 
 ##############################################################################
 # Initialize data of motif counts to use as covariates in negbin model

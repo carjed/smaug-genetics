@@ -1,11 +1,3 @@
-
-# Returns the following:
-# > z
-#  [1] "AAAAA_TTTTT_" "AAAAC_GTTTT_" "AAAAG_CTTTT_" "AAAAT_ATTTT_" "CAAAA_TTTTG_"
-#  [6] "CAAAC_GTTTG_" "CAAAG_CTTTG_" "CAAAT_ATTTG_" "GAAAA_TTTTC_" "GAAAC_GTTTC_"
-# [11] "GAAAG_CTTTC_" "GAAAT_ATTTC_" "TAAAA_TTTTA_" "TAAAC_GTTTA_" "TAAAG_CTTTA_"
-# [16] "TAAAT_ATTTA_"
-
 # tris<-apply(expand.grid(bases, nts, bases), 1, paste, collapse="")
 
 bases<-c("A", "C", "G", "T")
@@ -55,11 +47,11 @@ a3a2 <- a3a1 %>%
 
 # Run model with this set vs. all 5bp motifs
 
-a3a1a<-colSums(a3a1[,c(16,20:ncol(a3a1))])
+# a3a1a<-colSums(a3a1[,c(16,20:ncol(a3a1))])
 
-rf1<-rates_full[rates_full$Category2=="AT_CG",]
-rf1b<-rf1 %>%
-  group_by(Seq3) %>%
-  summarise(ll5=sum(logLik5), ll3=sum(logLik3)) %>%
-  mutate(L=2*(ll5-ll3), p=1-pchisq(L, 15)) %>%
-  arrange(-L)
+# rf1<-rates_full[rates_full$Category2=="AT_CG",]
+# rf1b<-rf1 %>%
+#   group_by(Seq3) %>%
+#   summarise(ll5=sum(logLik5), ll3=sum(logLik3)) %>%
+#   mutate(L=2*(ll5-ll3), p=1-pchisq(L, 15)) %>%
+#   arrange(-L)

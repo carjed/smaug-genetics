@@ -136,7 +136,7 @@ rf2<-rates_full %>%
     rk=rank(-L), rk2=max(rk)-rk+16*rk, gp="3>5")
 
 
-rf3<-rates_full %>%
+rf3 <- rates_full %>%
   group_by(Category2, Seq5) %>%
   summarise(s5=-2*sum(logLik5), s7=-2*sum(logLik7)) %>%
   ungroup() %>%
@@ -147,48 +147,60 @@ rf3<-rates_full %>%
   mutate(D5_7c=cumsum(D5_7), L=s5s+D5_7c,
     rk=rank(-L), rk2=max(rk)-rk+16*rk, gp="5>7")
 
-rf3a<-rf3 %>%
+rf3a <- rf3 %>%
   mutate(rk2=min(rk2)+min(rk2)*rk2/max(rk2))
+
+names(rf3a)[2] <- "Sequence"
+names(rf2)[2] <- "Sequence"
 # rf3a$rk2 <- 256+256*rf3a$rk2/1000
-rfc <- rbind(dplyr::select(rf2, Category2, L, rk2, gp),
-  dplyr::select(rf3a, Category2, L, rk2, gp))
+rfc <- rbind(dplyr::select(rf2, Category2, Sequence, L, rk, rk2, gp),
+  dplyr::select(rf3a, Category2, Sequence, L, rk, rk2, gp))
 
-cat("Plotting likelihood curves...\n")
-ggplot(rf2, aes(x=rk2, y=L))+
-  scale_colour_brewer(palette="Set1")+
-  geom_point()+
-  geom_line()+
-  facet_wrap(~Category2, scales="free")+
-  theme_bw()+
-  theme(axis.title.y=element_blank(),
-    legend.title=element_blank())
+# cat("Plotting likelihood curves...\n")
+# ggplot(rf2, aes(x=rk2, y=L))+
+#   scale_colour_brewer(palette="Set1")+
+#   geom_point()+
+#   geom_line()+
+#   facet_wrap(~Category2, scales="free")+
+#   theme_bw()+
+#   theme(axis.title.y=element_blank(),
+#     legend.title=element_blank())
+#
+# ggsave("/net/bipolar/jedidiah/mutation/images/compare_LL_int_5.png")
+#
+# ggplot(rf3, aes(x=rk2, y=L))+
+#   scale_colour_brewer(palette="Set1")+
+#   geom_point()+
+#   geom_line()+
+#   facet_wrap(~Category2, scales="free")+
+#   theme_bw()+
+#   theme(axis.title.y=element_blank(),
+#     legend.title=element_blank())
+#
+# ggsave("/net/bipolar/jedidiah/mutation/images/compare_LL_int_7.png")
 
-ggsave("/net/bipolar/jedidiah/mutation/images/compare_LL_int_5.png")
-
-ggplot(rf3, aes(x=rk2, y=L))+
-  scale_colour_brewer(palette="Set1")+
-  geom_point()+
-  geom_line()+
-  facet_wrap(~Category2, scales="free")+
-  theme_bw()+
-  theme(axis.title.y=element_blank(),
-    legend.title=element_blank())
-
-ggsave("/net/bipolar/jedidiah/mutation/images/compare_LL_int_7.png")
-
-ggplot(rfc, aes(x=rk2, y=L, group=gp, colour=gp))+
+ggplot(rfc, aes(x=rk2, y=L))+
   # scale_y_log10()+
   # scale_x_log10()+
   # scale_x_continuous(breaks=c(min(rk2), max(rk2)))+
+  scale_x_continuous(expand = c(.2, .2))+
+  scale_y_continuous(expand = c(.1, .1))+
   scale_colour_brewer(palette="Set1")+
-  geom_point()+
+  geom_point(size=4, aes(colour=gp))+
   geom_line()+
+  geom_text(size=4, angle=20,
+    aes(label=ifelse(rk<5, as.character(Sequence), ''),
+      hjust=rep(c(1,0), length.out=length(Sequence)),
+      vjust=0))+#rep(c(.5,-.5), length.out=length(Sequence))))+
   facet_wrap(~Category2, scales="free")+
   theme_bw()+
-  theme(axis.title.y=element_blank(),
+  ylab("-2log(L)")+
+  theme(axis.title.x=element_blank(),
+    axis.text.x=element_blank(),
     legend.title=element_blank())
 
-ggsave("/net/bipolar/jedidiah/mutation/images/compare_LL_full.png")
+ggsave("/net/bipolar/jedidiah/mutation/images/compare_LL_full.png",
+  width=12, height=12)
 
 ##############################################################################
 # Initialize data of motif counts to use as covariates in negbin model

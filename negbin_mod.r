@@ -73,13 +73,14 @@ ra1a$k <- c(rep(1,9),
   c(rep(256,3), rep(192,3), rep(64,3)),
 	c(rep(4096,3), rep(3072,3), rep(1024,3)))
 
-ra1a$AIC <- 2*ra1a$k+2*ra1a$log
+ra1a$AIC <- 2*ra1a$k+ra1a$log
+ra1c$BIC <- ra1c$k*log(ra1c$num1)+ra1c$log
 
-ra1b <- gather(ra1a, stat, L, c(log, AIC))
+ra1b <- gather(ra1c, stat, L, c(log, AIC, BIC))
 levels(ra1b$model) <- c("1", "3", "5", "7")
 
-levels(ra1b$stat) <- c("-2ln(L)", "AIC")
-names(ra1b) <- c("Category", "Motif_Length", "k", "Stat", "L")
+levels(ra1b$stat) <- c("-2ln(L)", "AIC", "BIC")
+names(ra1b) <- c("Category", "Motif_Length", "k", "num1", "Stat", "L")
 
 # Plot AIC and -2log(L) for each category
 cat("Plotting likelihood curves...\n")
@@ -402,7 +403,7 @@ for(i in 1:length(mut_cats)) {
 
   # Add formulas to list
   forms <- c(gc_form, feat_form, full_form, motif_form, motif2_form)
-  names(forms) <- c("gc", "features", "5bp_motifs", "5bp+7bp_motifs", "full")
+  names(forms) <- c("gc", "features", "full", "motifs", "motifs2")
 
   # Run models for each formula in list
   models <- runMod(forms, aggcatm)
@@ -449,8 +450,8 @@ cat("Done (", tottime, "s)\n")
 # Process resulting data from models
 ##############################################################################
 # Update comparison data frame
-compare.all$res <- factor(compare.all$res,
-  levels(compare.all$res)[names(forms)])
+# compare.all$res <- factor(compare.all$res,
+#   levels(compare.all$res)[names(forms)])
 # compare.all$res <- factor(compare.all$res,
 # 	levels = c("GC", "features", "motifs_5bp", "motifs_5bp+features"))
 compare.all$Category2 <- factor(compare.all$Category2)

@@ -82,7 +82,8 @@ ra1b <- gather(ra1c, stat, L, c(log, AIC, BIC))
 levels(ra1b$model) <- c("1", "3", "5", "7")
 
 levels(ra1b$stat) <- c("-2ln(L)", "AIC", "BIC")
-names(ra1b) <- c("Category", "Motif_Length", "k", "num1", "Stat", "L")
+names(ra1b) <- c("Category", "Motif_Length", "k", "COUNT", 
+  "num1", "rel_prop", "Stat", "L")
 
 # Plot AIC and -2log(L) for each category
 cat("Plotting likelihood curves...\n")

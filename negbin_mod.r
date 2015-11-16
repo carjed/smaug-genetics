@@ -74,6 +74,8 @@ ra1a$k <- c(rep(1,9),
 	c(rep(4096,3), rep(3072,3), rep(1024,3)))
 
 ra1a$AIC <- 2*ra1a$k+ra1a$log
+
+ra1c <- merge(ra1a, rates1, by="Category2")
 ra1c$BIC <- ra1c$k*log(ra1c$num1)+ra1c$log
 
 ra1b <- gather(ra1c, stat, L, c(log, AIC, BIC))

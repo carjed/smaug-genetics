@@ -82,7 +82,7 @@ ra1b <- gather(ra1c, stat, L, c(log, AIC, BIC))
 levels(ra1b$model) <- c("1", "3", "5", "7")
 
 levels(ra1b$stat) <- c("-2ln(L)", "AIC", "BIC")
-names(ra1b) <- c("Category", "Motif_Length", "k", "COUNT", 
+names(ra1b) <- c("Category", "Motif_Length", "k", "COUNT",
   "num1", "rel_prop", "Stat", "L")
 
 # Plot AIC and -2log(L) for each category
@@ -136,9 +136,12 @@ rf2<-rates_full %>%
   group_by(Category2) %>%
   mutate(D3_5=s5-s3,s3s=sum(s3)) %>%
   arrange(D3_5) %>%
-  mutate(D3_5c=cumsum(D3_5), L=s3s+D3_5c,
-    rk=rank(-L), rk2=max(rk)-rk+16*rk, gp="3>5")
-
+  mutate(D3_5c=cumsum(D3_5),
+    L=s3s+D3_5c,
+    rk=rank(-L),
+    rk2=max(rk)-rk+16*rk,
+    rk3=rk2,
+    gp="3>5")
 
 rf3 <- rates_full %>%
   group_by(Category2, Seq5) %>%
@@ -148,60 +151,78 @@ rf3 <- rates_full %>%
   group_by(Category2) %>%
   mutate(D5_7=s7-s5,s5s=sum(s5)) %>%
   arrange(D5_7) %>%
-  mutate(D5_7c=cumsum(D5_7), L=s5s+D5_7c,
-    rk=rank(-L), rk2=max(rk)-rk+16*rk, gp="5>7")
+  mutate(D5_7c=cumsum(D5_7),
+    L=s5s+D5_7c,
+    rk=rank(-L),
+    rk2=max(rk)-rk+16*rk,
+    rk3=min(rk2)+min(rk2)*rk2/max(rk2),
+    gp="5>7")
 
-rf3a <- rf3 %>%
-  mutate(rk2=min(rk2)+min(rk2)*rk2/max(rk2))
-
-names(rf3a)[2] <- "Sequence"
+names(rf3)[2] <- "Sequence"
 names(rf2)[2] <- "Sequence"
-# rf3a$rk2 <- 256+256*rf3a$rk2/1000
-rfc <- rbind(dplyr::select(rf2, Category2, Sequence, L, rk, rk2, gp),
-  dplyr::select(rf3a, Category2, Sequence, L, rk, rk2, gp))
 
-# cat("Plotting likelihood curves...\n")
-# ggplot(rf2, aes(x=rk2, y=L))+
-#   scale_colour_brewer(palette="Set1")+
-#   geom_point()+
-#   geom_line()+
-#   facet_wrap(~Category2, scales="free")+
-#   theme_bw()+
-#   theme(axis.title.y=element_blank(),
-#     legend.title=element_blank())
-#
-# ggsave("/net/bipolar/jedidiah/mutation/images/compare_LL_int_5.png")
-#
-# ggplot(rf3, aes(x=rk2, y=L))+
-#   scale_colour_brewer(palette="Set1")+
-#   geom_point()+
-#   geom_line()+
-#   facet_wrap(~Category2, scales="free")+
-#   theme_bw()+
-#   theme(axis.title.y=element_blank(),
-#     legend.title=element_blank())
-#
-# ggsave("/net/bipolar/jedidiah/mutation/images/compare_LL_int_7.png")
+rfc <- rbind(dplyr::select(rf2, Category2, Sequence, L, rk, rk2, rk3, gp),
+  dplyr::select(rf3, Category2, Sequence, L, rk, rk2, rk3, gp))
 
-ggplot(rfc, aes(x=rk2, y=L))+
+l1ll<-ra1b %>%
+  filter(Motif_Length %in% c("1", "3"), Stat=="-2ln(L)") %>%
+  mutate(Sequence=substr(Category, 1,1), rk=5, rk2=k,
+    rk3=min(rk2)+min(rk2)*rk2/max(rk2), gp=Motif_Length) %>%
+  dplyr::select(Category2=Category, Sequence, L, rk, rk2, rk3, gp)
+
+rfc2<-merge(rbind(l1ll, rfc), rates1, by="Category2")
+
+rfc2$AIC <- 2*rfc2$rk2 + rfc2$L
+rfc2$BIC <- rfc2$rk2*log(rfc2$num1) + rfc2$L
+
+rfc3<-gather(rfc2, z=AIC:BIC)
+
+ggplot(rfc3, aes(x=rk3, y=value, group=key, colour=key))+
   # scale_y_log10()+
   # scale_x_log10()+
   # scale_x_continuous(breaks=c(min(rk2), max(rk2)))+
-  scale_x_continuous(expand = c(.2, .2))+
+  scale_x_continuous(expand = c(.15, .15))+
   scale_y_continuous(expand = c(.1, .1))+
-  scale_colour_brewer(palette="Set1")+
-  geom_point(size=4, aes(colour=gp))+
-  geom_line()+
-  geom_text(size=4, angle=20,
-    aes(label=ifelse(rk<5, as.character(Sequence), ''),
-      hjust=rep(c(1,0), length.out=length(Sequence)),
-      vjust=0))+#rep(c(.5,-.5), length.out=length(Sequence))))+
+  scale_colour_brewer(palette="Dark2")+
+  geom_point(size=4, aes(alpha=0.4))+
+  # geom_line()+
   facet_wrap(~Category2, scales="free")+
   theme_bw()+
   ylab("-2log(L)")+
   theme(axis.title.x=element_blank(),
     axis.text.x=element_blank(),
-    legend.title=element_blank())
+    axis.title.y=element_text(size=16),
+    axis.text.y=element_text(size=14),
+    strip.text.x = element_text(size=16),
+    legend.title=element_blank(),
+    legend.text=element_text(size=16))
+
+ggsave("/net/bipolar/jedidiah/mutation/images/compare_AIC-BIC_full.png",
+  width=12, height=12)
+
+ggplot(rfc2, aes(x=rk3, y=L))+
+  # scale_y_log10()+
+  # scale_x_log10()+
+  # scale_x_continuous(breaks=c(min(rk2), max(rk2)))+
+  scale_x_continuous(expand = c(.15, .15))+
+  scale_y_continuous(expand = c(.1, .1))+
+  scale_colour_brewer(palette="Set1")+
+  geom_point(size=4, aes(colour=gp))+
+  geom_line()+
+  geom_text(size=6, angle=10,
+    aes(label=ifelse(rk<5, as.character(Sequence), ''),
+      hjust=rep(c(1,-0.5), length.out=length(Sequence)),
+      vjust=0.5))+#rep(c(.5,-.5), length.out=length(Sequence))))+
+  facet_wrap(~Category2, scales="free")+
+  theme_bw()+
+  ylab("-2log(L)")+
+  theme(axis.title.x=element_blank(),
+    axis.text.x=element_blank(),
+    axis.title.y=element_text(size=16),
+    axis.text.y=element_text(size=14),
+    strip.text.x = element_text(size=16),
+    legend.title=element_blank(),
+    legend.text=element_text(size=16))
 
 ggsave("/net/bipolar/jedidiah/mutation/images/compare_LL_full.png",
   width=12, height=12)

@@ -86,24 +86,27 @@ rrheat <- function(dat, f, levels, facetvar, nbp){
 	# limits=c(min(dat$v4), max(dat$v4))
 	geom_tile(data=dat, aes(x=v2a, y=v3, fill=v4))+
 	# geom_text(data=dat, aes(x=v2a, y=v3, label=v4a, family="Courier", size=0.1))+
-	geom_rect(data=f, size=1.4, colour="grey30", aes(xmin=xlo, xmax=xhi, ymin=ylo, ymax=yhi), fill=NA)+
+	geom_rect(data=f, size=1.4, colour="grey30",
+		aes(xmin=xlo, xmax=xhi, ymin=ylo, ymax=yhi), fill=NA)+
 	scale_fill_gradientn("Relative Rate\n",
-						 colours=myPalette((nbp-1)^4),
-						 trans="log",
-						 breaks=c(min(dat$v4), mean(dat$v4), max(dat$v4)),
-						 labels=c(round(min(dat$v4), 5), round(mean(dat$v4), 4), round(max(dat$v4), 3)),
-						 limits=c(min(dat$v4), max(dat$v4)))+
+		colours=myPalette((nbp-1)^4),
+		trans="log",
+		breaks=c(min(dat$v4), mean(dat$v4), max(dat$v4)),
+		labels=c(round(min(dat$v4), 5),
+	 		round(mean(dat$v4), 4),
+			round(max(dat$v4), 3)),
+		limits=c(min(dat$v4), max(dat$v4)))+
 	xlab("5' flank")+
 	ylab("3' flank")+
 	theme(
-		  legend.position="none",
-		  legend.title = element_text(size=18),
-		  legend.text = element_text(size=16),
-		  strip.text.x = element_text(size=40),
-		  axis.title.x = element_text(size=20),
-		  axis.title.y = element_text(size=20),
-	      axis.text.y = element_text(size=16, colour="black"),
-		  axis.text.x = element_text(size=16, colour="black"))+
+		legend.position="none",
+		legend.title = element_text(size=18),
+	  legend.text = element_text(size=16),
+	  strip.text.x = element_text(size=40),
+	  axis.title.x = element_text(size=20),
+	  axis.title.y = element_text(size=20),
+    axis.text.y = element_text(size=16, colour="black"),
+	  axis.text.x = element_text(size=16, colour="black"))+
 	scale_x_discrete(labels=levels)+
 	facet_wrap(as.formula(paste("~", facetvar)), ncol=1, scales="free_x")
 
@@ -123,7 +126,9 @@ ggQQ <- function (vec) # argument: vector of numbers
 
   d <- data.frame(resids = vec)
 
-  ggplot(d, aes(sample = resids)) + stat_qq() + geom_abline(slope = slope, intercept = int)
+  ggplot(d, aes(sample = resids)) +
+	stat_qq() +
+	geom_abline(slope = slope, intercept = int)
 
 }
 
@@ -165,10 +170,65 @@ buildDF <- function(fitlist, data){
 	return(out)
 }
 
+# Append columns to windowed count data for all motif lengths
+getSubMotifs <- function(data, nts){
+
+	bases <- c("A", "C", "G", "T")
+	# nts <- ifelse(grepl("^AT", cat1), "A", "C")
+	outdat <- data.frame()
+
+	# Loop currently just runs for 7->5bp motif aggregation;
+	# can run over 7->5->3 by setting last index to :1
+	for(j in ((nbp-1)/2-1):2){
+
+		# Specify iteration motif length
+		mlength <- (j+1)*2+1
+
+		# Define rule for substring evaluation
+		griddef <- paste(c(rep("bases", j), "nts", rep("bases", j)), collapse=",")
+
+		b3 <- bases
+		if(grepl("^cpg", cat1)){
+			b3 <- c("G")
+		} else if (grepl("^GC", cat1)){
+			b3 <- c("A", "C", "T")
+		}
+
+		griddef <- paste(c("bases", "bases", "nts", "b3", "bases"), collapse=",")
+
+		# Evaluate substring rule and get vector of submotifs
+		tris <- apply(eval(parse(text=paste("expand.grid(",griddef,")"))),
+			1, paste, collapse="")
+
+		# Loop through each substring and append column of
+		# aggregated counts
+		for(k in tris){
+			# Generate regex string; j is fixed per iteration
+			# (e.g., looking for internal 3-mers or 5-mers)
+			# so we search for all 3-mers or 5-mers by allowing
+			# any base preceding or following the internal motif
+			# regtri <- paste0("^", "[A-Z]{", j, "}", i, "[A-Z]{", j, "}")
+			regtri <- paste0("^[A-Z]", k, "[A-Z]")
+
+			# Extract sequences matching this submotif
+			z <- names(data)[grepl(regtri, names(data))]
+
+			# Ensure motif match vector includes only sequences
+			# corresponding to the appropriate motif length
+			z <- z[nchar(head(gsub("_[A-Z]*", "", z)))==mlength]
+
+			# Create column and append to df
+			tripct <- data %>%
+				mutate_(.dots=setNames(paste(z, collapse="+"), k)) %>%
+				select_(.dots=k)
+			outdat <- cbind(outdat, tripct)
+		}
+	}
+}
 ##############################################################################
 # Multiple plot function
 #
-# ggplot objects can be passed in ..., or to plotlist (as a list of ggplot objects)
+# ggplot objects passed in ..., or to plotlist (as list of ggplot objects)
 # - cols:   Number of columns in layout
 # - layout: A matrix specifying the layout. If present, 'cols' is ignored.
 #

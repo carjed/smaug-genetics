@@ -343,57 +343,9 @@ for(i in 1:length(mut_cats)) {
 		mcols <- cpggccols
 	}
 
-  # Append columns to windowed count data for all motif lengths
-  bases <- c("A", "C", "G", "T")
   nts <- ifelse(grepl("^AT", cat1), "A", "C")
-  # Loop currently just runs for 7->5bp motif aggregation;
-  # can run over 7->5->3 by setting last index to :1
-  for(j in ((nbp-1)/2-1):2){
-
-    # Specify iteration motif length
-    mlength <- (j+1)*2+1
-
-    # Define rule for substring evaluation
-    griddef <- paste(c(rep("bases", j), "nts", rep("bases", j)), collapse=",")
-
-    b3 <- bases
-    if(grepl("^cpg", cat1)){
-      b3 <- c("G")
-    } else if (grepl("^GC", cat1)){
-      b3 <- c("A", "C", "T")
-    }
-
-    griddef <- paste(c("bases", "bases", "nts", "b3", "bases"), collapse=",")
-
-    # Evaluate substring rule and get vector of submotifs
-    tris <- apply(eval(parse(text=paste("expand.grid(",griddef,")"))),
-      1, paste, collapse="")
-
-    # Loop through each substring and append column of
-    # aggregated counts
-    for(k in tris){
-      # Generate regex string; j is fixed per iteration
-      # (e.g., looking for internal 3-mers or 5-mers)
-      # so we search for all 3-mers or 5-mers by allowing
-      # any base preceding or following the internal motif
-      # regtri <- paste0("^", "[A-Z]{", j, "}", i, "[A-Z]{", j, "}")
-      regtri <- paste0("^[A-Z]", k, "[A-Z]")
-
-      # Extract sequences matching this submotif
-      z <- names(aggcatm)[grepl(regtri, names(aggcatm))]
-
-      # Ensure motif match vector includes only sequences
-      # corresponding to the appropriate motif length
-      z <- z[nchar(head(gsub("_[A-Z]*", "", z)))==mlength]
-
-      # Create column and append to df
-      tripct <- aggcatm %>%
-        mutate_(.dots=setNames(paste(z, collapse="+"), k)) %>%
-        select_(.dots=k)
-      aggcatm <- cbind(aggcatm, tripct)
-    }
-  }
-
+  aggcatm <- cbind(aggcatm, getSubMotifs(aggcatm, nts))
+  
   # Get all 5bp motifs to use
   pset <- results %>%
     filter(Category2==cat1, Q!=1)

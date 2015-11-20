@@ -224,6 +224,8 @@ getSubMotifs <- function(data, nts){
 			outdat <- cbind(outdat, tripct)
 		}
 	}
+
+	return(outdat)
 }
 ##############################################################################
 # Multiple plot function

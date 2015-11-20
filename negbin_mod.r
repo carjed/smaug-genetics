@@ -343,6 +343,7 @@ for(i in 1:length(mut_cats)) {
 		mcols <- cpggccols
 	}
 
+  bases <- c("A", "C", "G", "T")
   nts <- ifelse(grepl("^AT", cat1), "A", "C")
   aggcatm <- getSubMotifs(aggcatm, nts)
 

@@ -173,7 +173,6 @@ buildDF <- function(fitlist, data){
 # Append columns to windowed count data for all motif lengths
 getSubMotifs <- function(data, nts){
 
-	bases <- c("A", "C", "G", "T")
 	# nts <- ifelse(grepl("^AT", cat1), "A", "C")
 	outdat <- data
 

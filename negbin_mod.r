@@ -344,8 +344,8 @@ for(i in 1:length(mut_cats)) {
 	}
 
   nts <- ifelse(grepl("^AT", cat1), "A", "C")
-  aggcatm <- cbind(aggcatm, getSubMotifs(aggcatm, nts))
-  
+  aggcatm <- getSubMotifs(aggcatm, nts)
+
   # Get all 5bp motifs to use
   pset <- results %>%
     filter(Category2==cat1, Q!=1)

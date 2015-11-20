@@ -175,7 +175,7 @@ getSubMotifs <- function(data, nts){
 
 	bases <- c("A", "C", "G", "T")
 	# nts <- ifelse(grepl("^AT", cat1), "A", "C")
-	outdat <- data.frame()
+	outdat <- data
 
 	# Loop currently just runs for 7->5bp motif aggregation;
 	# can run over 7->5->3 by setting last index to :1

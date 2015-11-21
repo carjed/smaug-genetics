@@ -31,8 +31,10 @@ source("get_functions.R")
 args <- getArgs(
 	defaults=list(adj=3,
 		binw=1000000,
-		summfile=paste0(parentdir, "/output/7bp_1000k/full_j.summary"),
-		binfile=paste0(parentdir, "/output/7bp_1000k/full_bin.txt"),
+		# summfile=paste0(parentdir, "/output/7bp_1000k/full_j.summary"),
+		# binfile=paste0(parentdir, "/output/7bp_1000k/full_bin.txt"),
+		summfile=paste0(parentdir, "/output/7bp_1000k/chrX.expanded.summary"),
+		binfile=paste0(parentdir, "/output/7bp_1000k/chrX.bin_out.txt"),
 		run_agg=TRUE,
 		pcs=FALSE,
 		categ="AT_CG",
@@ -131,9 +133,14 @@ if(!file.exists(summfile)){
 }
 
 cat("Reading summary file:", summfile, "...\n")
+
 summ_5bp_100k <- read.table(summfile, header=F, stringsAsFactors=F, skip=1)
 names(summ_5bp_100k)<-c(
-	"CHR", "POS", "REF", "ALT", "DP", "AN", "SEQ", "ALTSEQ", "GC", "SAMPLE")
+	"CHR", "POS", "REF", "ALT", "DP", "AN", "SEQ", "ALTSEQ", "GC")
+
+# summ_5bp_100k <- read.table(summfile, header=F, stringsAsFactors=F)
+# names(summ_5bp_100k)<-c(
+# 	"CHR", "POS", "REF", "ALT", "DP", "AN", "SEQ", "ALTSEQ", "GC", "SAMPLE")
 summ_5bp_100k$BIN <- ceiling(summ_5bp_100k$POS/binw)
 
 cat("Reading bin file:", binfile, "...\n")

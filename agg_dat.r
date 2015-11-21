@@ -52,7 +52,7 @@ aggData <- function(datfile, adj){
 	}
 
 	# Plot genome-wide motif heatmaps
-	plot_heatmap <- 0
+	plot_heatmap <- 1
 	if(plot_heatmap==1){
 		cat("Generating data for relative rate heatmap...\n")
 		# aggseq <- count(summfile, c("Sequence", "Category", "CAT", "COUNT", "SEQ"))

@@ -170,8 +170,10 @@ buildDF <- function(fitlist, data){
 	return(out)
 }
 
+##############################################################################
 # Append columns to windowed count data for all motif lengths
-getSubMotifs <- function(data, nts){
+##############################################################################
+getSubMotifs <- function(data, nts, b3){
 
 	# nts <- ifelse(grepl("^AT", cat1), "A", "C")
 	outdat <- data
@@ -185,13 +187,6 @@ getSubMotifs <- function(data, nts){
 
 		# Define rule for substring evaluation
 		griddef <- paste(c(rep("bases", j), "nts", rep("bases", j)), collapse=",")
-
-		b3 <- bases
-		if(grepl("^cpg", cat1)){
-			b3 <- c("G")
-		} else if (grepl("^GC", cat1)){
-			b3 <- c("A", "C", "T")
-		}
 
 		griddef <- paste(c("bases", "bases", "nts", "b3", "bases"), collapse=",")
 

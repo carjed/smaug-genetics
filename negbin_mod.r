@@ -12,6 +12,7 @@ if(ratiofilter){
   agg_cov$ratio <- agg_cov$exp/agg_cov$obs
   agg_cov <- filter(agg_cov, ratio<5) %>% mutate(med=(maxn+minn)/2)
 }
+
 ##############################################################################
 # Get relative rates for 1bp and 3bp motifs and compare likelihoods
 ##############################################################################
@@ -164,13 +165,13 @@ names(rf2)[2] <- "Sequence"
 rfc <- rbind(dplyr::select(rf2, Category2, Sequence, L, rk, rk2, rk3, gp),
   dplyr::select(rf3, Category2, Sequence, L, rk, rk2, rk3, gp))
 
-l1ll<-ra1b %>%
+l1ll <- ra1b %>%
   filter(Motif_Length %in% c("1", "3"), Stat=="-2ln(L)") %>%
   mutate(Sequence=substr(Category, 1,1), rk=5, rk2=k,
     rk3=min(rk2)+min(rk2)*rk2/max(rk2), gp=Motif_Length) %>%
   dplyr::select(Category2=Category, Sequence, L, rk, rk2, rk3, gp)
 
-rfc2<-merge(rbind(l1ll, rfc), rates1, by="Category2")
+rfc2 <- merge(rbind(l1ll, rfc), rates1, by="Category2")
 
 rfc2$AIC <- 2*rfc2$rk2 + rfc2$L
 rfc2$BIC <- rfc2$rk2*log(rfc2$num1) + rfc2$L
@@ -178,14 +179,10 @@ rfc2$BIC <- rfc2$rk2*log(rfc2$num1) + rfc2$L
 rfc3<-gather(rfc2, z=AIC:BIC)
 
 ggplot(rfc3, aes(x=rk3, y=value, group=key, colour=key))+
-  # scale_y_log10()+
-  # scale_x_log10()+
-  # scale_x_continuous(breaks=c(min(rk2), max(rk2)))+
   scale_x_continuous(expand = c(.15, .15))+
   scale_y_continuous(expand = c(.1, .1))+
   scale_colour_brewer(palette="Dark2")+
   geom_point(size=4, aes(alpha=0.4))+
-  # geom_line()+
   facet_wrap(~Category2, scales="free")+
   theme_bw()+
   ylab("-2log(L)")+
@@ -201,9 +198,6 @@ ggsave("/net/bipolar/jedidiah/mutation/images/compare_AIC-BIC_full.png",
   width=12, height=12)
 
 ggplot(rfc2, aes(x=rk3, y=L))+
-  # scale_y_log10()+
-  # scale_x_log10()+
-  # scale_x_continuous(breaks=c(min(rk2), max(rk2)))+
   scale_x_continuous(expand = c(.15, .15))+
   scale_y_continuous(expand = c(.1, .1))+
   scale_colour_brewer(palette="Set1")+
@@ -280,16 +274,20 @@ a3a <- a3 %>%
 # Add motif counts per bin
 a3a1 <- merge(a3a, dat_5bp_100k$bin, by=c("CHR", "BIN", "prop_GC"))
 
+bases <- c("A", "C", "G", "T")
+nts <- c("A", "C")
+a3a1 <- getSubMotifs(a3a1, nts, bases)
+
 # Create model formulas
 # Must fix to use filtered motifs
 motif_mod_form <- as.formula(paste("obs~",
-	paste(names(a3a1)[-c(1:18)], collapse="+")))
+	paste(names(a3a1)[(ncol(a3a1)-511):ncol(a3a1)], collapse="+")))
 
 feat_mod_form <- as.formula(paste("obs~",
   paste(c(covnames, "prop_GC"), collapse="+")))
 
 full_mod_form <- as.formula(paste("obs~",
-	paste(names(a3a1)[-c(1,2,16:18)], collapse="+")))
+	paste(names(a3a1)[c(3:15, (ncol(a3a1)-511):ncol(a3a1))], collapse="+")))
 
 # Uses poisson regression instead of negbin, since negbin fails to converge
 # with default parameters of glm.nb()
@@ -345,7 +343,21 @@ for(i in 1:length(mut_cats)) {
 
   bases <- c("A", "C", "G", "T")
   nts <- ifelse(grepl("^AT", cat1), "A", "C")
-  aggcatm <- getSubMotifs(aggcatm, nts)
+
+  b3 <- bases
+  if(grepl("^cpg", cat1)){
+    b3 <- c("G")
+  } else if (grepl("^GC", cat1)){
+    b3 <- c("A", "C", "T")
+  }
+
+  aggcatm <- getSubMotifs(aggcatm, nts, b3)
+
+  # Fix issue where a single bin in Chr5 with 15 AT>GC observations
+  # causes glm.nb() to fail to converge
+  if(cat1=="AT_GC"){
+    aggcatm <- aggcatm[aggcatm$obs>15,]
+  }
 
   # Get all 5bp motifs to use
   pset <- results %>%
@@ -377,10 +389,17 @@ for(i in 1:length(mut_cats)) {
 		paste(m5set, collapse="+")))
   motif2_form <- as.formula(paste("obs~",
 		paste(m7set, collapse="+")))
+  full_form_int <- as.formula(paste("obs~prop_GC*(",
+		paste(m5set, collapse="+"), ")+",
+		paste(covnames, collapse="+")))
 
   # Add formulas to list
-  forms <- c(gc_form, feat_form, full_form, motif_form, motif2_form)
-  names(forms) <- c("gc", "features", "full", "motifs", "motifs2")
+  forms <- c(gc_form, feat_form,
+    full_form, full_form_int,
+    motif_form, motif2_form)
+  names(forms) <- c("gc", "features",
+    "full", "full_int",
+    "motifs", "motifs2")
 
   # Run models for each formula in list
   models <- runMod(forms, aggcatm)
@@ -455,8 +474,6 @@ ggplot(mod.corr, aes(x=Category2, y=cor, fill=res))+
 	geom_bar(stat="identity", position=dodge)+
   scale_colour_brewer("Predictor",palette="Dark2")+
   scale_fill_brewer("Predictor", palette="Dark2")+
-	# scale_colour_manual("Predictor", values=myPaletteCat(8)[4:8])+
-	# scale_fill_manual("Predictor", values=myPaletteCat(8)[4:8])+
 	xlab("Category")+
 	ylab("Correlation with observed count")+
 	geom_errorbar(limits, position=dodge, width=0.25)+
@@ -505,3 +522,14 @@ ggsave(aicbar, width=7, height=7)
 #
 # mspebar <- paste0(parentdir, "/images/compare_mspe.png")
 # ggsave(mspebar, width=12, height=12)
+
+dat<-compare.all %>%
+  filter(CHR==2, res=="full")
+
+dat$diff<-dat$obs-dat$exp
+dat2<-gather(dat, key, value, c(exp, obs, diff))
+ggplot(dat2, aes(x=BIN, y=value, group=key, colour=key))+
+  geom_point()+
+  facet_wrap(~Category2, scales="free")+
+  theme_bw()
+ggsave("/net/bipolar/jedidiah/mutation/images/chr2.png")

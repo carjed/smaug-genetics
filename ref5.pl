@@ -124,10 +124,10 @@ if ($adj!=0) {
 
 my $bw=$binwidth/1000;
 
-my $nextchr;
-if ($chr<22) {
+my $nextchr='';
+if ($chr lt '22') {
 	$nextchr=$chr+1;
-} elsif ($chr==22) {
+} elsif ($chr eq '22') {
 	$nextchr="X";
 } else {
 	$nextchr="Y";

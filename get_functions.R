@@ -186,7 +186,7 @@ getSubMotifs <- function(data, nts, b3){
 		mlength <- (j+1)*2+1
 
 		# Define rule for substring evaluation
-		griddef <- paste(c(rep("bases", j), "nts", rep("bases", j)), collapse=",")
+		# griddef <- paste(c(rep("bases", j), "nts", rep("bases", j)), collapse=",")
 
 		griddef <- paste(c("bases", "bases", "nts", "b3", "bases"), collapse=",")
 

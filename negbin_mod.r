@@ -526,10 +526,17 @@ ggsave(aicbar, width=7, height=7)
 dat<-compare.all %>%
   filter(CHR==2, res=="full")
 
-dat$diff<-dat$obs-dat$exp
-dat2<-gather(dat, key, value, c(exp, obs, diff))
+#dat$diff<-dat$obs-dat$exp
+dat2<-gather(dat, key, value, c(exp, obs))
 ggplot(dat2, aes(x=BIN, y=value, group=key, colour=key))+
   geom_point()+
   facet_wrap(~Category2, scales="free")+
-  theme_bw()
+  xlab("Window (1Mb)")+
+  ylab("# Singletons")+
+  theme_bw()+
+  theme(axis.title.x=element_text(size=24),
+    axis.title.y=element_text(size=24),
+    legend.position="none",
+    strip.text.x=element_text(size=20)
+  )
 ggsave("/net/bipolar/jedidiah/mutation/images/chr2.png")

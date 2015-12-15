@@ -530,12 +530,13 @@ dat<-compare.all %>%
 dat2<-gather(dat, key, value, c(exp, obs))
 ggplot(dat2, aes(x=BIN, y=value, group=key, colour=key))+
   geom_point()+
+  scale_colour_manual(values=c("#ffcb05", "#00274c"))+
   facet_wrap(~Category2, scales="free")+
   xlab("Window (1Mb)")+
   ylab("# Singletons")+
   theme_bw()+
-  theme(axis.title.x=element_text(size=24),
-    axis.title.y=element_text(size=24),
+  theme(axis.title.x=element_text(size=22),
+    axis.title.y=element_text(size=22),
     legend.position="none",
     strip.text.x=element_text(size=20)
   )

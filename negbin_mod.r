@@ -330,6 +330,16 @@ for(i in 1:length(mut_cats)) {
   cat("Running ", cat1, "models...\n")
 	aggcat <- a3[a3$Category2==mut_cats[i],]
 
+  # Subset 7bp rates for category i and sort
+  rcat<-rates5 %>% filter(Category2==cat1) %>% arrange(Sequence)
+
+  # Get expected num per window per bin
+  z<-as.vector(r51$rel_prop)*as.matrix(binsAT[,6:4101])
+
+  # Merge row sums with CHR/BIN
+  # CHR BIN EXP
+  r6<-cbind(binsAT[,c(1,5)],marg=rowSums(z))
+
 	if(grepl("^AT", cat1)) {
 		aggcatm <- merge(aggcat, binsAT, by=c("CHR", "BIN", "prop_GC"), all.x=T)
 		mcols <- atcols
@@ -352,6 +362,9 @@ for(i in 1:length(mut_cats)) {
   }
 
   aggcatm <- getSubMotifs(aggcatm, nts, b3)
+
+  # Merge data to include column of marginals
+  aggcatm<-merge(aggcatm, r6, by=c("CHR", "BIN"))
 
   # Fix issue where a single bin in Chr5 with 15 AT>GC observations
   # causes glm.nb() to fail to converge
@@ -392,14 +405,17 @@ for(i in 1:length(mut_cats)) {
   full_form_int <- as.formula(paste("obs~prop_GC*(",
 		paste(m5set, collapse="+"), ")+",
 		paste(covnames, collapse="+")))
+  marg_form <- as.formula("obs~marg")
 
   # Add formulas to list
   forms <- c(gc_form, feat_form,
     full_form, full_form_int,
-    motif_form, motif2_form)
+    motif_form, motif2_form,
+    marg_form)
   names(forms) <- c("gc", "features",
     "full", "full_int",
-    "motifs", "motifs2")
+    "motifs", "motifs2",
+    "marginal")
 
   # Run models for each formula in list
   models <- runMod(forms, aggcatm)

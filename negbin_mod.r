@@ -334,7 +334,7 @@ for(i in 1:length(mut_cats)) {
   rcat<-rates5 %>% filter(Category2==cat1) %>% arrange(Sequence)
 
   # Get expected num per window per bin
-  z<-as.vector(r51$rel_prop)*as.matrix(binsAT[,6:4101])
+  z<-as.vector(rcat$rel_prop)*as.matrix(binsAT[,6:4101])
 
   # Merge row sums with CHR/BIN
   # CHR BIN EXP

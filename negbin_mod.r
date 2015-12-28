@@ -330,26 +330,28 @@ for(i in 1:length(mut_cats)) {
   cat("Running ", cat1, "models...\n")
 	aggcat <- a3[a3$Category2==mut_cats[i],]
 
+	if(grepl("^AT", cat1)) {
+		bindat <- binsAT
+		mcols <- atcols
+	} else if(grepl("^GC", cat1)) {
+		bindat <- binsGC
+		mcols <- gccols
+	} else {
+		bindat <- binscpgGC
+		mcols <- cpggccols
+	}
+
+  aggcatm <- merge(aggcat, bindat, by=c("CHR", "BIN", "prop_GC"), all.x=T)
+
   # Subset 7bp rates for category i and sort
   rcat<-rates5 %>% filter(Category2==cat1) %>% arrange(Sequence)
 
   # Get expected num per window per bin
-  z<-as.vector(rcat$rel_prop)*as.matrix(binsAT[,6:4101])
+  z<-as.vector(rcat$rel_prop)*as.matrix(bindat[,6:ncol(bindat)])
 
   # Merge row sums with CHR/BIN
   # CHR BIN EXP
-  r6<-cbind(binsAT[,c(1,5)],marg=rowSums(z))
-
-	if(grepl("^AT", cat1)) {
-		aggcatm <- merge(aggcat, binsAT, by=c("CHR", "BIN", "prop_GC"), all.x=T)
-		mcols <- atcols
-	} else if(grepl("^GC", cat1)) {
-		aggcatm <- merge(aggcat, binsGC, by=c("CHR", "BIN", "prop_GC"), all.x=T)
-		mcols <- gccols
-	} else {
-		aggcatm <- merge(aggcat, binscpgGC, by=c("CHR", "BIN", "prop_GC"), all.x=T)
-		mcols <- cpggccols
-	}
+  r6<-cbind(bindat[,c(1,5)],marg=rowSums(z))
 
   bases <- c("A", "C", "G", "T")
   nts <- ifelse(grepl("^AT", cat1), "A", "C")

@@ -27,12 +27,14 @@ my $baseopt;
 my $chr;
 my $categ;
 my $bw = 100;
+my $adj=1;
 my $f_covs = "$parentdir/output/logmod_data/${bw}kb_mut_cov2.txt";
 
 GetOptions ('b=s'=> \$baseopt,
 'chr=s'=> \$chr,
 'categ=s' => \$categ,
 'bw=i' => \$bw,
+'adj=i' => \$adj,
 'covs=s' => \$f_covs) or pod2usage(1);
 
 my $b1;
@@ -46,7 +48,6 @@ if($baseopt eq "AT"){
 }
 
 my $mask_flag=0;
-my $adj=2;
 my $binwidth=$bw*1000;
 
 my $nextchr;

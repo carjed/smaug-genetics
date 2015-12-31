@@ -91,6 +91,7 @@ if(!file.exists(fullfile)){
 			" --chr ", chr,
 			" --categ ", categ,
 			" --bw ", bink,
+			" --adj ", adj,
 			" --covs ", mutcov2file)
 		system(perlcmd)
 	}
@@ -116,7 +117,7 @@ int_only_rates <- data.frame(stringsAsFactors=F)
 
 motifs <- sort(unique(summfile1$Sequence))
 foreach(i=1:length(motifs)) %dopar% {
-	motif <- substr(motifs[i], 0, 5)
+	motif <- substr(motifs[i], 0, nbp)
 	# cat("Running model", i, "on", motif, "sites...\n")
 	modtime <- proc.time()
 
@@ -142,7 +143,7 @@ foreach(i=1:length(motifs)) %dopar% {
 	unlink(tmpfile)
 
 	tottime <- (proc.time()-modtime)[3]
-	cat("Finished category", i, "of 256", " (", tottime, "s)\n")
+	cat("Finished category", i, " (", tottime, "s)\n")
 }
 
 intratefile <- paste0(parentdir, "/output/", nbp, "bp_logit_rates.txt")

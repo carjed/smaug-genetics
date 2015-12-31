@@ -10,7 +10,7 @@ cluster <- makeCluster(8, type = "SOCK")
 registerDoSNOW(cluster)
 
 
-binw <- 100000
+binw <- 1000000
 bink <- binw/1000
 
 # Target mutation rate

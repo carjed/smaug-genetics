@@ -127,7 +127,7 @@ coefdat<-foreach(i=1:length(motifs), .combine=rbind) %dopar% {
 
 	tmpfile <- paste0(parentdir, "/output/logmod_data/", categ, "_tmp", i, ".txt")
 	grepcmd <- paste0("grep ", motif, " ", fullfile, " > ", tmpfile)
-	#system(grepcmd)
+	system(grepcmd)
 
 	da1 <- read.table(tmpfile, header=F, stringsAsFactors=F)
 	names(da1) <- c("CHR", "BIN", "POS", "Sequence", "mut", danames[-(1:2)])

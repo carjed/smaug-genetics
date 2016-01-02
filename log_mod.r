@@ -146,7 +146,7 @@ coefdat<-foreach(i=1:length(motifs), .combine=rbind) %dopar% {
 	as.numeric(log_mod$coefficients)
 	#coefdat <- rbind(coefdat, z)
 
-	#unlink(tmpfile)
+	unlink(tmpfile)
 
 	#tottime <- (proc.time()-modtime)[3]
 	#cat("Finished category ", i, " (", tottime, "s)\n")

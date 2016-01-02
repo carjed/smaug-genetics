@@ -188,7 +188,7 @@ if(run_agg){
 # Build file of covariates and run PCA
 ##############################################################################
 ptm <- proc.time()
-mutcov2file<-paste0(parentdir, "/output/logmod_data/", bink, "kb_mut_cov2.txt")
+mutcov2file <- paste0(parentdir, "/output/logmod_data/", bink, "kb_mut_cov2.txt")
 if(!file.exists(mutcov2file)){
 	cat("Building covariate data...\n")
 	source("get_covs.r")

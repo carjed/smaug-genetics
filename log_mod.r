@@ -75,7 +75,7 @@ if(!file.exists(fullfile)){
 	modtime <- proc.time()
 	cat("Building data from training set...\n")
 
-	mutcov2file <- paste0(parentdir, "/output/logmod_data/100kb_mut_cov2.txt")
+	#mutcov2file <- paste0(parentdir, "/output/logmod_data/1000kb_mut_cov2.txt")
 
 	foreach(chr=1:22) %dopar% {
 
@@ -116,39 +116,45 @@ coefdat <- data.frame(stringsAsFactors=F)
 int_only_rates <- data.frame(stringsAsFactors=F)
 
 motifs <- sort(unique(summfile1$Sequence))
-foreach(i=1:length(motifs)) %dopar% {
+#foreach(i=1:length(motifs)) %dopar% {
+coefdat<-foreach(i=1:length(motifs), .combine=rbind) %dopar% {
 	motif <- substr(motifs[i], 0, nbp)
-	# cat("Running model", i, "on", motif, "sites...\n")
+	cat("Running model", i, "on", motif, "sites...\n")
 	modtime <- proc.time()
+
+	require(speedglm)
+	require(boot)
 
 	tmpfile <- paste0(parentdir, "/output/logmod_data/", categ, "_tmp", i, ".txt")
 	grepcmd <- paste0("grep ", motif, " ", fullfile, " > ", tmpfile)
-	system(grepcmd)
+	#system(grepcmd)
 
 	da1 <- read.table(tmpfile, header=F, stringsAsFactors=F)
 	names(da1) <- c("CHR", "BIN", "POS", "Sequence", "mut", danames[-(1:2)])
 
-	# Create intercept-only model to compare model-predicted motif-specific rates
-	# with those calculated directly from the genome
-	log_mod_int <- speedglm(mut~1, data=da1, family=binomial(), maxit=50)
-	int_only_rates <- rbind(int_only_rates,
-		c(motifs[i], categ, inv.logit(log_mod_int$coefficients)))
+	# Create intercept-only model to compare model-predicted rates
+	# with marginal rates
+	# Need to modify loop to append to 2 dataframes in order to work
+	#log_mod_int <- glm(mut~1, data=da1, family=binomial)
+	#int_only_rates <- rbind(int_only_rates,
+	#	c(motifs[i], categ, inv.logit(log_mod_int$coefficients)))
 
 	log_mod_formula <- as.formula(paste("mut~", paste(covnames, collapse="+")))
 	log_mod <- speedglm(log_mod_formula, data=da1, family=binomial(), maxit=50)
 
-	z <- as.numeric(log_mod$coefficients)
-	coefdat <- rbind(coefdat, z)
+	#z <- as.numeric(log_mod$coefficients)
+	as.numeric(log_mod$coefficients)
+	#coefdat <- rbind(coefdat, z)
 
-	unlink(tmpfile)
+	#unlink(tmpfile)
 
-	tottime <- (proc.time()-modtime)[3]
-	cat("Finished category", i, " (", tottime, "s)\n")
+	#tottime <- (proc.time()-modtime)[3]
+	#cat("Finished category ", i, " (", tottime, "s)\n")
 }
 
-intratefile <- paste0(parentdir, "/output/", nbp, "bp_logit_rates.txt")
-write.table(int_only_rates, intratefile,
-	col.names=T, row.names=F, quote=F, sep="\t")
+#intratefile <- paste0(parentdir, "/output/", nbp, "bp_logit_rates.txt")
+#write.table(int_only_rates, intratefile,
+#	col.names=T, row.names=F, quote=F, sep="\t")
 
 coefdat <- cbind(motifs, coefdat)
 names(coefdat) <- c("Sequence", "(Intercept)", covnames)

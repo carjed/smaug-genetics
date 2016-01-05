@@ -124,22 +124,21 @@ coefdat<-foreach(i=1:length(motifs), .combine=rbind) %dopar% {
 	modtime <- proc.time()
 
 	require(speedglm)
-	require(boot)
+	# require(boot)
 
 	# Define name of temporary file for motif i
-	tmpfile <- paste0(parentdir, "/output/logmod_data/", categ, "_", motif, ".txt")
+	tmpfile <- paste0(parentdir, "/output/logmod_data/motifs/",
+		categ, "_", motif, ".txt")
 	# grepcmd <- paste0("grep ", motif, " ", fullfile, " > ", tmpfile)
 	# system(grepcmd)
 
 	# Merge per-chromosome motif files to single file
-	catcmd1 <- paste0("ls -v ", parentdir,
-		"/output/logmod_data/chr*_", categ, "_", motif, ".txt | xargs cat >> ",
-		tmpfile)
+	perchrtmp <- paste0(parentdir,
+		"/output/logmod_data/chr*/chr*_", categ, "_", motif, ".txt")
+
+	catcmd1 <- paste0("ls -v ", perchrtmp, "| xargs cat >> ", tmpfile)
 	system(catcmd1)
 
-	# Delete per-chromosome motif files once merged
-	perchrtmp <- paste0(parentdir,
-		"/output/logmod_data/chr*_", categ, "_", motif, ".txt")
 	unlink(perchrtmp)
 
 	da1 <- read.table(tmpfile, header=F, stringsAsFactors=F)

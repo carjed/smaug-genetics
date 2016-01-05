@@ -90,7 +90,7 @@ while(<$mlist>){
     #my $key=join("\t", @line[0 .. 1]);
     #my $pcs=join("\t", @line[2 .. $#line]);
 
-    my $filename="$parentdir/output/logmod_data/chr${chr}_${categ}_$seq.txt";
+    my $filename="$parentdir/output/logmod_data/chr${chr}/chr${chr}_${categ}_$seq.txt";
     push(@fn, $filename);
     $fhash{$seq}=$filename;
     # print "$hash{$_}\n";
@@ -172,7 +172,7 @@ for my $strpos (0 .. $seqlength){
 				my $covs=&updateCovs($chr, $bin, $pos);
 
 				my $file=$fhash{$sequence};
-				my $mref={$handles{$file}};
+				# my $mref={$handles{$file}};
 
 				print $OUT "$chr\t$bin\t$pos\t$sequence\t 0 \t$covs\n";
 				print {$handles{$file}} "$chr\t$bin\t$pos\t$sequence\t 0 \t$covs\n";

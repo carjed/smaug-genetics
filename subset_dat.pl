@@ -1,9 +1,7 @@
 #!/usr/local/bin/perl
 
 ##############################################################################
-# Used to obtain full data from logistic regression model
-# loops through reference genome and outputs 1 line per base, as long as
-# valid covariate data exists
+# Subset data for logit model
 ##############################################################################
 
 use strict;
@@ -23,42 +21,44 @@ my $wdir=getcwd;
 my $parentdir="/net/bipolar/jedidiah/mutation";
 my $categ="AT_CG";
 
-# initialize singleton file
-my $f_mlist = "$parentdir/output/logmod_data/${categ}_mlist.txt";
+# Index motif file names
+my $f_mlist = "$parentdir/output/7bp_1000k_rates.txt";
 open my $mlist, '<', $f_mlist or die "can't open $f_mlist: $!";
 
 our %hash=();
 my @fn;
 while(<$mlist>){
   chomp;
-  #my @line=split(/\t/, $_);
-  #my $motif=$line[3];
-  #my $key=join("\t", @line[0 .. 1]);
-  #my $pcs=join("\t", @line[2 .. $#line]);
+  my @line=split(/\t/, $_);
+  my $seq=$line[1];
+  my $cat=$line[2];
 
-  my $filename="${categ}_tmp_$_.txt";
-  push(@fn, $filename);
-  $hash{$_}=$filename;
-  print "$hash{$_}\n";
+  if($cat eq $categ){
+    #my $key=join("\t", @line[0 .. 1]);
+    #my $pcs=join("\t", @line[2 .. $#line]);
+
+    my $filename="$parentdir/output/logmod_data/${categ}_tmp_$seq.txt";
+    push(@fn, $filename);
+    $hash{$seq}=$filename;
+    # print "$hash{$_}\n";
+  }
 }
 
 my %handles = get_write_handles(@fn);
 
-foreach(@fn){
-  my $ftest=$handles{$_};
-  print "$ftest\n";
-}
+# foreach(@fn){
+#   my $ftest=$handles{$_};
+#   print "$ftest\n";
+# }
+#
+# foreach(values %hash){
+#   print "$_\n";
+#   print {$handles{$_}} "$_\n";
+# }
 
-foreach(values %hash){
-  print "$_\n";
-  print {$handles{$_}} "$_\n";
-}
-
-# initialize singleton file
+# Read full data and subset by motif
 my $f_positions = "$parentdir/output/logmod_data/${categ}_full.txt";
 open my $positions, '<', $f_positions or die "can't open $f_positions: $!";
-
-
 
 while(<$positions>){
   chomp;
@@ -66,12 +66,13 @@ while(<$positions>){
   my $motif=$line[3];
   # print "$motif\n";
 
-  if(exists $hash{$motif}){
+  # if(exists $hash{$motif}){
     my $file=$hash{$motif};
     print {$handles{$file}} "$_\n";
-  }
+  # }
 }
 
+# Subroutine reads array of filenames and returns file handles
 sub get_write_handles {
   my @file_names = @_;
   my %file_handles;

@@ -173,9 +173,9 @@ for my $strpos (0 .. $seqlength){
 
 				my $file=$fhash{$sequence};
 				my $mref={$handles{$file}};
-				for my $output ($OUT, $mref) {
-					print $output "$chr\t$bin\t$pos\t$sequence\t 0 \t$covs\n";
-				}
+
+				print $OUT "$chr\t$bin\t$pos\t$sequence\t 0 \t$covs\n";
+				print {$handles{$file}} "$chr\t$bin\t$pos\t$sequence\t 0 \t$covs\n";
 			}
 		}elsif(exists $poshash{$pos}){
 			my $covs=&updateCovs($chr, $bin, $pos);
@@ -183,10 +183,10 @@ for my $strpos (0 .. $seqlength){
 			my $sequence=$line[3];
 
 			my $file=$fhash{$sequence};
-			my $mref={$handles{$file}};
-			for my $output ($OUT, $mref) {
-				print $output "$poshash{$pos}\t$covs\n";
-			}
+			# my $mref={$handles{$file}};
+
+			print $OUT "$poshash{$pos}\t$covs\n";
+			print {$handles{$file}} "$poshash{$pos}\t$covs\n";
 		}
 	}
 }

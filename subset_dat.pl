@@ -39,7 +39,7 @@ while(<$mlist>){
   my $filename="${categ}_tmp_{$_}.txt";
   push(@fn, $filename);
   $hash{$_}=$filename;
-  # print "$hash{$_}";
+  print "$hash{$_}";
 }
 
 my %handles = get_write_handles(@fn);
@@ -50,15 +50,15 @@ open my $positions, '<', $f_positions or die "can't open $f_positions: $!";
 
 
 
-while(<$positions>){
-  chomp;
-  my @line=split(/\t/, $_);
-  my $motif=$line[3];
-
-  my $file=$hash{$motif};
-  print {$handles{$file}} "$_\n";
-
-}
+# while(<$positions>){
+#   chomp;
+#   my @line=split(/\t/, $_);
+#   my $motif=$line[3];
+#
+#   my $file=$hash{$motif};
+#   print {$handles{$file}} "$_\n";
+#
+# }
 
 sub get_write_handles {
   my @file_names = @_;

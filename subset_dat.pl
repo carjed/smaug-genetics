@@ -40,6 +40,7 @@ while(<$mlist>){
   open(FILE, ">${categ}_tmp_{$_}.txt") || die;
   push(@fh, *FILE);
   $hash{$_}=*FILE;
+  print "$hash{$_}";
 }
 
 # initialize singleton file

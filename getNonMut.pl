@@ -172,7 +172,8 @@ for my $strpos (0 .. $seqlength){
 				my $covs=&updateCovs($chr, $bin, $pos);
 
 				my $file=$fhash{$sequence};
-				for my $output ($OUT, {$handles{$file}}) {
+				my $mref=$handles{$file};
+				for my $output ($OUT, $mref) {
 					print $output "$chr\t$bin\t$pos\t$sequence\t 0 \t$covs\n";
 				}
 			}
@@ -182,8 +183,8 @@ for my $strpos (0 .. $seqlength){
 			my $sequence=$line[3];
 
 			my $file=$fhash{$sequence};
-
-			for my $output ($OUT, {$handles{$file}}) {
+			my $mref=$handles{$file};
+			for my $output ($OUT, $mref) {
 				print $output "$poshash{$pos}\t$covs\n";
 			}
 		}

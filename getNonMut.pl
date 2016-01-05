@@ -64,7 +64,8 @@ if ($adj!=0) {
 
 # initialize output file
 my $outfile = "$parentdir/output/logmod_data/chr${chr}_${categ}_sites.txt";
-open(OUT, '>', $outfile) or die "can't write to $outfile: $!\n";
+my $OUT;
+open($OUT, '>', $outfile) or die "can't write to $outfile: $!\n";
 
 # initialize covariate data
 open my $covs, '<', $f_covs or die "can't open $f_covs: $!";
@@ -112,7 +113,7 @@ my $seqlength=length($seq);
 
 my $printheader=0;
 if($printheader==1){
-	print OUT "CHR \t POS \t BIN \t Sequence \t mut \n"; #<-add header to output, if needed
+	print $OUT "CHR \t POS \t BIN \t Sequence \t mut \n"; #<-add header to output, if needed
 }
 
 # Create hash keyed by Chr/Bin pairs, with row of PCs as value
@@ -169,24 +170,22 @@ for my $strpos (0 .. $seqlength){
 			# write line if site has non-N context
 			if ($sequence !~ /N/) {
 				my $covs=&updateCovs($chr, $bin, $pos);
-				print OUT "$chr\t$bin\t$pos\t$sequence\t 0 \t$covs\n";
 
-				# Print to motif file
 				my $file=$fhash{$sequence};
-				print {$handles{$file}} "$_\n";
+				for my $output ($OUT, {$handles{$file}}) {
+					print $output "$chr\t$bin\t$pos\t$sequence\t 0 \t$covs\n";
+				}
 			}
 		}elsif(exists $poshash{$pos}){
 			my $covs=&updateCovs($chr, $bin, $pos);
-
-			print OUT "$poshash{$pos}\t$covs\n";
-
-			# Print to motif file
 			my @line=split(/\t/, $poshash{$pos});
 			my $sequence=$line[3];
 
 			my $file=$fhash{$sequence};
-			print {$handles{$file}} "$_\n";
 
+			for my $output ($OUT, {$handles{$file}}) {
+				print $output "$poshash{$pos}\t$covs\n";
+			}
 		}
 	}
 }

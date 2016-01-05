@@ -60,15 +60,17 @@ open my $positions, '<', $f_positions or die "can't open $f_positions: $!";
 
 
 
-# while(<$positions>){
-#   chomp;
-#   my @line=split(/\t/, $_);
-#   my $motif=$line[3];
-#
-#   my $file=$hash{$motif};
-#   print {$handles{$file}} "$_\n";
-#
-# }
+while(<$positions>){
+  chomp;
+  my @line=split(/\t/, $_);
+  my $motif=$line[3];
+  # print "$motif\n";
+
+  if(exists $hash{$motif}){
+    my $file=$hash{$motif};
+    print {$handles{$file}} "$_\n";
+  }
+}
 
 sub get_write_handles {
   my @file_names = @_;

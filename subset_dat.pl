@@ -51,6 +51,7 @@ foreach(@fn){
 
 foreach(values %hash){
   print "$_\n";
+  print {$handles{$_}} "$_\n";
 }
 
 # initialize singleton file

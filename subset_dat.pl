@@ -44,21 +44,25 @@ while(<$mlist>){
 
 my %handles = get_write_handles(@fn);
 
+foreach(values %handles){
+  print "$_\n";
+}
+
 # initialize singleton file
 my $f_positions = "$parentdir/output/logmod_data/${categ}_full.txt";
 open my $positions, '<', $f_positions or die "can't open $f_positions: $!";
 
 
 
-while(<$positions>){
-  chomp;
-  my @line=split(/\t/, $_);
-  my $motif=$line[3];
-
-  my $file=$hash{$motif};
-  print {$handles{$file}} "$_\n";
-
-}
+# while(<$positions>){
+#   chomp;
+#   my @line=split(/\t/, $_);
+#   my $motif=$line[3];
+#
+#   my $file=$hash{$motif};
+#   print {$handles{$file}} "$_\n";
+#
+# }
 
 sub get_write_handles {
   my @file_names = @_;

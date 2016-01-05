@@ -19,6 +19,10 @@ use Cwd;
 use Benchmark;
 use Tie::File;
 
+my $wdir=getcwd;
+my $parentdir="/net/bipolar/jedidiah/mutation";
+my $categ="AT_CG";
+
 # initialize singleton file
 my $f_mlist = "$parentdir/output/logmod_data/${categ}_mlist.txt";
 open my $mlist, '<', $f_mlist or die "can't open $f_mlist: $!";

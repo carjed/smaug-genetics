@@ -56,7 +56,7 @@ while(<$positions>){
   my $motif=$line[3];
 
   my $file=$hash{$motif};
-  print $handles{$file} "$_\n";
+  print {$handles{$file}} "$_\n";
 
 }
 

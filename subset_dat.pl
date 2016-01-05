@@ -49,6 +49,10 @@ foreach(@fn){
   print "$ftest\n";
 }
 
+foreach(values %hash){
+  print "$_\n";
+}
+
 # initialize singleton file
 my $f_positions = "$parentdir/output/logmod_data/${categ}_full.txt";
 open my $positions, '<', $f_positions or die "can't open $f_positions: $!";

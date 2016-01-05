@@ -25,7 +25,7 @@ my $categ="AT_CG";
 my $f_mlist = "$parentdir/output/7bp_1000k_rates.txt";
 open my $mlist, '<', $f_mlist or die "can't open $f_mlist: $!";
 
-our %hash=();
+our %fhash=();
 my @fn;
 while(<$mlist>){
   chomp;
@@ -39,7 +39,7 @@ while(<$mlist>){
 
     my $filename="$parentdir/output/logmod_data/${categ}_tmp_$seq.txt";
     push(@fn, $filename);
-    $hash{$seq}=$filename;
+    $fhash{$seq}=$filename;
     # print "$hash{$_}\n";
   }
 }
@@ -67,7 +67,7 @@ while(<$positions>){
   # print "$motif\n";
 
   # if(exists $hash{$motif}){
-    my $file=$hash{$motif};
+    my $file=$fhash{$motif};
     print {$handles{$file}} "$_\n";
   # }
 }
@@ -77,7 +77,7 @@ sub get_write_handles {
   my @file_names = @_;
   my %file_handles;
   foreach (@file_names) {
-    open my $fh, '>', $_ or next;
+    open my $fh, '>>', $_ or next;
     $file_handles{$_} = $fh;
   }
   return %file_handles;

@@ -28,14 +28,14 @@ my $chr;
 my $categ;
 my $bw = 100;
 my $adj=1;
-my $f_covs = "$parentdir/output/logmod_data/${bw}kb_mut_cov2.txt";
 
 GetOptions ('b=s'=> \$baseopt,
 'chr=s'=> \$chr,
 'categ=s' => \$categ,
 'bw=i' => \$bw,
-'adj=i' => \$adj,
-'covs=s' => \$f_covs) or pod2usage(1);
+'adj=i' => \$adj) or pod2usage(1);
+
+my $f_covs = "$parentdir/output/logmod_data/${bw}kb_mut_cov2.txt";
 
 my $b1;
 my $b2;
@@ -72,6 +72,31 @@ open my $covs, '<', $f_covs or die "can't open $f_covs: $!";
 # initialize singleton file
 my $f_positions = "$parentdir/output/logmod_data/chr${chr}_${categ}_pos_examples.txt"; #main line for full processing
 open my $positions, '<', $f_positions or die "can't open $f_positions: $!";
+
+# Index motif file names
+my $f_mlist = "$parentdir/output/7bp_1000k_rates.txt";
+open my $mlist, '<', $f_mlist or die "can't open $f_mlist: $!";
+
+our %fhash=();
+my @fn;
+while(<$mlist>){
+  chomp;
+  my @line=split(/\t/, $_);
+  my $seq=$line[1];
+  my $cat=$line[2];
+
+  if($cat eq $categ){
+    #my $key=join("\t", @line[0 .. 1]);
+    #my $pcs=join("\t", @line[2 .. $#line]);
+
+    my $filename="$parentdir/output/logmod_data/chr${chr}_${categ}_$seq.txt";
+    push(@fn, $filename);
+    $fhash{$seq}=$filename;
+    # print "$hash{$_}\n";
+  }
+}
+
+my %handles = get_write_handles(@fn);
 
 # initialize phastCons data
 # my $f_cons = "$parentdir/reference_data/chr$chr.phastCons46way.primates.wigFix";
@@ -118,7 +143,7 @@ while (<$positions>) {
 	$poshash{$key}=$_;
 }
 
-# Reads conservation score data, writes line of output if site meets criteria
+# Write data files
 print "Writing chr${chr}: ${categ} data file...\n";
 for my $strpos (0 .. $seqlength){
 	my $base = substr($seq, $strpos, 1);
@@ -145,10 +170,23 @@ for my $strpos (0 .. $seqlength){
 			if ($sequence !~ /N/) {
 				my $covs=&updateCovs($chr, $bin, $pos);
 				print OUT "$chr\t$bin\t$pos\t$sequence\t 0 \t$covs\n";
+
+				# Print to motif file
+				my $file=$fhash{$sequence};
+				print {$handles{$file}} "$_\n";
 			}
 		}elsif(exists $poshash{$pos}){
 			my $covs=&updateCovs($chr, $bin, $pos);
+
 			print OUT "$poshash{$pos}\t$covs\n";
+
+			# Print to motif file
+			my @line=split(/\t/, $poshash{$pos});
+			my $sequence=$line[3];
+
+			my $file=$fhash{$sequence};
+			print {$handles{$file}} "$_\n";
+
 		}
 	}
 }
@@ -262,4 +300,15 @@ sub updateCovs{
 	my $covs=join("\t", @sum[0 .. $#sum]);
 	# print "$covs\n";
 	return $covs;
+}
+
+# Subroutine reads array of filenames and returns file handles
+sub get_write_handles {
+  my @file_names = @_;
+  my %file_handles;
+  foreach (@file_names) {
+    open my $fh, '>>', $_ or next;
+    $file_handles{$_} = $fh;
+  }
+  return %file_handles;
 }

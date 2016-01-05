@@ -68,9 +68,9 @@ if(!exists("summfile1")){
 trainchr1 <- c(1:22)
 nchr <- length(trainchr1)
 
-fullfile <- paste0(parentdir, "/output/logmod_data/",categ,"_full.txt")
+# fullfile <- paste0(parentdir, "/output/logmod_data/",categ,"_full.txt")
 
-if(!file.exists(fullfile)){
+# if(!file.exists(fullfile)){
 
 	modtime <- proc.time()
 	cat("Building data from training set...\n")
@@ -90,19 +90,19 @@ if(!file.exists(fullfile)){
 			parentdir, "/smaug-genetics/getNonMut.pl --b ", catopt,
 			" --chr ", chr,
 			" --categ ", categ,
-			" --bw ", bink,
-			" --adj ", adj,
-			" --covs ", mutcov2file)
+			" --bw ", 100,
+			" --adj ", adj)
 		system(perlcmd)
 	}
 
 	# Run Unix command to combine data, ordered by chromosome (1 to 22)
-	catcmd1 <- paste0("ls -v ", parentdir,
-		"/output/logmod_data/chr*_", categ, "_sites.txt | xargs cat >> ", fullfile)
-	system(catcmd1)
+	# catcmd1 <- paste0("ls -v ", parentdir,
+	# 	"/output/logmod_data/chr*_", categ, "_sites.txt | xargs cat >> ",
+	# 	fullfile)
+	# system(catcmd1)
 	tottime <- (proc.time()-modtime)[3]
 	# cat("Done (", tottime, "s)\n")
-}
+# }
 
 ##############################################################################
 # Subset data by motif (using grep in system command) and run motif-specific
@@ -118,16 +118,29 @@ int_only_rates <- data.frame(stringsAsFactors=F)
 motifs <- sort(unique(summfile1$Sequence))
 #foreach(i=1:length(motifs)) %dopar% {
 coefdat<-foreach(i=1:length(motifs), .combine=rbind) %dopar% {
-	motif <- substr(motifs[i], 0, nbp)
+	# motif <- substr(motifs[i], 0, nbp)
+	motif <- motifs[i]
 	cat("Running model", i, "on", motif, "sites...\n")
 	modtime <- proc.time()
 
 	require(speedglm)
 	require(boot)
 
-	tmpfile <- paste0(parentdir, "/output/logmod_data/", categ, "_tmp", i, ".txt")
-	grepcmd <- paste0("grep ", motif, " ", fullfile, " > ", tmpfile)
-	system(grepcmd)
+	# Define name of temporary file for motif i
+	tmpfile <- paste0(parentdir, "/output/logmod_data/", categ, "_", motif, ".txt")
+	# grepcmd <- paste0("grep ", motif, " ", fullfile, " > ", tmpfile)
+	# system(grepcmd)
+
+	# Merge per-chromosome motif files to single file
+	catcmd1 <- paste0("ls -v ", parentdir,
+		"/output/logmod_data/chr*_", categ, "_", motif, ".txt | xargs cat >> ",
+		tmpfile)
+	system(catcmd1)
+
+	# Delete per-chromosome motif files once merged
+	perchrtmp <- paste0(parentdir,
+		"/output/logmod_data/chr*_", categ, "_", motif, ".txt")
+	unlink(perchrtmp)
 
 	da1 <- read.table(tmpfile, header=F, stringsAsFactors=F)
 	names(da1) <- c("CHR", "BIN", "POS", "Sequence", "mut", danames[-(1:2)])
@@ -146,7 +159,7 @@ coefdat<-foreach(i=1:length(motifs), .combine=rbind) %dopar% {
 	as.numeric(log_mod$coefficients)
 	#coefdat <- rbind(coefdat, z)
 
-	unlink(tmpfile)
+	# unlink(tmpfile)
 
 	#tottime <- (proc.time()-modtime)[3]
 	#cat("Finished category ", i, " (", tottime, "s)\n")

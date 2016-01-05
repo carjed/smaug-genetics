@@ -37,6 +37,8 @@ GetOptions ('b=s'=> \$baseopt,
 
 my $f_covs = "$parentdir/output/logmod_data/${bw}kb_mut_cov2.txt";
 
+make_path("$parentdir/output/logmod_data/chr${chr}/");
+
 my $b1;
 my $b2;
 if($baseopt eq "AT"){

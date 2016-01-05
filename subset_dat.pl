@@ -44,7 +44,7 @@ while(<$mlist>){
 
 my %handles = get_write_handles(@fn);
 
-foreach(values %handles){
+foreach(@fn){
   my $ftest=$handles{$_};
   print "$ftest\n";
 }

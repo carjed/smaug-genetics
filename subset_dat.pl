@@ -45,7 +45,8 @@ while(<$mlist>){
 my %handles = get_write_handles(@fn);
 
 foreach(values %handles){
-  print "$handles{$_}\n";
+  my $ftest=$handles{$_};
+  print "$ftest\n";
 }
 
 # initialize singleton file

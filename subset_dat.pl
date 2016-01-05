@@ -36,10 +36,10 @@ while(<$mlist>){
   #my $key=join("\t", @line[0 .. 1]);
   #my $pcs=join("\t", @line[2 .. $#line]);
 
-  my $filename="${categ}_tmp_{$_}.txt";
+  my $filename="${categ}_tmp_$_.txt";
   push(@fn, $filename);
   $hash{$_}=$filename;
-  print "$hash{$_}";
+  print "$hash{$_}\n";
 }
 
 my %handles = get_write_handles(@fn);

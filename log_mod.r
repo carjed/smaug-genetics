@@ -127,9 +127,7 @@ coefdat<-foreach(i=1:length(motifs), .combine=rbind) %dopar% {
 	require(speedglm)
 	# require(boot)
 
-	# Define name of temporary file for motif i
-	tmpfile <- paste0(parentdir, "/output/logmod_data/motifs/",
-		categ, "_", motif, ".txt")
+
 	# grepcmd <- paste0("grep ", motif, " ", fullfile, " > ", tmpfile)
 	# system(grepcmd)
 
@@ -138,9 +136,16 @@ coefdat<-foreach(i=1:length(motifs), .combine=rbind) %dopar% {
 	perchrtmp <- paste0(parentdir,
 		"/output/logmod_data/chr*/chr*_", categ, "_", motif, ".txt")
 
+
+
 	# catcmd1 <- paste0("ls -v ", perchrtmp, " | xargs cat >> ", tmpfile)
-	escmotif <- substr(motifs, 0, nbp)
-	catcmd1 <- paste0("find ", parentdir, "/output/logmod_data -name '*",
+	escmotif <- substr(motif, 0, nbp)
+
+	# Define name of temporary file for motif i
+	tmpfile <- paste0(parentdir, "/output/logmod_data/motifs/",
+		categ, "_", escmotif, ".txt")
+		
+	catcmd1 <- paste0("find ", parentdir, "/output/logmod_data/chr* -name '*",
 		escmotif, "*.txt' | sort -V | xargs cat >> ", tmpfile)
 	system(catcmd1)
 

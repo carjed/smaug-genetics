@@ -170,7 +170,7 @@ for my $strpos (0 .. $seqlength){
 			}
 
 			# write line if site has non-N context
-			if ($sequence !~ /[MNSW]/) {
+			if ($sequence ~ /[ACGT]/) {
 				my $covs=&updateCovs($chr, $bin, $pos);
 
 				my $file=$fhash{$sequence};

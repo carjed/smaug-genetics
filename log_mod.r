@@ -55,6 +55,7 @@ if(!exists("summfile1")){
 	summfile1 <- dat_5bp_100k$summ[dat_5bp_100k$summ$Category==categ,
 		c("CHR", "BIN", "POS", "Sequence")]
 	summfile1$mut <- 1
+	summfile1$BIN <- ceiling(summfile1$POS/100000)
 	# summfile1 <- merge(summfile1, mut_cov, by=c("CHR", "BIN"))
 }
 
@@ -144,7 +145,7 @@ coefdat<-foreach(i=1:length(motifs), .combine=rbind) %dopar% {
 	# Define name of temporary file for motif i
 	tmpfile <- paste0(parentdir, "/output/logmod_data/motifs/",
 		categ, "_", escmotif, ".txt")
-		
+
 	catcmd1 <- paste0("find ", parentdir, "/output/logmod_data/chr* -name '*",
 		escmotif, "*.txt' | sort -V | xargs cat >> ", tmpfile)
 	system(catcmd1)

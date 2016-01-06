@@ -69,8 +69,9 @@ trainchr1 <- c(1:22)
 nchr <- length(trainchr1)
 
 # fullfile <- paste0(parentdir, "/output/logmod_data/",categ,"_full.txt")
-
-# if(!file.exists(fullfile)){
+# Only subset if specified temp file does not exist
+testfile <- "/net/bipolar/jedidiah/mutation/output/logmod_data/chr22/chr22_AT_CG_TTTATTG(CAATAAA).txt"
+if(!file.exists(testfile)){
 
 	modtime <- proc.time()
 	cat("Building data from training set...\n")
@@ -101,8 +102,8 @@ nchr <- length(trainchr1)
 	# 	fullfile)
 	# system(catcmd1)
 	tottime <- (proc.time()-modtime)[3]
-	# cat("Done (", tottime, "s)\n")
-# }
+	cat("Done (", tottime, "s)\n")
+}
 
 ##############################################################################
 # Subset data by motif (using grep in system command) and run motif-specific
@@ -133,13 +134,17 @@ coefdat<-foreach(i=1:length(motifs), .combine=rbind) %dopar% {
 	# system(grepcmd)
 
 	# Merge per-chromosome motif files to single file
+	cat("Merging ", motif, " files...\n")
 	perchrtmp <- paste0(parentdir,
 		"/output/logmod_data/chr*/chr*_", categ, "_", motif, ".txt")
 
-	catcmd1 <- paste0("ls -v ", perchrtmp, "| xargs cat >> ", tmpfile)
+	# catcmd1 <- paste0("ls -v ", perchrtmp, " | xargs cat >> ", tmpfile)
+	escmotif <- substr(motifs, 0, nbp)
+	catcmd1 <- paste0("find ", parentdir, "/output/logmod_data -name '*",
+		escmotif, "*.txt' | sort -V | xargs cat >> ", tmpfile)
 	system(catcmd1)
 
-	unlink(perchrtmp)
+	# unlink(perchrtmp)
 
 	da1 <- read.table(tmpfile, header=F, stringsAsFactors=F)
 	names(da1) <- c("CHR", "BIN", "POS", "Sequence", "mut", danames[-(1:2)])

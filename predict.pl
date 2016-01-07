@@ -73,7 +73,7 @@ while (<$data>){
 
 		my $pred=0;
 
-		if($vals[0]>0){
+		if($betas[0]>0){
 			$pred=$vals[0];
 		} else {
 			$pred+=$vals[$_]*$betas[$_] for 0 .. $#vals;

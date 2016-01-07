@@ -6,7 +6,7 @@ suppressMessages(require(data.table))
 suppressMessages(require(foreach))
 suppressMessages(require(doSNOW))
 
-cluster <- makeCluster(8, type = "SOCK")
+cluster <- makeCluster(8, type = "SOCK", outfile="")
 registerDoSNOW(cluster)
 
 
@@ -168,6 +168,10 @@ coefdat<-foreach(i=1:length(motifs), .combine=rbind) %dopar% {
 
 		#z <- as.numeric(log_mod$coefficients)
 		as.numeric(log_mod$coefficients)
+	} else {
+		cat("Not enough data--using marginal rate only\n")
+		alt <- c(sum(da1$mut)/nd2, rep(0,12))
+		alt
 	}
 	#coefdat <- rbind(coefdat, z)
 

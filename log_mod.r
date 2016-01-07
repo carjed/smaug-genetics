@@ -164,7 +164,7 @@ coefdat<-foreach(i=1:length(motifs), .combine=rbind) %dopar% {
 	#	c(motifs[i], categ, inv.logit(log_mod_int$coefficients)))
 
 	if(sum(da1$mut)>3){
-		log_mod_formula <- as.formula(paste("mut~", paste(covnames, collapse="+")))
+		log_mod_formula <- as.formula(paste("mut~", paste(danames[-(1:2)], collapse="+")))
 		log_mod <- speedglm(log_mod_formula, data=da1, family=binomial(), maxit=50)
 
 		#z <- as.numeric(log_mod$coefficients)
@@ -186,7 +186,7 @@ coefdat<-foreach(i=1:length(motifs), .combine=rbind) %dopar% {
 #write.table(int_only_rates, intratefile,
 #	col.names=T, row.names=F, quote=F, sep="\t")
 
-coefdat <- cbind(motifs, coefdat)
+coefdat <- cbind(motifs, data.frame(coefdat))
 names(coefdat) <- c("Sequence", "(Intercept)", covnames)
 
 coeffile <- paste0(parentdir,

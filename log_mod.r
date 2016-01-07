@@ -127,17 +127,9 @@ coefdat<-foreach(i=1:length(motifs), .combine=rbind) %dopar% {
 
 	require(speedglm)
 	# require(boot)
-
-
+	
 	# grepcmd <- paste0("grep ", motif, " ", fullfile, " > ", tmpfile)
 	# system(grepcmd)
-
-	# Merge per-chromosome motif files to single file
-	cat("Merging ", motif, " files...\n")
-	perchrtmp <- paste0(parentdir,
-		"/output/logmod_data/chr*/chr*_", categ, "_", motif, ".txt")
-
-
 
 	# catcmd1 <- paste0("ls -v ", perchrtmp, " | xargs cat >> ", tmpfile)
 	escmotif <- substr(motif, 0, nbp)
@@ -147,6 +139,11 @@ coefdat<-foreach(i=1:length(motifs), .combine=rbind) %dopar% {
 		categ, "_", escmotif, ".txt")
 
 	if(!(file.exists(tmpfile))){
+		# Merge per-chromosome motif files to single file
+		cat("Merging ", motif, " files...\n")
+		perchrtmp <- paste0(parentdir,
+			"/output/logmod_data/chr*/chr*_", categ, "_", motif, ".txt")
+
 		catcmd1 <- paste0("find ", parentdir, "/output/logmod_data/chr* -name '*",
 			escmotif, "*.txt' | sort -V | xargs cat >> ", tmpfile)
 		system(catcmd1)

@@ -162,11 +162,13 @@ coefdat<-foreach(i=1:length(motifs), .combine=rbind) %dopar% {
 	#int_only_rates <- rbind(int_only_rates,
 	#	c(motifs[i], categ, inv.logit(log_mod_int$coefficients)))
 
-	log_mod_formula <- as.formula(paste("mut~", paste(covnames, collapse="+")))
-	log_mod <- speedglm(log_mod_formula, data=da1, family=binomial(), maxit=50)
+	if(sum(da1$mut)>3){
+		log_mod_formula <- as.formula(paste("mut~", paste(covnames, collapse="+")))
+		log_mod <- speedglm(log_mod_formula, data=da1, family=binomial(), maxit=50)
 
-	#z <- as.numeric(log_mod$coefficients)
-	as.numeric(log_mod$coefficients)
+		#z <- as.numeric(log_mod$coefficients)
+		as.numeric(log_mod$coefficients)
+	}
 	#coefdat <- rbind(coefdat, z)
 
 	# unlink(tmpfile)

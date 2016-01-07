@@ -78,7 +78,7 @@ while (<$data>){
 		} else {
 			$pred+=$vals[$_]*$betas[$_] for 0 .. $#vals;
 
-			$pred=nearest(0.00001, exp($pred)/(exp($pred)+1));
+			$pred=nearest(0.00001, (exp($pred)/(exp($pred)+1)));
 			# $pred=nearest(0.001, ((exp($pred)/(exp($pred)+1))/314244)*1e8);
 		}
 

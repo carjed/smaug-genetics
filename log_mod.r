@@ -146,10 +146,11 @@ coefdat<-foreach(i=1:length(motifs), .combine=rbind) %dopar% {
 	tmpfile <- paste0(parentdir, "/output/logmod_data/motifs/",
 		categ, "_", escmotif, ".txt")
 
-	catcmd1 <- paste0("find ", parentdir, "/output/logmod_data/chr* -name '*",
-		escmotif, "*.txt' | sort -V | xargs cat >> ", tmpfile)
-	system(catcmd1)
-
+	if(!(file.exists(tmpfile))){
+		catcmd1 <- paste0("find ", parentdir, "/output/logmod_data/chr* -name '*",
+			escmotif, "*.txt' | sort -V | xargs cat >> ", tmpfile)
+		system(catcmd1)
+	}
 	# unlink(perchrtmp)
 
 	da1 <- read.table(tmpfile, header=F, stringsAsFactors=F)

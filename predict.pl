@@ -68,8 +68,8 @@ while (<$data>){
 		my @vals=(1,@line[5..$#line]);
 		my @betas=@{$hash{$SEQ}};
 
-		print "$vals[$_]\n" for 0 .. $#vals;
-		print "$betas[$_]\n" for 0 .. $#betas;
+		# print "$vals[$_]\n" for 0 .. $#vals;
+		# print "$betas[$_]\n" for 0 .. $#betas;
 
 		my $pred=0;
 

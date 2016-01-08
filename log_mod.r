@@ -127,7 +127,7 @@ coefdat<-foreach(i=1:length(motifs), .combine=rbind) %dopar% {
 
 	require(speedglm)
 	# require(boot)
-	
+
 	# grepcmd <- paste0("grep ", motif, " ", fullfile, " > ", tmpfile)
 	# system(grepcmd)
 
@@ -168,7 +168,7 @@ coefdat<-foreach(i=1:length(motifs), .combine=rbind) %dopar% {
 		as.numeric(log_mod$coefficients)
 	} else {
 		cat("Not enough data--using marginal rate only\n")
-		alt <- c(sum(da1$mut)/nrow(da1), rep(0,12))
+		alt <- c(sum(da1$mut)/nrow(da1), rep(0,13))
 		alt
 	}
 	#coefdat <- rbind(coefdat, z)

@@ -50,14 +50,12 @@ catopt <- substr(categ,0,2)
 ##############################################################################
 # Get summary file for category i; merge with covariates
 ##############################################################################
-if(!exists("summfile1")){
-	cat("Extracting", categ, "sites...\n")
-	summfile1 <- dat_5bp_100k$summ[dat_5bp_100k$summ$Category==categ,
-		c("CHR", "BIN", "POS", "Sequence")]
-	summfile1$mut <- 1
-	summfile1$BIN <- ceiling(summfile1$POS/100000)
-	# summfile1 <- merge(summfile1, mut_cov, by=c("CHR", "BIN"))
-}
+cat("Extracting", categ, "sites...\n")
+summfile1 <- dat_5bp_100k$summ[dat_5bp_100k$summ$Category==categ,
+	c("CHR", "BIN", "POS", "Sequence")]
+summfile1$mut <- 1
+summfile1$BIN <- ceiling(summfile1$POS/100000)
+# summfile1 <- merge(summfile1, mut_cov, by=c("CHR", "BIN"))
 
 ##############################################################################
 # Run perl script to build input data for model
@@ -115,7 +113,6 @@ if(!file.exists(testfile)){
 cat("Running model...\n")
 
 coefdat <- data.frame(stringsAsFactors=F)
-
 int_only_rates <- data.frame(stringsAsFactors=F)
 
 motifs <- sort(unique(summfile1$Sequence))
@@ -124,23 +121,20 @@ coefdat<-foreach(i=1:length(motifs), .combine=rbind) %dopar% {
 	# motif <- substr(motifs[i], 0, nbp)
 	motif <- motifs[i]
 	cat("Running model", i, "on", motif, "sites...\n")
-	modtime <- proc.time()
 
 	require(speedglm)
 	# require(boot)
 
-	# grepcmd <- paste0("grep ", motif, " ", fullfile, " > ", tmpfile)
-	# system(grepcmd)
-
-	# catcmd1 <- paste0("ls -v ", perchrtmp, " | xargs cat >> ", tmpfile)
+	# Shortened motif
 	escmotif <- substr(motif, 0, nbp)
 
 	# Define name of temporary file for motif i
 	tmpfile <- paste0(parentdir, "/output/logmod_data/motifs/",
 		categ, "_", escmotif, ".txt")
 
+	# Merge per-chromosome motif files to single file
 	if(!(file.exists(tmpfile))){
-		# Merge per-chromosome motif files to single file
+
 		cat("Merging ", motif, " files...\n")
 		perchrtmp <- paste0(parentdir,
 			"/output/logmod_data/chr*/chr*_", categ, "_", motif, ".txt")
@@ -149,7 +143,9 @@ coefdat<-foreach(i=1:length(motifs), .combine=rbind) %dopar% {
 			escmotif, "*.txt' | sort -V | xargs cat >> ", tmpfile)
 		system(catcmd1)
 	}
-	# unlink(perchrtmp)
+
+	# Remove per-chromosome motif files once merged
+	unlink(perchrtmp)
 
 	da1 <- read.table(tmpfile, header=F, stringsAsFactors=F)
 	names(da1) <- c("CHR", "BIN", "POS", "Sequence", "mut", danames[-(1:2)])
@@ -161,6 +157,8 @@ coefdat<-foreach(i=1:length(motifs), .combine=rbind) %dopar% {
 	#int_only_rates <- rbind(int_only_rates,
 	#	c(motifs[i], categ, inv.logit(log_mod_int$coefficients)))
 
+	# Run logit model for categories with >3 singletons, return coefficients
+	# Otherwise, returns single marginal rate
 	if(sum(da1$mut)>3){
 		log_mod_formula <- as.formula(paste("mut~", paste(danames[-(1:2)], collapse="+")))
 		log_mod <- speedglm(log_mod_formula, data=da1, family=binomial(), maxit=50)
@@ -172,12 +170,9 @@ coefdat<-foreach(i=1:length(motifs), .combine=rbind) %dopar% {
 		alt <- c(sum(da1$mut)/nrow(da1), rep(0,13))
 		alt
 	}
-	#coefdat <- rbind(coefdat, z)
 
-	# unlink(tmpfile)
-
-	#tottime <- (proc.time()-modtime)[3]
-	#cat("Finished category ", i, " (", tottime, "s)\n")
+	# Remove motif file once model finished
+	unlink(tmpfile)
 }
 
 #intratefile <- paste0(parentdir, "/output/", nbp, "bp_logit_rates.txt")

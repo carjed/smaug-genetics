@@ -180,7 +180,7 @@ coefdat<-foreach(i=1:length(motifs), .combine=rbind) %dopar% {
 #	col.names=T, row.names=F, quote=F, sep="\t")
 
 coefdat <- cbind(motifs, data.frame(coefdat))
-names(coefdat) <- c("Sequence", "(Intercept)", covnames)
+# names(coefdat) <- c("Sequence", "(Intercept)", covnames)
 
 coeffile <- paste0(parentdir,
 	"/output/logmod_data/", categ, "_", bink, "kb_coefs.txt")

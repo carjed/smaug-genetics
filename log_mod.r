@@ -145,7 +145,7 @@ coefdat<-foreach(i=1:length(motifs), .combine=rbind) %dopar% {
 	}
 
 	# Remove per-chromosome motif files once merged
-	unlink(perchrtmp)
+	# unlink(perchrtmp)
 
 	da1 <- read.table(tmpfile, header=F, stringsAsFactors=F)
 	names(da1) <- c("CHR", "BIN", "POS", "Sequence", "mut", danames[-(1:2)])
@@ -172,19 +172,19 @@ coefdat<-foreach(i=1:length(motifs), .combine=rbind) %dopar% {
 	}
 
 	# Remove motif file once model finished
-	unlink(tmpfile)
+	# unlink(tmpfile)
 }
 
 #intratefile <- paste0(parentdir, "/output/", nbp, "bp_logit_rates.txt")
 #write.table(int_only_rates, intratefile,
 #	col.names=T, row.names=F, quote=F, sep="\t")
 
-coefdat <- cbind(motifs, data.frame(coefdat))
-# names(coefdat) <- c("Sequence", "(Intercept)", covnames)
+coefdat2 <- cbind(motifs, data.frame(coefdat))
+# names(coefdat) <- c("Sequence", "(Intercept)", danames[-(1:2)])
 
 coeffile <- paste0(parentdir,
 	"/output/logmod_data/", categ, "_", bink, "kb_coefs.txt")
-write.table(coefdat, coeffile, col.names=F, row.names=F, quote=F, sep="\t")
+write.table(coefdat2, coeffile, col.names=F, row.names=F, quote=F, sep="\t")
 
 ##############################################################################
 # If prediction is specified, creates and executes a slurm batch file

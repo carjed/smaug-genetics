@@ -168,8 +168,9 @@ for my $strpos (0 .. $seqlength){
 			} else {
 				$sequence = $altlocalseq . '(' . $localseq . ')';
 			}
+			
+			# print "$pos\t$sequence\n";
 
-			print "$pos\t$sequence\n";
 			# write line if site has non-N context
 			if ($sequence =~ /\A[acgt\(\)]+\z/i) {
 				my $covs=&updateCovs($chr, $bin, $pos);

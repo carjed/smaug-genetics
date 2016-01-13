@@ -145,7 +145,7 @@ coefdat<-foreach(i=1:length(motifs), .combine=rbind) %dopar% {
 	}
 
 	# Remove per-chromosome motif files once merged
-	# unlink(perchrtmp)
+	unlink(perchrtmp)
 
 	da1 <- read.table(tmpfile, header=F, stringsAsFactors=F)
 	names(da1) <- c("CHR", "BIN", "POS", "Sequence", "mut", danames[-(1:2)])
@@ -172,7 +172,7 @@ coefdat<-foreach(i=1:length(motifs), .combine=rbind) %dopar% {
 	}
 
 	# Remove motif file once model finished
-	# unlink(tmpfile)
+	unlink(tmpfile)
 }
 
 #intratefile <- paste0(parentdir, "/output/", nbp, "bp_logit_rates.txt")

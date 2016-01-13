@@ -88,7 +88,7 @@ while(<$mlist>){
   my $seq=$line[1];
   my $cat=$line[2];
 
-  if($cat eq $categ){
+  if($cat eq ($categ|"cpg_${categ}")){
     #my $key=join("\t", @line[0 .. 1]);
     #my $pcs=join("\t", @line[2 .. $#line]);
 

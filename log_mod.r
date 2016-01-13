@@ -70,7 +70,7 @@ nchr <- length(trainchr1)
 # fullfile <- paste0(parentdir, "/output/logmod_data/",categ,"_full.txt")
 # Only subset if specified temp file does not exist
 testfile <- paste0(parentdir, "/output/logmod_data/chr22/chr22_",
-	categ, "_TTTATTG(CAATAAA).txt")
+	categ, "_TTTCTTG(CAAGAAA).txt")
 if(!file.exists(testfile)){
 
 	modtime <- proc.time()

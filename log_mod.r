@@ -160,7 +160,7 @@ coefdat<-foreach(i=1:length(motifs), .combine=rbind) %dopar% {
 
 	# Run logit model for categories with >3 singletons, return coefficients
 	# Otherwise, returns single marginal rate
-	if(sum(da1$mut)>3){
+	if(sum(da1$mut)>10){
 		log_mod_formula <- as.formula(paste("mut~", paste(danames[-(1:2)], collapse="+")))
 		log_mod <- speedglm(log_mod_formula, data=da1, family=binomial(), maxit=50)
 
@@ -173,7 +173,7 @@ coefdat<-foreach(i=1:length(motifs), .combine=rbind) %dopar% {
 	}
 
 	# Remove motif file once model finished
-	unlink(tmpfile)
+	# unlink(tmpfile)
 }
 
 #intratefile <- paste0(parentdir, "/output/", nbp, "bp_logit_rates.txt")

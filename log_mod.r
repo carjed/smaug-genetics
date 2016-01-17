@@ -173,7 +173,7 @@ coefdat<-foreach(i=1:length(motifs), .combine=rbind) %dopar% {
 	}
 
 	# Remove motif file once model finished
-	# unlink(tmpfile)
+	unlink(tmpfile)
 }
 
 #intratefile <- paste0(parentdir, "/output/", nbp, "bp_logit_rates.txt")

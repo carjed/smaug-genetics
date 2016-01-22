@@ -16,6 +16,8 @@ use List::MoreUtils 'pairwise';
 use Cwd;
 use Benchmark;
 use Tie::File;
+use Compress::Zlib;
+use IO::Compress::Gzip;
 
 # Set options and inputs
 my $wdir=getcwd;
@@ -26,6 +28,9 @@ open my $mus, '<', $f_mus or die "can't open $f_mus: $!";
 
 my $f_cadd = "/net/dumbo/home/lockeae/CADD/whole_genome_SNVs.tsv.gz";
 open my $cadd, '<', $f_cadd or die "can't open $f_cadd: $!";
+
+my $vcf = gzopen($f_cadd, "rb") or
+  die "can't open $invcf: $gzerrno";
 
 while(<$mus>){
   chomp;

@@ -39,7 +39,7 @@ args <- getArgs(
 		pcs=FALSE,
 		categ="GC_TA",
 		negbin_model=TRUE,
-		log_model=FALSE,
+		log_model=TRUE,
 		run_predict=FALSE))
 
 # The usePackage function loads packages if they already exist,

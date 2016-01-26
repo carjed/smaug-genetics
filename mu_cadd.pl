@@ -27,10 +27,10 @@ my $f_mus = "/net/bipolar/jedidiah/mutation/output/predicted/AT_GC_out.txt"; #ma
 open my $mus, '<', $f_mus or die "can't open $f_mus: $!";
 
 my $f_cadd = "/net/dumbo/home/lockeae/CADD/whole_genome_SNVs.tsv.gz";
-open my $cadd, '<', $f_cadd or die "can't open $f_cadd: $!";
+# open my $cadd, '<', $f_cadd or die "can't open $f_cadd: $!";
 
-my $vcf = gzopen($f_cadd, "rb") or
-  die "can't open $invcf: $gzerrno";
+my $cadd = gzopen($f_cadd, "rb") or
+  die "can't open $f_cadd: $gzerrno";
 
 while(<$mus>){
   chomp;

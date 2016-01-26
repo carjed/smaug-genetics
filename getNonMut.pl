@@ -18,6 +18,7 @@ use List::MoreUtils 'pairwise';
 use Cwd;
 use Benchmark;
 use Tie::File;
+# use Util::Any;
 
 # Set options and inputs
 my $wdir=getcwd;
@@ -36,6 +37,7 @@ GetOptions ('b=s'=> \$baseopt,
 'adj=i' => \$adj) or pod2usage(1);
 
 my $f_covs = "$parentdir/output/logmod_data/${bw}kb_mut_cov2.txt";
+my $f_exons = "$parentdir/reference_data/GRCh37_RefSeq_sorted.bed";
 
 make_path("$parentdir/output/logmod_data/chr${chr}/");
 
@@ -72,9 +74,24 @@ open($OUT, '>', $outfile) or die "can't write to $outfile: $!\n";
 # initialize covariate data
 open my $covs, '<', $f_covs or die "can't open $f_covs: $!";
 
+# initialize exon bed file
+open my $exons, '<', $f_exons or die "can't oopen $f_exons: $!";
+
 # initialize singleton file
 my $f_positions = "$parentdir/output/logmod_data/chr${chr}_${categ}_pos_examples.txt"; #main line for full processing
 open my $positions, '<', $f_positions or die "can't open $f_positions: $!";
+
+# Read array of exon positions
+my @exarr;
+while(<$exons>){
+	chomp;
+	my @line=split(/\t/, $_);
+
+	if($line[0] eq "chr$chr"){
+		my @range=$line[1]..$line[2];
+		push(@exarr, @range);
+	}
+}
 
 # Index motif file names
 my $f_mlist = "$parentdir/output/7bp_1000k_rates.txt";
@@ -168,7 +185,7 @@ for my $strpos (0 .. $seqlength){
 			} else {
 				$sequence = $altlocalseq . '(' . $localseq . ')';
 			}
-			
+
 			# print "$pos\t$sequence\n";
 
 			# write line if site has non-N context
@@ -178,8 +195,13 @@ for my $strpos (0 .. $seqlength){
 				my $file=$fhash{$sequence};
 				# my $mref={$handles{$file}};
 
-				print $OUT "$chr\t$bin\t$pos\t$sequence\t 0 \t$covs\n";
-				print {$handles{$file}} "$chr\t$bin\t$pos\t$sequence\t 0 \t$covs\n";
+				my $ex=0;
+				if($pos ~~ @exarr){
+					$ex=1;
+				}
+
+				print $OUT "$chr\t$bin\t$pos\t$sequence\t 0 \t$covs\t$ex\n";
+				print {$handles{$file}} "$chr\t$bin\t$pos\t$sequence\t 0 \t$covs\t$ex\n";
 			}
 		}elsif(exists $poshash{$pos}){
 			my $covs=&updateCovs($chr, $bin, $pos);
@@ -189,8 +211,13 @@ for my $strpos (0 .. $seqlength){
 			my $file=$fhash{$sequence};
 			# my $mref={$handles{$file}};
 
-			print $OUT "$poshash{$pos}\t$covs\n";
-			print {$handles{$file}} "$poshash{$pos}\t$covs\n";
+			my $ex=0;
+			if($pos ~~ @exarr){
+				$ex=1;
+			}
+
+			print $OUT "$poshash{$pos}\t$covs\t$ex\n";
+			print {$handles{$file}} "$poshash{$pos}\t$covs\t$ex\n";
 		}
 	}
 }

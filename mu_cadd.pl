@@ -28,9 +28,12 @@ my $f_cadd = "/net/dumbo/home/lockeae/CADD/whole_genome_SNVs.tsv.gz";
 # open my $cadd, '<', $f_cadd or die "can't open $f_cadd: $!";
 
 <<<<<<< HEAD
+<<<<<<< HEAD
 my $cadd = gzopen($f_cadd, "rb") or
   die "can't open $f_cadd: $gzerrno";
 
+=======
+>>>>>>> parent of 26c0d17... update heatmap
 =======
 >>>>>>> parent of 26c0d17... update heatmap
 while(<$mus>){

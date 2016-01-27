@@ -79,7 +79,7 @@ open my $positions, '<', $f_positions or die "can't open $f_positions: $!";
 # Index motif file names
 my $f_mlist = "$parentdir/output/7bp_1000k_rates.txt";
 open my $mlist, '<', $f_mlist or die "can't open $f_mlist: $!";
-# 
+#
 # our %fhash=();
 # my @fn;
 # while(<$mlist>){
@@ -99,7 +99,7 @@ open my $mlist, '<', $f_mlist or die "can't open $f_mlist: $!";
 #   }
 # }
 
-my %handles = get_write_handles(@fn);
+# my %handles = get_write_handles(@fn);
 
 # initialize phastCons data
 # my $f_cons = "$parentdir/reference_data/chr$chr.phastCons46way.primates.wigFix";
@@ -119,16 +119,16 @@ if($printheader==1){
 }
 
 # Create hash keyed by Chr/Bin pairs, with row of PCs as value
-# print "Indexing chr${chr} covariate data...\n";
-# our %hash=();
-# while (<$covs>){
-# 	chomp;
-# 	my @line=split(/\t/, $_);
-# 	my $key=join("\t", @line[0 .. 1]);
-# 	my $pcs=join("\t", @line[2 .. $#line]);
-#
-# 	$hash{$key}=$pcs;
-# }
+print "Indexing chr${chr} covariate data...\n";
+our %hash=();
+while (<$covs>){
+	chomp;
+	my @line=split(/\t/, $_);
+	my $key=join("\t", @line[0 .. 1]);
+	my $pcs=join("\t", @line[2 .. $#line]);
+
+	$hash{$key}=$pcs;
+}
 
 # my $key=join("\t", 20, 100);
 # print "$hash{$key}\n";
@@ -175,7 +175,7 @@ for my $strpos (0 .. $seqlength){
 			if ($sequence =~ /\A[acgt\(\)]+\z/i) {
 				my $covs=&updateCovs($chr, $bin, $pos);
 
-				my $file=$fhash{$sequence};
+				# my $file=$fhash{$sequence};
 				# my $mref={$handles{$file}};
 
 				print $OUT "$chr\t$bin\t$pos\t$sequence\t 0 \t$covs\n";
@@ -186,7 +186,7 @@ for my $strpos (0 .. $seqlength){
 			my @line=split(/\t/, $poshash{$pos});
 			my $sequence=$line[3];
 
-			my $file=$fhash{$sequence};
+			# my $file=$fhash{$sequence};
 			# my $mref={$handles{$file}};
 
 			print $OUT "$poshash{$pos}\t$covs\n";

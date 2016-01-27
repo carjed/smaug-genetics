@@ -94,6 +94,21 @@ if(!file.exists(testfile)){
 			" --bw ", 100,
 			" --adj ", adj)
 		system(perlcmd)
+
+		exoncmd <- paste0("join -a1 -1 3 -2 3 -o 0 2.4 -e 0 ",
+			parentdir, "/output/logmod_data/chr", chr, "_", categ, "_sites.txt ",
+			"<(awk '$1 == \"chr", chr, "\" { print }' ",
+				parentdir, "/reference_data/GRCh37_RefSeq_chop.bed | sort -k3,3) > ",
+			parentdir, "/output/logmod_data/chr", chr, "_", categ, "_m.txt")
+
+		system(exoncmd)
+
+		subcmd <- paste0("awk '{ print >> \"",
+			parentdir, "/output/logmod_data/chr", chr, "/chr", chr, "_", categ, "_ \" ",
+				"$4 \".txt\" }' ",
+			parentdir, "/output/logmod_data/chr", chr, "_", categ, "_m.txt")
+
+		system(subcmd)
 	}
 
 	# Run Unix command to combine data, ordered by chromosome (1 to 22)

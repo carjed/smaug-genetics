@@ -79,25 +79,25 @@ open my $positions, '<', $f_positions or die "can't open $f_positions: $!";
 # Index motif file names
 my $f_mlist = "$parentdir/output/7bp_1000k_rates.txt";
 open my $mlist, '<', $f_mlist or die "can't open $f_mlist: $!";
-
-our %fhash=();
-my @fn;
-while(<$mlist>){
-  chomp;
-  my @line=split(/\t/, $_);
-  my $seq=$line[1];
-  my $cat=$line[2];
-
-  if(($cat eq $categ) | ($cat eq "cpg_${categ}")){
-    #my $key=join("\t", @line[0 .. 1]);
-    #my $pcs=join("\t", @line[2 .. $#line]);
-
-    my $filename="$parentdir/output/logmod_data/chr${chr}/chr${chr}_${categ}_$seq.txt";
-    push(@fn, $filename);
-    $fhash{$seq}=$filename;
-    # print "$hash{$_}\n";
-  }
-}
+# 
+# our %fhash=();
+# my @fn;
+# while(<$mlist>){
+#   chomp;
+#   my @line=split(/\t/, $_);
+#   my $seq=$line[1];
+#   my $cat=$line[2];
+#
+#   if(($cat eq $categ) | ($cat eq "cpg_${categ}")){
+#     #my $key=join("\t", @line[0 .. 1]);
+#     #my $pcs=join("\t", @line[2 .. $#line]);
+#
+#     my $filename="$parentdir/output/logmod_data/chr${chr}/chr${chr}_${categ}_$seq.txt";
+#     push(@fn, $filename);
+#     $fhash{$seq}=$filename;
+#     # print "$hash{$_}\n";
+#   }
+# }
 
 my %handles = get_write_handles(@fn);
 
@@ -119,16 +119,16 @@ if($printheader==1){
 }
 
 # Create hash keyed by Chr/Bin pairs, with row of PCs as value
-print "Indexing chr${chr} covariate data...\n";
-our %hash=();
-while (<$covs>){
-	chomp;
-	my @line=split(/\t/, $_);
-	my $key=join("\t", @line[0 .. 1]);
-	my $pcs=join("\t", @line[2 .. $#line]);
-
-	$hash{$key}=$pcs;
-}
+# print "Indexing chr${chr} covariate data...\n";
+# our %hash=();
+# while (<$covs>){
+# 	chomp;
+# 	my @line=split(/\t/, $_);
+# 	my $key=join("\t", @line[0 .. 1]);
+# 	my $pcs=join("\t", @line[2 .. $#line]);
+#
+# 	$hash{$key}=$pcs;
+# }
 
 # my $key=join("\t", 20, 100);
 # print "$hash{$key}\n";
@@ -168,7 +168,7 @@ for my $strpos (0 .. $seqlength){
 			} else {
 				$sequence = $altlocalseq . '(' . $localseq . ')';
 			}
-			
+
 			# print "$pos\t$sequence\n";
 
 			# write line if site has non-N context
@@ -179,7 +179,7 @@ for my $strpos (0 .. $seqlength){
 				# my $mref={$handles{$file}};
 
 				print $OUT "$chr\t$bin\t$pos\t$sequence\t 0 \t$covs\n";
-				print {$handles{$file}} "$chr\t$bin\t$pos\t$sequence\t 0 \t$covs\n";
+				# print {$handles{$file}} "$chr\t$bin\t$pos\t$sequence\t 0 \t$covs\n";
 			}
 		}elsif(exists $poshash{$pos}){
 			my $covs=&updateCovs($chr, $bin, $pos);
@@ -190,7 +190,7 @@ for my $strpos (0 .. $seqlength){
 			# my $mref={$handles{$file}};
 
 			print $OUT "$poshash{$pos}\t$covs\n";
-			print {$handles{$file}} "$poshash{$pos}\t$covs\n";
+			# print {$handles{$file}} "$poshash{$pos}\t$covs\n";
 		}
 	}
 }

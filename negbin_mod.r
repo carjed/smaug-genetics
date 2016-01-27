@@ -291,7 +291,7 @@ full_mod_form <- as.formula(paste("obs~",
 
 # Uses poisson regression instead of negbin, since negbin fails to converge
 # with default parameters of glm.nb()
-overall<-1
+overall<-0
 if(overall){
   cat("Running overall models...\n")
   mut_lm_m_all <- glm(motif_mod_form, data=a3a1, family="poisson")
@@ -541,7 +541,6 @@ ggsave(aicbar, width=7, height=7)
 # mspebar <- paste0(parentdir, "/images/compare_mspe.png")
 # ggsave(mspebar, width=12, height=12)
 
-# Create loop here to go through all chromosomes
 dat<-compare.all %>%
   filter(CHR==2, res=="full")
 
@@ -556,6 +555,7 @@ ggplot(dat2, aes(x=BIN, y=value, group=key, colour=key))+
   theme_bw()+
   theme(axis.title.x=element_text(size=22),
     axis.title.y=element_text(size=22),
+    legend.position="none",
     strip.text.x=element_text(size=20)
   )
 ggsave("/net/bipolar/jedidiah/mutation/images/chr2.png")

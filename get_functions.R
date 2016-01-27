@@ -91,17 +91,15 @@ rrheat <- function(dat, f, levels, facetvar, nbp){
 	scale_fill_gradientn("Relative Rate\n",
 		colours=myPalette((nbp-1)^4),
 		trans="log",
-		# breaks=c(min(dat$v4), mean(dat$v4), max(dat$v4)),
-		# labels=c(round(min(dat$v4), 5),
-	 # 		round(mean(dat$v4), 4),
-		# 	round(max(dat$v4), 3)),
-		# limits=c(min(dat$v4), max(dat$v4))
-		breaks=c(0.00022, 0.0731, 0.1461),
-		limits=c(0.00022, 0.1461))+
+		breaks=c(min(dat$v4), mean(dat$v4), max(dat$v4)),
+		labels=c(round(min(dat$v4), 5),
+	 		round(mean(dat$v4), 4),
+			round(max(dat$v4), 3)),
+		limits=c(min(dat$v4), max(dat$v4)))+
 	xlab("5' flank")+
 	ylab("3' flank")+
 	theme(
-		# legend.position="none",
+		legend.position="none",
 		legend.title = element_text(size=18),
 	  legend.text = element_text(size=16),
 	  strip.text.x = element_text(size=40),

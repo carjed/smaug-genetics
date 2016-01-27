@@ -16,8 +16,6 @@ use List::MoreUtils 'pairwise';
 use Cwd;
 use Benchmark;
 use Tie::File;
-use Compress::Zlib;
-use IO::Compress::Gzip;
 
 # Set options and inputs
 my $wdir=getcwd;
@@ -29,9 +27,12 @@ open my $mus, '<', $f_mus or die "can't open $f_mus: $!";
 my $f_cadd = "/net/dumbo/home/lockeae/CADD/whole_genome_SNVs.tsv.gz";
 # open my $cadd, '<', $f_cadd or die "can't open $f_cadd: $!";
 
+<<<<<<< HEAD
 my $cadd = gzopen($f_cadd, "rb") or
   die "can't open $f_cadd: $gzerrno";
 
+=======
+>>>>>>> parent of 26c0d17... update heatmap
 while(<$mus>){
   chomp;
   my @line=split(/\t/, $_);

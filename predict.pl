@@ -26,7 +26,7 @@ GetOptions('chr=s' => \$chr,
 			'bink=s' => \$bink);
 
 my $f_coefs = "$parentdir/output/logmod_data/${cat}_${bink}kb_coefs.txt";
-my $f_data = "$parentdir/output/logmod_data/chr${chr}_${cat}_sites.txt";
+my $f_data = "$parentdir/output/logmod_data/chr${chr}_${cat}_m.txt";
 my $outfile = "$parentdir/output/predicted/chr${chr}_${cat}_predicted.txt";
 
 # initialize covariate data

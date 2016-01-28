@@ -114,7 +114,7 @@ if(!file.exists(testfile)){
 
 		# Subset chromosome file by motif
 		subcmd <- paste0("awk '{ print >> \"",
-			parentdir, "/output/logmod_data/chr", chr, "/chr", chr, "_", categ, "_ \" ",
+			parentdir, "/output/logmod_data/chr", chr, "/chr", chr, "_", categ, "_\" ",
 				"$4 \".txt\" }' ",
 			parentdir, "/output/logmod_data/chr", chr, "_", categ, "_m.txt")
 

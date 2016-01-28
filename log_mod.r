@@ -95,14 +95,24 @@ if(!file.exists(testfile)){
 			" --adj ", adj)
 		system(perlcmd)
 
-		exoncmd <- paste0("join -a1 -1 3 -2 3 -o 0 2.4 -e 0 ",
+		# Gets position list for exons in specified chr
+		chrcmd <- paste0("awk \'$1 == \"chr", chr, "\" { print }\' ",
+			parentdir, "/reference_data/GRCh37_RefSeq_chop.bed | sort -k3,3 | cut -f 3,4 > ",
+			parentdir, "/reference_data/chr", chr, "_RefSeq.bed")
+
+		system(chrcmd)
+
+		# Join exon positions with full data
+		# cuts out regional exon info (column 14) and adds the binary column
+		exoncmd <- paste0("join -a1 -1 3 -2 1 -e 0 -o auto -t $\'\\t\' ",
 			parentdir, "/output/logmod_data/chr", chr, "_", categ, "_sites.txt ",
-			"<(awk '$1 == \"chr", chr, "\" { print }' ",
-				parentdir, "/reference_data/GRCh37_RefSeq_chop.bed | sort -k3,3) > ",
+			parentdir, "/reference_data/chr", chr, "_RefSeq.bed | ",
+			" cut -f 14 --complement > ",
 			parentdir, "/output/logmod_data/chr", chr, "_", categ, "_m.txt")
 
 		system(exoncmd)
 
+		# Subset chromosome file by motif
 		subcmd <- paste0("awk '{ print >> \"",
 			parentdir, "/output/logmod_data/chr", chr, "/chr", chr, "_", categ, "_ \" ",
 				"$4 \".txt\" }' ",
@@ -164,7 +174,8 @@ coefdat<-foreach(i=1:length(motifs), .combine=rbind) %dopar% {
 	# unlink(perchrtmp)
 
 	da1 <- read.table(tmpfile, header=F, stringsAsFactors=F)
-	names(da1) <- c("CHR", "BIN", "POS", "Sequence", "mut", danames[-(1:2)])
+	names(da1) <- c("CHR", "BIN", "POS", "Sequence", "mut",
+		danames[-c(1:2,11)], "EXON")
 
 	# Create intercept-only model to compare model-predicted rates
 	# with marginal rates
@@ -173,10 +184,11 @@ coefdat<-foreach(i=1:length(motifs), .combine=rbind) %dopar% {
 	#int_only_rates <- rbind(int_only_rates,
 	#	c(motifs[i], categ, inv.logit(log_mod_int$coefficients)))
 
-	# Run logit model for categories with >3 singletons, return coefficients
+	# Run logit model for categories with >10 singletons, return coefficients
 	# Otherwise, returns single marginal rate
 	if(sum(da1$mut)>10){
-		log_mod_formula <- as.formula(paste("mut~", paste(danames[-(1:2)], collapse="+")))
+		log_mod_formula <- as.formula(paste("mut~",
+			paste(names(da1)[-(1:5)], collapse="+")))
 		log_mod <- speedglm(log_mod_formula, data=da1, family=binomial(), maxit=50)
 
 		#z <- as.numeric(log_mod$coefficients)

@@ -37,7 +37,7 @@ args <- getArgs(
 		# binfile=paste0(parentdir, "/output/7bp_1000k/chrX.bin_out.txt"),
 		run_agg=TRUE,
 		pcs=FALSE,
-		categ="AT_GC",
+		categ="AT_TA",
 		negbin_model=TRUE,
 		log_model=TRUE,
 		run_predict=TRUE))

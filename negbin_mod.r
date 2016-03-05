@@ -488,13 +488,13 @@ limits <- aes(ymax = mod.corr$cor + mod.corr$SE,
 	ymin=mod.corr$cor - mod.corr$SE)
 dodge <- position_dodge(width=0.9)
 
-ggplot(mod.corr, aes(x=Category2, y=cor, fill=res))+
+ggplot(m2, aes(x=Category2, y=cor, fill=res))+
 	geom_bar(stat="identity", position=dodge)+
   scale_colour_brewer("Predictor",palette="Dark2")+
   scale_fill_brewer("Predictor", palette="Dark2")+
 	xlab("Category")+
 	ylab("Correlation with observed count")+
-	geom_errorbar(limits, position=dodge, width=0.25)+
+	# geom_errorbar(limits, position=dodge, width=0.25)+
 	theme_bw()+
 	theme(legend.title = element_text(size=18),
 		legend.text = element_text(size=16),
@@ -503,7 +503,7 @@ ggplot(mod.corr, aes(x=Category2, y=cor, fill=res))+
 		axis.text.y = element_text(size=16),
 		axis.text.x = element_text(size=16, angle = 45,  vjust=1, hjust=1.01))
 
-modelbar <- paste0(parentdir, "/images/gw_5bp_vs_mod.png")
+modelbar <- paste0(parentdir, "/images/gw_5bp_vs_mod_3.png")
 ggsave(modelbar, width=7, height=7)
 
 ggplot(compare.aic, aes(x=model, y=AIC))+
@@ -555,7 +555,7 @@ ggplot(dat2, aes(x=BIN, y=value, group=key, colour=key))+
   theme_bw()+
   theme(axis.title.x=element_text(size=22),
     axis.title.y=element_text(size=22),
-    legend.position="none",
+    # legend.position="none",
     strip.text.x=element_text(size=20)
   )
 ggsave("/net/bipolar/jedidiah/mutation/images/chr2.png")

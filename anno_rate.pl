@@ -91,7 +91,8 @@ if ($adj!=0) {
 # Get rates for each base
 my $start_time=new Benchmark;
 print "Writing data file...\n";
-for my $i (2 .. length($seq)-1){
+# for my $i (2 .. length($seq)-1){
+for my $i (2 .. 20000){
 	my $base=substr($seq, $i, 1);
 
 	my $localseq = substr($seq, $i-$adj-1, $subseq);
@@ -105,6 +106,8 @@ for my $i (2 .. length($seq)-1){
 		} else {
 			$sequence = $altlocalseq . '(' . $localseq . ')';
 		}
+
+		print "$sequence\n";
 
 		print OUT "$chr\t$i\t$hash{$sequence}\n";
 	}

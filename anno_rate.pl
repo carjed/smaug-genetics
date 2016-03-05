@@ -65,15 +65,15 @@ while (<$rates>){
 	chomp;
 	my @line=split(/\t/, $_);
 	my $key=$line[0];
-	my $vals=join("\t", nearest(0.0001, @line[1 .. $#line]));
-
+	# my $vals=join("\t", nearest(0.0001, @line[1 .. $#line]));
+	my $vals=sum(@line[1 .. $#line]);
 	$hash{$key}=$vals;
 }
 
 # Initialize output file
 my $outfile ="$parentdir/chr$chr.rates.txt";
 open(OUT, '>', $outfile) or die "can't write to $outfile: $!\n";
-print OUT "CHR\tPOS\tAT_CG\tAT_GC\tAT_TA\tGC_AT\tGC_CG\tGC_TA\n";
+# print OUT "CHR\tPOS\tAT_CG\tAT_GC\tAT_TA\tGC_AT\tGC_CG\tGC_TA\n";
 
 
 # Get reference sequence
@@ -106,7 +106,8 @@ for my $i (2 .. length($seq)-1){
 			$sequence = $altlocalseq . '(' . $localseq . ')';
 		}
 
-		print OUT "$chr\t$i\t$hash{$sequence}\n";
+		# print OUT "$chr\t$i\t$hash{$sequence}\n";
+		print OUT "$i\t$hash{$sequence}\n";
 	}
 }
 my $end_time=new Benchmark;

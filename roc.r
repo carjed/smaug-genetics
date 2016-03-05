@@ -7,7 +7,7 @@ dnms <- read.table("/net/bipolar/jedidiah/mutation/reference_data/GoNL_DNMs.txt"
 chrdnms <- dnms[dnms$CHROM==4,]
 
 # Read predicted mutation rate data
-chrp <- read.table("/net/bipolar/jedidiah/mutation/output/predicted/chr4_full.txt", header=F)
+chrp <- read.table("/net/bipolar/jedidiah/mutation/output/predicted/chr4_full_mask.txt", header=F)
 names(chrp) <- c("POS", "MU")
 
 # Function checks if elements in a exist in b

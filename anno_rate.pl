@@ -82,8 +82,8 @@ my $altseq=$seq;
 $altseq =~ tr/ACGT/TGCA/;
 
 # Define motif length
-my $adj=2;
-my $subseq=2;
+my $adj=1;
+my $subseq=1;
 if ($adj!=0) {
 	$subseq = $adj*2+1;
 }
@@ -91,8 +91,7 @@ if ($adj!=0) {
 # Get rates for each base
 my $start_time=new Benchmark;
 print "Writing data file...\n";
-# for my $i (2 .. length($seq)-1){
-for my $i (2 .. 20000){
+for my $i (2 .. length($seq)-1){
 	my $base=substr($seq, $i, 1);
 
 	my $localseq = substr($seq, $i-$adj-1, $subseq);
@@ -107,8 +106,6 @@ for my $i (2 .. 20000){
 			$sequence = $altlocalseq . '(' . $localseq . ')';
 		}
 
-		print "$sequence\n";
-
 		print OUT "$chr\t$i\t$hash{$sequence}\n";
 	}
 }
@@ -118,8 +115,6 @@ print "Done. ";
 print "Finished in: ", timestr($difference), "\n";
 
 sub getRef{
-	# my $f_fasta = "$parentdir/reference_data/human_g1k_v37.fasta";
-
 	if (-e $f_fasta) {
 		print "Using reference genome: $f_fasta\n";
 	} else {

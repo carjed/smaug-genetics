@@ -1,13 +1,13 @@
 #!/usr/local/bin/perl
 
 ##############################################################################
-# Script used to annotate every non-N base in a specified chromosome with 
+# Script used to annotate every non-N base in a specified chromosome with
 # relative mutation rates
 #
 # Output is a text file with the following 8 columns:
 # CHR	POS	AT_CG	AT_GC	AT_TA	GC_AT	GC_CG	GC_TA
 #
-# For each base position in the file, 3 rates will be output; the others will 
+# For each base position in the file, 3 rates will be output; the others will
 # be NA values
 #
 # Currently must specify a single chromosome when running; can be modified
@@ -66,7 +66,7 @@ while (<$rates>){
 	my @line=split(/\t/, $_);
 	my $key=$line[0];
 	my $vals=join("\t", nearest(0.0001, @line[1 .. $#line]));
-	
+
 	$hash{$key}=$vals;
 }
 
@@ -93,19 +93,19 @@ my $start_time=new Benchmark;
 print "Writing data file...\n";
 for my $i (2 .. length($seq)-1){
 	my $base=substr($seq, $i, 1);
-	
+
 	my $localseq = substr($seq, $i-$adj-1, $subseq);
-	
+
 	if($localseq!~/[MNSW]/){
 		my $altlocalseq = reverse substr($altseq, $i-$adj-1, $subseq);
-		
+
 		my $sequence;
 		if(substr($localseq,$adj,1) lt substr($altlocalseq,$adj,1)){
 			$sequence = $localseq . '(' . $altlocalseq . ')';
 		} else {
 			$sequence = $altlocalseq . '(' . $localseq . ')';
 		}
-		
+
 		print OUT "$chr\t$i\t$hash{$sequence}\n";
 	}
 }
@@ -115,6 +115,13 @@ print "Done. ";
 print "Finished in: ", timestr($difference), "\n";
 
 sub getRef{
+	my $f_fasta;
+	if($mask_flag){
+		$f_fasta = "$parentdir/reference_data/human_g1k_v37.mask.fasta";
+	} else {
+		$f_fasta = "$parentdir/reference_data/human_g1k_v37.fasta";
+	}
+
 	if (-e $f_fasta) {
 		print "Using reference genome: $f_fasta\n";
 	} else {
@@ -142,7 +149,7 @@ sub getRef{
 			$seq .=$_;
 		}
 	}
-	
+
 	return $seq;
 }
 

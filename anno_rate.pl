@@ -115,12 +115,7 @@ print "Done. ";
 print "Finished in: ", timestr($difference), "\n";
 
 sub getRef{
-	my $f_fasta;
-	if($mask_flag){
-		$f_fasta = "$parentdir/reference_data/human_g1k_v37.mask.fasta";
-	} else {
-		$f_fasta = "$parentdir/reference_data/human_g1k_v37.fasta";
-	}
+	my $f_fasta = "$parentdir/reference_data/human_g1k_v37.fasta";
 
 	if (-e $f_fasta) {
 		print "Using reference genome: $f_fasta\n";

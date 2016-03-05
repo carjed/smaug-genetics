@@ -70,11 +70,21 @@ while (<$rates>){
 	$hash{$key}=$vals;
 }
 
+my $f_positions="/net/bipolar/jedidiah/mutation/output/predicted/chr${chr}_full_mask.txt";
+open my $positions '<', $f_positions or die "can't open $f_positions: $!";
+
+my @sites;
+while(<$positions>){
+	chomp;
+	my @line=split(/\t/, $_);
+	my $pos=$line[0];
+	push(@sites, $pos);
+}
+
 # Initialize output file
 my $outfile ="$parentdir/chr$chr.rates.txt";
 open(OUT, '>', $outfile) or die "can't write to $outfile: $!\n";
 # print OUT "CHR\tPOS\tAT_CG\tAT_GC\tAT_TA\tGC_AT\tGC_CG\tGC_TA\n";
-
 
 # Get reference sequence
 my $seq=&getRef();
@@ -91,7 +101,8 @@ if ($adj!=0) {
 # Get rates for each base
 my $start_time=new Benchmark;
 print "Writing data file...\n";
-for my $i (2 .. length($seq)-1){
+# for my $i (2 .. length($seq)-1){
+foreach my $i (@sites){
 	my $base=substr($seq, $i, 1);
 
 	my $localseq = substr($seq, $i-$adj-1, $subseq);

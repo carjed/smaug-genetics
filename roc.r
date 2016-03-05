@@ -100,7 +100,7 @@ names(chrp3m)[4:5]<-c("lb", "ub")
 
 ggplot(chrp3m, aes(x=1000-ntile, y=1-val))+
   geom_line(colour="blue")+
-  # geom_abline(intercept=0, slope=1/1000)+
+  geom_abline(intercept=0, slope=1/1000)+
   geom_ribbon(aes(ymin=1-lb, ymax=1-ub), alpha=0.2)+
   coord_cartesian(xlim=c(0,1000))+
   theme_bw()

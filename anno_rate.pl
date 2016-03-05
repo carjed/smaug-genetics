@@ -71,7 +71,7 @@ while (<$rates>){
 }
 
 my $f_positions="/net/bipolar/jedidiah/mutation/output/predicted/chr${chr}_full_mask.txt";
-open my $positions '<', $f_positions or die "can't open $f_positions: $!";
+open my $positions, '<', $f_positions or die "can't open $f_positions: $!";
 
 my @sites;
 while(<$positions>){

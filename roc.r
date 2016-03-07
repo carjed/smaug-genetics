@@ -59,7 +59,7 @@ for(i in 1:10){
 # Get cumulative proportions of simulated data
 ##############################################################################
 for(i in 5:14){
-	chrp$tmpprop <- cumsum(chrp[,i])/nsites
+	chrp$tmpprop <- cumsum(chrp[,i])/sum(chrp[,i])
 	colnames(chrp)[ncol(chrp)] <- paste0("simprop", i)
 }
 
@@ -143,7 +143,7 @@ auc <- chrp3m %>% group_by(group) %>% summarise(AUC=1-sum(val)/1000)
 ggplot()+
   geom_line(data=chrp3m, aes(x=1000-ntile, y=1-val, group=group, colour=group))+
   geom_abline(intercept=0, slope=1/1000)+
-  geom_ribbon(data=chrp3m[1:1000,], aes(x=1000-ntile, y=1-val, ymin=1-ub, ymax=1-lb), alpha=0.2)+
+  geom_ribbon(data=chrp3m[1:1000,], aes(x=1000-ntile, y=1-val, ymin=1-lb, ymax=1-ub), alpha=0.2)+
   coord_cartesian(xlim=c(0,1000))+
   theme_bw()
   # scale_y_continuous(limits=c(0,1))+

@@ -38,10 +38,10 @@ nsites <- sum(chrp$OBS)
 
 for(i in 1:5){
 	cat("Running simulation ", i, "of 10...\n")
-	nsample <- 50000
+	nsample <- 20000
 	mutated <- c()
 
-	while(length(mutated) < nsites){
+	while(length(mutated) < 400){
 		rowind <- sample(nrow(chrp), nsample)
 		row <- chrp[rowind,]
 		mu <- row$MU
@@ -99,13 +99,15 @@ chrp3m<-chrp3[chrp3$group=="prop",]
 ##############################################################################
 chrp3lb<-chrp3a %>%
   group_by(ntile) %>%
-  summarise(lb=t.test(val)$conf.int[1]) %>%
+  # summarise(lb=t.test(val)$conf.int[1]) %>%
+	summarise(lb=max(val)) %>%
   mutate(group="lb") %>%
   select(group, ntile, lb)
 
 chrp3ub<-chrp3a %>%
   group_by(ntile) %>%
-  summarise(ub=t.test(val)$conf.int[2]) %>%
+  # summarise(ub=t.test(val)$conf.int[2]) %>%
+	summarise(ub=min(val)) %>%
   mutate(group="ub") %>%
   select(group, ntile, ub)
 

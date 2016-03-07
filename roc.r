@@ -36,7 +36,7 @@ chrp$prop <- cumsum(chrp$OBS)/sum(chrp$OBS)
 ##############################################################################
 nsites <- sum(chrp$OBS)
 
-for(i in 1:5){
+for(i in 1:10){
 	cat("Running simulation ", i, "of 10...\n")
 	nsample <- 20000
 	mutated <- c()
@@ -58,7 +58,7 @@ for(i in 1:5){
 ##############################################################################
 # Get cumulative proportions of simulated data
 ##############################################################################
-for(i in 5:9){
+for(i in 5:14){
 	chrp$tmpprop <- cumsum(chrp[,i])/sum(chrp[,i])
 	colnames(chrp)[ncol(chrp)] <- paste0("simprop", i)
 }

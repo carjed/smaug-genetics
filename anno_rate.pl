@@ -73,6 +73,7 @@ while (<$rates>){
 my $f_positions="/net/bipolar/jedidiah/mutation/output/predicted/chr${chr}_full_mask.txt";
 open my $positions, '<', $f_positions or die "can't open $f_positions: $!";
 
+print "Indexing sites in chr${chr}...\n";
 my @sites;
 while(<$positions>){
 	chomp;

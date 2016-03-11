@@ -15,4 +15,4 @@ rm -f /net/bipolar/jedidiah/mutation/output/predicted/chr${chr}_{AT,GC,tmp,tmp2}
 awk -v chr="$chr" '{print chr"\t"($1-1)"\t"$1"\t"$2}' /net/bipolar/jedidiah/mutation/output/predicted/chr${chr}_full.txt > /net/bipolar/jedidiah/mutation/output/predicted/chr${chr}_full.bed
 
 
-bedtools intersect -a /net/bipolar/jedidiah/mutation/output/predicted/chr${chr}_full.bed -b /net/bipolar/jedidiah/mutation/reference_data/20140520.strict_mask2.bed  | awk '{print "\t"$3"\t"$4}' > /net/bipolar/jedidiah/mutation/output/predicted/chr${chr}_full_mask.txt
+bedtools intersect -a /net/bipolar/jedidiah/mutation/output/predicted/chr${chr}_full.bed -b /net/bipolar/jedidiah/mutation/reference_data/20140520.strict_mask2.bed  | awk '{print $3"\t"$4}' > /net/bipolar/jedidiah/mutation/output/predicted/chr${chr}_full_mask.txt

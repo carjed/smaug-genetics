@@ -143,10 +143,12 @@ chrp3m <- rbind(chrp3m, chrpm2)
 auc <- chrp3m %>% group_by(group) %>% summarise(AUC=1-sum(val)/1000)
 
 ggplot()+
-  geom_line(data=chrp3m, aes(x=1000-ntile, y=1-val, group=group, colour=group))+
+  geom_line(data=chrp3m, aes(x=ntile, y=val, group=group, colour=group))+
   geom_abline(intercept=0, slope=1/1000)+
-  geom_ribbon(data=chrp3m[1:1000,], aes(x=1000-ntile, y=1-val, ymin=1-lb, ymax=1-ub), alpha=0.2)+
+  geom_ribbon(data=chrp3m[1:1000,], aes(x=ntile, y=val, ymin=lb, ymax=ub), alpha=0.2)+
   coord_cartesian(xlim=c(0,1000))+
+	xlab("Rank")+
+	ylab("Proportion of DNMs explained")+
   theme_bw()
   # scale_y_continuous(limits=c(0,1))+
   # scale_x_continuous(limits=c(0,1000))

@@ -53,7 +53,7 @@ suppressMessages(usePackage(MASS))
 suppressMessages(usePackage(speedglm))
 suppressMessages(usePackage(boot))
 suppressMessages(usePackage(devtools))
-suppressMessages(usePackage(ggbio))
+# suppressMessages(usePackage(ggbio))
 
 # Manual toggle for installing ggbio package
 # Uses the install_github() function from devtools to pull latest version,

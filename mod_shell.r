@@ -71,7 +71,7 @@ if(install_ggbio){
 }
 
 # Get ideogram data for plotting track under chromosome
-data(hg19IdeogramCyto, package = "biovizBase")
+# data(hg19IdeogramCyto, package = "biovizBase")
 
 # Parse args--command line options become objects, so instead of using
 # "args$summfile", we can just use "summfile"

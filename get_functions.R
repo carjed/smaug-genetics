@@ -213,8 +213,8 @@ getSubMotifs <- function(data, nts, b3){
 
 			# Create column and append to df
 			tripct <- data %>%
-				mutate_(.dots=setNames(paste(z, collapse="+"), k)) %>%
-				select_(.dots=k)
+				dplyr::mutate_(.dots=setNames(paste(z, collapse="+"), k)) %>%
+				dplyr::select_(.dots=k)
 			outdat <- cbind(outdat, tripct)
 		}
 	}

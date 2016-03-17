@@ -165,9 +165,11 @@ names(rf2)[2] <- "Sequence"
 rfc <- rbind(dplyr::select(rf2, Category2, Sequence, L, rk, rk2, rk3, gp),
   dplyr::select(rf3, Category2, Sequence, L, rk, rk2, rk3, gp))
 
+write.table(ra1b, "/net/bipolar/jedidiah/mutation/ra1b.txt", col.names=T, row.names=F, quote=F, sep="\t")
+
 l1ll <- ra1b %>%
   filter(Motif_Length %in% c("1", "3"), Stat=="-2ln(L)") %>%
-  mutate(Sequence=substr(Category, 1,1), rk=5, rk2=k,
+  dplyr::mutate(Sequence=substr(Category, 1,1), rk=5, rk2=k,
     rk3=min(rk2)+min(rk2)*rk2/max(rk2), gp=Motif_Length) %>%
   dplyr::select(Category2=Category, Sequence, L, rk, rk2, rk3, gp)
 

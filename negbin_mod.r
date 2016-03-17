@@ -276,24 +276,28 @@ a3a1 <- merge(a3a, dat_5bp_100k$bin, by=c("CHR", "BIN", "prop_GC"))
 
 bases <- c("A", "C", "G", "T")
 nts <- c("A", "C")
-a3a1 <- getSubMotifs(a3a1, nts, bases)
-
-# Create model formulas
-# Must fix to use filtered motifs
-motif_mod_form <- as.formula(paste("obs~",
-	paste(names(a3a1)[(ncol(a3a1)-511):ncol(a3a1)], collapse="+")))
-
-feat_mod_form <- as.formula(paste("obs~",
-  paste(c(covnames, "prop_GC"), collapse="+")))
-
-full_mod_form <- as.formula(paste("obs~",
-	paste(names(a3a1)[c(3:15, (ncol(a3a1)-511):ncol(a3a1))], collapse="+")))
 
 # Uses poisson regression instead of negbin, since negbin fails to converge
 # with default parameters of glm.nb()
 overall<-0
 if(overall){
   cat("Running overall models...\n")
+
+  cat("Formatting data...\n")
+  a3a1 <- getSubMotifs(a3a1, nts, bases)
+
+  # Create model formulas
+  # Must fix to use filtered motifs
+  motif_mod_form <- as.formula(paste("obs~",
+  	paste(names(a3a1)[(ncol(a3a1)-511):ncol(a3a1)], collapse="+")))
+
+  feat_mod_form <- as.formula(paste("obs~",
+    paste(c(covnames, "prop_GC"), collapse="+")))
+
+  full_mod_form <- as.formula(paste("obs~",
+  	paste(names(a3a1)[c(3:15, (ncol(a3a1)-511):ncol(a3a1))], collapse="+")))
+
+
   mut_lm_m_all <- glm(motif_mod_form, data=a3a1, family="poisson")
   mut_lm_fe_all <- glm(feat_mod_form, data=a3a1, family="poisson")
   mut_lm_f_all <- glm(full_mod_form, data=a3a1, family="poisson")
@@ -541,21 +545,57 @@ ggsave(aicbar, width=7, height=7)
 # mspebar <- paste0(parentdir, "/images/compare_mspe.png")
 # ggsave(mspebar, width=12, height=12)
 
-dat<-compare.all %>%
-  filter(CHR==2, res=="full")
+
+cat("Plotting per-chromosome variation...\n")
+for(i in 1:22){
+  dat<-compare.all %>%
+    filter(CHR==i, res=="full")
+
+  d2<-dat %>%
+    filter(obs>50) %>%
+    group_by(Category2, BIN) %>%
+    summarise(ratio=exp/obs)
+
+  chrname<-paste0("chr",i)
+  p <- plotIdeogram(hg19IdeogramCyto,
+    chrname, xlabel=TRUE, alpha=0,
+    zoom.region=c(min(d2$BIN2),max(d2$BIN2)))
+
+  fixed(p)<-FALSE
+
+  p2<-ggplot(d2[d2$ratio<2,],
+      aes(x=BIN, y=ratio, colour=Category2, group=Category2))+
+    geom_point(alpha=0.6)+
+    geom_smooth(span=0.2, se=FALSE)+
+    scale_colour_manual("Category", values=myPaletteCat(9))+
+    geom_hline(yintercept=1)+
+    geom_hline(yintercept=0.9, linetype="dashed")+
+    geom_hline(yintercept=1.1, linetype="dashed")+
+    # facet_wrap(~Category2, scales="free", ncol=1)+
+    ylab("Predicted:Observed Ratio")+
+    xlab(NULL)+
+    theme_bw()
+
+  labeled(p2)<-FALSE
+  labeled(p)<-FALSE
+  tracks(p2,p, heights=c(6,2))
+
+  ratiofile<-paste0("/net/bipolar/jedidiah/mutation/images/chr",i,"_ratio.png")
+  ggsave(ratiofile, width=12, height=6)
+}
 
 #dat$diff<-dat$obs-dat$exp
-dat2<-gather(dat, key, value, c(exp, obs))
-ggplot(dat2, aes(x=BIN, y=value, group=key, colour=key))+
-  geom_point()+
-  scale_colour_manual(values=c("#ffcb05", "#00274c"))+
-  facet_wrap(~Category2, scales="free")+
-  xlab("Window (1Mb)")+
-  ylab("# Singletons")+
-  theme_bw()+
-  theme(axis.title.x=element_text(size=22),
-    axis.title.y=element_text(size=22),
-    # legend.position="none",
-    strip.text.x=element_text(size=20)
-  )
-ggsave("/net/bipolar/jedidiah/mutation/images/chr2.png")
+# dat2<-gather(dat, key, value, c(exp, obs))
+# ggplot(dat2, aes(x=BIN, y=value, group=key, colour=key))+
+#   geom_point()+
+#   scale_colour_manual(values=c("#ffcb05", "#00274c"))+
+#   facet_wrap(~Category2, scales="free")+
+#   xlab("Window (1Mb)")+
+#   ylab("# Singletons")+
+#   theme_bw()+
+#   theme(axis.title.x=element_text(size=22),
+#     axis.title.y=element_text(size=22),
+#     # legend.position="none",
+#     strip.text.x=element_text(size=20)
+#   )
+# ggsave("/net/bipolar/jedidiah/mutation/images/chr2.png")

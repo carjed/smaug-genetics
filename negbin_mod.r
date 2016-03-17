@@ -547,6 +547,9 @@ ggsave(aicbar, width=7, height=7)
 
 
 cat("Plotting per-chromosome variation...\n")
+require(ggbio)
+data(hg19IdeogramCyto, package = "biovizBase")
+
 for(i in 1:22){
   dat<-compare.all %>%
     filter(CHR==i, res=="full")

@@ -204,7 +204,7 @@ for(i in 1:length(mut_cats)) {
 		mcols <- cpggccols
 	}
 
-  aggcatm <- merge(aggcat, bindat, by=c("CHR", "BIN", "prop_GC"), all.x=T)
+  aggcatm1 <- merge(aggcat, bindat, by=c("CHR", "BIN", "prop_GC"), all.x=T)
 
   # Subset 7bp rates for category i and sort
   rcat<-rates5 %>% filter(Category2==cat1) %>% arrange(Sequence)
@@ -226,10 +226,10 @@ for(i in 1:length(mut_cats)) {
     b3 <- c("A", "C", "T")
   }
 
-  aggcatm <- getSubMotifs(aggcatm, nts, b3)
+  aggcatm2 <- getSubMotifs(aggcatm1, nts, b3)
 
   # Merge data to include column of marginals
-  aggcatm<-merge(aggcatm, r6, by=c("CHR", "BIN"))
+  aggcatm<-merge(aggcatm2, r6, by=c("CHR", "BIN"))
 
   # Fix issue where a single bin in Chr5 with 15 AT>GC observations
   # causes glm.nb() to fail to converge

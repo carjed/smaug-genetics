@@ -1,3 +1,62 @@
+
+cat("Calculating likelihoods under different motif lengths...\n")
+# Calculate likelihoods
+rates_full$logLik1 <- dbinom(rates_full$num,
+  rates_full$COUNT,
+  rates_full$rel_prop1, log=T)
+
+rates_full$logLik3 <- dbinom(rates_full$num,
+  rates_full$COUNT,
+  rates_full$rel_prop3, log=T)
+
+rates_full$logLik5 <- dbinom(rates_full$num,
+  rates_full$COUNT,
+  rates_full$rel_prop5, log=T)
+
+rates_full$logLik7 <- dbinom(rates_full$num,
+  rates_full$COUNT,
+  rates_full$rel_prop, log=T)
+
+ra1<-rates_full %>%
+  group_by(Category2) %>%
+  summarise(L1=-2*sum(logLik1),
+    L3=-2*sum(logLik3),
+    L5=-2*sum(logLik5),
+		L7=-2*sum(logLik7))
+
+ra1a<-gather(ra1, model, log, L1:L7)
+
+ra1a$k <- c(rep(1,9),
+  c(rep(16,3), rep(12,3), rep(4,3)),
+  c(rep(256,3), rep(192,3), rep(64,3)),
+	c(rep(4096,3), rep(3072,3), rep(1024,3)))
+
+ra1a$AIC <- 2*ra1a$k+ra1a$log
+
+ra1c <- merge(ra1a, rates1, by="Category2")
+# ra1c$BIC <- ra1c$k*log(ra1c$num1)+ra1c$log
+
+ra1b <- gather(ra1c, stat, L, c(log, AIC))
+levels(ra1b$model) <- c("1", "3", "5", "7")
+
+levels(ra1b$stat) <- c("-2ln(L)", "AIC")
+names(ra1b) <- c("Category", "Motif_Length", "k", "COUNT",
+  "num1", "rel_prop", "Stat", "L")
+
+# Plot AIC and -2log(L) for each category
+cat("Plotting likelihood curves...\n")
+ggplot(ra1b, aes(x=Motif_Length, y=L, group=Stat, colour=Stat))+
+  scale_colour_brewer(palette="Set1")+
+  geom_point()+
+  geom_line()+
+  facet_wrap(~Category, scales="free")+
+  theme_bw()+
+  xlab("Motif Length")+
+  theme(axis.title.y=element_blank(),
+    legend.title=element_blank())
+
+ggsave("/net/bipolar/jedidiah/mutation/images/compare_AIC.png")
+
 rf2<-rates_full %>%
   group_by(Category2, Seq3) %>%
   summarise(s3=-2*sum(logLik3), s5=-2*sum(logLik5)) %>%

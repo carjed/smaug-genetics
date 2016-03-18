@@ -14,7 +14,8 @@ if(ratiofilter){
 }
 
 ##############################################################################
-# Get relative rates for 1bp and 3bp motifs and compare likelihoods
+# Get relative rates for 1bp and 3bp motifs and check for homogeneity
+# among constituent motifs
 ##############################################################################
 cat("Getting relative rates for submotifs...\n")
 # Get submotifs
@@ -41,64 +42,6 @@ rates5a <- rates5 %>%
 rates_full <- merge(rates5, rates1, by="Category2")
 rates_full <- merge(rates_full, rates3, by=c("Seq3", "Category2"))
 rates_full <- merge(rates_full, rates5a, by=c("Seq5", "Category2"))
-
-cat("Calculating likelihoods under different motif lengths...\n")
-# Calculate likelihoods
-rates_full$logLik1 <- dbinom(rates_full$num,
-  rates_full$COUNT,
-  rates_full$rel_prop1, log=T)
-
-rates_full$logLik3 <- dbinom(rates_full$num,
-  rates_full$COUNT,
-  rates_full$rel_prop3, log=T)
-
-rates_full$logLik5 <- dbinom(rates_full$num,
-  rates_full$COUNT,
-  rates_full$rel_prop5, log=T)
-
-rates_full$logLik7 <- dbinom(rates_full$num,
-  rates_full$COUNT,
-  rates_full$rel_prop, log=T)
-
-ra1<-rates_full %>%
-  group_by(Category2) %>%
-  summarise(L1=-2*sum(logLik1),
-    L3=-2*sum(logLik3),
-    L5=-2*sum(logLik5),
-		L7=-2*sum(logLik7))
-
-ra1a<-gather(ra1, model, log, L1:L7)
-
-ra1a$k <- c(rep(1,9),
-  c(rep(16,3), rep(12,3), rep(4,3)),
-  c(rep(256,3), rep(192,3), rep(64,3)),
-	c(rep(4096,3), rep(3072,3), rep(1024,3)))
-
-ra1a$AIC <- 2*ra1a$k+ra1a$log
-
-ra1c <- merge(ra1a, rates1, by="Category2")
-ra1c$BIC <- ra1c$k*log(ra1c$num1)+ra1c$log
-
-ra1b <- gather(ra1c, stat, L, c(log, AIC, BIC))
-levels(ra1b$model) <- c("1", "3", "5", "7")
-
-levels(ra1b$stat) <- c("-2ln(L)", "AIC", "BIC")
-names(ra1b) <- c("Category", "Motif_Length", "k", "COUNT",
-  "num1", "rel_prop", "Stat", "L")
-
-# Plot AIC and -2log(L) for each category
-cat("Plotting likelihood curves...\n")
-ggplot(ra1b, aes(x=Motif_Length, y=L, group=Stat, colour=Stat))+
-  scale_colour_brewer(palette="Set1")+
-  geom_point()+
-  geom_line()+
-  facet_wrap(~Category, scales="free")+
-  theme_bw()+
-  xlab("Motif Length")+
-  theme(axis.title.y=element_blank(),
-    legend.title=element_blank())
-
-ggsave("/net/bipolar/jedidiah/mutation/images/compare_AIC.png")
 
 # Identify motifs whose components have most similar relative rates
 cat("Checking for homogeneity of similar motifs...\n")
@@ -127,6 +70,9 @@ for(i in unique(rates5$Category2)){
   results <- rbind(results, tmpresults)
 }
 
+##############################################################################
+# Run likelihood analysis on full data
+##############################################################################
 # ra1a %>% filter(model=="L5")
 logit_curves<-0
 if(logit_curves){
@@ -231,6 +177,7 @@ if(overall){
   cat("Adjusted R-squared of combined model (full): ", frsq, "\n")
   cat("AIC of combined model (full): ", faic, "\n")
 }
+
 ##############################################################################
 # Model each category independently
 ##############################################################################
@@ -331,9 +278,9 @@ for(i in 1:length(mut_cats)) {
     motif_form, motif2_form,
     marg_form)
   names(forms) <- c("gc", "features",
-    "full", "full_int",
-    "motifs", "motifs2",
-    "marginal")
+    "full", "full_gc_inter",
+    "motifs5", "motifs5_top7",
+    "marginal7")
 
   # Run models for each formula in list
   models <- runMod(forms, aggcatm)
@@ -371,24 +318,29 @@ for(i in 1:length(mut_cats)) {
   }
 
   # Append model predictions to full df
-	compare.all <- rbind(compare.all, rbind_all(moddat))
+	compare.all <- rbind(compare.all, bind_rows(moddat))
 }
 tottime <- (proc.time()-ptm)[3]
 cat("Done (", tottime, "s)\n")
 
-##############################################################################
-# Process resulting data from models
-##############################################################################
-# Update comparison data frame
-# compare.all$res <- factor(compare.all$res,
-#   levels(compare.all$res)[names(forms)])
-# compare.all$res <- factor(compare.all$res,
-# 	levels = c("GC", "features", "motifs_5bp", "motifs_5bp+features"))
+# Specify category as factor
 compare.all$Category2 <- factor(compare.all$Category2)
 # levels(compare.all$Category2) <- c(
 	# "AT>CG", "AT>GC", "AT>TA",
 	# "(CpG)GC>AT", "(CpG)GC>CG", "(CpG)GC>TA",
 	# "GC>AT", "GC>CG", "GC>TA")
+
+overallcor<-compare.all %>%
+  group_by(res) %>%
+  summarise(cor=cor(exp,obs), corsq=cor^2)
+
+ggplot(compare.all, aes(x=obs, y=exp, group=res, colour=res))+
+  geom_point(alpha=0.3)+
+  scale_colour_brewer("Model",palette="Dark2")+
+  facet_wrap(~res, scales="free")+
+  theme_bw()
+ggsave("/net/bipolar/jedidiah/mutation/images/1mb_scatter.png")
+
 
 ##############################################################################
 # Plot barcharts comparing obs/exp correlation for different models
@@ -404,7 +356,7 @@ limits <- aes(ymax = mod.corr$cor + mod.corr$SE,
 	ymin=mod.corr$cor - mod.corr$SE)
 dodge <- position_dodge(width=0.9)
 
-ggplot(m2, aes(x=Category2, y=cor, fill=res))+
+ggplot(mod.corr, aes(x=Category2, y=cor, fill=res))+
 	geom_bar(stat="identity", position=dodge)+
   scale_colour_brewer("Predictor",palette="Dark2")+
   scale_fill_brewer("Predictor", palette="Dark2")+
@@ -422,95 +374,62 @@ ggplot(m2, aes(x=Category2, y=cor, fill=res))+
 modelbar <- paste0(parentdir, "/images/gw_5bp_vs_mod_3.png")
 ggsave(modelbar, width=7, height=7)
 
-ggplot(compare.aic, aes(x=model, y=AIC))+
-  # geom_bar(stat="identity", position="dodge")+
-  geom_point()+
-  facet_wrap(~Category2, scales="free")+
-  theme_bw()
-
-aicbar <- paste0(parentdir, "/images/gw_aic.png")
-ggsave(aicbar, width=7, height=7)
+# Get AIC for each model/category
+compare.aic <- compare.aic %>% spread(Category2, AIC)
 
 ##############################################################################
-# Plot barcharts comparing 10-fold cross validation MSPE
+# Plot per-chromosome variation
 ##############################################################################
-# compare.err$res <- factor(compare.err$res,
-# 	levels = c("GC", "features", "motifs", "motifs+features"))
-#
-# ggplot(compare.err, aes(x=Category2, y=mspe, fill=res))+
-# 	geom_bar(stat="identity", position=dodge)+
-#   scale_colour_brewer("Predictor",palette="Dark2")+
-#   scale_fill_brewer("Predictor", palette="Dark2")+
-# 	# scale_colour_manual("Predictor", values=myPaletteCat(8)[5:8])+
-# 	# scale_fill_manual("Predictor", values=myPaletteCat(8)[5:8])+
-# 	facet_wrap(~Category2, scales="free")+
-# 	ylab("MSPE")+
-# 	theme_bw()+
-# 	theme(legend.title = element_text(size=18),
-# 		legend.text = element_text(size=16),
-# 		axis.title.y = element_text(size=20),
-# 		axis.title.x = element_blank(),
-# 	  axis.text.y = element_text(size=16),
-# 	  axis.text.x = element_blank(),
-# 	  axis.ticks.x = element_blank())
-#
-# mspebar <- paste0(parentdir, "/images/compare_mspe.png")
-# ggsave(mspebar, width=12, height=12)
-
-
 cat("Plotting per-chromosome variation...\n")
 require(ggbio)
 data(hg19IdeogramCyto, package = "biovizBase")
+ic2<-as.data.frame(hg19IdeogramCyto)
+
+# Read in chromosome lengths for specifying plot range
+chrlen<-read.table("/net/bipolar/jedidiah/mutation/reference_data/hg19.genome", header=T, stringsAsFactors=F)
 
 for(i in 1:22){
-  dat<-compare.all %>%
-    filter(CHR==i, res=="full")
-
-  d2<-dat %>%
-    filter(obs>50) %>%
-    group_by(Category2, BIN) %>%
-    summarise(ratio=exp/obs)
-
+  # Specify chromosome
   chrname<-paste0("chr",i)
-  p <- plotIdeogram(hg19IdeogramCyto,
-    chrname, xlabel=TRUE, alpha=0,
-    zoom.region=c(min(d2$BIN2),max(d2$BIN2)))
 
-  fixed(p)<-FALSE
+  #Subset and update data
+  d2<-compare.all %>%
+    filter(CHR==i, res=="full") %>%
+    mutate(ratio=exp/obs)
+  d2$BIN<-d2$BIN*1000000
 
-  p2<-ggplot(d2[d2$ratio<2,],
-      aes(x=BIN, y=ratio, colour=Category2, group=Category2))+
-    geom_point(alpha=0.6)+
-    geom_smooth(span=0.2, se=FALSE)+
+  # Get chromosome band
+  ic2chr<-ic2[ic2$seqnames==chrname,]
+  ic2chr$mean<-(ic2chr$start+ic2chr$end)/2
+
+  # Plot scatterplot & loess curve, with banding overlay
+  p2<-ggplot()+
+    geom_rect(data=ic2chr,
+      aes(xmin=start, xmax=end,
+        # ymin=min(d2$ratio)-0.3, ymax=min(d2$ratio)-0.1, fill=gieStain),
+        ymin=0.9, ymax=1.1, fill=gieStain),
+      alpha=0.6)+
+    scale_fill_manual(values=getOption("biovizBase")$cytobandColor)+
+    geom_point(data=d2[d2$ratio<2,],
+        aes(x=BIN, y=ratio, colour=Category2, group=Category2), alpha=0.3)+
+    geom_smooth(data=d2[d2$ratio<2,],
+        aes(x=BIN, y=ratio, colour=Category2, group=Category2), span=0.2, se=FALSE)+
     scale_colour_manual("Category", values=myPaletteCat(9))+
+    scale_x_continuous(limits=c(0,chrlen[chrlen$chrom==chrname,]$size))+
+    # scale_y_continuous(limits=c(0.25,2))+
     geom_hline(yintercept=1)+
     geom_hline(yintercept=0.9, linetype="dashed")+
     geom_hline(yintercept=1.1, linetype="dashed")+
+    geom_text(data=ic2chr,
+      aes(x=mean, y=min(d2$ratio)-0.3, label=name),
+      hjust=0, angle=90, size=2)+
     # facet_wrap(~Category2, scales="free", ncol=1)+
     ylab("Predicted:Observed Ratio")+
     xlab(NULL)+
-    theme_bw()
+    theme_bw()+
+    theme(legend.position="top")
 
-  labeled(p2)<-FALSE
-  labeled(p)<-FALSE
-  tracks(p2,p, heights=c(6,2))
-
+  p2
   ratiofile<-paste0("/net/bipolar/jedidiah/mutation/images/chr",i,"_ratio.png")
-  ggsave(ratiofile, width=12, height=6)
+  ggsave(ratiofile, width=10, height=5)
 }
-
-#dat$diff<-dat$obs-dat$exp
-# dat2<-gather(dat, key, value, c(exp, obs))
-# ggplot(dat2, aes(x=BIN, y=value, group=key, colour=key))+
-#   geom_point()+
-#   scale_colour_manual(values=c("#ffcb05", "#00274c"))+
-#   facet_wrap(~Category2, scales="free")+
-#   xlab("Window (1Mb)")+
-#   ylab("# Singletons")+
-#   theme_bw()+
-#   theme(axis.title.x=element_text(size=22),
-#     axis.title.y=element_text(size=22),
-#     # legend.position="none",
-#     strip.text.x=element_text(size=20)
-#   )
-# ggsave("/net/bipolar/jedidiah/mutation/images/chr2.png")

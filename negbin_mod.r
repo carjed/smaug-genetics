@@ -356,20 +356,26 @@ limits <- aes(ymax = mod.corr$cor + mod.corr$SE,
 	ymin=mod.corr$cor - mod.corr$SE)
 dodge <- position_dodge(width=0.9)
 
-ggplot(mod.corr, aes(x=Category2, y=cor, fill=res))+
-	geom_bar(stat="identity", position=dodge)+
+ggplot(mod.corr, aes(x=res, y=cor, colour=res))+
+	# geom_bar(stat="identity", position=dodge)+
+  geom_point(position=dodge)+
   scale_colour_brewer("Predictor",palette="Dark2")+
   scale_fill_brewer("Predictor", palette="Dark2")+
 	xlab("Category")+
 	ylab("Correlation with observed count")+
-	# geom_errorbar(limits, position=dodge, width=0.25)+
+	geom_errorbar(limits, position=dodge, width=0.25)+
+  facet_wrap(~Category2)+
 	theme_bw()+
 	theme(legend.title = element_text(size=18),
 		legend.text = element_text(size=16),
-		axis.title.x = element_text(size=20),
+    legend.position="bottom",
+		# axis.title.x = element_text(size=20),
+    axis.title.x = element_blank(),
 		axis.title.y = element_text(size=20),
 		axis.text.y = element_text(size=16),
-		axis.text.x = element_text(size=16, angle = 45,  vjust=1, hjust=1.01))
+    axis.ticks.x = element_blank(),
+    axis.text.x = element_blank())
+		# axis.text.x = element_text(size=16, angle = 45,  vjust=1, hjust=1.01))
 
 modelbar <- paste0(parentdir, "/images/gw_5bp_vs_mod_3.png")
 ggsave(modelbar, width=7, height=7)
@@ -388,6 +394,7 @@ ic2<-as.data.frame(hg19IdeogramCyto)
 # Read in chromosome lengths for specifying plot range
 chrlen<-read.table("/net/bipolar/jedidiah/mutation/reference_data/hg19.genome", header=T, stringsAsFactors=F)
 
+plotlist<-list()
 for(i in 1:22){
   # Specify chromosome
   chrname<-paste0("chr",i)
@@ -395,41 +402,68 @@ for(i in 1:22){
   #Subset and update data
   d2<-compare.all %>%
     filter(CHR==i, res=="full") %>%
-    mutate(ratio=exp/obs)
+    mutate(ratio=exp/obs, diff=exp-obs) %>%
+    filter(abs(diff)<1200)
   d2$BIN<-d2$BIN*1000000
 
   # Get chromosome band
   ic2chr<-ic2[ic2$seqnames==chrname,]
   ic2chr$mean<-(ic2chr$start+ic2chr$end)/2
+  oetest<-t.test(d2$exp, d2$obs, conf.level=0.99)
+  testmin<-oetest$conf.int[[1]]
+  testmax<-oetest$conf.int[[2]]
+  ic2a<-ic2chr %>%
+    group_by(seqnames) %>%
+    summarise(min=min(start), max=max(end))
 
   # Plot scatterplot & loess curve, with banding overlay
   p2<-ggplot()+
     geom_rect(data=ic2chr,
       aes(xmin=start, xmax=end,
         # ymin=min(d2$ratio)-0.3, ymax=min(d2$ratio)-0.1, fill=gieStain),
-        ymin=0.9, ymax=1.1, fill=gieStain),
+        ymin=testmin, ymax=testmax, fill=gieStain),
       alpha=0.6)+
+    geom_rect(data=ic2a,
+      aes(xmin=min, xmax=max,
+        ymin=testmin, ymax=testmax),
+      colour="black", alpha=0)+
     scale_fill_manual(values=getOption("biovizBase")$cytobandColor)+
     geom_point(data=d2[d2$ratio<2,],
-        aes(x=BIN, y=ratio, colour=Category2, group=Category2), alpha=0.3)+
+        aes(x=BIN, y=diff, colour=Category2, group=Category2), alpha=0.3)+
     geom_smooth(data=d2[d2$ratio<2,],
-        aes(x=BIN, y=ratio, colour=Category2, group=Category2), span=0.2, se=FALSE)+
+        aes(x=BIN, y=diff, colour=Category2, group=Category2), span=0.2, se=FALSE)+
     scale_colour_manual("Category", values=myPaletteCat(9))+
     scale_x_continuous(limits=c(0,chrlen[chrlen$chrom==chrname,]$size))+
     # scale_y_continuous(limits=c(0.25,2))+
-    geom_hline(yintercept=1)+
-    geom_hline(yintercept=0.9, linetype="dashed")+
-    geom_hline(yintercept=1.1, linetype="dashed")+
-    geom_text(data=ic2chr,
-      aes(x=mean, y=min(d2$ratio)-0.3, label=name),
-      hjust=0, angle=90, size=2)+
+    # geom_hline(yintercept=0)+
+    # geom_hline(yintercept=testmin, linetype="dashed")+
+    # geom_hline(yintercept=testmax, linetype="dashed")+
+    # geom_text(data=ic2chr,
+    #   aes(x=mean, y=min(d2$ratio)-0.3, label=name),
+    #   hjust=0, angle=90, size=3)+
     # facet_wrap(~Category2, scales="free", ncol=1)+
-    ylab("Predicted:Observed Ratio")+
+    ylab("Predicted-Observed")+
     xlab(NULL)+
     theme_bw()+
-    theme(legend.position="top")
-
+    theme(legend.justification = c(0, 1),
+      legend.position = c(0, 1),
+      legend.title=element_blank(),
+      legend.text=element_text(size=5),
+      axis.text.x=element_blank(),
+      axis.ticks.x=element_blank())+
+    guides(fill=FALSE, colour = guide_legend(nrow = 3))
+  plotlist[[i]]<-p2
   p2
   ratiofile<-paste0("/net/bipolar/jedidiah/mutation/images/chr",i,"_ratio.png")
   ggsave(ratiofile, width=10, height=5)
 }
+
+pdf("/net/bipolar/jedidiah/mutation/images/allchr.pdf", onefile=T,
+  width=8, height=88, paper="letter")
+multiplot(plotlist=plotlist[1:4], cols=1)
+multiplot(plotlist=plotlist[5:8], cols=1)
+multiplot(plotlist=plotlist[9:12], cols=1)
+multiplot(plotlist=plotlist[13:16], cols=1)
+multiplot(plotlist=plotlist[17:20], cols=1)
+multiplot(plotlist=plotlist[21:22], cols=1)
+dev.off()

@@ -33,7 +33,7 @@ open my $data, '<', $f_data or die "can't open $f_data: $!";
 
 # initialize output
 open(OUT, '>', $outfile) or die "can't write to $outfile: $!\n";
-# 
+#
 # print "Hashing 1Mb bins...\n";
 # my %hash=();
 # while (<$coefs>){
@@ -61,10 +61,11 @@ while (<$data>){
 	if($BIN==$PREVBIN){
 		$SUM+=$MU;
 	} else {
-		print OUT "$chr\t$BIN\t$SUM\n";
+		print OUT "$chr\t$PREVBIN\t$SUM\n";
 		$SUM=0;
+		$PREVBIN = $BIN;
 	}
 
-	my $PREVBIN = $BIN;
+
 
 }

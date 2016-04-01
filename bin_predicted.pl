@@ -1,8 +1,7 @@
 #!/usr/local/bin/perl
 
 ##############################################################################
-# Script reads full data file and matrix of model coefficients for given
-# mutation category and outputs per-site predicted mutation rates
+# Script sums predicted rates over fixed-width windows
 ##############################################################################
 
 use strict;
@@ -48,14 +47,14 @@ open(OUT, '>', $outfile) or die "can't write to $outfile: $!\n";
 # <$data> for (1 .. 976_000_000);
 my $firstLine = <$data>;
 my @linearr=split(/\t/, $firstLine);
-my $PREVBIN = $linearr[1];
+my $PREVBIN = ceil($linearr[1]/10);
 my $SUM=0;
 seek $data, 0, 0;
 while (<$data>){
 	chomp;
 	my @line=split(/\t/, $_);
 	my $POS=$line[0];
-	my $BIN=$line[1];
+	my $BIN=ceil($line[1]/10);
 	my $MU=$line[2];
 
 	if($BIN==$PREVBIN){

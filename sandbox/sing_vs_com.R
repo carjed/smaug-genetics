@@ -187,17 +187,20 @@ names(dat)<-c("x", "y", "Category", "val")
 # my_grob = grobTree(textGrob("This text stays in place!", x=0.1,  y=0.95, hjust=0,
   # gp=gpar(col="blue", fontsize=12, fontface="italic")))
 
-ggplot()+
-	geom_point(data=fullcount, aes(x=sing_count, y=spec_count, colour=Category, group=Category, size=prop_GC.y), alpha=0.4)+
+ggplot(data=fullcount,
+		aes(x=sing_count, y=spec_count, colour=Category, group=Category))+
+	geom_point(alpha=0.4)+
+	geom_smooth(method=lm, se=FALSE, colour="black")+
 	scale_colour_manual(values=rbg)+
 	xlab("Singletons")+
 	ylab("Common Variants (MAC>10)")+
 	# xlab("Group 1 Relative Rate")+
 	# ylab("Group 2 Relative Rate")+
 	theme_bw()+
-	geom_text(data=dat, aes(x=-Inf,y=Inf, label=val, hjust=0, vjust=1))+
+	theme(legend.position="none")+
+	geom_text(data=dat, aes(x=-Inf, y=Inf, label=val, hjust=0, vjust=1), colour="black")+
 	facet_wrap(~Category, scales="free")
-ggsave("/net/bipolar/jedidiah/mutation/images/sing_com_corr.png", width=12.4, height=8.4)
+ggsave("/net/bipolar/jedidiah/mutation/images/sing_com_corr.png", width=6.2, height=4.2)
 
 ggplot()+
 	geom_point(data=fullcount[fullcount$Category=="AT_GC",], aes(x=sing_count, y=spec_count, colour=prop_GC.y, size=5), alpha=0.6)+
@@ -209,5 +212,3 @@ ggplot()+
 	theme_bw()+
 	geom_text(data=dat, aes(x=-Inf,y=Inf, label=val, hjust=0, vjust=1))+
 ggsave("/net/bipolar/jedidiah/mutation/images/sing_com_corr_bgc.png", width=12.4, height=8.4)
-
-

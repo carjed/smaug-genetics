@@ -125,7 +125,7 @@ MANDATORY: specify output vcf
 
 =head1 DESCRIPTION
 
-B<ref5.pl> annotates summary files and counts motifs in genome over fixed-width windows
+B<ma_parse.pl> annotates summary files and counts motifs in genome over fixed-width windows
 
 =head1 AUTHOR
 

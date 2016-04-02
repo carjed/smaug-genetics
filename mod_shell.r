@@ -31,7 +31,7 @@ source("get_functions.R")
 args <- getArgs(
 	defaults=list(adj=2,
 		binw=1000000,
-		summfile=paste0(parentdir, "/output/5bp_1000k/full_j.summary"),
+		summfile=paste0(parentdir, "/output/5bp_1000k/full.summary"),
 		binfile=paste0(parentdir, "/output/5bp_1000k/full_bin.txt"),
 		# summfile=paste0(parentdir, "/output/7bp_1000k/chrX.expanded.summary"),
 		# binfile=paste0(parentdir, "/output/7bp_1000k/chrX.bin_out.txt"),

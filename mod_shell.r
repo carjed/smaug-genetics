@@ -29,7 +29,7 @@ source("get_functions.R")
 
 # Get args from command line; defaults defined below
 args <- getArgs(
-	defaults=list(adj=3,
+	defaults=list(adj=2,
 		binw=1000000,
 		summfile=paste0(parentdir, "/output/7bp_1000k/full_j.summary"),
 		binfile=paste0(parentdir, "/output/7bp_1000k/full_bin.txt"),
@@ -38,7 +38,7 @@ args <- getArgs(
 		run_agg=TRUE,
 		pcs=FALSE,
 		categ="GC_CG",
-		negbin_model=TRUE,
+		negbin_model=FALSE,
 		log_model=FALSE,
 		run_predict=FALSE))
 

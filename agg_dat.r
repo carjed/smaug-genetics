@@ -106,15 +106,20 @@ aggData <- function(datfile, adj){
 		ylo <- yhi-nint
 		f <- data.frame(xlo,xhi,ylo,yhi)
 
-		# Plot relative rate heatmaps
-		cat("Plotting heatmaps...\n")
-		at_heat <- rrheat(map_a1, f, levs_a, "v5", nbp)
-		gc_heat <- rrheat(map_g1, f, levs_g, "v5", nbp)
+		map_t<-rbind(map_a1, map_g1)
 
-		gwmapfile<-paste0(parentdir, "/images/gw_map_", nbp, ".png")
-		png(gwmapfile, width=24, height=4, units="in", res=300)
-		multiplot(at_heat, gc_heat, cols=2)
-		dev.off()
+		rrheat(map_t, f, levs_a, "v5", nbp)
+		ggsave("/net/bipolar/jedidiah/mutation/images/test_map.png", height=4, width=24)
+
+		# Plot relative rate heatmaps
+		# cat("Plotting heatmaps...\n")
+		# at_heat <- rrheat(map_a1, f, levs_a, "v5", nbp)
+		# gc_heat <- rrheat(map_g1, f, levs_g, "v5", nbp)
+		#
+		# gwmapfile<-paste0(parentdir, "/images/gw_map_", nbp, ".png")
+		# png(gwmapfile, width=24, height=4, units="in", res=300)
+		# multiplot(at_heat, gc_heat, cols=2)
+		# dev.off()
 
 		# Plot relative rate heatmaps for uncombined categories
 		# Redo data subsets for 12 individual mutations

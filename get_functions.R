@@ -86,7 +86,7 @@ rrheat <- function(dat, f, levels, facetvar, nbp){
 	# limits=c(min(dat$v4), max(dat$v4))
 	geom_tile(data=dat, aes(x=v2a, y=v3, fill=v4))+
 	# geom_text(data=dat, aes(x=v2a, y=v3, label=v4a, family="Courier", size=0.1))+
-	geom_rect(data=f, size=1.4, colour="grey30",
+	geom_rect(data=f, size=0.8, colour="grey30",
 		aes(xmin=xlo, xmax=xhi, ymin=ylo, ymax=yhi), fill=NA)+
 	scale_fill_gradientn("Relative Rate\n",
 		colours=myPalette((nbp-1)^4),
@@ -99,16 +99,18 @@ rrheat <- function(dat, f, levels, facetvar, nbp){
 	xlab("5' flank")+
 	ylab("3' flank")+
 	theme(
-		legend.position="none",
+		# legend.position="none",
 		legend.title = element_text(size=18),
 	  legend.text = element_text(size=16),
-	  strip.text.x = element_text(size=40),
+	  strip.text.x = element_text(size=20),
 	  axis.title.x = element_text(size=20),
 	  axis.title.y = element_text(size=20),
-    axis.text.y = element_text(size=16, colour="black"),
-	  axis.text.x = element_text(size=16, colour="black"))+
+    axis.text.y = element_text(size=6, colour="black"),
+	  axis.text.x = element_text(size=6, colour="black", angle=90, hjust=1))+
+		# axis.text.y = element_blank(),
+		# axis.text.x = element_blank())+
 	scale_x_discrete(labels=levels)+
-	facet_wrap(as.formula(paste("~", facetvar)), ncol=3, scales="free_x")
+	facet_wrap(as.formula(paste("~", facetvar)), ncol=6, scales="free_x")
 
 	return(p)
 }

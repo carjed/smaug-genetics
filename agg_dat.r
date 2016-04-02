@@ -111,8 +111,8 @@ aggData <- function(datfile, adj){
 		at_heat <- rrheat(map_a1, f, levs_a, "v5", nbp)
 		gc_heat <- rrheat(map_g1, f, levs_g, "v5", nbp)
 
-		gwmapfile<-paste0(parentdir, "/images/gw_map.png")
-		png(gwmapfile, width=18, height=24, units="in", res=300)
+		gwmapfile<-paste0(parentdir, "/images/gw_map_", nbp, ".png")
+		png(gwmapfile, width=24, height=4, units="in", res=300)
 		multiplot(at_heat, gc_heat, cols=2)
 		dev.off()
 

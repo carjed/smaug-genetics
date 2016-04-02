@@ -108,7 +108,7 @@ rrheat <- function(dat, f, levels, facetvar, nbp){
     axis.text.y = element_text(size=16, colour="black"),
 	  axis.text.x = element_text(size=16, colour="black"))+
 	scale_x_discrete(labels=levels)+
-	facet_wrap(as.formula(paste("~", facetvar)), ncol=1, scales="free_x")
+	facet_wrap(as.formula(paste("~", facetvar)), ncol=3, scales="free_x")
 
 	return(p)
 }

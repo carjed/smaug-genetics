@@ -143,16 +143,16 @@ chrp3m <- rbind(chrp3m, chrpm2)
 auc <- chrp3m %>% group_by(group) %>% summarise(AUC=1-sum(val)/1000)
 
 ggplot()+
-  geom_line(data=chrp3m, aes(x=ntile, y=val, group=group, colour=group))+
-  geom_abline(intercept=0, slope=1/1000)+
-  geom_ribbon(data=chrp3m[1:1000,], aes(x=ntile, y=val, ymin=lb, ymax=ub), alpha=0.2)+
+  geom_line(data=chrp3m, aes(x=(1000-ntile)/1000, y=1-val, group=group, colour=group))+
+  geom_abline(intercept=0, slope=1)+
+  geom_ribbon(data=chrp3m[1:1000,], aes(x=(1000-ntile)/1000, y=1-val, ymin=lb, ymax=ub), alpha=0.2)+
   coord_cartesian(xlim=c(0,1000))+
-	xlab("Rank")+
-	ylab("Proportion of DNMs explained")+
+	xlab("False Positive Rate")+
+	ylab("True Positive Rate")+
   theme_bw()
   # scale_y_continuous(limits=c(0,1))+
-  # scale_x_continuous(limits=c(0,1000))
-ggsave("/net/bipolar/jedidiah/mutation/images/psuedo_roc_chr4b.png")
+  # scale_x_continuous(limits=c(0,1000), labels=c())
+ggsave("/net/bipolar/jedidiah/mutation/images/psuedo_roc_chr4b.png", height=4, width=7.25)
 
 # OLD VERSION--early attempt at pseudo-ROC curves
 # ggplot(chrp3, aes(x=1000-ntile, y=1-val, group=group, colour=group))+

@@ -81,7 +81,7 @@ while (<$data>){
 	my $localseq = substr($seq, $POS-$adj-1, 2);
 	my $altlocalseq = reverse substr($altseq, $POS-$adj-1, 2);
 
-	if(($localseq eq "CG" | ($altlocalseq eq "CG")){
+	if(($localseq eq "CG") | ($altlocalseq eq "CG")){
 		if($BIN==$PREVBIN){
 			$CPGSUM+=$MU;
 		} else {

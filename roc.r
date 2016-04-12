@@ -114,45 +114,75 @@ chrp3ub<-chrp3a %>%
 ##############################################################################
 # Add bounds to data frame
 ##############################################################################
-chrp3m <- cbind(chrp3m, chrp3lb$lb)
-chrp3m <- cbind(chrp3m, chrp3ub$ub)
-names(chrp3m)[4:5]<-c("lb", "ub")
+chrp3m$lb <- chrp3lb$lb
+chrp3m$ub <- chrp3ub$ub
+# names(chrp3m)[4:5]<-c("lb", "ub")
 
 
 ##############################################################################
 # Repeat with 3bp marginal rates
 ##############################################################################
-chrpm <- read.table("/net/bipolar/jedidiah/mutation/smaug-genetics/chr4.rates.txt")
-names(chrpm) <- c("POS", "MU")
+tris<-0
+if(tris){
+	chrpm <- read.table("/net/bipolar/jedidiah/mutation/chr4.rates.txt")
+	names(chrpm) <- c("POS", "MU")
 
-chrpm$OBS <- toBin(chrdnms$POS, chrpm$POS)
-chrpm <- chrpm %>% arrange(MU)
-chrpm$prop <- cumsum(chrpm$OBS)/sum(chrpm$OBS)
+	chrpm$OBS <- toBin(chrdnms$POS, chrpm$POS)
+	chrpm <- chrpm %>% arrange(MU)
+	chrpm$prop <- cumsum(chrpm$OBS)/sum(chrpm$OBS)
 
-chrpm2<-chrpm[sample(nrow(chrpm), 1000000),] %>%
-  arrange(MU) %>%
-  mutate(ntile=ntile(MU, 1000), group="marginal") %>%
-  group_by(group, ntile) %>%
-  summarise(val=mean(prop))
+	chrpm2<-chrpm[sample(nrow(chrpm), 1000000),] %>%
+	  arrange(MU) %>%
+	  mutate(ntile=ntile(MU, 1000), group="marginal") %>%
+	  group_by(group, ntile) %>%
+	  summarise(val=mean(prop))
 
-chrpm2$lb <- chrp3m$lb
-chrpm2$ub <- chrp3m$ub
+	chrpm2$lb <- chrp3m$lb
+	chrpm2$ub <- chrp3m$ub
 
-chrp3m <- rbind(chrp3m, chrpm2)
+	chrp3m <- rbind(chrp3m, chrpm2)
+}
 
 auc <- chrp3m %>% group_by(group) %>% summarise(AUC=1-sum(val)/1000)
 
 ggplot()+
-  geom_line(data=chrp3m, aes(x=(1000-ntile)/1000, y=1-val, group=group, colour=group))+
+  geom_line(data=chrp3m[1:1000,],
+		aes(x=(1000-ntile)/1000, y=1-val, group=group, colour=group), size=1.2)+
   geom_abline(intercept=0, slope=1)+
-  geom_ribbon(data=chrp3m[1:1000,], aes(x=(1000-ntile)/1000, y=1-val, ymin=lb, ymax=ub), alpha=0.2)+
-  coord_cartesian(xlim=c(0,1000))+
+  geom_ribbon(data=chrp3m[1:1000,],
+		aes(x=(1000-ntile)/1000, y=1-val, ymin=1-ub, ymax=1-lb), alpha=0.2)+
+  coord_cartesian(xlim=c(0,1))+
 	xlab("False Positive Rate")+
 	ylab("True Positive Rate")+
-  theme_bw()
+  theme_bw()+
+	theme(legend.position="none",
+		axis.title.x=element_text(size=20),
+		axis.title.y=element_text(size=20))
   # scale_y_continuous(limits=c(0,1))+
   # scale_x_continuous(limits=c(0,1000), labels=c())
 ggsave("/net/bipolar/jedidiah/mutation/images/psuedo_roc_chr4b.png", height=4, width=7.25)
+
+
+
+ggplot(chrp2[chrp2$MU>0,], aes(x=log(MU)))+
+	geom_histogram(bins=100)+
+	xlab("log(relative rate)")+
+	ylab("Frequency")+
+	theme_bw()+
+	theme(axis.text.y=element_blank(),
+		axis.title.x=element_text(size=20),
+		axis.title.y=element_text(size=20))
+ggsave("/net/bipolar/jedidiah/mutation/images/chr4_hist.png", width=10, height=3)
+
+ggplot(chrpm, aes(x=log(MU)))+
+	geom_histogram(bins=32)+
+	xlab("log(relative rate)")+
+	ylab("Frequency")+
+	theme_bw()+
+	theme(axis.text.y=element_blank(),
+		axis.title.x=element_text(size=20),
+		axis.title.y=element_text(size=20))
+ggsave("/net/bipolar/jedidiah/mutation/images/chr4_hista.png")
 
 # OLD VERSION--early attempt at pseudo-ROC curves
 # ggplot(chrp3, aes(x=1000-ntile, y=1-val, group=group, colour=group))+

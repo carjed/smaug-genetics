@@ -356,29 +356,33 @@ limits <- aes(ymax = mod.corr$cor + mod.corr$SE,
 	ymin=mod.corr$cor - mod.corr$SE)
 dodge <- position_dodge(width=0.9)
 
-ggplot(mod.corr, aes(x=res, y=cor, colour=res))+
-	# geom_bar(stat="identity", position=dodge)+
-  geom_point(position=dodge)+
+mc2<-mod.corr %>% filter(res %in% c("features", "full", "marginal7", "motifs5"))
+mc2$res<-as.factor(mc2$res)
+levels(mc2$res)<-c("Features only", "Features+K-mers", "Marginal", "K-mers")
+mc2$res<-factor(mc2$res,levels(mc2$res)[c(1,3,4,2)])
+ggplot(mc2, aes(x=res, y=cor, colour=res, fill=res))+
+	geom_bar(stat="identity", position=dodge)+
+  # geom_point(position=dodge)+
   scale_colour_brewer("Predictor",palette="Dark2")+
   scale_fill_brewer("Predictor", palette="Dark2")+
 	xlab("Category")+
-	ylab("Correlation with observed count")+
-	geom_errorbar(limits, position=dodge, width=0.25)+
-  facet_wrap(~Category2)+
+	ylab("Correlation")+
+	# geom_errorbar(limits, position=dodge, width=0.25)+
+  facet_wrap(~Category2, nrow=1)+
 	theme_bw()+
 	theme(legend.title = element_text(size=18),
-		legend.text = element_text(size=16),
+		legend.text = element_text(size=14),
     legend.position="bottom",
 		# axis.title.x = element_text(size=20),
     axis.title.x = element_blank(),
 		axis.title.y = element_text(size=20),
-		axis.text.y = element_text(size=16),
+		axis.text.y = element_text(size=16, angle=90, hjust=0.5),
     axis.ticks.x = element_blank(),
     axis.text.x = element_blank())
 		# axis.text.x = element_text(size=16, angle = 45,  vjust=1, hjust=1.01))
 
 modelbar <- paste0(parentdir, "/images/gw_5bp_vs_mod_3.png")
-ggsave(modelbar, width=7, height=7)
+ggsave(modelbar, width=9, height=4)
 
 # Get AIC for each model/category
 compare.aic <- compare.aic %>% spread(Category2, AIC)
@@ -448,7 +452,8 @@ for(i in 1:22){
     theme(legend.justification = c(0, 1),
       legend.position = c(0, 1),
       legend.title=element_blank(),
-      legend.text=element_text(size=5),
+      legend.text=element_text(size=14),
+      axis.title.y=element_text(size=16),
       axis.text.x=element_blank(),
       axis.ticks.x=element_blank())+
     guides(fill=FALSE, colour = guide_legend(nrow = 3))

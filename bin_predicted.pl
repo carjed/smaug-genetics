@@ -102,7 +102,7 @@ while (<$data>){
 
 sub getRef{
 	my $f_fasta="$parentdir/reference_data/human_g1k_v37.fasta";
-
+	my $mask_flag=0;
 	if (-e $f_fasta) {
 		print "Using reference genome: $f_fasta\n";
 	} else {

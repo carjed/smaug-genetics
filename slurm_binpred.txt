@@ -5,9 +5,9 @@
 #SBATCH --ntasks=1
 #SBATCH --mem=30000
 #SBATCH --time 25:00:00
-#SBATCH --job-name=binpred_atta
+#SBATCH --job-name=binpred_atgc
 #SBATCH --partition=nomosix
 #SBATCH --array=1-22
 #SBATCH --output="/net/bipolar/jedidiah/mutation/output/slurm/slurmJob-%J.out" --error="/net/bipolar/jedidiah/mutation/output/slurm/slurmJob-%J.err"
 
-srun perl /net/bipolar/jedidiah/mutation/smaug-genetics/bin_predicted.pl --chr $SLURM_ARRAY_TASK_ID --cat AT_TA --bink 1000000
+srun perl /net/bipolar/jedidiah/mutation/smaug-genetics/bin_predicted.pl --chr $SLURM_ARRAY_TASK_ID --cat AT_GC --bink 1000000

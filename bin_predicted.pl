@@ -35,14 +35,14 @@ if ($chr lt '22') {
 
 my $f_data = "$parentdir/output/predicted/chr${chr}_${cat}_predicted.txt";
 my $outfile = "$parentdir/output/predicted/chr${chr}_${cat}_binned.txt";
-my $cpgoutfile = "$parentdir/output/predicted/chr${chr}_${cat}_binned_cpg.txt";
+# my $cpgoutfile = "$parentdir/output/predicted/chr${chr}_${cat}_binned_cpg.txt";
 
 # initialize input file
 open my $data, '<', $f_data or die "can't open $f_data: $!";
 
 # initialize output
 open(OUT, '>', $outfile) or die "can't write to $outfile: $!\n";
-open(OUTCPG, '>', $cpgoutfile) or die "can't write to $cpgoutfile: $!\n";
+# open(OUTCPG, '>', $cpgoutfile) or die "can't write to $cpgoutfile: $!\n";
 
 my $seq=&getRef();
 my $altseq=$seq;

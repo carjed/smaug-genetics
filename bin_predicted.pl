@@ -24,6 +24,15 @@ GetOptions('chr=s' => \$chr,
 			'cat=s' => \$cat,
 			'bink=s' => \$bink);
 
+my $nextchr='';
+if ($chr lt '22') {
+	$nextchr=$chr+1;
+} elsif ($chr eq '22') {
+	$nextchr="X";
+} else {
+	$nextchr="Y";
+}
+
 my $f_data = "$parentdir/output/predicted/chr${chr}_${cat}_predicted.txt";
 my $outfile = "$parentdir/output/predicted/chr${chr}_${cat}_binned.txt";
 my $cpgoutfile = "$parentdir/output/predicted/chr${chr}_${cat}_binned_cpg.txt";

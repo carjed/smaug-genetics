@@ -90,6 +90,7 @@ while (<$data>){
 		} else {
 			print OUT "$chr\t$PREVBIN\t$SUM\t$CPGSUM\n";
 			$SUM=0;
+			$CPGSUM=0;
 			$PREVBIN = $BIN;
 		}
 }

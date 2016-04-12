@@ -81,23 +81,17 @@ while (<$data>){
 	my $localseq = substr($seq, $POS-1, 2);
 	my $altlocalseq = reverse substr($altseq, $POS-1, 2);
 
-	if(($localseq eq "CG") | ($altlocalseq eq "CG")){
 		if($BIN==$PREVBIN){
-			$CPGSUM+=$MU;
+			if(($localseq eq "CG") | ($altlocalseq eq "CG")){
+				$CPGSUM+=$MU;
+			} else {
+				$SUM+=$MU;
+			}
 		} else {
-			print OUTCPG "$chr\t$PREVBIN\t$CPGSUM\n";
-			$CPGSUM=0;
-			$PREVBIN = $BIN;
-		}
-	} else {
-		if($BIN==$PREVBIN){
-			$SUM+=$MU;
-		} else {
-			print OUT "$chr\t$PREVBIN\t$SUM\n";
+			print OUT "$chr\t$PREVBIN\t$SUM\t$CPGSUM\n";
 			$SUM=0;
 			$PREVBIN = $BIN;
 		}
-	}
 }
 
 sub getRef{

@@ -31,14 +31,14 @@ source("get_functions.R")
 args <- getArgs(
 	defaults=list(adj=3,
 		binw=1000000,
-		summfile=paste0(parentdir, "/output/3bp_1000k/full.summary"),
-		binfile=paste0(parentdir, "/output/3bp_1000k/full_bin.txt"),
+		summfile=paste0(parentdir, "/output/7bp_1000k/full_j.summary"),
+		binfile=paste0(parentdir, "/output/7bp_1000k/full_bin.txt"),
 		# summfile=paste0(parentdir, "/output/7bp_1000k/chrX.expanded.summary"),
 		# binfile=paste0(parentdir, "/output/7bp_1000k/chrX.bin_out.txt"),
 		run_agg=TRUE,
 		pcs=FALSE,
 		categ="GC_CG",
-		negbin_model=FALSE,
+		negbin_model=TRUE,
 		log_model=FALSE,
 		run_predict=FALSE))
 

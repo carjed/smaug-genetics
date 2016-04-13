@@ -1,0 +1,13 @@
+#!/bin/sh
+
+#SBATCH --mail-type=ALL
+#SBATCH --mail-user=jedidiah@umich.edu
+#SBATCH --ntasks=1
+#SBATCH --mem=10000
+#SBATCH --time 02:00:00
+#SBATCH --job-name=extract_sing
+#SBATCH --partition=bipolar
+#SBATCH --array=1-22
+#SBATCH --output="/net/bipolar/jedidiah/mutation/output/slurm/slurmJob-%J.out" --error="/net/bipolar/jedidiah/mutation/output/slurm/slurmJob-%J.err"
+
+srun vcftools --gzvcf /net/bipolar/lockeae/final_freeze/snps/vcfs/chr${SLURM_ARRAY_TASK_ID}/chr${SLURM_ARRAY_TASK_ID}.filtered.modified.vcf.gz --singletons --chr ${SLURM_ARRAY_TASK_ID} --out /net/bipolar/jedidiah/chr${SLURM_ARRAY_TASK_ID}sing

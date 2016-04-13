@@ -123,6 +123,34 @@ binscpgGC <- dat_5bp_100k$bin %>%
 a3 <- merge(agg_cov, rates1[,c(1,2,4)], by="Category2")
 # a3$exp1 <- a3$nmotifs*a3$rel_prop1
 
+logit_gcta<-read.table("/net/bipolar/jedidiah/mutation/output/predicted/binned/GC_TA_binned.txt", header=F, stringsAsFactors=F)
+names(logit_gcta)<-c("CHR", "BIN", "GC_TA", "cpg_GC_TA")
+lgcta<-logit_gcta %>% gather(Category2, LSUM, GC_TA:cpg_GC_TA)
+
+logit_gccg<-read.table("/net/bipolar/jedidiah/mutation/output/predicted/binned/GC_CG_binned.txt", header=F, stringsAsFactors=F)
+names(logit_gccg)<-c("CHR", "BIN", "GC_CG", "cpg_GC_CG")
+lgccg<-logit_gccg %>% gather(Category2, LSUM, GC_CG:cpg_GC_CG)
+
+logit_gcat<-read.table("/net/bipolar/jedidiah/mutation/output/predicted/binned/GC_AT_binned.txt", header=F, stringsAsFactors=F)
+names(logit_gcat)<-c("CHR", "BIN", "GC_AT", "cpg_GC_AT")
+lgcat<-logit_gcat %>% gather(Category2, LSUM, GC_AT:cpg_GC_AT)
+
+logit_atcg<-read.table("/net/bipolar/jedidiah/mutation/output/predicted/binned/AT_CG_binned.txt", header=F, stringsAsFactors=F)
+names(logit_atcg)<-c("CHR", "BIN", "LSUM")
+latcg<-logit_atcg %>% mutate(Category2="AT_CG") %>% dplyr::select(CHR, BIN, Category2, LSUM)
+
+logit_atgc<-read.table("/net/bipolar/jedidiah/mutation/output/predicted/binned/AT_GC_binned.txt", header=F, stringsAsFactors=F)
+names(logit_atgc)<-c("CHR", "BIN", "LSUM")
+latgc<-logit_atgc %>% mutate(Category2="AT_GC") %>% dplyr::select(CHR, BIN, Category2, LSUM)
+
+logit_atta<-read.table("/net/bipolar/jedidiah/mutation/output/predicted/binned/AT_TA_binned.txt", header=F, stringsAsFactors=F)
+names(logit_atta)<-c("CHR", "BIN", "LSUM")
+latta<-logit_atta %>% mutate(Category2="AT_TA") %>% dplyr::select(CHR, BIN, Category2, LSUM)
+
+ldat<-rbind(latcg, latgc, latta, lgcat, lgccg, lgcta)
+
+a3<-merge(a3, ldat, by=c("Category2", "CHR", "BIN"))
+
 # Aggregate across categories for total #singletons per bin
 a3a <- a3 %>%
   # group_by_(.dots=lapply(names(a3)[c(2,3,5:17)], as.symbol)) %>%
@@ -271,16 +299,17 @@ for(i in 1:length(mut_cats)) {
 		paste(m5set, collapse="+"), ")+",
 		paste(covnames, collapse="+")))
   marg_form <- as.formula("obs~marg")
+  logit_form <- as.formula("obs~LSUM")
 
   # Add formulas to list
   forms <- c(gc_form, feat_form,
     full_form, full_form_int,
     motif_form, motif2_form,
-    marg_form)
+    marg_form, logit_form)
   names(forms) <- c("gc", "features",
     "full", "full_gc_inter",
     "motifs5", "motifs5_top7",
-    "marginal7")
+    "marginal7", "logit")
 
   # Run models for each formula in list
   models <- runMod(forms, aggcatm)
@@ -356,10 +385,11 @@ limits <- aes(ymax = mod.corr$cor + mod.corr$SE,
 	ymin=mod.corr$cor - mod.corr$SE)
 dodge <- position_dodge(width=0.9)
 
-mc2<-mod.corr %>% filter(res %in% c("features", "full", "marginal7", "motifs5"))
+mc2<-mod.corr %>%
+  filter(res %in% c("features", "full", "marginal7", "motifs5", "logit"))
 mc2$res<-as.factor(mc2$res)
-levels(mc2$res)<-c("Features only", "Features+K-mers", "Marginal", "K-mers")
-mc2$res<-factor(mc2$res,levels(mc2$res)[c(1,3,4,2)])
+levels(mc2$res)<-c("Features only", "Features+K-mers", "Marginal", "K-mers", "Logit")
+mc2$res<-factor(mc2$res,levels(mc2$res)[c(1,3,4,5,2)])
 ggplot(mc2, aes(x=res, y=cor, colour=res, fill=res))+
 	geom_bar(stat="identity", position=dodge)+
   # geom_point(position=dodge)+

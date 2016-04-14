@@ -363,14 +363,6 @@ overallcor<-compare.all %>%
   group_by(res) %>%
   summarise(cor=cor(exp,obs), corsq=cor^2)
 
-ggplot(compare.all, aes(x=obs, y=exp, group=res, colour=res))+
-  geom_point(alpha=0.3)+
-  scale_colour_brewer("Model",palette="Dark2")+
-  facet_wrap(~res, scales="free")+
-  theme_bw()
-ggsave("/net/bipolar/jedidiah/mutation/images/1mb_scatter.png")
-
-
 ##############################################################################
 # Plot barcharts comparing obs/exp correlation for different models
 ##############################################################################
@@ -386,19 +378,25 @@ limits <- aes(ymax = mod.corr$cor + mod.corr$SE,
 dodge <- position_dodge(width=0.9)
 
 mc2<-mod.corr %>%
-  filter(res %in% c("features", "full", "marginal7", "motifs5", "logit"))
+  filter(res %in% c("full", "logit", "marginal7", "motifs5")) %>%
+  mutate(gp=ifelse(res %in% c("full", "logit"), "Sequence+Features", "Sequence Only"))
 mc2$res<-as.factor(mc2$res)
-levels(mc2$res)<-c("Features only", "Features+K-mers", "Marginal", "K-mers", "Logit")
-mc2$res<-factor(mc2$res,levels(mc2$res)[c(1,3,4,5,2)])
-ggplot(mc2, aes(x=res, y=cor, colour=res, fill=res))+
+levels(mc2$res)<-c("K-mers+Features", "Marginal+Features", "Marginal", "K-mers")
+mc2$res<-factor(mc2$res,levels(mc2$res)[c(1,2,4,3)])
+
+customPalette <- brewer.pal(4, "RdBu")[c(1,2,4,3)]
+
+ggplot(mc2, aes(x=Category2, y=cor, colour=res, fill=res, group=res))+
 	geom_bar(stat="identity", position=dodge)+
   # geom_point(position=dodge)+
-  scale_colour_brewer("Predictor",palette="Dark2")+
-  scale_fill_brewer("Predictor", palette="Dark2")+
+  # scale_colour_brewer("Predictor",palette="RdBu")+
+  # scale_fill_brewer("Predictor", palette="RdBu")+
+  scale_colour_manual("Model", values=customPalette)+
+  scale_fill_manual("Model", values=customPalette)+
 	xlab("Category")+
 	ylab("Correlation")+
 	# geom_errorbar(limits, position=dodge, width=0.25)+
-  facet_wrap(~Category2, nrow=1)+
+  facet_wrap(~gp, nrow=1)+
 	theme_bw()+
 	theme(legend.title = element_text(size=18),
 		legend.text = element_text(size=14),
@@ -408,14 +406,42 @@ ggplot(mc2, aes(x=res, y=cor, colour=res, fill=res))+
 		axis.title.y = element_text(size=20),
 		axis.text.y = element_text(size=16, angle=90, hjust=0.5),
     axis.ticks.x = element_blank(),
-    axis.text.x = element_blank())
-		# axis.text.x = element_text(size=16, angle = 45,  vjust=1, hjust=1.01))
+    # axis.text.x = element_blank())
+		axis.text.x = element_text(size=16, angle = 45,  vjust=1, hjust=1.01))
 
 modelbar <- paste0(parentdir, "/images/gw_5bp_vs_mod_3.png")
-ggsave(modelbar, width=9, height=4)
+ggsave(modelbar, width=9, height=6)
 
 # Get AIC for each model/category
 compare.aic <- compare.aic %>% spread(Category2, AIC)
+
+mc2b<-mod.corr %>%
+  filter(res %in% c("full", "logit", "marginal7", "motifs5")) %>%
+  ungroup() %>%
+  dplyr::select(Category2, num, res, cor) %>%
+  spread(res, cor) %>%
+  mutate(corpf=r.test(num, full, logit)$p,
+    corps=r.test(num, marginal7, motifs5)$p)
+
+
+comp.mods<-compare.all %>%
+  filter(res %in% c("full", "logit", "marginal7", "motifs5")) %>%
+  mutate(gp=ifelse(res %in% c("full", "logit"), "Sequence+Features", "Sequence Only"))
+comp.mods$res<-as.factor(comp.mods$res)
+levels(comp.mods$res)<-c("K-mers+Features", "Marginal+Features", "Marginal", "K-mers")
+comp.mods$res<-factor(comp.mods$res,levels(comp.mods$res)[c(1,2,4,3)])
+
+ggplot(comp.mods, aes(x=obs, y=exp, group=res, colour=res))+
+  geom_point(alpha=0.3)+
+  scale_colour_manual("Model", values=customPalette)+
+  xlab("Observed Singletons")+
+  ylab("Predicted Singletons")+
+  geom_smooth(method=lm, se=F, colour="black")+
+  facet_wrap(~res, scales="free")+
+  theme_bw()+
+  theme(legend.position="none")
+ggsave("/net/bipolar/jedidiah/mutation/images/1mb_scatter.png")
+
 
 ##############################################################################
 # Plot per-chromosome variation

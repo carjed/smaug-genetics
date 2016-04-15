@@ -2,6 +2,7 @@
 
 ##############################################################################
 # Script sums predicted rates over fixed-width windows
+# NEED TO FIX: removed bin column on 4/15/16
 ##############################################################################
 
 use strict;

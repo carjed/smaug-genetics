@@ -80,43 +80,47 @@ if(!file.exists(testfile)){
 
 	foreach(chr=1:22) %dopar% {
 
-		posfile <- paste0(parentdir,
-				"/output/logmod_data/chr", chr, "_", categ,"_pos_examples.txt")
-		dat <- summfile1[summfile1$CHR==chr,]
-		dat <- dat[order(dat$POS),]
+		# Run with builddat option if *_m.txt.gz files do not already exist
+		builddat<-0
+		if(builddat){
+			posfile <- paste0(parentdir,
+					"/output/logmod_data/chr", chr, "_", categ,"_pos_examples.txt")
+			dat <- summfile1[summfile1$CHR==chr,]
+			dat <- dat[order(dat$POS),]
 
-		write.table(dat, posfile, col.names=F, row.names=F, quote=F, sep="\t")
+			write.table(dat, posfile, col.names=F, row.names=F, quote=F, sep="\t")
 
-		perlcmd <- paste0("perl ",
-			parentdir, "/smaug-genetics/getNonMut.pl --b ", catopt,
-			" --chr ", chr,
-			" --categ ", categ,
-			" --bw ", 100,
-			" --adj ", adj)
-		system(perlcmd)
+			perlcmd <- paste0("perl ",
+				parentdir, "/smaug-genetics/getNonMut.pl --b ", catopt,
+				" --chr ", chr,
+				" --categ ", categ,
+				" --bw ", 100,
+				" --adj ", adj)
+			system(perlcmd)
 
-		# Gets position list for exons in specified chr
-		chrcmd <- paste0("awk \'$1 == \"chr", chr, "\" { print }\' ",
-			parentdir, "/reference_data/GRCh37_RefSeq_chop.bed | sort -k3,3 | cut -f 3,4 > ",
-			parentdir, "/reference_data/chr", chr, "_RefSeq.bed")
+			# Gets position list for exons in specified chr
+			chrcmd <- paste0("awk \'$1 == \"chr", chr, "\" { print }\' ",
+				parentdir, "/reference_data/GRCh37_RefSeq_chop.bed | sort -k3,3 | cut -f 3,4 > ",
+				parentdir, "/reference_data/chr", chr, "_RefSeq.bed")
 
-		system(chrcmd)
+			system(chrcmd)
 
-		# Join exon positions with full data
-		# cuts out regional exon info (column 14) and adds the binary column
-		exoncmd <- paste0("join -a1 -1 3 -2 1 -e 0 -o auto -t $\'\\t\' ",
-			parentdir, "/output/logmod_data/chr", chr, "_", categ, "_sites.txt ",
-			parentdir, "/reference_data/chr", chr, "_RefSeq.bed | ",
-			" cut -f 14 --complement > ",
-			parentdir, "/output/logmod_data/chr", chr, "_", categ, "_m.txt")
+			# Join exon positions with full data
+			# cuts out regional exon info (column 14) and adds the binary column
+			exoncmd <- paste0("join -a1 -1 3 -2 1 -e 0 -o auto -t $\'\\t\' ",
+				parentdir, "/output/logmod_data/chr", chr, "_", categ, "_sites.txt ",
+				parentdir, "/reference_data/chr", chr, "_RefSeq.bed | ",
+				" cut -f 14 --complement > ",
+				parentdir, "/output/logmod_data/chr", chr, "_", categ, "_m.txt")
 
-		system(exoncmd)
+			system(exoncmd)
+		}
 
 		# Subset chromosome file by motif
 		subcmd <- paste0("awk '{ print >> \"",
 			parentdir, "/output/logmod_data/chr", chr, "/chr", chr, "_", categ, "_\" ",
 				"$4 \".txt\" }' ",
-			parentdir, "/output/logmod_data/chr", chr, "_", categ, "_m.txt")
+			"<(gunzip -c ", parentdir, "/output/logmod_data/chr", chr, "_", categ, "_m.txt.gz)")
 
 		system(subcmd)
 	}
@@ -193,10 +197,14 @@ coefdat<-foreach(i=1:length(motifs), .combine=rbind) %dopar% {
 
 		#z <- as.numeric(log_mod$coefficients)
 		as.numeric(log_mod$coefficients)
+
+		coefs<-summary(log_mod)$coefficients
+		coefs$Sequence<-unique(da1$Sequence)
+		coefs
 	} else {
 		cat("Not enough data--using marginal rate only\n")
 		alt <- c(sum(da1$mut)/nrow(da1), rep(0,13))
-		alt
+		# alt
 	}
 
 	# Remove motif file once model finished
@@ -211,7 +219,7 @@ coefdat2 <- cbind(motifs, data.frame(coefdat))
 # names(coefdat) <- c("Sequence", "(Intercept)", danames[-(1:2)])
 
 coeffile <- paste0(parentdir,
-	"/output/logmod_data/", categ, "_", bink, "kb_coefs.txt")
+	"/output/logmod_data/", categ, "_", bink, "kb_coefs_p.txt")
 write.table(coefdat2, coeffile, col.names=F, row.names=F, quote=F, sep="\t")
 
 ##############################################################################

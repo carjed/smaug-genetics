@@ -117,10 +117,14 @@ if(!file.exists(testfile)){
 		}
 
 		# Subset chromosome file by motif
-		subcmd <- paste0("awk '{ print >> \"",
-			parentdir, "/output/logmod_data/chr", chr, "/chr", chr, "_", categ, "_\" ",
-				"$4 \".txt\" }' ",
-			"<(gunzip -c ", parentdir, "/output/logmod_data/chr", chr, "_", categ, "_m.txt.gz)")
+		# subcmd <- paste0("awk '{ print >> \"",
+		# 	parentdir, "/output/logmod_data/chr", chr, "/chr", chr, "_", categ, "_\" ",
+		# 		"$4 \".txt\" }' ",
+		# 	"<(gzip -dc ", parentdir, "/output/logmod_data/chr", chr, "_", categ, "_m.txt.gz)")
+
+		subcmd <- paste0("zcat ", parentdir, "/output/logmod_data/chr", chr, "_", categ, "_m.txt.gz | ",
+			"awk '{ print >> \"",
+				parentdir, "/output/logmod_data/chr", chr, "/chr", chr, "_", categ, "_\" ", "$4 \".txt\" }' ")
 
 		system(subcmd)
 	}

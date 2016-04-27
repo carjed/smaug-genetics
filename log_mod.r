@@ -76,11 +76,9 @@ if(!file.exists(testfile)){
 	modtime <- proc.time()
 	cat("Building data from training set...\n")
 
-	#mutcov2file <- paste0(parentdir, "/output/logmod_data/1000kb_mut_cov2.txt")
-
 	foreach(chr=1:22) %dopar% {
 
-		# Run with builddat option if *_m.txt.gz files do not already exist
+		# Run with builddat=1 if *_m.txt.gz files do not already exist
 		builddat<-0
 		if(builddat){
 			posfile <- paste0(parentdir,
@@ -117,11 +115,6 @@ if(!file.exists(testfile)){
 		}
 
 		# Subset chromosome file by motif
-		# subcmd <- paste0("awk '{ print >> \"",
-		# 	parentdir, "/output/logmod_data/chr", chr, "/chr", chr, "_", categ, "_\" ",
-		# 		"$4 \".txt\" }' ",
-		# 	"<(gzip -dc ", parentdir, "/output/logmod_data/chr", chr, "_", categ, "_m.txt.gz)")
-
 		subcmd <- paste0("zcat ", parentdir, "/output/logmod_data/chr", chr, "_", categ, "_m.txt.gz | ",
 			"awk '{ print >> \"",
 				parentdir, "/output/logmod_data/chr", chr, "/chr", chr, "_", categ, "_\" ", "$4 \".txt\" }' ")
@@ -146,10 +139,9 @@ if(!file.exists(testfile)){
 cat("Running model...\n")
 
 coefdat <- data.frame(stringsAsFactors=F)
-int_only_rates <- data.frame(stringsAsFactors=F)
-
+# int_only_rates <- data.frame(stringsAsFactors=F)
 motifs <- sort(unique(summfile1$Sequence))
-#foreach(i=1:length(motifs)) %dopar% {
+
 coefdat<-foreach(i=1:length(motifs), .combine=rbind) %dopar% {
 # coefdat<-foreach(i=1:16, .combine=rbind) %dopar% {
 	# motif <- substr(motifs[i], 0, nbp)
@@ -157,7 +149,6 @@ coefdat<-foreach(i=1:length(motifs), .combine=rbind) %dopar% {
 	cat("Running model", i, "on", motif, "sites...\n")
 
 	require(speedglm)
-	# require(boot)
 
 	# Shortened motif
 	escmotif <- substr(motif, 0, nbp)
@@ -186,13 +177,6 @@ coefdat<-foreach(i=1:length(motifs), .combine=rbind) %dopar% {
 	names(da1) <- c("CHR", "BIN", "POS", "Sequence", "mut",
 		danames[-c(1:2,11)], "EXON")
 
-	# Create intercept-only model to compare model-predicted rates
-	# with marginal rates
-	# Need to modify loop to append to 2 dataframes in order to work
-	#log_mod_int <- glm(mut~1, data=da1, family=binomial)
-	#int_only_rates <- rbind(int_only_rates,
-	#	c(motifs[i], categ, inv.logit(log_mod_int$coefficients)))
-
 	# Run logit model for categories with >10 singletons, return coefficients
 	# Otherwise, returns single marginal rate
 	if(sum(da1$mut)>10){
@@ -200,9 +184,7 @@ coefdat<-foreach(i=1:length(motifs), .combine=rbind) %dopar% {
 			paste(names(da1)[-(1:5)], collapse="+")))
 		log_mod <- speedglm(log_mod_formula, data=da1, family=binomial(), maxit=50)
 
-		#z <- as.numeric(log_mod$coefficients)
-		# as.numeric(log_mod$coefficients)
-
+		# Get coefficients from model summary, clean up data formats
 		coefs<-data.frame(summary(log_mod)$coefficients, stringsAsFactors=F)
 		coefs <- cbind(Cov = rownames(coefs), coefs)
 		coefs$Cov<-as.character(coefs$Cov)
@@ -222,13 +204,6 @@ coefdat<-foreach(i=1:length(motifs), .combine=rbind) %dopar% {
 	# Remove motif file once model finished
 	# unlink(tmpfile)
 }
-
-#intratefile <- paste0(parentdir, "/output/", nbp, "bp_logit_rates.txt")
-#write.table(int_only_rates, intratefile,
-#	col.names=T, row.names=F, quote=F, sep="\t")
-
-# coefdat2 <- cbind(motifs, data.frame(coefdat))
-# names(coefdat) <- c("Sequence", "(Intercept)", danames[-(1:2)])
 
 coeffile <- paste0(parentdir,
 	"/output/logmod_data/", categ, "_", bink, "kb_coefs_p.txt")

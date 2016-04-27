@@ -216,10 +216,12 @@ compare.all <- data.frame()
 compare.err <- data.frame()
 compare.aic <- data.frame()
 
-for(i in 1:length(mut_cats)) {
-	cat1 <- mut_cats[i]
+modsumm<-list()
+
+for(j in 1:length(mut_cats)) {
+	cat1 <- mut_cats[j]
   cat("Running ", cat1, "models...\n")
-	aggcat <- a3[a3$Category2==mut_cats[i],]
+	aggcat <- a3[a3$Category2==cat1,]
 
 	if(grepl("^AT", cat1)) {
 		bindat <- binsAT
@@ -348,6 +350,7 @@ for(i in 1:length(mut_cats)) {
 
   # Append model predictions to full df
 	compare.all <- rbind(compare.all, bind_rows(moddat))
+  modsumm[[j]]<-summary(models$full)
 }
 tottime <- (proc.time()-ptm)[3]
 cat("Done (", tottime, "s)\n")

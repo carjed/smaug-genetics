@@ -151,6 +151,7 @@ int_only_rates <- data.frame(stringsAsFactors=F)
 motifs <- sort(unique(summfile1$Sequence))
 #foreach(i=1:length(motifs)) %dopar% {
 coefdat<-foreach(i=1:length(motifs), .combine=rbind) %dopar% {
+# coefdat<-foreach(i=1:16, .combine=rbind) %dopar% {
 	# motif <- substr(motifs[i], 0, nbp)
 	motif <- motifs[i]
 	cat("Running model", i, "on", motif, "sites...\n")
@@ -200,10 +201,17 @@ coefdat<-foreach(i=1:length(motifs), .combine=rbind) %dopar% {
 		log_mod <- speedglm(log_mod_formula, data=da1, family=binomial(), maxit=50)
 
 		#z <- as.numeric(log_mod$coefficients)
-		as.numeric(log_mod$coefficients)
+		# as.numeric(log_mod$coefficients)
 
-		coefs<-summary(log_mod)$coefficients
-		coefs$Sequence<-unique(da1$Sequence)
+		coefs<-data.frame(summary(log_mod)$coefficients, stringsAsFactors=F)
+		coefs <- cbind(Cov = rownames(coefs), coefs)
+		coefs$Cov<-as.character(coefs$Cov)
+		rownames(coefs)<-NULL
+
+		coefs[,-1] <- data.frame(apply(coefs[,-1], 2, function(x) as.numeric(as.character(x))))
+		names(coefs)<-c("Cov", "Estimate", "SE", "Z", "pval")
+
+		coefs$Sequence<-escmotif
 		coefs
 	} else {
 		cat("Not enough data--using marginal rate only\n")
@@ -219,12 +227,12 @@ coefdat<-foreach(i=1:length(motifs), .combine=rbind) %dopar% {
 #write.table(int_only_rates, intratefile,
 #	col.names=T, row.names=F, quote=F, sep="\t")
 
-coefdat2 <- cbind(motifs, data.frame(coefdat))
+# coefdat2 <- cbind(motifs, data.frame(coefdat))
 # names(coefdat) <- c("Sequence", "(Intercept)", danames[-(1:2)])
 
 coeffile <- paste0(parentdir,
 	"/output/logmod_data/", categ, "_", bink, "kb_coefs_p.txt")
-write.table(coefdat2, coeffile, col.names=F, row.names=F, quote=F, sep="\t")
+write.table(coefdat, coeffile, col.names=F, row.names=F, quote=F, sep="\t")
 
 ##############################################################################
 # If prediction is specified, creates and executes a slurm batch file

@@ -97,8 +97,8 @@ while(<$positions>){
 	my $pos=$line[1];
 
 	if($sitechr!=$prevchr){
-		my $seq=&getRef($sitechr);
-		my $altseq=$seq;
+		$seq=&getRef($sitechr);
+		$altseq=$seq;
 		$altseq =~ tr/ACGT/TGCA/;
 	}
 

@@ -106,7 +106,7 @@ while(<$positions>){
 
 	my $localseq = substr($seq, $pos-$adj-1, $subseq);
 
-	print "$localseq\n";
+	# print "$localseq\n";
 
 	if($localseq!~/[MNSW]/){
 		my $altlocalseq = reverse substr($altseq, $pos-$adj-1, $subseq);
@@ -122,6 +122,7 @@ while(<$positions>){
 		print OUT "$_\t$sequence\t$hash{$sequence}\t\n";
 	}
 
+	$prevchr=$sitechr;
 }
 
 

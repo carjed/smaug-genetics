@@ -92,6 +92,7 @@ my $seq;
 my $altseq;
 while(<$positions>){
 	chomp;
+	my $linestr=$_;
 	my @line=split(/\t/, $_);
 	my $sitechr=$line[0];
 	my $pos=$line[1];
@@ -119,7 +120,7 @@ while(<$positions>){
 		}
 
 		# print OUT "$chr\t$i\t$hash{$sequence}\n";
-		print OUT "$_\t$sequence\t$hash{$sequence}\t\n";
+		print OUT "$linestr\t$sequence\t$hash{$sequence}\t\n";
 	}
 
 	$prevchr=$sitechr;

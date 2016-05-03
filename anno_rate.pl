@@ -85,10 +85,11 @@ if ($adj!=0) {
 	$subseq = $adj*2+1;
 }
 
-print "Indexing sites in chr${chr}...\n";
+# print "Indexing sites in chr${chr}...\n";
 my @sites;
 my $prevchr=0;
 my $seq;
+my $altseq;
 while(<$positions>){
 	chomp;
 	my @line=split(/\t/, $_);

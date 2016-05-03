@@ -33,7 +33,7 @@ my $help=0;
 my $man=0;
 # my $chr;
 my $f_rates = "$parentdir/3bp_rates.txt";
-my $f_fasta = "$parentdir/human_g1k_v37.fasta";
+my $f_fasta = "/net/bipolar/jedidiah/mutation/reference_data/human_g1k_v37.fasta";
 
 GetOptions (
 # 'chr=i'=> \$chr,

@@ -31,11 +31,12 @@ my $parentdir=getcwd;
 
 my $help=0;
 my $man=0;
-my $chr;
-my $f_rates = "$parentdir/5bp_rates.txt";
+# my $chr;
+my $f_rates = "$parentdir/3bp_rates.txt";
 my $f_fasta = "$parentdir/human_g1k_v37.fasta";
 
-GetOptions ('chr=i'=> \$chr,
+GetOptions (
+# 'chr=i'=> \$chr,
 'f_rates=s' => \$f_rates,
 'ref=s' => \$f_fasta,
 'help|?'=> \$help,
@@ -45,16 +46,9 @@ man => \$man) or pod2usage(1);
 pod2usage(0) if $help;
 pod2usage(-verbose => 2) if $man;
 
-if (!$chr) {
-	pod2usage("$0: Missing mandatory argument.");
-}
-
-my $nextchr;
-if ($chr<22) {
-	$nextchr=$chr+1;
-} elsif ($chr==22) {
-	$nextchr="X";
-}
+# if (!$chr) {
+# 	pod2usage("$0: Missing mandatory argument.");
+# }
 
 # Initialize and hash rate table
 open my $rates, '<', $f_rates or die "can't open $f_rates: $!";
@@ -70,27 +64,19 @@ while (<$rates>){
 	$hash{$key}=$vals;
 }
 
-my $f_positions="/net/bipolar/jedidiah/mutation/output/predicted/chr${chr}_full_mask.txt";
+# my $f_positions="/net/bipolar/jedidiah/mutation/output/predicted/chr${chr}_full_mask.txt";
+my $f_positions="/net/bipolar/jedidiah/mutation/output/predicted/full/rocdat_comb_mask.txt";
 open my $positions, '<', $f_positions or die "can't open $f_positions: $!";
 
-print "Indexing sites in chr${chr}...\n";
-my @sites;
-while(<$positions>){
-	chomp;
-	my @line=split(/\t/, $_);
-	my $pos=$line[0];
-	push(@sites, $pos);
-}
-
 # Initialize output file
-my $outfile ="$parentdir/chr$chr.rates.txt";
+my $outfile ="/net/bipolar/jedidiah/mutation/output/predicted/full/rocdat_comb_3bp.txt";
 open(OUT, '>', $outfile) or die "can't write to $outfile: $!\n";
 # print OUT "CHR\tPOS\tAT_CG\tAT_GC\tAT_TA\tGC_AT\tGC_CG\tGC_TA\n";
 
 # Get reference sequence
-my $seq=&getRef();
-my $altseq=$seq;
-$altseq =~ tr/ACGT/TGCA/;
+# my $seq=&getRef();
+# my $altseq=$seq;
+# $altseq =~ tr/ACGT/TGCA/;
 
 # Define motif length
 my $adj=1;
@@ -99,17 +85,28 @@ if ($adj!=0) {
 	$subseq = $adj*2+1;
 }
 
-# Get rates for each base
-my $start_time=new Benchmark;
-print "Writing data file...\n";
-# for my $i (2 .. length($seq)-1){
-foreach my $i (@sites){
-	my $base=substr($seq, $i, 1);
+print "Indexing sites in chr${chr}...\n";
+my @sites;
+my $prevchr=0;
+my $seq;
+while(<$positions>){
+	chomp;
+	my @line=split(/\t/, $_);
+	my $sitechr=$line[0];
+	my $pos=$line[1];
 
-	my $localseq = substr($seq, $i-$adj-1, $subseq);
+	if($sitechr!=$prevchr){
+		my $seq=&getRef($sitechr);
+		my $altseq=$seq;
+		$altseq =~ tr/ACGT/TGCA/;
+	}
+
+	my $base=substr($seq, $pos, 1);
+
+	my $localseq = substr($seq, $pos-$adj-1, $subseq);
 
 	if($localseq!~/[MNSW]/){
-		my $altlocalseq = reverse substr($altseq, $i-$adj-1, $subseq);
+		my $altlocalseq = reverse substr($altseq, $pos-$adj-1, $subseq);
 
 		my $sequence;
 		if(substr($localseq,$adj,1) lt substr($altlocalseq,$adj,1)){
@@ -119,15 +116,21 @@ foreach my $i (@sites){
 		}
 
 		# print OUT "$chr\t$i\t$hash{$sequence}\n";
-		print OUT "$i\t$hash{$sequence}\n";
+		print OUT "$_\t$sequence\t$hash{$sequence}\t\n";
 	}
+
 }
-my $end_time=new Benchmark;
-my $difference = timediff($end_time, $start_time);
-print "Done. ";
-print "Finished in: ", timestr($difference), "\n";
+
 
 sub getRef{
+	my $chr=shift;
+	my $nextchr;
+	if ($chr<22) {
+		$nextchr=$chr+1;
+	} elsif ($chr==22) {
+		$nextchr="X";
+	}
+
 	if (-e $f_fasta) {
 		print "Using reference genome: $f_fasta\n";
 	} else {

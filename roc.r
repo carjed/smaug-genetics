@@ -8,6 +8,8 @@ require(tidyr)
 chrp<-read.table("/net/bipolar/jedidiah/mutation/output/predicted/full/rocdat_comb_mask.txt", header=F)
 names(chrp)<-c("CHR", "POS", "MU", "OBS")
 
+# chrp<-chrp[chrp$CHR==1,1:5]
+chrp<-chrp[chrp$MU>0,]
 ##############################################################################
 # Function checks if elements in a exist in b
 # Output is binary vector of length same as b
@@ -26,7 +28,7 @@ chrp$prop <- cumsum(chrp$OBS)/sum(chrp$OBS)
 # of sites as in observed data
 ##############################################################################
 nsites <- sum(chrp$OBS)
-nsim<-50
+nsim<-100
 
 for(i in 1:nsim){
 	cat("Running simulation ", i, "of ", nsim, "...\n")
@@ -58,7 +60,7 @@ for(i in 1:nsim){
 ##############################################################################
 cat("Subsampling data...\n")
 
-nsamp<-1000000
+nsamp<-100000
 
 chrp2<-chrp[sample(nrow(chrp), nsamp),] %>%
   arrange(MU) %>%

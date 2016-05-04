@@ -8,6 +8,8 @@ require(tidyr)
 chrp<-read.table("/net/bipolar/jedidiah/mutation/output/predicted/full/rocdat_comb_3bp.txt", header=F)
 names(chrp)<-c("CHR", "POS", "MU", "OBS", "SEQ3", "MU3")
 
+
+chrp<-chrp[sample(nrow(chrp), 1000000),]
 # chrp<-chrp[chrp$CHR==1,1:5]
 # chrp<-chrp[chrp$MU>0,]
 chrp<-chrp[substr(chrp$SEQ3, 2, 3)!="CG" & chrp$MU>0,]

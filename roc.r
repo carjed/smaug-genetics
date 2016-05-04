@@ -5,11 +5,14 @@ require(tidyr)
 # chrp<-read.table("/net/bipolar/jedidiah/mutation/output/predicted/full/chr18_comb.txt", header=F)
 # chrp<-read.table("/net/bipolar/jedidiah/mutation/output/predicted/chr18_1pct_mask.txt", header=F)
 
-chrp<-read.table("/net/bipolar/jedidiah/mutation/output/predicted/full/rocdat_comb_mask.txt", header=F)
-names(chrp)<-c("CHR", "POS", "MU", "OBS")
+chrp<-read.table("/net/bipolar/jedidiah/mutation/output/predicted/full/rocdat_comb_3bp.txt", header=F)
+names(chrp)<-c("CHR", "POS", "MU", "OBS", "SEQ3", "MU3")
 
 # chrp<-chrp[chrp$CHR==1,1:5]
-chrp<-chrp[chrp$MU>0,]
+# chrp<-chrp[chrp$MU>0,]
+chrp<-chrp[substr(chrp$SEQ3, 2, 3)!="CG" & chrp$MU>0,]
+
+
 ##############################################################################
 # Function checks if elements in a exist in b
 # Output is binary vector of length same as b
@@ -28,11 +31,11 @@ chrp$prop <- cumsum(chrp$OBS)/sum(chrp$OBS)
 # of sites as in observed data
 ##############################################################################
 nsites <- sum(chrp$OBS)
-nsim<-100
+nsim<-500
 
-for(i in 1:nsim){
+for(i in 101:nsim){
 	cat("Running simulation ", i, "of ", nsim, "...\n")
-	nsample <- 20000
+	nsample <- 50000
 	mutated <- c()
 
 	while(length(mutated) < nsites){
@@ -158,6 +161,16 @@ ggplot()+
   # scale_y_continuous(limits=c(0,1))+
   # scale_x_continuous(limits=c(0,1000), labels=c())
 ggsave("/net/bipolar/jedidiah/mutation/images/psuedo_roc_chr4b.png", height=4, width=7.25)
+
+ggplot(auc[-1,], aes(x=AUC))+
+	geom_density()+
+	stat_function(fun = dnorm,
+		colour = "red",
+		args = list(mean = mean(auc[-1,]$AUC), sd = sd(auc[-1,]$AUC)))+
+	xlim(mean(auc[-1,]$AUC)-4*sd(auc[-1,]$AUC), mean(auc[-1,]$AUC)+4*sd(auc[-1,]$AUC))+
+	theme_bw()
+
+ggsave("/net/bipolar/jedidiah/mutation/images/auc_hist.png", height=7, width=7)
 
 # ggplot(chrp2[chrp2$MU>0,], aes(x=log(MU)))+
 # 	geom_histogram(bins=100)+

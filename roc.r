@@ -5,15 +5,60 @@ require(tidyr)
 # chrp<-read.table("/net/bipolar/jedidiah/mutation/output/predicted/full/chr18_comb.txt", header=F)
 # chrp<-read.table("/net/bipolar/jedidiah/mutation/output/predicted/chr18_1pct_mask.txt", header=F)
 
-chrp<-read.table("/net/bipolar/jedidiah/mutation/output/predicted/full/rocdat_comb_3bp.txt", header=F)
-names(chrp)<-c("CHR", "POS", "MU", "OBS", "SEQ3", "MU3")
+# Read data
+cat("Reading data...\n")
+chrpf<-read.table("/net/bipolar/jedidiah/mutation/output/predicted/full/rocdat_comb_3bp.txt", header=F)
+names(chrpf)<-c("CHR", "POS", "MU", "OBS", "SEQ3", "MU3")
 
+# Remove CpGs and sites with mu=0
+chrpf<-chrpf[substr(chrpf$SEQ3, 2, 3)!="CG" & chrpf$MU>0,]
 
-chrp<-chrp[sample(nrow(chrp), 1000000),]
-# chrp<-chrp[chrp$CHR==1,1:5]
-# chrp<-chrp[chrp$MU>0,]
-chrp<-chrp[substr(chrp$SEQ3, 2, 3)!="CG" & chrp$MU>0,]
+# Read DNMs
+cat("Reading DNMs...\n")
+dnms_full<-read.table("/net/bipolar/jedidiah/mutation/reference_data/GoNL_DNMs.txt", header=T, stringsAsFactors=F)
+dnms_full<-dnms_full[,1:3]
+names(dnms_full)<-c("ID", "CHR", "POS")
 
+# Duplicate data, merge with DNMs to get ID
+# chrpf<-chrp
+cat("Annotating with ID...\n")
+chrpf<-merge(chrpf, dnms_full, by=c("CHR", "POS"), all.x=T)
+chrpf$ID[is.na(chrpf$ID)] <- "all"
+
+# Subset to non-DNMs and DNMs
+cat("Splitting by DNM status...\n")
+chrpfa<-chrpf[chrpf$ID=="all",]
+chrpfa<-chrpfa[sample(nrow(chrpfa), 1000000),]
+chrpfdnm<-chrpf[chrpf$ID!="all",]
+
+# Combine data
+cat("Creating combined data...\n")
+chrp<-rbind(chrpfdnm, chrpfa) %>% arrange(MU)
+chrp$prop <- cumsum(chrp$OBS)/sum(chrp$OBS)
+
+##############################################################################
+# Calculate AUC for each individual
+##############################################################################
+ids<-unique(chrpfdnm$ID)
+numind<-length(indmuts)
+aucind<-rep(0, length(ids))
+
+for(i in 1:numind){
+	curid<-ids[i]
+	cat("Calculating AUC for", curid, "(", i, "of", numind, ")...\n")
+	datid<-chrpfdnm %>% filter(ID==curid)
+	tmpdat<-rbind(datid, chrpfa) %>% arrange(MU)
+	tmpdat$prop<-cumsum(tmpdat$OBS)/sum(tmpdat$OBS)
+
+	nsamp<-100000
+
+	tmpdat2<-tmpdat[sample(nrow(tmpdat), nsamp),] %>%
+	  arrange(MU) %>%
+	  mutate(ntile=ntile(MU, 1000))
+
+	tmpauc <- tmpdat2 %>% summarise(AUC=1-sum(prop)/nsamp)
+	aucind[i]<-tmpauc$AUC
+}
 
 ##############################################################################
 # Function checks if elements in a exist in b
@@ -23,19 +68,15 @@ toBin <- function(a,b){
 	as.numeric(is.element(b,a))
 }
 
-# Sort by logit-estimated rate and add column of cumulate proportion
-chrp <- chrp %>% arrange(MU)
-chrp$prop <- cumsum(chrp$OBS)/sum(chrp$OBS)
-
 ##############################################################################
 # Simulate mutations by randomly selecting sites and checking if
 # Bernoulli(mu)==1; loop continues until we have simulated the same number
 # of sites as in observed data
 ##############################################################################
 nsites <- sum(chrp$OBS)
-nsim<-500
+nsim<-200
 
-for(i in 101:nsim){
+for(i in 1:nsim){
 	cat("Running simulation ", i, "of ", nsim, "...\n")
 	nsample <- 50000
 	mutated <- c()
@@ -58,7 +99,7 @@ for(i in 101:nsim){
 }
 
 ##############################################################################
-# Subsample 10M sites, resort by mu, add percentile column, and coerce
+# Subsample 100k sites, resort by mu, add percentile column, and coerce
 # from wide to long format
 #
 # Can delete chrp after this step
@@ -120,7 +161,6 @@ chrp3m$lb <- chrp3lb$lb
 chrp3m$ub <- chrp3ub$ub
 # names(chrp3m)[4:5]<-c("lb", "ub")
 
-
 ##############################################################################
 # Repeat with 3bp marginal rates
 ##############################################################################
@@ -145,8 +185,6 @@ chrp3m$ub <- chrp3ub$ub
 # 	chrp3m <- rbind(chrp3m, chrpm2)
 # }
 
-# auc <- chrp3m %>% group_by(group) %>% summarise(AUC=1-sum(val)/1000)
-
 ggplot()+
   geom_line(data=chrp3m[1:1000,],
 		aes(x=(1000-ntile)/1000, y=1-val, group=group, colour=group), size=1.2)+
@@ -162,10 +200,11 @@ ggplot()+
 		axis.title.y=element_text(size=20))
   # scale_y_continuous(limits=c(0,1))+
   # scale_x_continuous(limits=c(0,1000), labels=c())
-ggsave("/net/bipolar/jedidiah/mutation/images/psuedo_roc_chr4b.png", height=4, width=7.25)
+ggsave("/net/bipolar/jedidiah/mutation/images/pseudo_roc_curves.png", height=4, width=7.25)
 
 ggplot(auc[-1,], aes(x=AUC))+
 	geom_density()+
+	geom_vline(data=auc[1,], aes(xintercept=AUC), linetype="longdash")+
 	stat_function(fun = dnorm,
 		colour = "red",
 		args = list(mean = mean(auc[-1,]$AUC), sd = sd(auc[-1,]$AUC)))+

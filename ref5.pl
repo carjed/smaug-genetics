@@ -68,7 +68,6 @@ print "Local subsequence and CpG command entered simultaneously--overriding CpG 
 ##############################################################################
 
 make_path("$parentdir/images/chr$chr");
-make_path("$parentdir/output/${subseq}bp_${bw}k_${macl}")
 # make_path("$parentdir/output/${subseq}bp_${bw}k_${macl}")
 my $imgdir="$parentdir/images/chr$chr";
 
@@ -144,6 +143,7 @@ if ($chr lt '22') {
 ##############################################################################
 ####OLD####my $f_summ = "/net/bipolar/jedidiah/bcftools/summaries/$macl/all/chr$chr.$macl.summary.txt";
 
+make_path("$parentdir/output/${subseq}bp_${bw}k_${macl}")
 my $f_summ = "/net/bipolar/jedidiah/testpipe/summaries/${macl}_${data}/chr$chr.summary"; #main line for full processing
 # my $f_summ = "$parentdir/smaug-sandbox/scripts/human_chimp_chr10.summary";
 # my $f_summ = "/net/bipolar/jedidiah/testpipe/summaries/chr10.common.summary";

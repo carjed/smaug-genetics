@@ -8,7 +8,7 @@
 ##############################################################################
 
 for my $i (1 .. 22) {
-	my $cmd = "perl ref5.pl --chr $i --mac 11 --adj 2 --b 100000 &";
+	my $cmd = "perl ref5.pl --chr $i --mac 11 --adj 3 --b 1000000 &";
 	&forkExecWait($cmd);
 }
 

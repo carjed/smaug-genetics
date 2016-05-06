@@ -76,7 +76,7 @@ if ($script==1){
 		# my $file = "/net/bipolar/jedidiah/testpipe/vcfs/merged.ma.vcf.gz"; # singletons, including multiallelic sites
 		# my $cmd="bcftools query -i 'FILTER=\"PASS\"' -r $chr -f '%CHROM\t%POS\t%REF\t%ALT\t%INFO/AB\t%INFO/AN\n' $file > $summloc/chr$chr.summary";
 
-		my $file = "/net/bipolar/jedidiah/testpipe/vcfs/merged.ma.vcf.gz"; # common variants
+		my $file = "/net/bipolar/jedidiah/testpipe/vcfs/merged.new.vcf.gz"; # common variants
 		my $cmd="bcftools query -i 'AC>10 && FILTER=\"PASS\"' -r $chr -f '%CHROM\t%POS\t%REF\t%ALT\t%INFO/AB\t%INFO/AN\n' $file > $summloc/chr$chr.summary";
 		&forkExecWait($cmd);
 	}

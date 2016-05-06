@@ -27,7 +27,7 @@ make_path("$projdir/summaries/doubletons",
 	"$projdir/summaries/controls");
 
 # my $summloc="$projdir/summaries";
-my $summloc="$projdir/summaries";
+my $summloc="$projdir/summaries/common";
 my $summloc2="$projdir/summaries/doubletons";
 
 my $bcftools="/net/bipolar/jedidiah/bcftools/bcftools";
@@ -73,8 +73,11 @@ if ($script==1){
         # my $filename=fileparse($file);
         # my $path=dirname($file);
 		# my $chr = substr($filename, 0, index($filename, '.'));
-		my $file = "/net/bipolar/jedidiah/testpipe/vcfs/merged.ma.vcf.gz";
-		my $cmd="bcftools query -i 'FILTER=\"PASS\"' -r $chr -f '%CHROM\t%POS\t%REF\t%ALT\t%INFO/AB\t%INFO/AN\n' $file > $summloc/chr$chr.summary";
+		# my $file = "/net/bipolar/jedidiah/testpipe/vcfs/merged.ma.vcf.gz"; # singletons, including multiallelic sites
+		# my $cmd="bcftools query -i 'FILTER=\"PASS\"' -r $chr -f '%CHROM\t%POS\t%REF\t%ALT\t%INFO/AB\t%INFO/AN\n' $file > $summloc/chr$chr.summary";
+
+		my $file = "/net/bipolar/jedidiah/testpipe/vcfs/merged.ma.vcf.gz"; # common variants
+		my $cmd="bcftools query -i 'AC>10 && FILTER=\"PASS\"' -r $chr -f '%CHROM\t%POS\t%REF\t%ALT\t%INFO/AB\t%INFO/AN\n' $file > $summloc/chr$chr.summary";
 		&forkExecWait($cmd);
 	}
 }

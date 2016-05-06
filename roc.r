@@ -2,6 +2,10 @@ require(ggplot2)
 require(dplyr)
 require(tidyr)
 
+
+##############################################################################
+# Read and process data
+##############################################################################
 # chrp<-read.table("/net/bipolar/jedidiah/mutation/output/predicted/full/chr18_comb.txt", header=F)
 # chrp<-read.table("/net/bipolar/jedidiah/mutation/output/predicted/chr18_1pct_mask.txt", header=F)
 
@@ -36,12 +40,52 @@ cat("Creating combined data...\n")
 chrp<-rbind(chrpfdnm, chrpfa) %>% arrange(MU)
 chrp$prop <- cumsum(chrp$OBS)/sum(chrp$OBS)
 
+
 ##############################################################################
-# Calculate AUC for each individual
+# Permute data from the GoNL DNMs
+# Each permutation simulates a single sample
+# Will modify to extract median ROC curve for plotting
+##############################################################################
+nperm<-500
+
+aucperm<-rep(0,nperm)
+aucperm3<-aucperm
+for(i in 1:nperm){
+	cat("Permuting AUC", "(", i, "of", nperm, ")...\n")
+	ndnms<-round(rnorm(1, 42.7, 10.3), 0)
+
+	chrpsub<-rbind(chrpfdnm[sample(nrow(chrpfdnm), ndnms),], chrpfa) %>%
+		arrange(MU)
+	chrpsub$prop <- cumsum(chrpsub$OBS)/sum(chrpsub$OBS)
+
+	nsamp<-50000
+
+	chrpsub2<-chrpsub[sample(nrow(chrpsub), nsamp),] %>%
+	  arrange(MU) %>%
+	  mutate(ntile=ntile(MU, 1000))
+
+	auctmp <- chrpsub2 %>% summarise(AUC=1-sum(prop)/nsamp)
+	aucperm[i] <- auctmp$AUC
+
+	# cat("Permuting 3-mer AUC", "(", i, "of", nperm, ")...\n")
+	chrpsub3<-chrpsub %>% arrange(MU3)
+	chrpsub3$prop <- cumsum(chrpsub3$OBS)/sum(chrpsub3$OBS)
+
+	chrpsub3a<-chrpsub3[sample(nrow(chrpsub3), nsamp),] %>%
+		arrange(MU3, prop) %>%
+		mutate(ntile=ntile(MU3, 1000))
+
+	auctmp3 <- chrpsub3a %>% summarise(AUC=1-sum(prop)/nsamp)
+	aucperm3[i] <- auctmp3$AUC
+}
+
+##############################################################################
+# Calculate AUC for each individual under the logit and 3-mer models
 ##############################################################################
 ids<-unique(chrpfdnm$ID)
 numind<-length(ids)
-aucind<-rep(0, length(ids))
+aucind<-rep(0, numind)
+aucind3<-aucind
 
 for(i in 1:numind){
 	curid<-ids[i]
@@ -50,7 +94,7 @@ for(i in 1:numind){
 	tmpdat<-rbind(datid, chrpfa) %>% arrange(MU)
 	tmpdat$prop<-cumsum(tmpdat$OBS)/sum(tmpdat$OBS)
 
-	nsamp<-100000
+	nsamp<-50000
 
 	tmpdat2<-tmpdat[sample(nrow(tmpdat), nsamp),] %>%
 	  arrange(MU) %>%
@@ -58,6 +102,17 @@ for(i in 1:numind){
 
 	tmpauc <- tmpdat2 %>% summarise(AUC=1-sum(prop)/nsamp)
 	aucind[i]<-tmpauc$AUC
+
+	### Repeat with 3-mer model
+	tmpdat3<-tmpdat %>% arrange(MU3)
+	tmpdat3$prop<-cumsum(tmpdat3$OBS)/sum(tmpdat3$OBS)
+
+	tmpdat3s<-tmpdat3[sample(nrow(tmpdat3), nsamp),] %>%
+		arrange(MU3, prop) %>%
+		mutate(ntile=ntile(MU3, 1000))
+
+	tmpauc3 <- tmpdat3s %>% summarise(AUC=1-sum(prop)/nsamp)
+	aucind3[i]<-tmpauc3$AUC
 }
 
 ##############################################################################
@@ -73,13 +128,15 @@ toBin <- function(a,b){
 # Bernoulli(mu)==1; loop continues until we have simulated the same number
 # of sites as in observed data
 ##############################################################################
-nsites <- sum(chrp$OBS)
+
+# nsites <- sum(chrp$OBS)
 nsim<-200
 
 for(i in 1:nsim){
-	cat("Running simulation ", i, "of ", nsim, "...\n")
-	nsample <- 50000
+	cat("Running simulation", i, "of", nsim, "...\n")
+	nsample <- 20000
 	mutated <- c()
+	nsites<-round(rnorm(1, 42.7, 10.3), 0)
 
 	while(length(mutated) < nsites){
 		rowind <- sample(nrow(chrp), nsample)
@@ -127,27 +184,27 @@ gc()
 #
 # Can delete chrp2 after this step
 ##############################################################################
-chrp3<-chrp2 %>%
+chrp2_nt_mean<-chrp2 %>%
   group_by(group, ntile) %>%
   summarise(val=mean(val))
 
 ##############################################################################
 # Get subsets of true and simulated data
 ##############################################################################
-chrp3a<-chrp3[chrp3$group!="prop",]
-chrp3m<-chrp3[chrp3$group=="prop",]
+chrp2_nt_sim<-chrp2_nt_mean[chrp2_nt_mean$group!="prop",]
+chrp2_nt_obs<-chrp2_nt_mean[chrp2_nt_mean$group=="prop",]
 
 ##############################################################################
 # Calculate lower/upper 95% CIs from simulations
 ##############################################################################
-chrp3lb<-chrp3a %>%
+chrp2_lb<-chrp2_nt_sim %>%
   group_by(ntile) %>%
   # summarise(lb=t.test(val)$conf.int[1]) %>%
 	summarise(lb=max(val)) %>%
   mutate(group="lb") %>%
   select(group, ntile, lb)
 
-chrp3ub<-chrp3a %>%
+chrp2_ub<-chrp2_nt_sim %>%
   group_by(ntile) %>%
   # summarise(ub=t.test(val)$conf.int[2]) %>%
 	summarise(ub=min(val)) %>%
@@ -157,61 +214,123 @@ chrp3ub<-chrp3a %>%
 ##############################################################################
 # Add bounds to data frame
 ##############################################################################
-chrp3m$lb <- chrp3lb$lb
-chrp3m$ub <- chrp3ub$ub
+chrp2_nt_obs$lb <- chrp2_lb$lb
+chrp2_nt_obs$ub <- chrp2_ub$ub
 # names(chrp3m)[4:5]<-c("lb", "ub")
 
 ##############################################################################
-# Repeat with 3bp marginal rates
+# Repeat genome-wide with 3bp marginal rates
 ##############################################################################
-# tris<-0
-# if(tris){
-# 	chrpm <- read.table("/net/bipolar/jedidiah/mutation/chr4.rates.txt")
-# 	names(chrpm) <- c("POS", "MU")
+# chrp3<-chrp %>% arrange(MU3)
+# chrp3$prop <- cumsum(chrp3$OBS)/sum(chrp3$OBS)
 #
-# 	chrpm$OBS <- toBin(chrdnms$POS, chrpm$POS)
-# 	chrpm <- chrpm %>% arrange(MU)
-# 	chrpm$prop <- cumsum(chrpm$OBS)/sum(chrpm$OBS)
+# chrp3a<-chrp3[sample(nrow(chrp3), nsamp),] %>%
+# 	arrange(MU3, prop) %>%
+# 	mutate(ntile=ntile(MU3, 1000))
 #
-# 	chrpm2<-chrpm[sample(nrow(chrpm), 1000000),] %>%
-# 	  arrange(MU) %>%
-# 	  mutate(ntile=ntile(MU, 1000), group="marginal") %>%
-# 	  group_by(group, ntile) %>%
-# 	  summarise(val=mean(prop))
+# chrp3b<-chrp3a %>%
+#   group_by(ntile) %>%
+#   summarise(val=mean(prop)) %>%
+# 	mutate(group="3-mers") %>%
+# 	dplyr::select(group, ntile, val)
 #
-# 	chrpm2$lb <- chrp3m$lb
-# 	chrpm2$ub <- chrp3m$ub
-#
-# 	chrp3m <- rbind(chrp3m, chrpm2)
-# }
+# auc3 <- chrp3b %>% summarise(AUC=1-sum(val)/1000)
+
+##############################################################################
+# Combine AUC data to generate plots
+##############################################################################
+
+full_auc_dat<-rbind(data.frame(chrp2_nt_obs[,1:3]), data.frame(chrp3b))
+names(full_auc_dat)[1]<-"Model"
+full_auc_dat$Model<-ifelse(full_auc_dat$Model=="prop", "Logit", "3-mer")
+
+full_auc_bounds<-chrp2_nt_obs[,c(2:5)]
+
+cbbPalette <- c("#000000", "#E69F00", "#56B4E9", "#009E73", "#F0E442", "#0072B2", "#D55E00", "#CC79A7")
 
 ggplot()+
-  geom_line(data=chrp3m[1:1000,],
-		aes(x=(1000-ntile)/1000, y=1-val, group=group, colour=group), size=1.2)+
+  geom_line(data=full_auc_dat,
+		aes(x=(1000-ntile)/1000, y=1-val, group=Model, colour=Model), size=1.2)+
   geom_abline(intercept=0, slope=1)+
-  geom_ribbon(data=chrp3m[1:1000,],
+  geom_ribbon(data=full_auc_bounds,
 		aes(x=(1000-ntile)/1000, y=1-val, ymin=1-ub, ymax=1-lb), alpha=0.2)+
+	scale_colour_manual(values=cbbPalette[2:3])+
   coord_cartesian(xlim=c(0,1))+
 	xlab("False Positive Rate")+
 	ylab("True Positive Rate")+
   theme_bw()+
-	theme(legend.position="none",
+	theme(
+		# legend.position="none",
 		axis.title.x=element_text(size=20),
 		axis.title.y=element_text(size=20))
   # scale_y_continuous(limits=c(0,1))+
   # scale_x_continuous(limits=c(0,1000), labels=c())
 ggsave("/net/bipolar/jedidiah/mutation/images/pseudo_roc_curves.png", height=4, width=7.25)
 
-ggplot(auc[-1,], aes(x=AUC))+
-	geom_density()+
-	geom_vline(data=auc[1,], aes(xintercept=AUC), linetype="longdash")+
-	stat_function(fun = dnorm,
-		colour = "red",
-		args = list(mean = mean(auc[-1,]$AUC), sd = sd(auc[-1,]$AUC)))+
-	xlim(mean(auc[-1,]$AUC)-4*sd(auc[-1,]$AUC), mean(auc[-1,]$AUC)+4*sd(auc[-1,]$AUC))+
-	theme_bw()
+auc$model<-"simulated"
+auc$obs<-"simulated"
 
+# aucind_df<-data.frame(AUC=aucind, gp="ind")
+aucsim<-auc[-1,2:4]
+auclogitobs<-data.frame(AUC=aucind, model="logit", obs="observed")
+auc3merobs<-data.frame(AUC=aucind3, model="3-mer", obs="observed")
+auclogitperm<-data.frame(AUC=aucperm, model="logit", obs="permuted")
+auc3merperm<-data.frame(AUC=aucperm3, model="3-mer", obs="permuted")
+
+plotaucfull<-rbind(aucsim, auclogitobs, auc3merobs, auclogitperm, auc3merperm)
+plotaucnosim<-rbind(auclogitobs, auc3merobs, auclogitperm, auc3merperm)
+plotaucobsonly<-rbind(auclogitobs, auc3merobs)
+plotaucnoperm<-rbind(aucsim, auclogitobs, auc3merobs)
+
+plotaucmean<-plotaucobsonly %>%
+	group_by(model, obs) %>%
+	summarise(AUC=mean(AUC))
+
+plotaucobsonly$model<-relevel(plotaucobsonly$model, "3-mer")
+plotaucfull$model<-relevel(plotaucfull$model, "3-mer")
+plotaucnosim$model<-relevel(plotaucnosim$model, "3-mer")
+plotaucnoperm$model<-relevel(plotaucnoperm$model, "3-mer")
+
+ggplot()+
+	geom_density(data=plotaucobsonly, aes(x=AUC, colour=model, linetype=obs))+
+	geom_density(data=aucsim, aes(x=AUC), colour="black")+
+	scale_colour_manual(values=cbbPalette[2:3])+
+	geom_vline(data=plotaucmean,
+		aes(xintercept=AUC, colour=model, linetype=obs))+
+	# geom_vline(data=auc3merobs, aes(xintercept=mean(AUC)), linetype="longdash")+
+	# stat_function(fun = dnorm,
+	# 	colour = "red",
+	# 	args = list(mean = mean(auc[-1,]$AUC), sd = sd(auc[-1,]$AUC)))+
+	# xlim(mean(auc[-1,]$AUC)-4*sd(auc[-1,]$AUC), mean(auc[-1,]$AUC)+4*sd(auc[-1,]$AUC))+
+	theme_classic()
 ggsave("/net/bipolar/jedidiah/mutation/images/auc_hist.png", height=7, width=7)
+
+aucind_df2<-data.frame(AUC=aucind, model="logit")
+aucind3_df2<-data.frame(AUC=aucind3, model="3-mers")
+
+aucind_comp<-rbind(aucind_df2, aucind3_df2)
+aucind_comp$model<-relevel(aucind_comp$model, "3-mers")
+
+plotaucfull$model<-as.factor(plotaucfull$model)
+plotaucfull$model<-relevel(plotaucfull$model, "3-mer")
+
+plotaucnoperm$model<-as.factor(plotaucnoperm$model)
+plotaucnoperm$model<-relevel(plotaucnoperm$model, "3-mer")
+
+ggplot(plotaucnoperm, aes(x=model, y=AUC, fill=model))+
+	geom_violin()+
+	geom_boxplot(width=0.1, fill="white")+
+	# facet_wrap(~obs, ncol=1, drop=TRUE, scales="free_x")+
+	# facet_grid(obs~., scales="free_x")+
+	# scale_x_discrete(drop=TRUE)+
+	# scale_y_discrete(drop=TRUE)+
+	# scale_fill_discrete(drop=T)+
+	coord_flip()+
+	# scale_colour_brewer(palette="Dark2")+
+	scale_fill_manual(values=cbbPalette[c(2:3,1)], drop=TRUE)+
+	theme_classic()+
+	theme(legend.position="none")
+ggsave("/net/bipolar/jedidiah/mutation/images/ind_violin.png", width=6, height=4)
 
 # ggplot(chrp2[chrp2$MU>0,], aes(x=log(MU)))+
 # 	geom_histogram(bins=100)+

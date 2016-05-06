@@ -324,16 +324,24 @@ plotaucobsonly$ID<-c(ids, ids)
 
 plotaucobsonly<-merge(plotaucobsonly, ages, by="ID")
 
-auc_age_cor<-plotaucobsonly %>% 
+auc_age_cor<-plotaucobsonly %>%
 	group_by(model) %>%
 	summarise(cor=cor(AUC, FatherAge, method="spearman"),
 		cor.p=cor.test(AUC, FatherAge, method="spearman")$p.value)
 
+fao<-plotaucobsonly %>%
+	filter(model=="logit") %>%
+	filter(AUC>0.669 | AUC<0.597) %>%
+	mutate(quart=ifelse(AUC>0.669, "yes", "no")) %>%
+	dplyr::select(quart, FatherAge) %>%
+	spread(quart, FatherAge)
+
 
 ggplot(plotaucobsonly, aes(x=model, y=AUC, fill=model))+
 	geom_violin()+
-	geom_boxplot(width=0.3, fill="white")+
-	geom_jitter(aes(colour=FatherAge), width=0.3, alpha=0.7)+
+	geom_boxplot(width=0.3, fill="white", outlier.colour=NA)+
+	geom_jitter(aes(colour=FatherAge), width=0.2, alpha=0.75)+
+	geom_hline(yintercept=0.5, linetype="dashed")+
 	# facet_wrap(~obs, ncol=1, drop=TRUE, scales="free_x")+
 	# facet_grid(obs~., scales="free_x")+
 	# scale_x_discrete(drop=TRUE)+

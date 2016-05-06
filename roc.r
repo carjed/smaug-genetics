@@ -40,7 +40,7 @@ chrp$prop <- cumsum(chrp$OBS)/sum(chrp$OBS)
 # Calculate AUC for each individual
 ##############################################################################
 ids<-unique(chrpfdnm$ID)
-numind<-length(indmuts)
+numind<-length(ids)
 aucind<-rep(0, length(ids))
 
 for(i in 1:numind){

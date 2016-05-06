@@ -65,11 +65,13 @@ while (<$rates>){
 }
 
 # my $f_positions="/net/bipolar/jedidiah/mutation/output/predicted/chr${chr}_full_mask.txt";
-my $f_positions="/net/bipolar/jedidiah/mutation/output/predicted/full/rocdat_comb_mask.txt";
+# my $f_positions="/net/bipolar/jedidiah/mutation/output/predicted/full/rocdat_comb_mask.txt";
+my $f_positions="/net/bipolar/jedidiah/mutation/output/predicted/full/uk10k_dnms_s.txt";
 open my $positions, '<', $f_positions or die "can't open $f_positions: $!";
 
 # Initialize output file
-my $outfile ="/net/bipolar/jedidiah/mutation/output/predicted/full/rocdat_comb_3bp.txt";
+# my $outfile ="/net/bipolar/jedidiah/mutation/output/predicted/full/rocdat_comb_3bp.txt";
+my $outfile ="/net/bipolar/jedidiah/mutation/reference_data/uk10kdnms_3mer.txt";
 open(OUT, '>', $outfile) or die "can't write to $outfile: $!\n";
 # print OUT "CHR\tPOS\tAT_CG\tAT_GC\tAT_TA\tGC_AT\tGC_CG\tGC_TA\n";
 
@@ -90,6 +92,7 @@ my @sites;
 my $prevchr=0;
 my $seq;
 my $altseq;
+readline($positions);
 while(<$positions>){
 	chomp;
 	my $linestr=$_;

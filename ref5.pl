@@ -68,6 +68,8 @@ print "Local subsequence and CpG command entered simultaneously--overriding CpG 
 ##############################################################################
 
 make_path("$parentdir/images/chr$chr");
+make_path("$parentdir/output/${subseq}bp_${bw}k_${macl}")
+# make_path("$parentdir/output/${subseq}bp_${bw}k_${macl}")
 my $imgdir="$parentdir/images/chr$chr";
 
 @annoin=split(',',join(',',@annoin));
@@ -101,6 +103,9 @@ if ($mac==1) {
 }
 if ($mac==2) {
 	$macl = "doubletons";
+}
+if ($mac==11){
+	$macl="common";
 }
 
 my $cpg_flag;
@@ -147,7 +152,7 @@ my $f_summ = "/net/bipolar/jedidiah/testpipe/summaries/${macl}_${data}/chr$chr.s
 # my $f_summ = "/net/bipolar/jedidiah/testpipe/vcfs/chr20.rq.summary";
 open my $summ, '<', $f_summ or die "can't open $f_summ: $!";
 
-my $outfile = "$parentdir/output/${subseq}bp_${bw}k/chr$chr.expanded.summary";
+my $outfile = "$parentdir/output/${subseq}bp_${bw}k_${macl}/chr$chr.expanded.summary";
 open(OUT, '>', $outfile) or die "can't write to $outfile: $!\n";
 
 if ($mac==1) {
@@ -157,7 +162,7 @@ if ($mac==1) {
 	print OUT "CHR\tPOS\tREF\tALT\tANNO\t";
 }
 
-my $bin_out = "$parentdir/output/${subseq}bp_${bw}k/chr$chr.bin_out.txt";
+my $bin_out = "$parentdir/output/${subseq}bp_${bw}k_${macl}/chr$chr.bin_out.txt";
 open(BIN, '>', $bin_out) or die "can't write to $bin_out: $!\n";
 
 my $seq=&getRef();

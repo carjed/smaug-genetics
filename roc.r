@@ -317,19 +317,37 @@ plotaucfull$model<-relevel(plotaucfull$model, "3-mer")
 plotaucnoperm$model<-as.factor(plotaucnoperm$model)
 plotaucnoperm$model<-relevel(plotaucnoperm$model, "3-mer")
 
-ggplot(plotaucnoperm, aes(x=model, y=AUC, fill=model))+
+ages<-read.table("/net/bipolar/jedidiah/mutation/reference_data/gonl_fam_age.txt", header=T)
+names(ages)<-c("ID", "nDNM", "FatherAge", "MotherAge", "Coverage")
+plotaucobsonly<-rbind(auclogitobs, auc3merobs)
+plotaucobsonly$ID<-c(ids, ids)
+
+plotaucobsonly<-merge(plotaucobsonly, ages, by="ID")
+
+auc_age_cor<-plotaucobsonly %>% 
+	group_by(model) %>%
+	summarise(cor=cor(AUC, FatherAge, method="spearman"),
+		cor.p=cor.test(AUC, FatherAge, method="spearman")$p.value)
+
+
+ggplot(plotaucobsonly, aes(x=model, y=AUC, fill=model))+
 	geom_violin()+
-	geom_boxplot(width=0.1, fill="white")+
+	geom_boxplot(width=0.3, fill="white")+
+	geom_jitter(aes(colour=FatherAge), width=0.3, alpha=0.7)+
 	# facet_wrap(~obs, ncol=1, drop=TRUE, scales="free_x")+
 	# facet_grid(obs~., scales="free_x")+
 	# scale_x_discrete(drop=TRUE)+
 	# scale_y_discrete(drop=TRUE)+
 	# scale_fill_discrete(drop=T)+
-	coord_flip()+
+	# coord_flip()+
 	# scale_colour_brewer(palette="Dark2")+
 	scale_fill_manual(values=cbbPalette[c(2:3,1)], drop=TRUE)+
+	# scale_colour_brewer()+
+	scale_colour_gradientn(colours=brewer.pal(7,"PiYG"))+
 	theme_classic()+
-	theme(legend.position="none")
+	theme(
+		# legend.position="none",
+	)
 ggsave("/net/bipolar/jedidiah/mutation/images/ind_violin.png", width=6, height=4)
 
 # ggplot(chrp2[chrp2$MU>0,], aes(x=log(MU)))+

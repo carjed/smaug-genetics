@@ -41,7 +41,7 @@ my $mask_flag='';
 my $rscript=0;
 my @annoin;
 
-GetOptions ('chr=s'=> \$chr,
+GetOptions ('chr=i'=> \$chr,
 'mac=i'=> \$mac,
 'b=i' => \$binwidth,
 'adj=i' => \$adj,
@@ -129,9 +129,9 @@ if ($adj!=0) {
 my $bw=$binwidth/1000;
 
 my $nextchr='';
-if ($chr lt '22') {
+if ($chr<22) {
 	$nextchr=$chr+1;
-} elsif ($chr eq '22') {
+} elsif ($chr==22) {
 	$nextchr="X";
 } else {
 	$nextchr="Y";

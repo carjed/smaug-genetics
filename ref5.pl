@@ -197,8 +197,8 @@ sub getRef{
 	my $seq;
 	while (<$fasta>) {
 		chomp;
-		if (/>$chr /../>$nextchr /) {
-			next if />$chr / || />$nextchr /;
+		if (/>$chr/../>$nextchr/) {
+			next if />$chr/ || />$nextchr/;
 			$seq .=$_;
 		}
 	}

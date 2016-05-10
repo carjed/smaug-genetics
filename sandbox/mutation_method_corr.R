@@ -109,7 +109,7 @@ for(i in 1:1000){
 		)
 
 	# cors<-paste0("r=",cors)
-	
+
 	output[i,]<-cors
 
 	# xpos<-rep(median(fullcount$sing_prop), 6)
@@ -120,23 +120,22 @@ for(i in 1:1000){
 	# dat<-data.frame(xpos, ypos, cats, cors)
 	# names(dat)<-c("x", "y", "Category", "val")
 }
-	
-output<-data.frame(output)
-names(output)<-c("AT_CG", "AT_GC", "AT_TA", "GC_AT", "GC_CG", "GC_TA")
+
+
 
 ##############################################################################
 # Get mean and cis for each category
 ##############################################################################
 cis<-matrix(nrow=6, ncol=4)
 for(i in 1:6){
-	
+
 	cis[i,]<-c(names(output)[i], mean(output[,i]), t.test(output[,i])$conf.int[1], t.test(output[,i])$conf.int[2])
 
 }
 
 cis<-data.frame(cis)
 names(cis)<-c("Category", "mean", "lcl", "ucl")
-	
+
 ##############################################################################
 # Scatter plot of relative rates in singleton vs. divergent sites
 ##############################################################################
@@ -154,5 +153,3 @@ names(cis)<-c("Category", "mean", "lcl", "ucl")
 	# geom_text(data=dat, aes(x=-Inf,y=Inf, label=val, hjust=0, vjust=1))+
 	# facet_wrap(~Category)
 # ggsave("sing_spec_compare_no_sub.png", width=8.4, height=4.4)
-
-

@@ -2,6 +2,7 @@ require(ggplot2)
 require(dplyr)
 require(tidyr)
 
+cbbPalette <- c("#000000", "#E69F00", "#56B4E9", "#009E73", "#F0E442", "#0072B2", "#D55E00", "#CC79A7")
 
 ##############################################################################
 # Read and process data
@@ -40,80 +41,108 @@ cat("Creating combined data...\n")
 chrp<-rbind(chrpfdnm, chrpfa) %>% arrange(MU)
 chrp$prop <- cumsum(chrp$OBS)/sum(chrp$OBS)
 
-
 ##############################################################################
-# Permute data from the GoNL DNMs
-# Each permutation simulates a single sample
-# Will modify to extract median ROC curve for plotting
+# Calculate individual-level AUC from the GoNL DNMs
+#
+# Each iteration calculates the AUC for the following:
+# AUC under 3-mer model
+# Permuted AUC under 3-mer model
+# AUC under logit model
+# Permuted AUC under logit model
 ##############################################################################
-nperm<-500
+nperm<-258
 
 aucperm<-rep(0,nperm)
 aucperm3<-aucperm
-for(i in 1:nperm){
-	cat("Permuting AUC", "(", i, "of", nperm, ")...\n")
-	ndnms<-round(rnorm(1, 42.7, 10.3), 0)
 
-	chrpsub<-rbind(chrpfdnm[sample(nrow(chrpfdnm), ndnms),], chrpfa) %>%
-		arrange(MU)
-	chrpsub$prop <- cumsum(chrpsub$OBS)/sum(chrpsub$OBS)
-
-	nsamp<-50000
-
-	chrpsub2<-chrpsub[sample(nrow(chrpsub), nsamp),] %>%
-	  arrange(MU) %>%
-	  mutate(ntile=ntile(MU, 1000))
-
-	auctmp <- chrpsub2 %>% summarise(AUC=1-sum(prop)/nsamp)
-	aucperm[i] <- auctmp$AUC
-
-	# cat("Permuting 3-mer AUC", "(", i, "of", nperm, ")...\n")
-	chrpsub3<-chrpsub %>% arrange(MU3)
-	chrpsub3$prop <- cumsum(chrpsub3$OBS)/sum(chrpsub3$OBS)
-
-	chrpsub3a<-chrpsub3[sample(nrow(chrpsub3), nsamp),] %>%
-		arrange(MU3, prop) %>%
-		mutate(ntile=ntile(MU3, 1000))
-
-	auctmp3 <- chrpsub3a %>% summarise(AUC=1-sum(prop)/nsamp)
-	aucperm3[i] <- auctmp3$AUC
-}
-
-##############################################################################
-# Calculate AUC for each individual under the logit and 3-mer models
-##############################################################################
 ids<-unique(chrpfdnm$ID)
 numind<-length(ids)
 aucind<-rep(0, numind)
 aucind3<-aucind
 
-for(i in 1:numind){
+for(i in 1:nperm){
+	### Run permutations
+	cat("Permuting AUC", "(", i, "of", nperm, ")...\n")
+	ndnms<-round(rnorm(1, 42.7, 10.3), 0)
+	nsamp<-1000000
+
+	chrpsub<-rbind(chrpfdnm[sample(nrow(chrpfdnm), ndnms),], chrpfa) %>%
+		arrange(MU)
+	chrpsub$prop <- cumsum(chrpsub$OBS)/sum(chrpsub$OBS)
+	chrpsub2<-chrpsub[sample(nrow(chrpsub), nsamp),] %>%
+	  arrange(MU) %>%
+	  mutate(ntile=ntile(MU, 1000))
+
+	chrpsub3<-chrpsub %>% arrange(MU3)
+	chrpsub3$prop <- cumsum(chrpsub3$OBS)/sum(chrpsub3$OBS)
+	chrpsub3a<-chrpsub3[sample(nrow(chrpsub3), nsamp),] %>%
+		arrange(MU3, prop) %>%
+		mutate(ntile=ntile(MU3, 1000))
+
+	auctmp <- chrpsub2 %>% summarise(AUC=1-sum(prop)/nsamp)
+	aucperm[i] <- auctmp$AUC
+	auctmp3 <- chrpsub3a %>% summarise(AUC=1-sum(prop)/nsamp)
+	aucperm3[i] <- auctmp3$AUC
+
 	curid<-ids[i]
+	### Get empirical AUC
 	cat("Calculating AUC for", curid, "(", i, "of", numind, ")...\n")
 	datid<-chrpfdnm %>% filter(ID==curid)
+
 	tmpdat<-rbind(datid, chrpfa) %>% arrange(MU)
 	tmpdat$prop<-cumsum(tmpdat$OBS)/sum(tmpdat$OBS)
-
-	nsamp<-50000
-
 	tmpdat2<-tmpdat[sample(nrow(tmpdat), nsamp),] %>%
 	  arrange(MU) %>%
 	  mutate(ntile=ntile(MU, 1000))
 
-	tmpauc <- tmpdat2 %>% summarise(AUC=1-sum(prop)/nsamp)
-	aucind[i]<-tmpauc$AUC
-
 	### Repeat with 3-mer model
 	tmpdat3<-tmpdat %>% arrange(MU3)
 	tmpdat3$prop<-cumsum(tmpdat3$OBS)/sum(tmpdat3$OBS)
-
 	tmpdat3s<-tmpdat3[sample(nrow(tmpdat3), nsamp),] %>%
 		arrange(MU3, prop) %>%
 		mutate(ntile=ntile(MU3, 1000))
 
+	tmpauc <- tmpdat2 %>% summarise(AUC=1-sum(prop)/nsamp)
+	aucind[i]<-tmpauc$AUC
 	tmpauc3 <- tmpdat3s %>% summarise(AUC=1-sum(prop)/nsamp)
 	aucind3[i]<-tmpauc3$AUC
 }
+
+##############################################################################
+# Calculate AUC for each individual under the logit and 3-mer models
+##############################################################################
+# ids<-unique(chrpfdnm$ID)
+# numind<-length(ids)
+# aucind<-rep(0, numind)
+# aucind3<-aucind
+#
+# for(i in 1:numind){
+# 	curid<-ids[i]
+# 	cat("Calculating AUC for", curid, "(", i, "of", numind, ")...\n")
+# 	datid<-chrpfdnm %>% filter(ID==curid)
+# 	tmpdat<-rbind(datid, chrpfa) %>% arrange(MU)
+# 	tmpdat$prop<-cumsum(tmpdat$OBS)/sum(tmpdat$OBS)
+#
+# 	nsamp<-50000
+#
+# 	tmpdat2<-tmpdat[sample(nrow(tmpdat), nsamp),] %>%
+# 	  arrange(MU) %>%
+# 	  mutate(ntile=ntile(MU, 1000))
+#
+# 	tmpauc <- tmpdat2 %>% summarise(AUC=1-sum(prop)/nsamp)
+# 	aucind[i]<-tmpauc$AUC
+#
+# 	### Repeat with 3-mer model
+# 	tmpdat3<-tmpdat %>% arrange(MU3)
+# 	tmpdat3$prop<-cumsum(tmpdat3$OBS)/sum(tmpdat3$OBS)
+#
+# 	tmpdat3s<-tmpdat3[sample(nrow(tmpdat3), nsamp),] %>%
+# 		arrange(MU3, prop) %>%
+# 		mutate(ntile=ntile(MU3, 1000))
+#
+# 	tmpauc3 <- tmpdat3s %>% summarise(AUC=1-sum(prop)/nsamp)
+# 	aucind3[i]<-tmpauc3$AUC
+# }
 
 ##############################################################################
 # Function checks if elements in a exist in b
@@ -128,8 +157,6 @@ toBin <- function(a,b){
 # Bernoulli(mu)==1; loop continues until we have simulated the same number
 # of sites as in observed data
 ##############################################################################
-
-# nsites <- sum(chrp$OBS)
 nsim<-200
 
 for(i in 1:nsim){
@@ -162,7 +189,6 @@ for(i in 1:nsim){
 # Can delete chrp after this step
 ##############################################################################
 cat("Subsampling data...\n")
-
 nsamp<-100000
 
 chrp2<-chrp[sample(nrow(chrp), nsamp),] %>%
@@ -172,31 +198,22 @@ chrp2<-chrp[sample(nrow(chrp), nsamp),] %>%
 
 auc <- chrp2 %>% group_by(group) %>% summarise(AUC=1-sum(val)/nsamp)
 
-# chrp2<-chrp %>%
-#   gather(group, val, .dots=grep("prop", names(chrp)))
-
 cat("Cleaning up memory...\n")
-# rm(chrp)
 gc()
 
 ##############################################################################
-# Further summarize data--get means by ntile
-#
-# Can delete chrp2 after this step
+# Summarize simulated data for ROC plots
 ##############################################################################
 chrp2_nt_mean<-chrp2 %>%
   group_by(group, ntile) %>%
   summarise(val=mean(val))
 
-##############################################################################
 # Get subsets of true and simulated data
-##############################################################################
 chrp2_nt_sim<-chrp2_nt_mean[chrp2_nt_mean$group!="prop",]
 chrp2_nt_obs<-chrp2_nt_mean[chrp2_nt_mean$group=="prop",]
 
-##############################################################################
-# Calculate lower/upper 95% CIs from simulations
-##############################################################################
+# Calculate lower/upper range from simulations
+# (can switch commented summarise() lines to use CI)
 chrp2_lb<-chrp2_nt_sim %>%
   group_by(ntile) %>%
   # summarise(lb=t.test(val)$conf.int[1]) %>%
@@ -211,42 +228,17 @@ chrp2_ub<-chrp2_nt_sim %>%
   mutate(group="ub") %>%
   select(group, ntile, ub)
 
-##############################################################################
 # Add bounds to data frame
-##############################################################################
 chrp2_nt_obs$lb <- chrp2_lb$lb
 chrp2_nt_obs$ub <- chrp2_ub$ub
-# names(chrp3m)[4:5]<-c("lb", "ub")
 
 ##############################################################################
-# Repeat genome-wide with 3bp marginal rates
+# Combine AUC data to generate ROC plot
 ##############################################################################
-# chrp3<-chrp %>% arrange(MU3)
-# chrp3$prop <- cumsum(chrp3$OBS)/sum(chrp3$OBS)
-#
-# chrp3a<-chrp3[sample(nrow(chrp3), nsamp),] %>%
-# 	arrange(MU3, prop) %>%
-# 	mutate(ntile=ntile(MU3, 1000))
-#
-# chrp3b<-chrp3a %>%
-#   group_by(ntile) %>%
-#   summarise(val=mean(prop)) %>%
-# 	mutate(group="3-mers") %>%
-# 	dplyr::select(group, ntile, val)
-#
-# auc3 <- chrp3b %>% summarise(AUC=1-sum(val)/1000)
-
-##############################################################################
-# Combine AUC data to generate plots
-##############################################################################
-
 full_auc_dat<-rbind(data.frame(chrp2_nt_obs[,1:3]), data.frame(chrp3b))
 names(full_auc_dat)[1]<-"Model"
 full_auc_dat$Model<-ifelse(full_auc_dat$Model=="prop", "Logit", "3-mer")
-
 full_auc_bounds<-chrp2_nt_obs[,c(2:5)]
-
-cbbPalette <- c("#000000", "#E69F00", "#56B4E9", "#009E73", "#F0E442", "#0072B2", "#D55E00", "#CC79A7")
 
 ggplot()+
   geom_line(data=full_auc_dat,
@@ -267,6 +259,9 @@ ggplot()+
   # scale_x_continuous(limits=c(0,1000), labels=c())
 ggsave("/net/bipolar/jedidiah/mutation/images/pseudo_roc_curves.png", height=4, width=7.25)
 
+##############################################################################
+# Get AUC data for distribution plots
+##############################################################################
 auc$model<-"simulated"
 auc$obs<-"simulated"
 
@@ -277,57 +272,74 @@ auc3merobs<-data.frame(AUC=aucind3, model="3-mer", obs="observed")
 auclogitperm<-data.frame(AUC=aucperm, model="logit", obs="permuted")
 auc3merperm<-data.frame(AUC=aucperm3, model="3-mer", obs="permuted")
 
+# All AUCs
 plotaucfull<-rbind(aucsim, auclogitobs, auc3merobs, auclogitperm, auc3merperm)
+plotaucfull$model<-as.factor(plotaucfull$model)
+plotaucfull$model<-relevel(plotaucfull$model, "3-mer")
+
+# No simulations
 plotaucnosim<-rbind(auclogitobs, auc3merobs, auclogitperm, auc3merperm)
+plotaucnosim$model<-as.factor(plotaucnosim$model)
+plotaucnosim$model<-relevel(plotaucnosim$model, "3-mer")
+
+# Only observed data (no simulation or permutations)
 plotaucobsonly<-rbind(auclogitobs, auc3merobs)
+plotaucobsonly$model<-as.factor(plotaucobsonly$model)
+plotaucobsonly$model<-relevel(plotaucobsonly$model, "3-mer")
+
+# Observed + Simulated (no permutations)
 plotaucnoperm<-rbind(aucsim, auclogitobs, auc3merobs)
+plotaucnoperm$model<-as.factor(plotaucnoperm$model)
+plotaucnoperm$model<-relevel(plotaucnoperm$model, "3-mer")
 
 plotaucmean<-plotaucobsonly %>%
 	group_by(model, obs) %>%
 	summarise(AUC=mean(AUC))
 
-plotaucobsonly$model<-relevel(plotaucobsonly$model, "3-mer")
-plotaucfull$model<-relevel(plotaucfull$model, "3-mer")
-plotaucnosim$model<-relevel(plotaucnosim$model, "3-mer")
-plotaucnoperm$model<-relevel(plotaucnoperm$model, "3-mer")
-
 ggplot()+
-	geom_density(data=plotaucobsonly, aes(x=AUC, colour=model, linetype=obs))+
+	geom_density(data=plotaucfull, aes(x=AUC, colour=model, linetype=obs))+
 	geom_density(data=aucsim, aes(x=AUC), colour="black")+
-	scale_colour_manual(values=cbbPalette[2:3])+
-	geom_vline(data=plotaucmean,
-		aes(xintercept=AUC, colour=model, linetype=obs))+
-	# geom_vline(data=auc3merobs, aes(xintercept=mean(AUC)), linetype="longdash")+
-	# stat_function(fun = dnorm,
-	# 	colour = "red",
-	# 	args = list(mean = mean(auc[-1,]$AUC), sd = sd(auc[-1,]$AUC)))+
-	# xlim(mean(auc[-1,]$AUC)-4*sd(auc[-1,]$AUC), mean(auc[-1,]$AUC)+4*sd(auc[-1,]$AUC))+
-	theme_classic()
-ggsave("/net/bipolar/jedidiah/mutation/images/auc_hist.png", height=7, width=7)
+	scale_colour_manual(values=cbbPalette[c(2,3,1)])+
+	# geom_vline(data=plotaucmean,
+	# 	aes(xintercept=AUC, colour=model, linetype=obs))+
+	theme_classic()+
+	guides(linetype=F)+
+	theme(legend.position="bottom")
+ggsave("/net/bipolar/jedidiah/mutation/images/auc_hist.png", height=4, width=4)
 
-aucind_df2<-data.frame(AUC=aucind, model="logit")
-aucind3_df2<-data.frame(AUC=aucind3, model="3-mers")
-
-aucind_comp<-rbind(aucind_df2, aucind3_df2)
-aucind_comp$model<-relevel(aucind_comp$model, "3-mers")
-
-plotaucfull$model<-as.factor(plotaucfull$model)
-plotaucfull$model<-relevel(plotaucfull$model, "3-mer")
-
-plotaucnoperm$model<-as.factor(plotaucnoperm$model)
-plotaucnoperm$model<-relevel(plotaucnoperm$model, "3-mer")
-
+# Add paternal age
 ages<-read.table("/net/bipolar/jedidiah/mutation/reference_data/gonl_fam_age.txt", header=T)
 names(ages)<-c("ID", "nDNM", "FatherAge", "MotherAge", "Coverage")
 plotaucobsonly<-rbind(auclogitobs, auc3merobs)
 plotaucobsonly$ID<-c(ids, ids)
-
 plotaucobsonly<-merge(plotaucobsonly, ages, by="ID")
 
+ggplot(plotaucobsonly, aes(x=model, y=AUC, fill=model))+
+	geom_violin()+
+	geom_boxplot(width=0.3, fill="white", outlier.colour=NA)+
+	# geom_jitter(aes(colour=FatherAge), width=0.2, alpha=0.75)+
+	geom_hline(yintercept=0.5, linetype="dashed")+
+	# facet_wrap(~obs, ncol=1, drop=TRUE, scales="free_x")+
+	# facet_grid(obs~., scales="free_x")+
+	# scale_x_discrete(drop=TRUE)+
+	# scale_y_discrete(drop=TRUE)+
+	# scale_fill_discrete(drop=T)+
+	# coord_flip()+
+	scale_fill_manual(values=cbbPalette[c(2:3,1)], drop=TRUE)+
+	# scale_colour_gradientn(colours=brewer.pal(7,"PiYG"))+
+	theme_classic()+
+	theme(legend.position="none")
+ggsave("/net/bipolar/jedidiah/mutation/images/ind_violin.png", width=6, height=4)
+
+##############################################################################
+# Additional data summaries for paternal age, etc.
+##############################################################################
 auc_age_cor<-plotaucobsonly %>%
 	group_by(model) %>%
 	summarise(cor=cor(AUC, FatherAge, method="spearman"),
-		cor.p=cor.test(AUC, FatherAge, method="spearman")$p.value)
+		cor.p=cor.test(AUC, FatherAge, method="spearman")$p.value,
+		cornum=cor(AUC, nDNM, method="spearman"),
+		cornum.p=cor.test(AUC, nDNM, method="spearman")$p.value)
 
 fao<-plotaucobsonly %>%
 	filter(model=="logit") %>%
@@ -336,53 +348,10 @@ fao<-plotaucobsonly %>%
 	dplyr::select(quart, FatherAge) %>%
 	spread(quart, FatherAge)
 
-
-ggplot(plotaucobsonly, aes(x=model, y=AUC, fill=model))+
-	geom_violin()+
-	geom_boxplot(width=0.3, fill="white", outlier.colour=NA)+
-	geom_jitter(aes(colour=FatherAge), width=0.2, alpha=0.75)+
-	geom_hline(yintercept=0.5, linetype="dashed")+
-	# facet_wrap(~obs, ncol=1, drop=TRUE, scales="free_x")+
-	# facet_grid(obs~., scales="free_x")+
-	# scale_x_discrete(drop=TRUE)+
-	# scale_y_discrete(drop=TRUE)+
-	# scale_fill_discrete(drop=T)+
-	# coord_flip()+
-	# scale_colour_brewer(palette="Dark2")+
-	scale_fill_manual(values=cbbPalette[c(2:3,1)], drop=TRUE)+
-	# scale_colour_brewer()+
-	scale_colour_gradientn(colours=brewer.pal(7,"PiYG"))+
-	theme_classic()+
-	theme(
-		# legend.position="none",
-	)
-ggsave("/net/bipolar/jedidiah/mutation/images/ind_violin.png", width=6, height=4)
-
-# ggplot(chrp2[chrp2$MU>0,], aes(x=log(MU)))+
-# 	geom_histogram(bins=100)+
-# 	xlab("log(relative rate)")+
-# 	ylab("Frequency")+
-# 	theme_bw()+
-# 	theme(axis.text.y=element_blank(),
-# 		axis.title.x=element_text(size=20),
-# 		axis.title.y=element_text(size=20))
-# ggsave("/net/bipolar/jedidiah/mutation/images/chr4_hist.png", width=10, height=3)
-#
-# ggplot(chrpm, aes(x=log(MU)))+
-# 	geom_histogram(bins=32)+
-# 	xlab("log(relative rate)")+
-# 	ylab("Frequency")+
-# 	theme_bw()+
-# 	theme(axis.text.y=element_blank(),
-# 		axis.title.x=element_text(size=20),
-# 		axis.title.y=element_text(size=20))
-# ggsave("/net/bipolar/jedidiah/mutation/images/chr4_hista.png")
-
 # OLD VERSION--early attempt at pseudo-ROC curves
 # ggplot(chrp3, aes(x=1000-ntile, y=1-val, group=group, colour=group))+
 #   geom_line()
 # ggsave("/net/bipolar/jedidiah/mutation/images/psuedo_roc_chr4a.png")
-
 
 # OLD VERSION--uses true ROC calculations
 # devtools::install_github("hadley/ggplot2")

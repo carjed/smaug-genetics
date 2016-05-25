@@ -152,7 +152,7 @@ my $f_summ = "/net/bipolar/jedidiah/testpipe/summaries/${macl}_${data}/chr$chr.s
 # my $f_summ = "/net/bipolar/jedidiah/testpipe/vcfs/chr20.rq.summary";
 open my $summ, '<', $f_summ or die "can't open $f_summ: $!";
 
-my $outfile = "$parentdir/output/${subseq}bp_${bw}k_${macl}/chr$chr.expanded.summary";
+my $outfile = "$parentdir/output/${subseq}bp_${bw}k_${macl}_${data}/chr$chr.expanded.summary";
 open(OUT, '>', $outfile) or die "can't write to $outfile: $!\n";
 
 if ($mac==1) {

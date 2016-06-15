@@ -22,7 +22,7 @@ chrpf<-chrpf[substr(chrpf$SEQ3, 2, 3)!="CG" & chrpf$MU>0,]
 cat("Reading DNMs...\n")
 dnms_full<-read.table("/net/bipolar/jedidiah/mutation/reference_data/GoNL_DNMs.txt", header=T, stringsAsFactors=F)
 dnms_full<-dnms_full[,1:3]
-names(dnms_full)<-c("ID", "CHR", "POS")
+names(dnms_full)[1:3]<-c("ID", "CHR", "POS")
 
 # Duplicate data, merge with DNMs to get ID
 # chrpf<-chrp
@@ -313,23 +313,6 @@ names(ages)<-c("ID", "nDNM", "FatherAge", "MotherAge", "Coverage")
 plotaucobsonly<-rbind(auclogitobs, auc3merobs)
 plotaucobsonly$ID<-c(ids, ids)
 plotaucobsonly<-merge(plotaucobsonly, ages, by="ID")
-
-ggplot(plotaucobsonly, aes(x=model, y=AUC, fill=model))+
-	geom_violin()+
-	geom_boxplot(width=0.3, fill="white", outlier.colour=NA)+
-	# geom_jitter(aes(colour=FatherAge), width=0.2, alpha=0.75)+
-	geom_hline(yintercept=0.5, linetype="dashed")+
-	# facet_wrap(~obs, ncol=1, drop=TRUE, scales="free_x")+
-	# facet_grid(obs~., scales="free_x")+
-	# scale_x_discrete(drop=TRUE)+
-	# scale_y_discrete(drop=TRUE)+
-	# scale_fill_discrete(drop=T)+
-	# coord_flip()+
-	scale_fill_manual(values=cbbPalette[c(2:3,1)], drop=TRUE)+
-	# scale_colour_gradientn(colours=brewer.pal(7,"PiYG"))+
-	theme_classic()+
-	theme(legend.position="none")
-ggsave("/net/bipolar/jedidiah/mutation/images/ind_violin.png", width=6, height=4)
 
 ##############################################################################
 # Additional data summaries for paternal age, etc.

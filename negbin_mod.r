@@ -170,23 +170,22 @@ if(overall){
   cat("Running overall models...\n")
 
   cat("Formatting data...\n")
-  a3a1 <- getSubMotifs(a3a1, nts, bases)
+  a3a2 <- getSubMotifs(a3a1, nts, bases)
 
   # Create model formulas
   # Must fix to use filtered motifs
   motif_mod_form <- as.formula(paste("obs~",
-  	paste(names(a3a1)[(ncol(a3a1)-511):ncol(a3a1)], collapse="+")))
+  	paste(names(a3a2)[(ncol(a3a2)-511):ncol(a3a2)], collapse="+")))
 
   feat_mod_form <- as.formula(paste("obs~",
     paste(c(covnames, "prop_GC"), collapse="+")))
 
   full_mod_form <- as.formula(paste("obs~",
-  	paste(names(a3a1)[c(3:15, (ncol(a3a1)-511):ncol(a3a1))], collapse="+")))
+  	paste(names(a3a2)[c(3:15, (ncol(a3a2)-511):ncol(a3a2))], collapse="+")))
 
-
-  mut_lm_m_all <- glm(motif_mod_form, data=a3a1, family="poisson")
-  mut_lm_fe_all <- glm(feat_mod_form, data=a3a1, family="poisson")
-  mut_lm_f_all <- glm(full_mod_form, data=a3a1, family="poisson")
+  mut_lm_m_all <- glm(motif_mod_form, data=a3a2, family="poisson")
+  mut_lm_fe_all <- glm(feat_mod_form, data=a3a2, family="poisson")
+  mut_lm_f_all <- glm(full_mod_form, data=a3a2, family="poisson")
 
   # Calculate McFadden's pseudo R-squared (unadjusted)
   mrsq <- 1-mut_lm_m_all$deviance/mut_lm_m_all$null.deviance
@@ -413,7 +412,7 @@ ggplot(mc2, aes(x=Category2, y=cor, colour=res, fill=res, group=res))+
 		axis.text.x = element_text(size=16, angle = 45,  vjust=1, hjust=1.01))
 
 modelbar <- paste0(parentdir, "/images/gw_5bp_vs_mod_3.png")
-ggsave(modelbar, width=9, height=6)
+ggsave(modelbar, width=6, height=3.5)
 
 # Get AIC for each model/category
 compare.aic <- compare.aic %>% spread(Category2, AIC)
@@ -443,7 +442,7 @@ ggplot(comp.mods, aes(x=obs, y=exp, group=res, colour=res))+
   facet_wrap(~res, scales="free")+
   theme_bw()+
   theme(legend.position="none")
-ggsave("/net/bipolar/jedidiah/mutation/images/1mb_scatter.png")
+ggsave("/net/bipolar/jedidiah/mutation/images/1mb_scatter.png", height=4, width=5.5)
 
 
 ##############################################################################

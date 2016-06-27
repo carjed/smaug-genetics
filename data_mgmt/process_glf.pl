@@ -55,11 +55,11 @@ my $fname="$filepath[8]/$filepath[9]/$filepath[10].dp";
 
 # print "$_\n" foreach(@filepath);
 
-make_path("$parentdir/$filepath[8]/$filepath[9]");
+make_path("$parentdir/output/glf_depth/$filepath[8]/$filepath[9]");
 
 my $glfcmd="samtools-hybrid glfview $indfile | cut -f1-4 | awk '\$2%10==0 && \$3 ~ /[ACGT]/' > $parentdir/output/glf_depth/$fname";
-print "Following command will be run:\n";
-print "$glfcmd\n";
+# print "Following command will be run:\n";
+# print "$glfcmd\n";
 &forkExecWait($glfcmd);
 
 ##############################################################################

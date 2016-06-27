@@ -53,7 +53,7 @@ print "$outfile\n";
 open(OUT, '>', $outfile) or die "can't write to $outfile: $!\n";
 
 # glob ('/path/to/dir/*');
-my @files = glob("$glfdir/1497-RMM-401*");
+my @files = glob("$glfdir/$dirs[0]/1497-RMM-401*");
 foreach my $file (@files) {
   print $file . "\n";
   open my $sample, '<', $file or die "can't open $file: $!";

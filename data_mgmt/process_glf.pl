@@ -33,7 +33,7 @@ pod2usage(-verbose => 2) if $man;
 
 my $wdir=getcwd;
 my $parentdir="/net/bipolar/jedidiah/mutation";
-my $glfdir="$parentdir/output/glf_depth/chr$chr/";
+# my $glfdir="$parentdir/output/glf_depth/chr$chr/";
 
 my $filelist="/net/bipolar/jedidiah/mutation/output/glf_depth/glf_filelist.txt";
 open my $files, '<', $filelist or die "$filelist: $!";

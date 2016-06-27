@@ -51,6 +51,7 @@ my $end=$index*400;
 
 my @filerange;
 while(<$files>) {
+  chomp;
   if (($. == $start) .. ($. == $end)) {
     push @filerange, $_;
   }

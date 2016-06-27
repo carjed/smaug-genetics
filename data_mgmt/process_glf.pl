@@ -51,8 +51,9 @@ my $end=$index*400;
 
 my @filerange;
 while(<$files>) {
-if (($. == $start) .. ($. == $end)) {
+  if (($. == $start) .. ($. == $end)) {
     push @filerange, $_;
+  }
 }
 
 foreach(@filerange){

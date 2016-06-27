@@ -1,8 +1,8 @@
 #!/usr/local/bin/perl
 
 ##############################################################################
-# Scans summarized glf files (every 10bp; colnames: chr, pos, ref, dp) and
-# outputs mean depth
+# Script scans glf file and extracts only the relevant info (chr, pos, ref, dp)
+# for every 10th base
 ##############################################################################
 
 use strict;
@@ -13,7 +13,6 @@ use Pod::Usage;
 use File::Basename;
 use File::Path qw(make_path);
 use List::Util qw(first max maxstr min minstr reduce shuffle sum);
-use List::MoreUtils 'pairwise';
 use Math::Round;
 use Cwd;
 use Benchmark;
@@ -33,7 +32,6 @@ pod2usage(-verbose => 2) if $man;
 
 my $wdir=getcwd;
 my $parentdir="/net/bipolar/jedidiah/mutation";
-# my $glfdir="$parentdir/output/glf_depth/chr$chr/";
 
 my $filelist="/net/bipolar/jedidiah/mutation/output/glf_depth/glf_filelist.txt";
 open my $files, '<', $filelist or die "$filelist: $!";
@@ -47,19 +45,11 @@ while( <$files> ) {
   }
 }
 
-# open my $ind, '<', $indfile or die "$indfile: $!";
-
 my @filepath=split m%/%, $indfile;
-
 my $fname="$filepath[8]/$filepath[9]/$filepath[10].dp";
-
-# print "$_\n" foreach(@filepath);
-
 make_path("$parentdir/output/glf_depth/$filepath[8]/$filepath[9]");
 
 my $glfcmd="samtools-hybrid glfview $indfile | cut -f1-4 | awk '\$2%10==0 && \$3 ~ /[ACGT]/' > $parentdir/output/glf_depth/$fname";
-# print "Following command will be run:\n";
-# print "$glfcmd\n";
 &forkExecWait($glfcmd);
 
 ##############################################################################

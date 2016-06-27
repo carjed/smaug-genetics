@@ -13,7 +13,6 @@ use Pod::Usage;
 use File::Basename;
 use File::Path qw(make_path);
 use List::Util qw(first max maxstr min minstr reduce shuffle sum);
-use List::MoreUtils 'pairwise';
 use Math::Round;
 use Cwd;
 use Benchmark;

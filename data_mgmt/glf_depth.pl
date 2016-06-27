@@ -48,4 +48,4 @@ foreach my $file (@files) {
 
 }
 
-print OUT "$_\t$hash{$_}\n" foreach (sort keys%hash);
+print OUT "$_\t$hash{$_}\n" foreach (sort {$a <=> $b} (keys%hash));

@@ -18,14 +18,25 @@ use Benchmark;
 use Tie::File;
 
 # Set options and inputs
+my $chr=1;
+
 my $wdir=getcwd;
 my $parentdir="/net/bipolar/jedidiah/mutation";
+my $glfdir="$parentdir/output/glf_depth/$chr";
+
+opendir my $dh, $glfdir
+  or die "$0: opendir: $!";
+
+print "$_\n" foreach grep {-d "$glfdir/$_" && ! /^\.{1,2}$/} readdir($dh);
 
 # for(i in 1:5000000){
 #   grep -w "9996" *.dp
 # }
 
 my %hash=();
+my %hashn=();
+
+# $hashn{$_}=0 for
 
 my $outfile = "$parentdir/output/glf_depth/test.txt";
 open(OUT, '>', $outfile) or die "can't write to $outfile: $!\n";
@@ -36,7 +47,6 @@ foreach my $file (@files) {
   print $file . "\n";
   open my $sample, '<', $file or die "can't open $file: $!";
 
-
   while (<$sample>){
   	chomp;
   	my @line=split(/\t/, $_);
@@ -44,8 +54,20 @@ foreach my $file (@files) {
   	# my $vals=join("\t", nearest(0.0001, @line[1 .. $#line]));
   	my $dp=$line[3];
   	$hash{$pos}+=$dp;
+    $hashn{$pos}+=1;
   }
 
 }
 
+$hash{$_}=$hash{$_}/$hashn{$_} foreach (keys%hash);
+
 print OUT "$_\t$hash{$_}\n" foreach (sort {$a <=> $b} (keys%hash));
+
+
+sub roundup
+{
+  my $num = shift;
+  my $roundto = shift || 1;
+
+  return int(ceil($num/$roundto))*$roundto;
+}

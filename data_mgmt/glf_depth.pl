@@ -32,7 +32,7 @@ open(OUT, '>', $outfile) or die "can't write to $outfile: $!\n";
 
 # glob ('/path/to/dir/*');
 my @files = glob("/output/glf_depth/1497-RMM-07*");
-foreach $file (@files) {
+foreach my $file (@files) {
   print $file . "\n";
   open my $sample, '<', $file or die "can't open $file: $!";
 

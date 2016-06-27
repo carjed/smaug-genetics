@@ -24,7 +24,7 @@ my $wdir=getcwd;
 my $parentdir="/net/bipolar/jedidiah/mutation";
 my $glfdir="$parentdir/output/glf_depth/$chr/";
 
-opendir (DIR, $glfdir) or die $!";
+opendir (DIR, $glfdir) or die $!;
 
 print "$_\n" foreach grep {-d "$glfdir/$_" && ! /^\.{1,2}$/} readdir(DIR);
 

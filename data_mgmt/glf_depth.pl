@@ -1,7 +1,8 @@
 #!/usr/local/bin/perl
 
 ##############################################################################
-#
+# Scans summarized glf files (every 10bp; colnames: chr, pos, ref, dp) and
+# outputs mean depth
 ##############################################################################
 
 use strict;
@@ -68,7 +69,6 @@ foreach my $file (@files) {
   	$hash{$pos}+=$dp;
     $hashn{$pos}+=1;
   }
-
 }
 
 $hash{$_}=nearest(.1,$hash{$_}/$hashn{$_}) foreach (keys%hash);

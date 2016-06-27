@@ -31,9 +31,9 @@ opendir (DIR, $glfdir) or die $!;
 my @dirs = grep {-d "$glfdir/$_" && ! /^\.{1,2}$/} readdir(DIR);
 print "$_\n" foreach @dirs;
 
-my @range = split/./, $dirs[0];
-my $start = $range[0];
-my $end = $range[1];
+my @range = split/\./, $dirs[0];
+my $start = roundup($range[0], 10);
+my $end = roundup($range[1], 10)-10;
 
 print "$start\t$end\n";
 
@@ -44,7 +44,9 @@ print "$start\t$end\n";
 my %hash=();
 my %hashn=();
 
-# $hashn{$_}=0 for
+for(my $i=$start; $i<=$end; $i+=10){
+  $hashn{$i}=0;
+}
 
 my $outfile = "$parentdir/output/glf_depth/test.txt";
 open(OUT, '>', $outfile) or die "can't write to $outfile: $!\n";

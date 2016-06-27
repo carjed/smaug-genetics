@@ -56,12 +56,12 @@ while(<$files>) {
   }
 }
 
-foreach(@filerange){
-  my @filepath=split m%/%, $_;
+foreach my $sample (@filerange){
+  my @filepath=split m%/%, $sample;
   my $fname="$filepath[8]/$filepath[9]/$filepath[10].dp";
   make_path("$parentdir/output/glf_depth/$filepath[8]/$filepath[9]");
 
-  my $glfcmd="samtools-hybrid glfview $_ | cut -f1-4 | awk '\$2%10==0 && \$3 ~ /[ACGT]/' > $parentdir/output/glf_depth/$fname";
+  my $glfcmd="samtools-hybrid glfview $sample | cut -f1-4 | awk '\$2%10==0 && \$3 ~ /[ACGT]/' > $parentdir/output/glf_depth/$fname";
   &forkExecWait($glfcmd);
   # print "$_\n";
 }

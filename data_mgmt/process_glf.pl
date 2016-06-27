@@ -37,17 +37,17 @@ my $filelist="/net/bipolar/jedidiah/mutation/output/glf_depth/glf_filelist.txt";
 open my $files, '<', $filelist or die "$filelist: $!";
 my $NUMFILES=2217585;
 
-my $indfile;
-while( <$files> ) {
-  chomp;
-  if($. == $index) {
-      $indfile = $_;
-      last;
-  }
-}
+# my $indfile;
+# while( <$files> ) {
+#   chomp;
+#   if($. == $index) {
+#       $indfile = $_;
+#       last;
+#   }
+# }
 
-my $start=($ind-1)*400+1;
-my $end=$ind*400;
+my $start=($index-1)*400+1;
+my $end=$index*400;
 
 my @filerange;
 while(<$files>) {

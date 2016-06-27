@@ -1,9 +1,7 @@
 #!/usr/local/bin/perl
 
 ##############################################################################
-# Used to obtain full data from logistic regression model
-# loops through reference genome and outputs 1 line per base, as long as
-# valid covariate data exists
+# 
 ##############################################################################
 
 use strict;
@@ -23,6 +21,31 @@ use Tie::File;
 my $wdir=getcwd;
 my $parentdir="/net/bipolar/jedidiah/mutation";
 
-for(i in 1:5000000){
-  grep -w "9996" *.dp
+# for(i in 1:5000000){
+#   grep -w "9996" *.dp
+# }
+
+my %hash=();
+
+my $outfile = "$parentdir/output/glf_depth/test.txt";
+open(OUT, '>', $outfile) or die "can't write to $outfile: $!\n";
+
+# glob ('/path/to/dir/*');
+@files = glob("/output/glf_depth/1497-RMM-07*");
+foreach $file (@files) {
+  print $file . "\n";
+  open my $sample, '<', $file or die "can't open $file: $!";
+
+
+  while (<$sample>){
+  	chomp;
+  	my @line=split(/\t/, $_);
+  	my $pos=$line[1];
+  	# my $vals=join("\t", nearest(0.0001, @line[1 .. $#line]));
+  	my $dp=$line[3];
+  	$hash{$pos}+=$dp;
+  }
+
 }
+
+print OUT "$_\t$hash{$_}\n" foreach (keys%hash);

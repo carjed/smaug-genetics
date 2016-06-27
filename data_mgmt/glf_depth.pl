@@ -31,7 +31,7 @@ my $outfile = "$parentdir/output/glf_depth/test.txt";
 open(OUT, '>', $outfile) or die "can't write to $outfile: $!\n";
 
 # glob ('/path/to/dir/*');
-my @files = glob("$parentdir/output/glf_depth/1497-RMM-07*");
+my @files = glob("$parentdir/output/glf_depth/1497-RMM-401*");
 foreach my $file (@files) {
   print $file . "\n";
   open my $sample, '<', $file or die "can't open $file: $!";

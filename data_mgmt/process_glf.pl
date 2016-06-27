@@ -40,17 +40,18 @@ open my $files, '<', $filelist or die "$filelist: $!";
 
 my $indfile;
 while( <$files> ) {
-    if($. == $index) {
-        $indfile = $_;
-        last;
-    }
+  chomp;
+  if($. == $index) {
+      $indfile = $_;
+      last;
+  }
 }
 
 # open my $ind, '<', $indfile or die "$indfile: $!";
 
 my @filepath=split m%/%, $indfile;
 
-my $fname="$filepath[7]/$filepath[8]/$filepath[9].dp";
+my $fname="$filepath[8]/$filepath[9]/$filepath[10].dp";
 
 print "$_\n" foreach(@filepath);
 

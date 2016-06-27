@@ -28,7 +28,8 @@ print "$glfdir\n";
 
 opendir (DIR, $glfdir) or die $!;
 
-print "$_\n" foreach grep {-d "$glfdir/$_" && ! /^\.{1,2}$/} readdir(DIR);
+my @dirs = grep {-d "$glfdir/$_" && ! /^\.{1,2}$/} readdir(DIR);
+print "$_\n" foreach @dirs;
 
 # for(i in 1:5000000){
 #   grep -w "9996" *.dp

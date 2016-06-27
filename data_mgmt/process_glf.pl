@@ -58,7 +58,7 @@ print "$_\n" foreach(@filepath);
 my $glfcmd="samtools-hybrid glfview $indfile | cut -f1-4 | awk '\$2%10==0 && \$3 ~ /[ACGT]/' > /net/bipolar/jedidiah/mutation/output/glf_depth/$fname";
 print "Following command will be run:\n";
 print "$glfcmd\n";
-# &forkExecWait($glfcmd);
+&forkExecWait($glfcmd);
 
 ##############################################################################
 # fork-exec-wait subroutine

@@ -7,7 +7,7 @@
 #SBATCH --time 48:00:00
 #SBATCH --job-name=process_glfs
 #SBATCH --partition=nomosix
-#SBATCH --array=456544-456644
+#SBATCH --array=5000-5010
 #SBATCH --output="/net/bipolar/jedidiah/mutation/output/slurm/slurmJob-%J.out" --error="/net/bipolar/jedidiah/mutation/output/slurm/slurmJob-%J.err"
 
 srun perl /net/bipolar/jedidiah/mutation/smaug-genetics/data_mgmt/process_glf.pl --ind $SLURM_ARRAY_TASK_ID

@@ -24,10 +24,9 @@ my $wdir=getcwd;
 my $parentdir="/net/bipolar/jedidiah/mutation";
 my $glfdir="$parentdir/output/glf_depth/$chr/";
 
-opendir my $dh, $glfdir
-  or die "$0: opendir: $!";
+opendir (DIR, $glfdir) or die $!";
 
-print "$_\n" foreach grep {-d "$glfdir/$_" && ! /^\.{1,2}$/} readdir($dh);
+print "$_\n" foreach grep {-d "$glfdir/$_" && ! /^\.{1,2}$/} readdir(DIR);
 
 # for(i in 1:5000000){
 #   grep -w "9996" *.dp

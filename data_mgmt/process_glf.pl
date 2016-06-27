@@ -62,7 +62,7 @@ foreach(@filerange){
   make_path("$parentdir/output/glf_depth/$filepath[8]/$filepath[9]");
 
   my $glfcmd="samtools-hybrid glfview $_ | cut -f1-4 | awk '\$2%10==0 && \$3 ~ /[ACGT]/' > $parentdir/output/glf_depth/$fname";
-  # &forkExecWait($glfcmd);
+  &forkExecWait($glfcmd);
   print "$_\n";
 }
 ##############################################################################

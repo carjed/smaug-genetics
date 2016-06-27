@@ -22,7 +22,7 @@ my $chr=1;
 
 my $wdir=getcwd;
 my $parentdir="/net/bipolar/jedidiah/mutation";
-my $glfdir="$parentdir/output/glf_depth/$chr";
+my $glfdir="$parentdir/output/glf_depth/$chr/";
 
 opendir my $dh, $glfdir
   or die "$0: opendir: $!";

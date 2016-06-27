@@ -48,11 +48,12 @@ for(my $i=$start; $i<=$end; $i+=10){
   $hashn{$i}=0;
 }
 
-my $outfile = "$parentdir/output/glf_depth/test.txt";
+my $outfile = "$parentdir/output/glf_depth/chr$chr.$dirs[0].txt";
+print "$outfile\n";
 open(OUT, '>', $outfile) or die "can't write to $outfile: $!\n";
 
 # glob ('/path/to/dir/*');
-my @files = glob("$parentdir/output/glf_depth/1497-RMM-401*");
+my @files = glob("$glfdir/1497-RMM-401*");
 foreach my $file (@files) {
   print $file . "\n";
   open my $sample, '<', $file or die "can't open $file: $!";
@@ -69,7 +70,7 @@ foreach my $file (@files) {
 
 }
 
-$hash{$_}=$hash{$_}/$hashn{$_} foreach (keys%hash);
+$hash{$_}=nearest(.1,$hash{$_}/$hashn{$_}) foreach (keys%hash);
 
 print OUT "$_\t$hash{$_}\n" foreach (sort {$a <=> $b} (keys%hash));
 

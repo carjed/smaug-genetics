@@ -20,6 +20,8 @@ use Benchmark;
 use Tie::File;
 
 # Set options and inputs
+my $help=0;
+my $man=0;
 my $index;
 
 GetOptions ('ind=i'=> \$index,

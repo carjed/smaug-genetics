@@ -35,6 +35,7 @@ my $parentdir="/net/bipolar/jedidiah/mutation";
 
 my $filelist="/net/bipolar/jedidiah/mutation/output/glf_depth/glf_filelist.txt";
 open my $files, '<', $filelist or die "$filelist: $!";
+my $NUMFILES=2217585;
 
 my $indfile;
 while( <$files> ) {
@@ -45,13 +46,24 @@ while( <$files> ) {
   }
 }
 
-my @filepath=split m%/%, $indfile;
-my $fname="$filepath[8]/$filepath[9]/$filepath[10].dp";
-make_path("$parentdir/output/glf_depth/$filepath[8]/$filepath[9]");
+my $start=($ind-1)*400+1;
+my $end=$ind*400;
 
-my $glfcmd="samtools-hybrid glfview $indfile | cut -f1-4 | awk '\$2%10==0 && \$3 ~ /[ACGT]/' > $parentdir/output/glf_depth/$fname";
-&forkExecWait($glfcmd);
+my @filerange;
+while(<$files>) {
+if (($. == $start) .. ($. == $end)) {
+    push @filerange, $_;
+}
 
+foreach(@filerange){
+  my @filepath=split m%/%, $_;
+  my $fname="$filepath[8]/$filepath[9]/$filepath[10].dp";
+  make_path("$parentdir/output/glf_depth/$filepath[8]/$filepath[9]");
+
+  my $glfcmd="samtools-hybrid glfview $_ | cut -f1-4 | awk '\$2%10==0 && \$3 ~ /[ACGT]/' > $parentdir/output/glf_depth/$fname";
+  # &forkExecWait($glfcmd);
+  print "$_\n";
+}
 ##############################################################################
 # fork-exec-wait subroutine
 ##############################################################################

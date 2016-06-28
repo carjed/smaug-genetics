@@ -25,8 +25,13 @@ my $chr=3;
 my $filelist="$parentdir/output/glf_depth/glf_filelist.txt";
 my $chrfilelist="$parentdir/output/glf_depth/chr${chr}_glf_filelist.txt";
 
-my $getchrfiles="grep -w \"chr$chr\" < $filelist > $chrfilelist";
-my $count = `wc -l < $chrfilelist`;
+my $chrfile;
+open($chrfile, '>', $chrfilelist) or
+die "Unable to open file $chrfilelist : $!";
+close($chrfile) or die "Unable to close file : $chrfilelist $!";
+
+my $getchrfiles=`grep -w \"chr$chr\" $filelist > $chrfilelist`;
+my $count = `wc -l $chrfilelist`;
 die "wc failed: $?" if $?;
 chomp($count);
 print "$count\n";

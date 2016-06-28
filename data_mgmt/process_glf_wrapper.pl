@@ -64,7 +64,7 @@ print "$ID\n";
 
 my $cflag=0;
 while($cflag!=1){
-  $datestring = gmtime();
+  my $datestring = gmtime();
   print "checking for completion at $datestring\n...";
   my $logfile="$parentdir/output/glf_depth/chr$chr.data.log";
   my $logcmd="sacct -j $ID --format=JobID,State | awk 'NR>2 {print \$2}' | sort | uniq | paste -d- -s > $logfile";

@@ -62,31 +62,46 @@ my $ID=substr($rawID, 0, index($rawID, '_'));
 print "$ID\n";
 # &forkExecWait($getjobID);
 
-my $f_dirlist = "$parentdir/output/glf_depth/chr${chr}_glf_dirlist.txt";
-my $getdirlist = "find $parentdir/output/glf_depth/chr$chr -mindepth 1 -maxdepth 1 -type d > $f_dirlist";
-&forkExecWait($getdirlist);
-open my $dirlist, '<', $f_dirlist or die "can't open $f_dirlist: $!";
+my $cflag=0;
+while($cflag!=1){
+  $datestring = gmtime();
+  print "checking for completion at $datestring\n...";
+  my $logfile="$parentdir/output/glf_depth/chr$chr.data.log";
+  my $logcmd="sacct -j $ID --format=JobID,State | awk 'NR>2 {print \$2}' | sort | uniq | paste -d- -s > $logfile";
+  &forkExecWait($logcmd);
 
-while(<$dirlist>){
-  print "Validating files in $_...";
-  while (1) {
-    my $numfiles=`$_/*.dp | wc -l`;
-    my $chknum=`$_/*.ok | wc -l`;
-    last if $chknum==$numsamples;
-    sleep 1;
+  open my $log, '<', $logfile or die "can't open $logfile: $!";
+  while(<$log>){
+    chomp;
+    if($_ eq "COMPLETED"){
+      $cflag=1;
+      print "...COMPLETE\n";
+    } else {
+      print "...\n";
+    }
   }
-  # run glf_depth.pl
-  print "COMPLETE\n";
+
+  sleep 30;
 }
 
-# my $logfile="$parentdir/output/glf_depth/chr$chr.data.log";
-# my $logcmd="sacct -j $ID --format=JobID,State | awk 'NR>2 {print \$2}' | sort | uniq -c > $logfile";
-# &forkExecWait($logcmd);
-
-# open my $log, '<', $logfile or die "can't open $logfile: $!";
-# while(<$log>){
-#   if $_
+# my $f_dirlist = "$parentdir/output/glf_depth/chr${chr}_glf_dirlist.txt";
+# my $getdirlist = "find $parentdir/output/glf_depth/chr$chr -mindepth 1 -maxdepth 1 -type d > $f_dirlist";
+# &forkExecWait($getdirlist);
+# open my $dirlist, '<', $f_dirlist or die "can't open $f_dirlist: $!";
+#
+# while(<$dirlist>){
+#   print "Validating files in $_...";
+#   while (1) {
+#     my $numfiles=`$_/*.dp | wc -l`;
+#     my $chknum=`$_/*.ok | wc -l`;
+#     last if $chknum==$numsamples;
+#     sleep 1;
+#   }
+#   # run glf_depth.pl
+#   print "COMPLETE\n";
 # }
+
+
 
 ##############################################################################
 # fork-exec-wait subroutine

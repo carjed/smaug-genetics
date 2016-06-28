@@ -22,8 +22,10 @@ use Tie::File;
 my $help=0;
 my $man=0;
 my $index;
+my $chr;
 
 GetOptions ('ind=i'=> \$index,
+'chr=i' => \$chr,
 'help|?'=> \$help,
 man => \$man) or pod2usage(1);
 
@@ -33,7 +35,7 @@ pod2usage(-verbose => 2) if $man;
 my $wdir=getcwd;
 my $parentdir="/net/bipolar/jedidiah/mutation";
 
-my $filelist="/net/bipolar/jedidiah/mutation/output/glf_depth/glf_filelist.txt";
+my $filelist="$parentdir/output/glf_depth/chr${chr}_glf_filelist.txt";
 open my $files, '<', $filelist or die "$filelist: $!";
 my $NUMFILES=2217585;
 

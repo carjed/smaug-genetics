@@ -21,6 +21,7 @@ use Tie::File;
 my $chr=4;
 my $numsamples=400;
 my $parentdir="/net/bipolar/jedidiah/mutation";
+  make_path("$parentdir/output/glf_depth/chr$chr");
 
 my $filelist="$parentdir/output/glf_depth/glf_filelist.txt";
 my $chrfilelist="$parentdir/output/glf_depth/chr${chr}_glf_filelist.txt";

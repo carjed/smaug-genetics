@@ -90,6 +90,7 @@ foreach my $file (@files) {
   if($i%10==0){
     print "Finished $i of $numfiles samples\n";
   }
+  $i++;
 }
 
 $hash{$_}=nearest(.1,$hash{$_}/$hashn{$_}) foreach (keys%hash);

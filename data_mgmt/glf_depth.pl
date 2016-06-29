@@ -18,21 +18,35 @@ use Cwd;
 use Benchmark;
 use Tie::File;
 
+my $chr;
+my $dir;
+
 # Set options and inputs
-my $chr=1;
+GetOptions ('chr=i'=> \$chr,
+'dir=s' => \$dir,
+'help|?'=> \$help,
+man => \$man) or pod2usage(1);
+
+pod2usage(0) if $help;
+pod2usage(-verbose => 2) if $man;
+# my $chr=1;
 
 my $wdir=getcwd;
 my $parentdir="/net/bipolar/jedidiah/mutation";
-my $glfdir="$parentdir/output/glf_depth/chr$chr/";
+# my $glfdir="$parentdir/output/glf_depth/chr$chr/";
 
-print "$glfdir\n";
+my @path=split/\//, $dir;
+my $chunk=$path[-1];
 
-opendir (DIR, $glfdir) or die $!;
+# print "$glfdir\n";
 
-my @dirs = grep {-d "$glfdir/$_" && ! /^\.{1,2}$/} readdir(DIR);
-print "$_\n" foreach @dirs;
+# opendir (DIR, $glfdir) or die $!;
 
-my @range = split/\./, $dirs[0];
+# my @dirs = grep {-d "$glfdir/$_" && ! /^\.{1,2}$/} readdir(DIR);
+
+# print "$_\n" foreach @dirs;
+
+my @range = split/\./, $chunk;
 my $start = roundup($range[0], 10);
 my $end = roundup($range[1], 10)-10;
 
@@ -49,12 +63,12 @@ for(my $i=$start; $i<=$end; $i+=10){
   $hashn{$i}=0;
 }
 
-my $outfile = "$parentdir/output/glf_depth/chr$chr.$dirs[0].txt";
+my $outfile = "$parentdir/output/glf_depth/chr$chr.$chunk.txt";
 print "$outfile\n";
 open(OUT, '>', $outfile) or die "can't write to $outfile: $!\n";
 
 # glob ('/path/to/dir/*');
-my @files = glob("$glfdir/$dirs[0]/1497-RMM-401*");
+my @files = glob("$glfdir/$chunk/1497-RMM-18*.dp");
 foreach my $file (@files) {
   print $file . "\n";
   open my $sample, '<', $file or die "can't open $file: $!";

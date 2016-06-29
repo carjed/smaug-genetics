@@ -84,7 +84,7 @@ while($cflag!=1){
     if($filehash{$_}!=1){
       print "Validating files in $_...";
       # while (1) {
-        my $numfiles=`$_/*.dp | wc -l`;
+        my $numfiles=`ls $_/*.dp | wc -l`;
         my $chknum=`wc -l $_/*.ok`;
         if($chknum==$numsamples){
           # run glf_depth.pl on chunk

@@ -67,8 +67,8 @@ foreach my $sample (@filerange){
   my $glfcmd="samtools-hybrid glfview $sample | cut -f1-4 | awk '\$2%10==0 && \$3 ~ /[ACGT]/' > $parentdir/output/glf_depth/$fname";
   # print "$glfcmd\n";
   &forkExecWait($glfcmd);
-  my $okfile="$parentdir/output/glf_depth/$fname.ok";
-  open(OUT, '>', $okfile) or die "can't write to $okfile: $!\n";
+  my $okfile="$parentdir/output/glf_depth/$filepath[8]/$filepath[9]/samples.ok";
+  open(OUT, '>>', $okfile) or die "can't write to $okfile: $!\n";
   print OUT "$fname: OK\n";
   close(OUT) or die "Unable to close file: $okfile $!";
   # print "$_\n";

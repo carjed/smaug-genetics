@@ -62,46 +62,57 @@ my $ID=substr($rawID, 0, index($rawID, '_'));
 print "$ID\n";
 # &forkExecWait($getjobID);
 
+my %filehash();
+my $f_dirlist = "$parentdir/output/glf_depth/chr${chr}_glf_dirlist.txt";
+
+my $datestring = gmtime();
+print "Validation started at $datestring...";
 my $cflag=0;
 while($cflag!=1){
-  my $datestring = gmtime();
-  print "checking for completion at $datestring\n...";
+
+  # To-do:
+  # [X] move this code chunk inside first while loop above
+  # [-] run glf_depth.pl
+  # [-] delete glfs in subdir once mean depth file finished
+  # [X] mark completed directories; skip when re-scanning (create hash table!)
+  my $getdirlist = "find $parentdir/output/glf_depth/chr$chr -mindepth 1 -maxdepth 1 -type d > $f_dirlist";
+  &forkExecWait($getdirlist);
+  open my $dirlist, '<', $f_dirlist or die "can't open $f_dirlist: $!";
+
+  while(<$dirlist>){
+    if($filehash($_)!=1){
+      print "Validating files in $_...";
+      # while (1) {
+        my $numfiles=`$_/*.dp | wc -l`;
+        my $chknum=`wc -l $_/*.ok`;
+        if($chknum==$numsamples){
+          # run glf_depth.pl on chunk
+          $filehash($_)=1;
+          # last;
+        }
+        # sleep 1;
+      # }
+      print "COMPLETE\n";
+    }
+  }
+
   my $logfile="$parentdir/output/glf_depth/chr$chr.data.log";
   my $logcmd="sacct -j $ID --format=JobID,State | awk 'NR>2 {print \$2}' | sort | uniq | paste -d- -s > $logfile";
   &forkExecWait($logcmd);
-
   open my $log, '<', $logfile or die "can't open $logfile: $!";
+
+  # To-do: also validate that mean depth files created for each subdir before script finishes
   while(<$log>){
     chomp;
     if($_ eq "COMPLETED"){
       $cflag=1;
       print "...COMPLETE\n";
-    } else {
-      print "...\n";
+      last;
     }
   }
 
-  sleep 30;
+  sleep 300;
 }
-
-# my $f_dirlist = "$parentdir/output/glf_depth/chr${chr}_glf_dirlist.txt";
-# my $getdirlist = "find $parentdir/output/glf_depth/chr$chr -mindepth 1 -maxdepth 1 -type d > $f_dirlist";
-# &forkExecWait($getdirlist);
-# open my $dirlist, '<', $f_dirlist or die "can't open $f_dirlist: $!";
-#
-# while(<$dirlist>){
-#   print "Validating files in $_...";
-#   while (1) {
-#     my $numfiles=`$_/*.dp | wc -l`;
-#     my $chknum=`$_/*.ok | wc -l`;
-#     last if $chknum==$numsamples;
-#     sleep 1;
-#   }
-#   # run glf_depth.pl
-#   print "COMPLETE\n";
-# }
-
-
 
 ##############################################################################
 # fork-exec-wait subroutine

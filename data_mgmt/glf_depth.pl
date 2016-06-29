@@ -87,7 +87,7 @@ foreach my $file (@files) {
     $hashn{$pos}+=1;
   }
 
-  if $i%10==0{
+  if($i%10==0){
     print "Finished $i of $numfiles samples\n";
   }
 }

@@ -80,6 +80,7 @@ while($cflag!=1){
   open my $dirlist, '<', $f_dirlist or die "can't open $f_dirlist: $!";
 
   while(<$dirlist>){
+    chomp;
     if($filehash{$_}!=1){
       print "Validating files in $_...";
       # while (1) {

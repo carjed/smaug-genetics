@@ -52,7 +52,7 @@ my @range = split/\./, $chunk;
 my $start = roundup($range[0], 10);
 my $end = roundup($range[1], 10)-10;
 
-print "$start\t$end\n";
+# print "$start\t$end\n";
 
 # for(i in 1:5000000){
 #   grep -w "9996" *.dp
@@ -70,9 +70,11 @@ print "$outfile\n";
 open(OUT, '>', $outfile) or die "can't write to $outfile: $!\n";
 
 # glob ('/path/to/dir/*');
-my @files = glob("$dir/1497-RMM-18*.dp");
+my @files = glob("$dir/*.dp");
+my $i=0;
+my $numfiles=scalar @files;
 foreach my $file (@files) {
-  print $file . "\n";
+  # print $file . "\n";
   open my $sample, '<', $file or die "can't open $file: $!";
 
   while (<$sample>){
@@ -83,6 +85,10 @@ foreach my $file (@files) {
   	my $dp=$line[3];
   	$hash{$pos}+=$dp;
     $hashn{$pos}+=1;
+  }
+
+  if $i%10==0{
+    print "Finished $i of $numfiles samples\n";
   }
 }
 

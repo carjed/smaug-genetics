@@ -65,6 +65,14 @@ print "$ID\n";
 my %filehash=();
 my $f_dirlist = "$parentdir/output/glf_depth/chr${chr}_glf_dirlist.txt";
 
+my $getdirlist = "find $parentdir/output/glf_depth/chr$chr -mindepth 1 -maxdepth 1 -type d > $f_dirlist";
+# &forkExecWait($getdirlist);
+# open my $dirlist, '<', $f_dirlist or die "can't open $f_dirlist: $!";
+# while(<$dirlist>){
+#   chomp;
+#   $filehash{$_}=0;
+# }
+
 my $datestring = gmtime();
 print "Validation started at $datestring...";
 my $cflag=0;
@@ -81,7 +89,7 @@ while($cflag!=1){
 
   while(<$dirlist>){
     chomp;
-    if($filehash{$_}!=1){
+    if(exists($filehash{$_}) && $filehash{$_}!=1){
       print "Validating files in $_...";
       # while (1) {
         my $numfiles=`ls $_/*.dp | wc -l`;
@@ -94,6 +102,8 @@ while($cflag!=1){
         # sleep 1;
       # }
       print "COMPLETE\n";
+    } else {
+      $filehash{$_}=0;
     }
   }
 

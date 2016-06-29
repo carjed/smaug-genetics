@@ -80,14 +80,14 @@ while($cflag!=1){
   open my $dirlist, '<', $f_dirlist or die "can't open $f_dirlist: $!";
 
   while(<$dirlist>){
-    if($filehash($_)!=1){
+    if($filehash{$_}!=1){
       print "Validating files in $_...";
       # while (1) {
         my $numfiles=`$_/*.dp | wc -l`;
         my $chknum=`wc -l $_/*.ok`;
         if($chknum==$numsamples){
           # run glf_depth.pl on chunk
-          $filehash($_)=1;
+          $filehash{$_}=1;
           # last;
         }
         # sleep 1;

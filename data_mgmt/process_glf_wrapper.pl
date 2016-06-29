@@ -103,6 +103,9 @@ while($cflag!=1){
         chomp($chknum);
         if($chknum==$numsamples){
           # run glf_depth.pl on chunk
+
+          my $perlcmd = "perl $parentdir/smaug-genetics/data_mgmt/glf_depth.pl --chr $chr --dir $_";
+          &forkExecWait($perlcmd);
           $filehash{$_}=1;
           # print "COMPLETE\n";
           # last;

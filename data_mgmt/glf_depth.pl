@@ -20,6 +20,8 @@ use Tie::File;
 
 my $chr;
 my $dir;
+my $help=0;
+my $man=0;
 
 # Set options and inputs
 GetOptions ('chr=i'=> \$chr,
@@ -68,7 +70,7 @@ print "$outfile\n";
 open(OUT, '>', $outfile) or die "can't write to $outfile: $!\n";
 
 # glob ('/path/to/dir/*');
-my @files = glob("$glfdir/$chunk/1497-RMM-18*.dp");
+my @files = glob("$dir/1497-RMM-18*.dp");
 foreach my $file (@files) {
   print $file . "\n";
   open my $sample, '<', $file or die "can't open $file: $!";

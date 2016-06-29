@@ -19,7 +19,7 @@ use Benchmark;
 use Tie::File;
 
 my $chr=4;
-my $numsamples=400;
+my $numsamples=40;
 my $parentdir="/net/bipolar/jedidiah/mutation";
   make_path("$parentdir/output/glf_depth/chr$chr");
 
@@ -34,7 +34,7 @@ my $getchrfiles=`grep -w \"chr$chr\" $filelist > $chrfilelist`;
 my $count = `wc -l $chrfilelist | cut -d" " -f1`;
 die "wc failed: $?" if $?;
 chomp($count);
-my $njobs=ceil($count/400);
+my $njobs=ceil($count/$numsamples);
 print "Number of records to process in chr$chr: $count\n";
 
 # initialize output
@@ -48,9 +48,9 @@ print OUT "#SBATCH --mem=10000 \n";
 print OUT "#SBATCH --time 10:00:00 \n";
 print OUT "#SBATCH --job-name=chr${chr}_process_glfs \n";
 print OUT "#SBATCH --partition=nomosix \n";
-print OUT "#SBATCH --array=1-1 \n";
+print OUT "#SBATCH --array=1-10 \n";
 print OUT "#SBATCH --output=\"$parentdir/output/slurm/slurmJob-%J.out\" --error=\"$parentdir/output/slurm/slurmJob-%J.err\" \n";
-print OUT "srun perl $parentdir/smaug-genetics/data_mgmt/process_glf.pl --chr $chr --ind \${SLURM_ARRAY_TASK_ID}\n";
+print OUT "srun perl $parentdir/smaug-genetics/data_mgmt/process_glf.pl --chr $chr --ind \${SLURM_ARRAY_TASK_ID}\n --chunk $numsamples";
 close(OUT) or die "Unable to close file: $outfile $!";
 
 my $slurmcmd="sbatch $outfile";

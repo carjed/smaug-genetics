@@ -23,9 +23,11 @@ my $help=0;
 my $man=0;
 my $index;
 my $chr;
+my $chunksize=400;
 
 GetOptions ('ind=i'=> \$index,
 'chr=i' => \$chr,
+'chunk=i' => \$chunksize,
 'help|?'=> \$help,
 man => \$man) or pod2usage(1);
 
@@ -48,8 +50,8 @@ my $NUMFILES=2217585;
 #   }
 # }
 
-my $start=($index-1)*400+1;
-my $end=$index*400;
+my $start=($index-1)*$chunksize+1;
+my $end=$index*$chunksize;
 
 my @filerange;
 while(<$files>) {

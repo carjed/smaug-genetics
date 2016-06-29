@@ -40,23 +40,9 @@ my $parentdir="/net/bipolar/jedidiah/mutation";
 my @path=split/\//, $dir;
 my $chunk=$path[-1];
 
-# print "$glfdir\n";
-
-# opendir (DIR, $glfdir) or die $!;
-
-# my @dirs = grep {-d "$glfdir/$_" && ! /^\.{1,2}$/} readdir(DIR);
-
-# print "$_\n" foreach @dirs;
-
 my @range = split/\./, $chunk;
 my $start = roundup($range[0], 10);
 my $end = roundup($range[1], 10)-10;
-
-# print "$start\t$end\n";
-
-# for(i in 1:5000000){
-#   grep -w "9996" *.dp
-# }
 
 my %hash=();
 my %hashn=();
@@ -87,13 +73,13 @@ foreach my $file (@files) {
     $hashn{$pos}+=1;
   }
 
-  if($i%10==0){
-    print "Finished $i of $numfiles samples\n";
-  }
-  $i++;
+  # if($i%10==0){
+  #   print "Finished $i of $numfiles samples\n";
+  # }
+  # $i++;
 }
 
-$hash{$_}=nearest(.1,$hash{$_}/$hashn{$_}) foreach (keys%hash);
+$hash{$_}=nearest(.01,$hash{$_}/$hashn{$_}) foreach (keys%hash);
 
 print OUT "$_\t$hash{$_}\n" foreach (sort {$a <=> $b} (keys%hash));
 

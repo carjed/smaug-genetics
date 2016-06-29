@@ -56,6 +56,9 @@ close(OUT) or die "Unable to close file: $outfile $!";
 my $slurmcmd="sbatch $outfile";
 &forkExecWait($slurmcmd);
 
+my $datestring = gmtime();
+print "Batch job started at $datestring...\n";
+
 my $jobIDfile="$parentdir/output/glf_depth/chr$chr.jobID";
 my $rawID=`squeue -u jedidiah | awk 'NR>1 {print \$1}'`;
 my $ID=substr($rawID, 0, index($rawID, '_'));
@@ -74,14 +77,14 @@ my $getdirlist = "find $parentdir/output/glf_depth/chr$chr -mindepth 1 -maxdepth
 # }
 
 my $datestring = gmtime();
-print "Validation started at $datestring...";
+print "Validation started at $datestring...\n";
 my $cflag=0;
 while($cflag!=1){
 
   # To-do:
   # [X] move this code chunk inside first while loop above
   # [-] run glf_depth.pl
-  # [-] delete glfs in subdir once mean depth file finished
+  # [-] delete glfs and OK file in subdir once mean depth file finished
   # [X] mark completed directories; skip when re-scanning (create hash table!)
   my $getdirlist = "find $parentdir/output/glf_depth/chr$chr -mindepth 1 -maxdepth 1 -type d > $f_dirlist";
   &forkExecWait($getdirlist);
@@ -90,18 +93,19 @@ while($cflag!=1){
   while(<$dirlist>){
     chomp;
     if(exists($filehash{$_}) && $filehash{$_}!=1){
-      print "Validating files in $_...";
+      # print "Validating files in $_...";
       # while (1) {
-        my $numfiles=`ls $_/*.dp | wc -l`;
-        my $chknum=`wc -l $_/*.ok`;
+        my $numfiles=`ls $_/\*.dp | wc -l`;
+        my $chknum=`wc -l $_/\*.ok`;
         if($chknum==$numsamples){
           # run glf_depth.pl on chunk
           $filehash{$_}=1;
+          # print "COMPLETE\n";
           # last;
         }
         # sleep 1;
       # }
-      print "COMPLETE\n";
+
     } else {
       $filehash{$_}=0;
     }
@@ -117,7 +121,7 @@ while($cflag!=1){
     chomp;
     if($_ eq "COMPLETED"){
       $cflag=1;
-      print "...COMPLETE\n";
+      print "VALIDATION COMPLETE\n";
       last;
     }
   }

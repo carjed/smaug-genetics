@@ -95,9 +95,11 @@ while($cflag!=1){
     if(exists($filehash{$_}) && $filehash{$_}!=1){
       # print "Validating files in $_...";
       # while (1) {
-        my $numfiles=`ls $_/\*.dp | wc -l | cut -d" " -f1`;
-        chomp($numfiles);
-        my $chknum=`wc -l $_/\*.ok | cut -d" " -f1`;
+        # my $numfiles=`ls $_/\*.dp | wc -l | cut -d" " -f1`;
+        my @filecount=glob("$_/*.dp");
+        my $numfiles = scalar @filecount;
+        # chomp($numfiles);
+        my $chknum=`wc -l $_/samples.ok | cut -d" " -f1`;
         chomp($chknum);
         if($chknum==$numsamples){
           # run glf_depth.pl on chunk

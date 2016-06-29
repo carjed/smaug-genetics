@@ -76,7 +76,7 @@ my $getdirlist = "find $parentdir/output/glf_depth/chr$chr -mindepth 1 -maxdepth
 #   $filehash{$_}=0;
 # }
 
-my $datestring = gmtime();
+$datestring = gmtime();
 print "Validation started at $datestring...\n";
 my $cflag=0;
 while($cflag!=1){

@@ -62,7 +62,7 @@ my $ID=substr($rawID, 0, index($rawID, '_'));
 print "$ID\n";
 # &forkExecWait($getjobID);
 
-my %filehash();
+my %filehash=();
 my $f_dirlist = "$parentdir/output/glf_depth/chr${chr}_glf_dirlist.txt";
 
 my $datestring = gmtime();

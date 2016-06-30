@@ -73,7 +73,7 @@ foreach my $sample (@filerange){
   open(OUT, '>>', $okfile) or die "can't write to $okfile: $!\n";
   print OUT "$fname: OK\n";
   close(OUT) or die "Unable to close file: $okfile $!";
-  # print "$_\n";
+  print "$_\n";
 }
 ##############################################################################
 # fork-exec-wait subroutine

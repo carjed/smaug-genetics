@@ -41,10 +41,13 @@ if($subset==0){
   my $samples="/net/bipolar/lockeae/final_freeze/list.txt";
   my $subsetsamples="$parentdir/output/glf_depth/list_sub.txt";
   my $sscmd="cat $samples | perl -ne 'print \$_ if 0.1 > rand;' > $subsetsamples";
+  print "Subsetting samples: $sscmd\n";
   &forkExecWait($sscmd);
   my $sscmd2="cat $chrfilesfull | grep -Fwf $subsetsamples > $chrfiles";
+  print "Subsetting file list: $sscmd2\n";
   &forkExecWait($sscmd2);
   $numind=`wc -l $subsetsamples | cut -d" " -f1`;
+  chomp($numind);
   # my $subsetcmd="cat $chrfilesfull | perl -ne 'print $_ if 0.1 > rand;' > $chrfiles";
   # $numind=``
 }
@@ -57,8 +60,8 @@ my $getchrfiles=`grep -w \"chr$chr\" $filelist > $chrfiles`;
 
 # Count total records and specify number of jobs
 my $numrecords = `wc -l $chrfiles | cut -d" " -f1`;
-die "wc failed: $?" if $?;
 chomp($numrecords);
+
 my $numjobs=ceil($numrecords/$chunksize);
 print "Number of records to process in chr$chr: $numrecords\n";
 print "Number of individuals to be processed: $numind\n";

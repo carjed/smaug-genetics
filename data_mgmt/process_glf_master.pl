@@ -19,8 +19,8 @@ use Tie::File;
 
 # Specify parameters
 my $chr=4;
-my $numind=40;
-# my $numind=3765;
+# my $numind=40;
+my $numind=3765;
 my $chunksize=40; # No. of records to process in each worker job
 my $parentdir="/net/bipolar/jedidiah/mutation";
   make_path("$parentdir/output/glf_depth/chr$chr");
@@ -48,11 +48,11 @@ print OUT "#!/bin/sh \n";
 print OUT "#SBATCH --mail-type=FAIL \n";
 print OUT "#SBATCH --mail-user=jedidiah\@umich.edu \n";
 print OUT "#SBATCH --ntasks=1 \n";
-print OUT "#SBATCH --mem=10000 \n";
+print OUT "#SBATCH --mem=2000 \n";
 print OUT "#SBATCH --time 20:00:00 \n";
 print OUT "#SBATCH --job-name=chr${chr}_process_glfs \n";
-print OUT "#SBATCH --partition=bipolar \n";
-print OUT "#SBATCH --array=1-1 \n"; # change to 1-$numjobs
+print OUT "#SBATCH --partition=nomosix \n";
+print OUT "#SBATCH --array=1-$numjobs \n"; # change to 1-$numjobs
 print OUT "#SBATCH --output=\"$parentdir/output/slurm/slurmJob-%J.out\" --error=\"$parentdir/output/slurm/slurmJob-%J.err\" \n";
 print OUT "srun perl $parentdir/smaug-genetics/data_mgmt/process_glf_worker.pl --chr $chr --ind \${SLURM_ARRAY_TASK_ID} --chunk $chunksize \n";
 close(OUT) or die "Unable to close file: $outfile $!";
@@ -106,8 +106,10 @@ while($cflag!=1){
 
         if(-e $meandp){
           print "Removing files in $_/\n";
-          my $rmcmd="rm -f $_/\*.dp";
-          &forkExecWait($rmcmd);
+          my $rmdpcmd="rm -f $_/\*.dp";
+          &forkExecWait($rmdpcmd);
+          my $rmokcmd="rm -f $_/samples.ok";
+          &forkExecWait($rmokcmd);
         }
       }
     } else {
@@ -129,7 +131,7 @@ while($cflag!=1){
     }
   }
 
-  sleep 300;
+  sleep 120;
 }
 
 ##############################################################################

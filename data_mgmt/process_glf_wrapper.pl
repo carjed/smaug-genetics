@@ -106,7 +106,7 @@ while($cflag!=1){
 
           my @path = split /\//, $_;
           my $range = $path[-1];
-          my $meandp = "$parentdir/output/glf_depth/chr$chr.$range.txt"
+          my $meandp = "$parentdir/output/glf_depth/chr$chr.$range.txt";
           if(-e $meandp){
             print "Removing files in $_/\n";
             my $rmcmd="rm -f $_/\*.dp";

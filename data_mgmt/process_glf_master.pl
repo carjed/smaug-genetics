@@ -113,7 +113,7 @@ while($cflag!=1){
     print "$line\n";
     print "$line\n";
     print "$cflag\n";
-    if($line =~ /^COMPLETE/){
+    if($line =~ /^COMPLETED/){
       $cflag=1;
       print "VALIDATION COMPLETE\n";
       last;
@@ -127,6 +127,7 @@ while($cflag!=1){
 my %filehash=();
 my $f_dirlist = "$parentdir/output/glf_depth/chr${chr}_glf_dirlist.txt";
 my $getdirlist = "find $parentdir/output/glf_depth/chr$chr -mindepth 1 -maxdepth 1 -type d > $f_dirlist";
+&forkExecWait($getdirlist);
 
 my $numdirs = `wc -l $f_dirlist | cut -d" " -f1`;
 chomp($numdirs);

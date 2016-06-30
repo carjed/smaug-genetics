@@ -104,7 +104,7 @@ while($cflag!=1){
   my $logcmd="sacct -j $ID --format=JobID,State | awk 'NR>2 {print \$2}' | sort | uniq | paste -d- -s > $logfile";
   &forkExecWait($logcmd);
   open my $logFH, '<', $logfile or die "can't open $logfile: $!";
-
+  print "Reading $logfile\n";
   foreach my $line (<$logFH>){
     print "$line\n";
     chomp;

@@ -19,7 +19,13 @@ use Benchmark;
 use Tie::File;
 
 my $chr=4;
+
+my $numind=40;
+# my $numind=3765;
+
+# Number of records to process in each worker job
 my $numsamples=40;
+
 my $parentdir="/net/bipolar/jedidiah/mutation";
   make_path("$parentdir/output/glf_depth/chr$chr");
 
@@ -41,40 +47,30 @@ print "Number of records to process in chr$chr: $count\n";
 my $outfile = "$parentdir/smaug-genetics/data_mgmt/slurm_process_glfs.$chr.txt";
 open(OUT, '>', $outfile) or die "can't write to $outfile: $!\n";
 print OUT "#!/bin/sh \n";
-print OUT "#SBATCH --mail-type=ALL \n";
+print OUT "#SBATCH --mail-type=FAIL \n";
 print OUT "#SBATCH --mail-user=jedidiah\@umich.edu \n";
 print OUT "#SBATCH --ntasks=1 \n";
 print OUT "#SBATCH --mem=10000 \n";
 print OUT "#SBATCH --time 10:00:00 \n";
 print OUT "#SBATCH --job-name=chr${chr}_process_glfs \n";
 print OUT "#SBATCH --partition=nomosix \n";
-print OUT "#SBATCH --array=1-10 \n";
+print OUT "#SBATCH --array=1-1 \n";
 print OUT "#SBATCH --output=\"$parentdir/output/slurm/slurmJob-%J.out\" --error=\"$parentdir/output/slurm/slurmJob-%J.err\" \n";
-print OUT "srun perl $parentdir/smaug-genetics/data_mgmt/process_glf.pl --chr $chr --ind \${SLURM_ARRAY_TASK_ID} --chunk $numsamples";
+print OUT "srun perl $parentdir/smaug-genetics/data_mgmt/process_glf.pl --chr $chr --ind \${SLURM_ARRAY_TASK_ID} --chunk 40 \n";
 close(OUT) or die "Unable to close file: $outfile $!";
 
 my $slurmcmd="sbatch $outfile";
 &forkExecWait($slurmcmd);
 
-my $datestring = gmtime();
-print "Batch job started at $datestring...\n";
-
 my $jobIDfile="$parentdir/output/glf_depth/chr$chr.jobID";
 my $rawID=`squeue -u jedidiah | awk 'NR>1 {print \$1}'`;
 my $ID=substr($rawID, 0, index($rawID, '_'));
-print "$ID\n";
-# &forkExecWait($getjobID);
+my $datestring = gmtime();
+print "Batch job $ID started at $datestring...\n";
 
 my %filehash=();
 my $f_dirlist = "$parentdir/output/glf_depth/chr${chr}_glf_dirlist.txt";
-
 my $getdirlist = "find $parentdir/output/glf_depth/chr$chr -mindepth 1 -maxdepth 1 -type d > $f_dirlist";
-# &forkExecWait($getdirlist);
-# open my $dirlist, '<', $f_dirlist or die "can't open $f_dirlist: $!";
-# while(<$dirlist>){
-#   chomp;
-#   $filehash{$_}=0;
-# }
 
 $datestring = gmtime();
 print "Validation started at $datestring...\n";
@@ -83,7 +79,7 @@ while($cflag!=1){
 
   # To-do:
   # [X] move this code chunk inside first while loop above
-  # [-] run glf_depth.pl
+  # [X] run glf_depth.pl
   # [-] delete glfs and OK file in subdir once mean depth file finished
   # [X] mark completed directories; skip when re-scanning (create hash table!)
   my $getdirlist = "find $parentdir/output/glf_depth/chr$chr -mindepth 1 -maxdepth 1 -type d > $f_dirlist";
@@ -101,12 +97,17 @@ while($cflag!=1){
         # chomp($numfiles);
         my $chknum=`wc -l $_/samples.ok | cut -d" " -f1`;
         chomp($chknum);
-        if($chknum==$numsamples){
+        if($chknum==$numind){
           # run glf_depth.pl on chunk
 
           my $perlcmd = "perl $parentdir/smaug-genetics/data_mgmt/glf_depth.pl --chr $chr --dir $_";
           &forkExecWait($perlcmd);
           $filehash{$_}=1;
+
+          my $meandp = "$parentdir/output/glf_depth/chr$chr.1.5000000.txt"
+          if(-e ){
+            my $rmcmd="rm -f $_/\*.dp"
+          }
           # print "COMPLETE\n";
           # last;
         }

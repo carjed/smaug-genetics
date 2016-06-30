@@ -62,7 +62,7 @@ while(<$files>) {
 }
 
 my $numruns=scalar @filerange;
-print "Running loop on $numruns\n";
+# print "Running loop on $numruns\n";
 foreach my $sample (@filerange){
   my @filepath=split m%/%, $sample;
   my $fname="$filepath[8]/$filepath[9]/$filepath[10].dp";
@@ -75,7 +75,7 @@ foreach my $sample (@filerange){
   open(OUT, '>>', $okfile) or die "can't write to $okfile: $!\n";
   print OUT "$fname: OK\n";
   close(OUT) or die "Unable to close file: $okfile $!";
-  print "$sample\n";
+  # print "$sample\n";
 }
 ##############################################################################
 # fork-exec-wait subroutine

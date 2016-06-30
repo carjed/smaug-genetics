@@ -110,7 +110,7 @@ while($cflag!=1){
 
   foreach my $line (<$logFH>){
     print "$line\n";
-    chomp;
+    chomp($line);
     if($line eq "COMPLETED"){
       $cflag=1;
       print "VALIDATION COMPLETE\n";

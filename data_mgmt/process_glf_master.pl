@@ -109,8 +109,9 @@ while($cflag!=1){
   open my $logFH, '<', $logfile or die "can't open $logfile: $!";
 
   foreach my $line (<$logFH>){
-    print "$line\n";
     chomp($line);
+    print "$line\n";
+    print "$line\n";
     if($line eq "COMPLETED"){
       $cflag=1;
       print "VALIDATION COMPLETE\n";

@@ -110,7 +110,7 @@ while($cflag!=1){
 
   foreach my $line (<$logFH>){
     chomp($line);
-    print "$line\n";
+    print "$line ab\n";
     print "${line}ab\n";
     print "$cflag\n";
     if($line =~ /^COMPLETED$/){

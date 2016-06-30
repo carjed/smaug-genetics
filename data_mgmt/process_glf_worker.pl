@@ -41,6 +41,8 @@ my $filelist="$parentdir/output/glf_depth/chr${chr}_glf_filelist.txt";
 open my $files, '<', $filelist or die "$filelist: $!";
 my $NUMFILES=2217585;
 
+print "Worker ID: $index\n";
+
 # my $indfile;
 # while( <$files> ) {
 #   chomp;

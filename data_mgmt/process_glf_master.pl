@@ -49,9 +49,9 @@ print OUT "#SBATCH --mail-type=FAIL \n";
 print OUT "#SBATCH --mail-user=jedidiah\@umich.edu \n";
 print OUT "#SBATCH --ntasks=1 \n";
 print OUT "#SBATCH --mem=10000 \n";
-print OUT "#SBATCH --time 10:00:00 \n";
+print OUT "#SBATCH --time 20:00:00 \n";
 print OUT "#SBATCH --job-name=chr${chr}_process_glfs \n";
-print OUT "#SBATCH --partition=nomosix \n";
+print OUT "#SBATCH --partition=bipolar \n";
 print OUT "#SBATCH --array=1-1 \n"; # change to 1-$numjobs
 print OUT "#SBATCH --output=\"$parentdir/output/slurm/slurmJob-%J.out\" --error=\"$parentdir/output/slurm/slurmJob-%J.err\" \n";
 print OUT "srun perl $parentdir/smaug-genetics/data_mgmt/process_glf_worker.pl --chr $chr --ind \${SLURM_ARRAY_TASK_ID} --chunk $chunksize \n";
@@ -64,7 +64,7 @@ my $jobIDfile="$parentdir/output/glf_depth/chr$chr.jobID";
 my $rawID=`squeue -u jedidiah | awk 'NR>1 {print \$1}'`;
 my $ID=substr($rawID, 0, index($rawID, '_'));
 my $datestring = gmtime();
-print "Batch job $ID started at $datestring...\n";
+print "Batch job $ID queued at $datestring...\n";
 
 # Continuous loop checks if all files in each 5Mb subdirectory are present
 # If so, runs script to get mean per position, deletes files when done

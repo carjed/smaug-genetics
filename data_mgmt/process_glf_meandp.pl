@@ -47,7 +47,7 @@ while(<$dirlist>){
   push @dirs, $_;
 }
 
-my $dir=@dirs[$i-1];
+my $dir=$dirs[$ind-1];
 
 my @path=split/\//, $dir;
 my $chunk=$path[-1];

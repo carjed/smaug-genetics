@@ -106,6 +106,7 @@ while($cflag!=1){
   open my $logFH, '<', $logfile or die "can't open $logfile: $!";
 
   while(<$logFH>){
+    print "$_\n";
     chomp;
     if($_ eq "COMPLETED"){
       $cflag=1;

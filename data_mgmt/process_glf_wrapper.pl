@@ -104,9 +104,13 @@ while($cflag!=1){
           &forkExecWait($perlcmd);
           $filehash{$_}=1;
 
-          my $meandp = "$parentdir/output/glf_depth/chr$chr.1.5000000.txt"
-          if(-e ){
-            my $rmcmd="rm -f $_/\*.dp"
+          my @path = split /\//, $_;
+          my $range = $path[-1];
+          my $meandp = "$parentdir/output/glf_depth/chr$chr.$range.txt"
+          if(-e $meandp){
+            print "Removing files in $_/\n";
+            my $rmcmd="rm -f $_/\*.dp";
+            &forkExecWait($rmcmd);
           }
           # print "COMPLETE\n";
           # last;

@@ -112,6 +112,7 @@ while($cflag!=1){
     chomp($line);
     print "$line\n";
     print "$line\n";
+    print "$cflag\n";
     if($line eq "COMPLETED"){
       $cflag=1;
       print "VALIDATION COMPLETE\n";

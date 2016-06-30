@@ -25,40 +25,44 @@ my $numind=3765;
 my $chunksize=40; # No. of records to process in each worker job
 my $parentdir="/net/bipolar/jedidiah/mutation";
   make_path("$parentdir/output/glf_depth/chr$chr");
-my $filelist="$parentdir/output/glf_depth/glf_filelist.txt";
+my $allfiles="$parentdir/output/glf_depth/glf_filelist.txt";
 
-my $chrfilesfull="$parentdir/output/glf_depth/chr${chr}_glf_filelist.txt";
-my $chrfiles;
+my $chrfiles="$parentdir/output/glf_depth/chr${chr}_glf_filelist.txt";
+# my $chrfiles;
 
+my $chrFH;
+open($chrFH, '>', $chrfiles) or
+  die "Unable to open file $chrfiles : $!";
+close($chrFH) or die "Unable to close file: $chrfiles $!";
+my $getchrfiles=`grep -w \"chr$chr\" $allfiles > $chrfiles`;
+
+my $chrfilesub;
 if($subset==0){
   $numind=3765;
-  $chrfiles=$chrfilesfull;
+  $chrfilesub=$chrfiles;
 } else {
 
   # Subset file list to 10% of samples
-  $chrfiles="$parentdir/output/glf_depth/chr${chr}_glf_filelist.sub.txt";
+  $chrfilesub="$parentdir/output/glf_depth/chr${chr}_glf_filelist.sub.txt";
 
   my $samples="/net/bipolar/lockeae/final_freeze/list.txt";
   my $subsetsamples="$parentdir/output/glf_depth/list_sub.txt";
   my $sscmd="cat $samples | perl -ne 'print \$_ if 0.1 > rand;' > $subsetsamples";
+  print "Subsetting samples: $sscmd\n";
   &forkExecWait($sscmd);
-  my $sscmd2="cat $chrfilesfull | grep -Fwf $subsetsamples > $chrfiles";
+  my $sscmd2="cat $chrfiles | grep -Fwf $subsetsamples > $chrfilesub";
+  print "Subsetting file list: $sscmd2\n";
   &forkExecWait($sscmd2);
-  my $numind=`wc -l $subsetsamples | cut -d" " -f1`;
+  $numind=`wc -l $subsetsamples | cut -d" " -f1`;
+  chomp($numind);
   # my $subsetcmd="cat $chrfilesfull | perl -ne 'print $_ if 0.1 > rand;' > $chrfiles";
   # $numind=``
 }
 
-my $chrfile;
-open($chrfile, '>', $chrfiles) or
-  die "Unable to open file $chrfiles : $!";
-close($chrfile) or die "Unable to close file: $chrfiles $!";
-my $getchrfiles=`grep -w \"chr$chr\" $filelist > $chrfiles`;
-
 # Count total records and specify number of jobs
-my $numrecords = `wc -l $chrfiles | cut -d" " -f1`;
-die "wc failed: $?" if $?;
+my $numrecords = `wc -l $chrfilesub | cut -d" " -f1`;
 chomp($numrecords);
+
 my $numjobs=ceil($numrecords/$chunksize);
 print "Number of records to process in chr$chr: $numrecords\n";
 print "Number of individuals to be processed: $numind\n";
@@ -147,14 +151,28 @@ while($cflag!=1){
   while(<$log>){
     chomp;
     if($_ eq "COMPLETED"){
-      $cflag=1;
-      print "VALIDATION COMPLETE\n";
-      last;
+      my @dirs;
+      while(<$dirlist>){
+        chomp;
+        push @dirs, $_;
+      }
+      if(is_folder_empty($dirs[-1])){
+        $cflag=1;
+        print "VALIDATION COMPLETE\n";
+        last;
+      }
     }
   }
 
   sleep 120;
 }
+
+sub is_folder_empty {
+    my $dirname = shift;
+    opendir(my $dh, $dirname) or die "Not a directory";
+    return scalar(grep { $_ ne "." && $_ ne ".." } readdir($dh)) == 0;
+}
+
 
 ##############################################################################
 # fork-exec-wait subroutine

@@ -41,7 +41,6 @@ my $f_dirlist = "$parentdir/output/glf_depth/chr${chr}_glf_dirlist.txt";
 open my $dirlist, '<', $f_dirlist or die "can't open $f_dirlist: $!";
 
 my @dirs;
-
 while(<$dirlist>){
   chomp;
   push @dirs, $_;

@@ -113,10 +113,10 @@ while($cflag!=1){
     print "$line\n";
     print "$line\n";
     print "$cflag\n";
-    if($line =~ /^COMPLETED/){
+    if($line =~ /^COMPLETED$/){
       $cflag=1;
       print "VALIDATION COMPLETE\n";
-      last;
+      last OUTER;
     }
   }
 

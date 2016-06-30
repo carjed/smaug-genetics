@@ -62,3 +62,20 @@ chomp($numrecords);
 my $numjobs=ceil($numrecords/$chunksize);
 print "Number of records to process in chr$chr: $numrecords\n";
 print "Number of individuals to be processed: $numind\n";
+
+##############################################################################
+# fork-exec-wait subroutine
+##############################################################################
+sub forkExecWait {
+  my $cmd = shift;
+  #print "forkExecWait(): $cmd\n";
+  my $kidpid;
+  if ( !defined($kidpid = fork()) ) {
+	  die "Cannot fork: $!";
+  } elsif ($kidpid==0) {
+	  exec($cmd);
+	  die "Cannot exec $cmd: $!";
+  } else {
+	  waitpid($kidpid,0);
+  }
+}

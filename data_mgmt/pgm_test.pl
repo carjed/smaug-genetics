@@ -44,7 +44,7 @@ if($subset==0){
   &forkExecWait($sscmd);
   my $sscmd2="cat $chrfilesfull | grep -Fwf $subsetsamples > $chrfiles";
   &forkExecWait($sscmd2);
-  my $numind=`wc -l $subsetsamples | cut -d" " -f1`;
+  $numind=`wc -l $subsetsamples | cut -d" " -f1`;
   # my $subsetcmd="cat $chrfilesfull | perl -ne 'print $_ if 0.1 > rand;' > $chrfiles";
   # $numind=``
 }

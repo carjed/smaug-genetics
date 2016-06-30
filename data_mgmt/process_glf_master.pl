@@ -108,7 +108,7 @@ while($cflag!=1){
 
   open my $logFH, '<', $logfile or die "can't open $logfile: $!";
 
-  foreach my $line (<$logFH>){
+  while( my $line = <$logFH>)
     chomp($line);
     print "$line ab\n";
     print "${line}ab\n";

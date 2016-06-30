@@ -80,7 +80,7 @@ print OUT "#SBATCH --job-name=chr${chr}_process_glfs \n";
 print OUT "#SBATCH --partition=nomosix \n";
 print OUT "#SBATCH --array=1-$numjobs \n"; # change to 1-$numjobs
 print OUT "#SBATCH --output=\"$parentdir/output/slurm/slurmJob-%J.out\" --error=\"$parentdir/output/slurm/slurmJob-%J.err\" \n";
-print OUT "srun perl $parentdir/smaug-genetics/data_mgmt/process_glf_worker.pl --chr $chr --ind \${SLURM_ARRAY_TASK_ID} --chunk $chunksize \n";
+print OUT "srun perl $parentdir/smaug-genetics/data_mgmt/process_glf_worker.pl --chr $chr --ind \${SLURM_ARRAY_TASK_ID} --chunk $chunksize --filelist $chrfilesub\n";
 close(OUT) or die "Unable to close file: $outfile $!";
 
 my $slurmcmd="sbatch $outfile";

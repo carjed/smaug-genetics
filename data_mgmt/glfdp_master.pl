@@ -72,3 +72,22 @@ while(<$dirlist>){
     $filehash{$_}=0;
   }
 }
+
+# initialize and run sbatch file
+my $outfile = "$parentdir/smaug-genetics/data_mgmt/slurm_glf_meandp.$chr.txt";
+open(OUT, '>', $outfile) or die "can't write to $outfile: $!\n";
+print OUT "#!/bin/sh \n";
+print OUT "#SBATCH --mail-type=FAIL \n";
+print OUT "#SBATCH --mail-user=jedidiah\@umich.edu \n";
+print OUT "#SBATCH --ntasks=1 \n";
+print OUT "#SBATCH --mem=2000 \n";
+print OUT "#SBATCH --time 20:00:00 \n";
+print OUT "#SBATCH --job-name=chr${chr}_glf_meandp \n";
+print OUT "#SBATCH --partition=nomosix \n";
+print OUT "#SBATCH --array=1-$numjobs \n"; # change to 1-$numjobs
+print OUT "#SBATCH --output=\"$parentdir/output/slurm/slurmJob-%J.out\" --error=\"$parentdir/output/slurm/slurmJob-%J.err\" \n";
+print OUT "srun perl $parentdir/smaug-genetics/data_mgmt/process_glf_meandp.pl --chr $chr --ind \${SLURM_ARRAY_TASK_ID}";
+close(OUT) or die "Unable to close file: $outfile $!";
+
+my $slurmcmd="sbatch $outfile";
+&forkExecWait($slurmcmd);

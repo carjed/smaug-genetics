@@ -103,7 +103,7 @@ while($cflag!=1){
   my $logfile="$parentdir/output/glf_depth/chr$chr.data.log2";
   print "Reading $logfile\n";
   # my $logcmd="sacct -j $ID --format=JobID,State | awk 'NR>2 {print \$2}' | sort | uniq | paste -d- -s > $logfile";
-  print "Running $logcmd\n";
+  # print "Running $logcmd\n";
   # &forkExecWait($logcmd);
 
   open my $logFH, '<', $logfile or die "can't open $logfile: $!";

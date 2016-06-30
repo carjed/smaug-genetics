@@ -105,10 +105,10 @@ while($cflag!=1){
   &forkExecWait($logcmd);
   open my $logFH, '<', $logfile or die "can't open $logfile: $!";
 
-  while(<$logFH>){
-    print "$_\n";
+  foreach my $line (<$logFH>){
+    print "$line\n";
     chomp;
-    if($_ eq "COMPLETED"){
+    if($line eq "COMPLETED"){
       $cflag=1;
       print "VALIDATION COMPLETE\n";
       last;

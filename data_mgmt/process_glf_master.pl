@@ -92,18 +92,7 @@ my $ID=substr($rawID, 0, index($rawID, '_'));
 my $datestring = gmtime();
 print "Batch job $ID queued at $datestring...\n";
 
-# Continuous loop checks if all files in each 5Mb subdirectory are present
-# If so, runs script to get mean per position, deletes files when done
-# To-do:
-# [-] delete glfs and OK file in subdir once mean depth file finished
-# [-] Fix $chknum==$numind equivalency--currently throws error if slurm job is pending
-my %filehash=();
-my $f_dirlist = "$parentdir/output/glf_depth/chr${chr}_glf_dirlist.txt";
-my $getdirlist = "find $parentdir/output/glf_depth/chr$chr -mindepth 1 -maxdepth 1 -type d > $f_dirlist";
-
-my $numdirs = `wc -l $f_dirlist | cut -d" " -f1`;
-chomp($numdirs);
-
+# Continuous loop checks for batch job to complete before proceeding
 $datestring = gmtime();
 print "Validation started at $datestring...\n";
 
@@ -125,6 +114,13 @@ while($cflag!=1){
   }
   sleep 30;
 }
+
+my %filehash=();
+my $f_dirlist = "$parentdir/output/glf_depth/chr${chr}_glf_dirlist.txt";
+my $getdirlist = "find $parentdir/output/glf_depth/chr$chr -mindepth 1 -maxdepth 1 -type d > $f_dirlist";
+
+my $numdirs = `wc -l $f_dirlist | cut -d" " -f1`;
+chomp($numdirs);
 
 # initialize and run sbatch file
 my $meandpbatch = "$parentdir/smaug-genetics/data_mgmt/slurm_glf_meandp.$chr.txt";

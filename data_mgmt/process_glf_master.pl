@@ -18,9 +18,9 @@ use Benchmark;
 use Tie::File;
 
 # Specify parameters
-my $chr=4;
+my $chr=22;
 # my $numind=40;
-my $subset=1;
+my $subset=0;
 my $numind=3765;
 my $chunksize=40; # No. of records to process in each worker job
 my $parentdir="/net/bipolar/jedidiah/mutation";
@@ -68,25 +68,25 @@ print "Number of records to process in chr$chr: $numrecords\n";
 print "Number of individuals to be processed: $numind\n";
 
 # initialize and run sbatch file
-my $outfile = "$parentdir/smaug-genetics/data_mgmt/slurm_process_glfs.$chr.txt";
-open(OUT, '>', $outfile) or die "can't write to $outfile: $!\n";
-print OUT "#!/bin/sh \n";
-print OUT "#SBATCH --mail-type=FAIL \n";
-print OUT "#SBATCH --mail-user=jedidiah\@umich.edu \n";
-print OUT "#SBATCH --ntasks=1 \n";
-print OUT "#SBATCH --mem=2000 \n";
-print OUT "#SBATCH --time 20:00:00 \n";
-print OUT "#SBATCH --job-name=chr${chr}_process_glfs \n";
-print OUT "#SBATCH --partition=nomosix \n";
-print OUT "#SBATCH --array=1-$numjobs \n"; # change to 1-$numjobs
-print OUT "#SBATCH --output=\"$parentdir/output/slurm/slurmJob-%J.out\" --error=\"$parentdir/output/slurm/slurmJob-%J.err\" \n";
-print OUT "srun perl $parentdir/smaug-genetics/data_mgmt/process_glf_worker.pl --chr $chr --ind \${SLURM_ARRAY_TASK_ID} --chunk $chunksize --filelist $chrfilesub\n";
-close(OUT) or die "Unable to close file: $outfile $!";
+my $workerbatch = "$parentdir/smaug-genetics/data_mgmt/slurm_process_glfs.$chr.txt";
+open my $wFH, '>', $workerbatch or die "can't write to $workerbatch: $!\n";
+print $wFH "#!/bin/sh \n";
+print $wFH "#SBATCH --mail-type=FAIL \n";
+print $wFH "#SBATCH --mail-user=jedidiah\@umich.edu \n";
+print $wFH "#SBATCH --ntasks=1 \n";
+print $wFH "#SBATCH --mem=2000 \n";
+print $wFH "#SBATCH --time 20:00:00 \n";
+print $wFH "#SBATCH --job-name=chr${chr}_process_glfs \n";
+print $wFH "#SBATCH --partition=nomosix \n";
+print $wFH "#SBATCH --array=1-$numjobs \n"; # change to 1-$numjobs
+print $wFH "#SBATCH --output=\"$parentdir/output/slurm/slurmJob-%J.out\" --error=\"$parentdir/output/slurm/slurmJob-%J.err\" \n";
+print $wFH "srun perl $parentdir/smaug-genetics/data_mgmt/process_glf_worker.pl --chr $chr --ind \${SLURM_ARRAY_TASK_ID} --chunk $chunksize --filelist $chrfilesub\n";
+close($wFH) or die "Unable to close file: $workerbatch $!";
 
-my $slurmcmd="sbatch $outfile";
+my $slurmcmd="sbatch $workerbatch";
 &forkExecWait($slurmcmd);
 
-my $jobIDfile="$parentdir/output/glf_depth/chr$chr.jobID";
+# my $jobIDfile="$parentdir/output/glf_depth/chr$chr.jobID";
 my $rawID=`squeue -u jedidiah | awk 'NR>1 {print \$1}'`;
 my $ID=substr($rawID, 0, index($rawID, '_'));
 my $datestring = gmtime();
@@ -101,47 +101,14 @@ my %filehash=();
 my $f_dirlist = "$parentdir/output/glf_depth/chr${chr}_glf_dirlist.txt";
 my $getdirlist = "find $parentdir/output/glf_depth/chr$chr -mindepth 1 -maxdepth 1 -type d > $f_dirlist";
 
+my $numdirs = `wc -l $f_dirlist | cut -d" " -f1`;
+chomp($numdirs);
+
 $datestring = gmtime();
 print "Validation started at $datestring...\n";
 
 my $cflag=0;
 while($cflag!=1){
-  my $getdirlist = "find $parentdir/output/glf_depth/chr$chr -mindepth 1 -maxdepth 1 -type d > $f_dirlist";
-  &forkExecWait($getdirlist);
-  open my $dirlist, '<', $f_dirlist or die "can't open $f_dirlist: $!";
-
-  while(<$dirlist>){
-    chomp;
-
-    if(exists($filehash{$_}) && $filehash{$_}!=1){
-      # print "Validating files in $_...";
-      my @filecount=glob("$_/*.dp");
-      my $numfiles = scalar @filecount;
-      # chomp($numfiles);
-      my $chknum=`wc -l $_/samples.ok | cut -d" " -f1`;
-      chomp($chknum);
-
-      if($chknum==$numind){
-        my $perlcmd = "perl $parentdir/smaug-genetics/data_mgmt/process_glf_meandp.pl --chr $chr --dir $_";
-        &forkExecWait($perlcmd);
-        $filehash{$_}=1;
-
-        my @path = split /\//, $_;
-        my $range = $path[-1];
-        my $meandp = "$parentdir/output/glf_depth/chr$chr.$range.txt";
-
-        if(-e $meandp){
-          print "Removing files in $_/\n";
-          my $rmdpcmd="rm -f $_/\*.dp";
-          &forkExecWait($rmdpcmd);
-          my $rmokcmd="rm -f $_/samples.ok";
-          &forkExecWait($rmokcmd);
-        }
-      }
-    } else {
-      $filehash{$_}=0;
-    }
-  }
 
   my $logfile="$parentdir/output/glf_depth/chr$chr.data.log";
   my $logcmd="sacct -j $ID --format=JobID,State | awk 'NR>2 {print \$2}' | sort | uniq | paste -d- -s > $logfile";
@@ -151,28 +118,43 @@ while($cflag!=1){
   while(<$log>){
     chomp;
     if($_ eq "COMPLETED"){
-      my @dirs;
-      while(<$dirlist>){
-        chomp;
-        push @dirs, $_;
-      }
-      if(is_folder_empty($dirs[-1])){
-        $cflag=1;
-        print "VALIDATION COMPLETE\n";
-        last;
-      }
+      $cflag=1;
+      print "VALIDATION COMPLETE\n";
+      last;
     }
   }
-
-  sleep 120;
+  sleep 30;
 }
+
+# initialize and run sbatch file
+my $meandpbatch = "$parentdir/smaug-genetics/data_mgmt/slurm_glf_meandp.$chr.txt";
+open my $mdFH, '>', $meandpbatch or die "can't write to $meandpbatch: $!\n";
+print $mdFH "#!/bin/sh \n";
+print $mdFH "#SBATCH --mail-type=FAIL \n";
+print $mdFH "#SBATCH --mail-user=jedidiah\@umich.edu \n";
+print $mdFH "#SBATCH --ntasks=1 \n";
+print $mdFH "#SBATCH --mem=2000 \n";
+print $mdFH "#SBATCH --time 20:00:00 \n";
+print $mdFH "#SBATCH --job-name=chr${chr}_glf_meandp \n";
+print $mdFH "#SBATCH --partition=nomosix \n";
+print $mdFH "#SBATCH --array=1-$numdirs \n"; # change to 1-$numjobs
+print $mdFH "#SBATCH --output=\"$parentdir/output/slurm/slurmJob-%J.out\" --error=\"$parentdir/output/slurm/slurmJob-%J.err\" \n";
+print $mdFH "srun perl $parentdir/smaug-genetics/data_mgmt/process_glf_meandp.pl --chr $chr --ind \${SLURM_ARRAY_TASK_ID}";
+close($mdFH) or die "Unable to close file: $meandpbatch $!";
+
+$slurmcmd="sbatch $meandpbatch";
+&forkExecWait($slurmcmd);
+
+$rawID=`squeue -u jedidiah | awk 'NR>1 {print \$1}'`;
+$ID=substr($rawID, 0, index($rawID, '_'));
+$datestring = gmtime();
+print "Batch job $ID queued at $datestring...\n";
 
 sub is_folder_empty {
     my $dirname = shift;
     opendir(my $dh, $dirname) or die "Not a directory";
     return scalar(grep { $_ ne "." && $_ ne ".." } readdir($dh)) == 0;
 }
-
 
 ##############################################################################
 # fork-exec-wait subroutine

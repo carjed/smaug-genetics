@@ -94,11 +94,36 @@ $hash{$_}=nearest(.01,$hash{$_}/$hashn{$_}) foreach (keys%hash);
 
 print OUT "$_\t$hash{$_}\n" foreach (sort {$a <=> $b} (keys%hash));
 
+print "Removing files in $dir/\n";
+my $rmdpcmd="rm -f $dir/\*.dp";
+&forkExecWait($rmdpcmd);
+my $rmokcmd="rm -f $dir/samples.ok";
+&forkExecWait($rmokcmd);
 
+##############################################################################
+# Subroutine rounds up to nearest roundto value
+##############################################################################
 sub roundup
 {
   my $num = shift;
   my $roundto = shift || 1;
 
   return int(ceil($num/$roundto))*$roundto;
+}
+
+##############################################################################
+# fork-exec-wait subroutine
+##############################################################################
+sub forkExecWait {
+  my $cmd = shift;
+  #print "forkExecWait(): $cmd\n";
+  my $kidpid;
+  if ( !defined($kidpid = fork()) ) {
+	  die "Cannot fork: $!";
+  } elsif ($kidpid==0) {
+	  exec($cmd);
+	  die "Cannot exec $cmd: $!";
+  } else {
+	  waitpid($kidpid,0);
+  }
 }

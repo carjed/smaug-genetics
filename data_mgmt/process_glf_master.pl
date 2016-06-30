@@ -84,7 +84,7 @@ print $wFH "srun perl $parentdir/smaug-genetics/data_mgmt/process_glf_worker.pl 
 close($wFH) or die "Unable to close file: $workerbatch $!";
 
 my $slurmcmd="sbatch $workerbatch";
-&forkExecWait($slurmcmd);
+# &forkExecWait($slurmcmd);
 
 # my $jobIDfile="$parentdir/output/glf_depth/chr$chr.jobID";
 my $rawID=`squeue -u jedidiah | awk 'NR>1 {print \$1}'`;
@@ -97,14 +97,15 @@ $datestring = gmtime();
 print "Validation started at $datestring...\n";
 
 my $cflag=0;
+OUTER:
 while($cflag!=1){
 
   my $logfile="$parentdir/output/glf_depth/chr$chr.data.log";
   my $logcmd="sacct -j $ID --format=JobID,State | awk 'NR>2 {print \$2}' | sort | uniq | paste -d- -s > $logfile";
   &forkExecWait($logcmd);
-  open my $log, '<', $logfile or die "can't open $logfile: $!";
+  open my $logFH, '<', $logfile or die "can't open $logfile: $!";
 
-  while(<$log>){
+  while(<$logFH>){
     chomp;
     if($_ eq "COMPLETED"){
       $cflag=1;
@@ -112,6 +113,8 @@ while($cflag!=1){
       last;
     }
   }
+
+  close($logFH) or die "Unable to close file: $logfile $!";
   sleep 30;
 }
 

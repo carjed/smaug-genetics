@@ -19,13 +19,13 @@ use Benchmark;
 use Tie::File;
 
 my $chr;
-my $dir;
+my $ind;
 my $help=0;
 my $man=0;
 
 # Set options and inputs
 GetOptions ('chr=i'=> \$chr,
-'dir=s' => \$dir,
+'ind=i' => \$ind,
 'help|?'=> \$help,
 man => \$man) or pod2usage(1);
 
@@ -36,6 +36,18 @@ pod2usage(-verbose => 2) if $man;
 my $wdir=getcwd;
 my $parentdir="/net/bipolar/jedidiah/mutation";
 # my $glfdir="$parentdir/output/glf_depth/chr$chr/";
+
+my $f_dirlist = "$parentdir/output/glf_depth/chr${chr}_glf_dirlist.txt";
+open my $dirlist, '<', $f_dirlist or die "can't open $f_dirlist: $!";
+
+my @dirs;
+
+while(<$dirlist>){
+  chomp;
+  push @dirs, $_;
+}
+
+my $dir=@dirs[$i-1];
 
 my @path=split/\//, $dir;
 my $chunk=$path[-1];

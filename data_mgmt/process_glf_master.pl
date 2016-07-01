@@ -77,6 +77,7 @@ print "Number of records to process in chr$chr: $numrecords\n";
 print "Number of individuals to be processed: $numind\n";
 
 # initialize and run sbatch file
+my $jobcmd="chr${chr}_process_glfs";
 my $workerbatch = "$parentdir/smaug-genetics/data_mgmt/slurm_process_glfs.$chr.txt";
 open my $wFH, '>', $workerbatch or die "can't write to $workerbatch: $!\n";
 print $wFH "#!/bin/sh \n";
@@ -85,7 +86,7 @@ print $wFH "#SBATCH --mail-user=jedidiah\@umich.edu \n";
 print $wFH "#SBATCH --ntasks=1 \n";
 print $wFH "#SBATCH --mem=2000 \n";
 print $wFH "#SBATCH --time 20:00:00 \n";
-print $wFH "#SBATCH --job-name=chr${chr}_process_glfs \n";
+print $wFH "#SBATCH --job-name=$jobcmd \n";
 print $wFH "#SBATCH --partition=nomosix \n";
 print $wFH "#SBATCH --array=1-$numjobs \n"; # change to 1-$numjobs
 print $wFH "#SBATCH --output=\"$slurmdir/slurmJob-%J.out\" --error=\"$slurmdir/slurmJob-%J.err\" \n";
@@ -96,7 +97,7 @@ my $slurmcmd="sbatch $workerbatch";
 &forkExecWait($slurmcmd);
 
 # my $jobIDfile="$parentdir/output/glf_depth/chr$chr.jobID";
-my $rawID=`squeue -u jedidiah --format \"%.18i %.9P %.24j %.8u %.2t %.10M %.6D\" | grep \"chr${chr}_process_glfs\" awk 'NR>1 {print \$1}'`;
+my $rawID=`squeue -u jedidiah --format \"%.18i %.9P %.24j %.8u %.2t %.10M %.6D\" | grep \"$jobcmd\" awk 'NR>1 {print \$1}'`;
 my $ID=substr($rawID, 0, index($rawID, '_'));
 my $datestring = localtime();
 print "Batch job $ID queued at $datestring...\n";
@@ -137,6 +138,7 @@ my $numdirs = `wc -l $f_dirlist | cut -d" " -f1`;
 chomp($numdirs);
 
 # initialize and run sbatch file
+$jobcmd="chr${chr}_glf_meandp";
 my $meandpbatch = "$parentdir/smaug-genetics/data_mgmt/slurm_glf_meandp.$chr.txt";
 open my $mdFH, '>', $meandpbatch or die "can't write to $meandpbatch: $!\n";
 print $mdFH "#!/bin/sh \n";
@@ -145,7 +147,7 @@ print $mdFH "#SBATCH --mail-user=jedidiah\@umich.edu \n";
 print $mdFH "#SBATCH --ntasks=1 \n";
 print $mdFH "#SBATCH --mem=2000 \n";
 print $mdFH "#SBATCH --time 20:00:00 \n";
-print $mdFH "#SBATCH --job-name=chr${chr}_glf_meandp \n";
+print $mdFH "#SBATCH --job-name=$jobcmd \n";
 print $mdFH "#SBATCH --partition=nomosix \n";
 print $mdFH "#SBATCH --array=1-$numdirs \n";
 print $mdFH "#SBATCH --output=\"$slurmdir/slurmJob-%J.out\" --error=\"$slurmdir/slurmJob-%J.err\" \n";
@@ -155,7 +157,7 @@ close($mdFH) or die "Unable to close file: $meandpbatch $!";
 $slurmcmd="sbatch $meandpbatch";
 &forkExecWait($slurmcmd);
 
-$rawID=`squeue -u jedidiah --format "%.24i %.9P %.24j %.8u %.2t %.10M %.6D" | grep \"chr${chr}_glf_meandp\" | awk 'NR>1 {print \$1}'`;
+$rawID=`squeue -u jedidiah --format \"%.24i %.9P %.24j %.8u %.2t %.10M %.6D\" | grep \"$jobcmd\" | awk 'NR>1 {print \$1}'`;
 $ID=substr($rawID, 0, index($rawID, '_'));
 $datestring = localtime();
 print "Batch job $ID queued at $datestring...\n";

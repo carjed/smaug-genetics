@@ -155,7 +155,7 @@ close($mdFH) or die "Unable to close file: $meandpbatch $!";
 $slurmcmd="sbatch $meandpbatch";
 &forkExecWait($slurmcmd);
 
-$rawID=`squeue -u jedidiah --format "%.24i %.9P %.24j %.8u %.2t %.10M %.6D" | grep \"chr${chr}_glf_meandp\" awk 'NR>1 {print \$1}'`;
+$rawID=`squeue -u jedidiah --format "%.24i %.9P %.24j %.8u %.2t %.10M %.6D" | grep \"chr${chr}_glf_meandp\" | awk 'NR>1 {print \$1}'`;
 $ID=substr($rawID, 0, index($rawID, '_'));
 $datestring = localtime();
 print "Batch job $ID queued at $datestring...\n";

@@ -37,6 +37,10 @@ my $parentdir="/net/bipolar/jedidiah/mutation";
 my $allfiles="$parentdir/output/glf_depth/glf_filelist.txt";
 my $chrfiles="$parentdir/output/glf_depth/chr${chr}_glf_filelist.txt";
 
+my $today = POSIX::strftime('%Y%m%d', localtime);
+my $slurmdir = "$parentdir/output/slurm/$today";
+  make_path("$slurmdir");
+
 my $chrFH;
 open($chrFH, '>', $chrfiles) or
   die "Unable to open file $chrfiles : $!";
@@ -84,7 +88,7 @@ print $wFH "#SBATCH --time 20:00:00 \n";
 print $wFH "#SBATCH --job-name=chr${chr}_process_glfs \n";
 print $wFH "#SBATCH --partition=nomosix \n";
 print $wFH "#SBATCH --array=1-$numjobs \n"; # change to 1-$numjobs
-print $wFH "#SBATCH --output=\"$parentdir/output/slurm/slurmJob-%J.out\" --error=\"$parentdir/output/slurm/slurmJob-%J.err\" \n";
+print $wFH "#SBATCH --output=\"$slurmdir/slurmJob-%J.out\" --error=\"$slurmdir/slurmJob-%J.err\" \n";
 print $wFH "srun perl $parentdir/smaug-genetics/data_mgmt/process_glf_worker.pl --chr $chr --ind \${SLURM_ARRAY_TASK_ID} --chunk $chunksize --filelist $chrfilesub\n";
 close($wFH) or die "Unable to close file: $workerbatch $!";
 
@@ -94,11 +98,11 @@ my $slurmcmd="sbatch $workerbatch";
 # my $jobIDfile="$parentdir/output/glf_depth/chr$chr.jobID";
 my $rawID=`squeue -u jedidiah | awk 'NR>1 {print \$1}'`;
 my $ID=substr($rawID, 0, index($rawID, '_'));
-my $datestring = gmtime();
+my $datestring = localtime();
 print "Batch job $ID queued at $datestring...\n";
 
 # Continuous loop checks for batch job to complete before proceeding
-$datestring = gmtime();
+$datestring = localtime();
 print "Validation started at $datestring...\n";
 
 my $cflag=0;
@@ -144,7 +148,7 @@ print $mdFH "#SBATCH --time 20:00:00 \n";
 print $mdFH "#SBATCH --job-name=chr${chr}_glf_meandp \n";
 print $mdFH "#SBATCH --partition=nomosix \n";
 print $mdFH "#SBATCH --array=1-$numdirs \n";
-print $mdFH "#SBATCH --output=\"$parentdir/output/slurm/slurmJob-%J.out\" --error=\"$parentdir/output/slurm/slurmJob-%J.err\" \n";
+print $mdFH "#SBATCH --output=\"$slurmdir/slurmJob-%J.out\" --error=\"$slurmdir/slurmJob-%J.err\" \n";
 print $mdFH "srun perl $parentdir/smaug-genetics/data_mgmt/process_glf_meandp.pl --chr $chr --ind \${SLURM_ARRAY_TASK_ID}";
 close($mdFH) or die "Unable to close file: $meandpbatch $!";
 
@@ -153,7 +157,7 @@ $slurmcmd="sbatch $meandpbatch";
 
 $rawID=`squeue -u jedidiah | awk 'NR>1 {print \$1}'`;
 $ID=substr($rawID, 0, index($rawID, '_'));
-$datestring = gmtime();
+$datestring = localtime();
 print "Batch job $ID queued at $datestring...\n";
 
 ##############################################################################

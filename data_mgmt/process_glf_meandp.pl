@@ -62,7 +62,7 @@ for(my $i=$start; $i<=$end; $i+=10){
   $hashn{$i}=0;
 }
 
-my $outfile = "$parentdir/output/glf_depth/chr$chr.$chunk.txt";
+my $outfile = "$parentdir/output/glf_depth/meandp/chr$chr.$chunk.txt";
 print "$outfile\n";
 open(OUT, '>', $outfile) or die "can't write to $outfile: $!\n";
 

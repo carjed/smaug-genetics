@@ -81,7 +81,7 @@ print OUT "#SBATCH --mail-type=FAIL \n";
 print OUT "#SBATCH --mail-user=jedidiah\@umich.edu \n";
 print OUT "#SBATCH --ntasks=1 \n";
 print OUT "#SBATCH --mem=2000 \n";
-print OUT "#SBATCH --time 20:00:00 \n";
+print OUT "#SBATCH --time 2:00:00 \n";
 print OUT "#SBATCH --job-name=chr${chr}_glf_meandp \n";
 print OUT "#SBATCH --partition=nomosix \n";
 print OUT "#SBATCH --array=1-$numjobs \n"; # change to 1-$numjobs

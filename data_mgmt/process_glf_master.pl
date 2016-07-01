@@ -14,11 +14,20 @@ use File::Path qw(make_path);
 use List::Util qw(first max maxstr min minstr reduce shuffle sum);
 use Math::Round;
 use Cwd;
-use Benchmark;
-use Tie::File;
 
 # Specify parameters
-my $chr=22;
+my $chr;
+my $help=0;
+my $man=0;
+
+# Set options and inputs
+GetOptions ('chr=i'=> \$chr,
+'help|?'=> \$help,
+man => \$man) or pod2usage(1);
+
+pod2usage(0) if $help;
+pod2usage(-verbose => 2) if $man;
+
 # my $numind=40;
 my $subset=0;
 my $numind=3765;
@@ -26,9 +35,7 @@ my $chunksize=40; # No. of records to process in each worker job
 my $parentdir="/net/bipolar/jedidiah/mutation";
   make_path("$parentdir/output/glf_depth/chr$chr");
 my $allfiles="$parentdir/output/glf_depth/glf_filelist.txt";
-
 my $chrfiles="$parentdir/output/glf_depth/chr${chr}_glf_filelist.txt";
-# my $chrfiles;
 
 my $chrFH;
 open($chrFH, '>', $chrfiles) or
@@ -55,8 +62,6 @@ if($subset==0){
   &forkExecWait($sscmd2);
   $numind=`wc -l $subsetsamples | cut -d" " -f1`;
   chomp($numind);
-  # my $subsetcmd="cat $chrfilesfull | perl -ne 'print $_ if 0.1 > rand;' > $chrfiles";
-  # $numind=``
 }
 
 # Count total records and specify number of jobs
@@ -84,7 +89,7 @@ print $wFH "srun perl $parentdir/smaug-genetics/data_mgmt/process_glf_worker.pl 
 close($wFH) or die "Unable to close file: $workerbatch $!";
 
 my $slurmcmd="sbatch $workerbatch";
-# &forkExecWait($slurmcmd);
+&forkExecWait($slurmcmd);
 
 # my $jobIDfile="$parentdir/output/glf_depth/chr$chr.jobID";
 my $rawID=`squeue -u jedidiah | awk 'NR>1 {print \$1}'`;
@@ -100,19 +105,14 @@ my $cflag=0;
 OUTER:
 while($cflag!=1){
 
-  my $logfile="$parentdir/output/glf_depth/chr$chr.data.log2";
-  print "Reading $logfile\n";
-  # my $logcmd="sacct -j $ID --format=JobID,State | awk 'NR>2 {print \$2}' | sort | uniq | paste -d- -s > $logfile";
-  # print "Running $logcmd\n";
-  # &forkExecWait($logcmd);
+  my $logfile="$parentdir/output/glf_depth/chr$chr.data.log";
+  my $logcmd="sacct -j $ID --format=JobID,State | awk 'NR>2 {print \$2}' | sort | uniq | paste -d- -s > $logfile";
+  &forkExecWait($logcmd);
 
   open my $logFH, '<', $logfile or die "can't open $logfile: $!";
 
   while( my $line = <$logFH>){
     chomp($line);
-    print "$line ab\n";
-    print "${line}ab\n";
-    print "$cflag\n";
     if($line =~ /^COMPLETED$/){
       $cflag=1;
       print "VALIDATION COMPLETE\n";
@@ -143,7 +143,7 @@ print $mdFH "#SBATCH --mem=2000 \n";
 print $mdFH "#SBATCH --time 20:00:00 \n";
 print $mdFH "#SBATCH --job-name=chr${chr}_glf_meandp \n";
 print $mdFH "#SBATCH --partition=nomosix \n";
-print $mdFH "#SBATCH --array=1-$numdirs \n"; # change to 1-$numjobs
+print $mdFH "#SBATCH --array=1-$numdirs \n";
 print $mdFH "#SBATCH --output=\"$parentdir/output/slurm/slurmJob-%J.out\" --error=\"$parentdir/output/slurm/slurmJob-%J.err\" \n";
 print $mdFH "srun perl $parentdir/smaug-genetics/data_mgmt/process_glf_meandp.pl --chr $chr --ind \${SLURM_ARRAY_TASK_ID}";
 close($mdFH) or die "Unable to close file: $meandpbatch $!";
@@ -156,6 +156,9 @@ $ID=substr($rawID, 0, index($rawID, '_'));
 $datestring = gmtime();
 print "Batch job $ID queued at $datestring...\n";
 
+##############################################################################
+# Subroutine checks if folder is empty or not
+##############################################################################
 sub is_folder_empty {
     my $dirname = shift;
     opendir(my $dh, $dirname) or die "Not a directory";

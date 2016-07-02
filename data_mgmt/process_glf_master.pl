@@ -109,6 +109,7 @@ print "Validation started at $datestring...\n";
 # my $joblog = "$parentdir/smaug-genetics/data_mgmt/slurm_joblist.$chr.txt";
 # open my $jobFH, '>', $joblog or die "can't write to $joblog: $!\n";
 
+sleep 900;
 my %statushash=();
 my $cflag=0;
 OUTER:
@@ -132,7 +133,9 @@ while($cflag!=1){
       $statushash{$i}=1;
     } else {
       $statushash{$i}=0;
-      &forkExecWait($jobcmd);
+      # &forkExecWait($jobcmd);
+      my $requeuecmd="scontrol requeue $grepstr";
+      &forkExecWait($requeuecmd);
     }
 
     my $numcompleted = sum values %statushash;

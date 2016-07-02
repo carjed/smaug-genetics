@@ -120,7 +120,7 @@ while($cflag!=1){
   #
   # open my $logFH, '<', $logfile or die "can't open $logfile: $!";
 
-  for(my $i in 1:$numjobs){
+  foreach my $i (1..$numjobs){
     # my $jobcmd="perl $parentdir/smaug-genetics/data_mgmt/process_glf_worker.pl --chr $chr --ind $i --chunk $chunksize --filelist $chrfilesub";
     # print $jobFH "$jobcmd\n";
 

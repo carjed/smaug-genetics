@@ -131,11 +131,13 @@ while($cflag!=1){
 
     if($status eq "COMPLETED"){
       $statushash{$i}=1;
-    } else {
+    } elsif($status eq "FAILED"){
       $statushash{$i}=0;
       # &forkExecWait($jobcmd);
       my $requeuecmd="scontrol requeue $grepstr";
       &forkExecWait($requeuecmd);
+    } else {
+      $statushash{$i}=0;
     }
 
     my $numcompleted = sum values %statushash;

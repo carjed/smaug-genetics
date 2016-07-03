@@ -102,79 +102,7 @@ my $ID=substr($rawID, 0, index($rawID, '_'));
 my $datestring = localtime();
 print "Batch job $ID queued at $datestring...\n";
 
-# Continuous loop checks for batch job to complete before proceeding
-$datestring = localtime();
-print "Validation started at $datestring...\n";
-
-# my $joblog = "$parentdir/smaug-genetics/data_mgmt/slurm_joblist.$chr.txt";
-# open my $jobFH, '>', $joblog or die "can't write to $joblog: $!\n";
-
-sleep 900;
-my %statushash=();
-my $cflag=0;
-OUTER:
-while($cflag!=1){
-
-  # my $logfile="$parentdir/output/glf_depth/chr$chr.data.log";
-  # my $logcmd="sacct -j $ID --format=JobID,State | awk 'NR>2 {print \$2}' | sort | uniq | paste -d- -s > $logfile";
-  # &forkExecWait($logcmd);
-  #
-  # open my $logFH, '<', $logfile or die "can't open $logfile: $!";
-
-  foreach my $i (1..$numjobs){
-    # my $jobcmd="perl $parentdir/smaug-genetics/data_mgmt/process_glf_worker.pl --chr $chr --ind $i --chunk $chunksize --filelist $chrfilesub";
-    # print $jobFH "$jobcmd\n";
-
-    my $grepstr = "${ID}_$i ";
-    my $status=`sacct -j $ID --format=jobid%30,state | grep '$grepstr' | awk '{print \$2}'`;
-    chomp($status);
-
-    if($status eq "COMPLETED"){
-      $statushash{$i}=1;
-    } elsif($status eq "FAILED"){
-      $statushash{$i}=0;
-      # &forkExecWait($jobcmd);
-      my $requeuecmd="scontrol requeue $grepstr";
-      &forkExecWait($requeuecmd);
-    } else {
-      $statushash{$i}=0;
-    }
-
-    my $numcompleted = sum values %statushash;
-    if($numcompleted==$numjobs){
-      $cflag=1;
-      print "VALIDATION COMPLETE\n";
-      last OUTER;
-    }
-  }
-
-  # close($logFH) or die "Unable to close file: $logfile $!";
-  sleep 30;
-}
-
-# OLD VALIDATION LOOP
-# my $cflag=0;
-# OUTER:
-# while($cflag!=1){
-#
-#   my $logfile="$parentdir/output/glf_depth/chr$chr.data.log";
-#   my $logcmd="sacct -j $ID --format=JobID,State | awk 'NR>2 {print \$2}' | sort | uniq | paste -d- -s > $logfile";
-#   &forkExecWait($logcmd);
-#
-#   open my $logFH, '<', $logfile or die "can't open $logfile: $!";
-#
-#   while( my $line = <$logFH>){
-#     chomp($line);
-#     if($line =~ /^COMPLETED$/){
-#       $cflag=1;
-#       print "VALIDATION COMPLETE\n";
-#       last OUTER;
-#     }
-#   }
-#
-#   close($logFH) or die "Unable to close file: $logfile $!";
-#   sleep 30;
-# }
+&validate_slurm($ID, $numjobs);
 
 my %filehash=();
 my $f_dirlist = "$parentdir/output/glf_depth/chr${chr}_glf_dirlist.txt";
@@ -209,6 +137,8 @@ $ID=substr($rawID, 0, index($rawID, '_'));
 $datestring = localtime();
 print "Batch job $ID queued at $datestring...\n";
 
+&validate_slurm($ID, $numdirs);
+
 ##############################################################################
 # Subroutine checks if folder is empty or not
 ##############################################################################
@@ -232,5 +162,59 @@ sub forkExecWait {
 	  die "Cannot exec $cmd: $!";
   } else {
 	  waitpid($kidpid,0);
+  }
+}
+
+##############################################################################
+# Subroutine checks jobs in SBATCH array and requeues if failed
+##############################################################################
+sub validate_slurm {
+  my $ID=shift;
+  my $numjobs=shift;
+
+  $datestring = localtime();
+  print "Validation started at $datestring...\n";
+
+  sleep 30;
+  my %statushash=();
+  my $cflag=0;
+  OUTER:
+  while($cflag!=1){
+
+    # my $logfile="$parentdir/output/glf_depth/chr$chr.data.log";
+    # my $logcmd="sacct -j $ID --format=JobID,State | awk 'NR>2 {print \$2}' | sort | uniq | paste -d- -s > $logfile";
+    # &forkExecWait($logcmd);
+    #
+    # open my $logFH, '<', $logfile or die "can't open $logfile: $!";
+
+    foreach my $i (1..$numjobs){
+      # my $jobcmd="perl $parentdir/smaug-genetics/data_mgmt/process_glf_worker.pl --chr $chr --ind $i --chunk $chunksize --filelist $chrfilesub";
+      # print $jobFH "$jobcmd\n";
+
+      my $grepstr = "${ID}_$i ";
+      my $status=`sacct -j $ID --format=jobid%30,state | grep '$grepstr' | awk '{print \$2}'`;
+      chomp($status);
+
+      if($status eq "COMPLETED"){
+        $statushash{$i}=1;
+      } elsif($status eq "FAILED"){
+        $statushash{$i}=0;
+        # &forkExecWait($jobcmd);
+        my $requeuecmd="scontrol requeue $grepstr";
+        &forkExecWait($requeuecmd);
+      } else {
+        $statushash{$i}=0;
+      }
+
+      my $numcompleted = sum values %statushash;
+      if($numcompleted==$numjobs){
+        $cflag=1;
+        print "VALIDATION COMPLETE\n";
+        last OUTER;
+      }
+    }
+
+    # close($logFH) or die "Unable to close file: $logfile $!";
+    sleep 30;
   }
 }

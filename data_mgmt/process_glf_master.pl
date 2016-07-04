@@ -186,7 +186,7 @@ sub validate_slurm {
     # &forkExecWait($logcmd);
     #
     # open my $logFH, '<', $logfile or die "can't open $logfile: $!";
-
+    my $numcompleted=0;
     foreach my $i (1..$numjobs){
       # my $jobcmd="perl $parentdir/smaug-genetics/data_mgmt/process_glf_worker.pl --chr $chr --ind $i --chunk $chunksize --filelist $chrfilesub";
       # print $jobFH "$jobcmd\n";
@@ -206,7 +206,7 @@ sub validate_slurm {
         $statushash{$i}=0;
       }
 
-      my $numcompleted = sum values %statushash;
+      $numcompleted = sum values %statushash;
 
       if($numcompleted==$numjobs){
         $cflag=1;

@@ -177,6 +177,11 @@ sub validate_slurm {
 
   sleep 30;
   my %statushash=();
+
+  foreach my $i (1..$numjobs){
+    $statushash{$_}=0;
+  }
+
   my $cflag=0;
   OUTER:
   while($cflag!=1){

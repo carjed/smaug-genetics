@@ -206,6 +206,7 @@ sub validate_slurm {
         $statushash{$i}=0;
       }
 
+      print "$numcompleted of $numjobs jobs finished\n";
       my $numcompleted = sum values %statushash;
       if($numcompleted==$numjobs){
         $cflag=1;

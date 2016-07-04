@@ -90,6 +90,7 @@ print $wFH "#SBATCH --job-name=$jobcmd \n";
 print $wFH "#SBATCH --partition=nomosix \n";
 print $wFH "#SBATCH --array=1-$numjobs \n"; # change to 1-$numjobs
 print $wFH "#SBATCH --requeue \n";
+print $wFH "#SBATCH --exclude=inpsyght \n";
 print $wFH "#SBATCH --output=\"$slurmdir/slurmJob-%J.out\" --error=\"$slurmdir/slurmJob-%J.err\" \n";
 print $wFH "srun perl $parentdir/smaug-genetics/data_mgmt/process_glf_worker.pl --chr $chr --ind \${SLURM_ARRAY_TASK_ID} --chunk $chunksize --filelist $chrfilesub\n";
 close($wFH) or die "Unable to close file: $workerbatch $!";
@@ -127,6 +128,7 @@ print $mdFH "#SBATCH --job-name=$jobcmd \n";
 print $mdFH "#SBATCH --partition=nomosix \n";
 print $mdFH "#SBATCH --array=1-$numdirs \n";
 print $mdFH "#SBATCH --requeue \n";
+print $mdFH "#SBATCH --exclude=inpsyght \n";
 print $mdFH "#SBATCH --output=\"$slurmdir/slurmJob-%J.out\" --error=\"$slurmdir/slurmJob-%J.err\" \n";
 print $mdFH "srun perl $parentdir/smaug-genetics/data_mgmt/process_glf_meandp.pl --chr $chr --ind \${SLURM_ARRAY_TASK_ID}";
 close($mdFH) or die "Unable to close file: $meandpbatch $!";

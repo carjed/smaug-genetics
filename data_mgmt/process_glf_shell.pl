@@ -15,7 +15,7 @@ use List::Util qw(first max maxstr min minstr reduce shuffle sum);
 use Math::Round;
 use Cwd;
 
-my @chrs=(5..18, 20);
+my @chrs=(4, 9..18, 20);
 foreach my $i (@chrs){
   print "Processing chr$i...\n";
   my $pgmcmd="perl /net/bipolar/jedidiah/mutation/smaug-genetics/data_mgmt/process_glf_master.pl --chr $i";

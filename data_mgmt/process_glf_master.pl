@@ -207,7 +207,7 @@ sub validate_slurm {
       }
 
       my $numcompleted = sum values %statushash;
-      print "$numcompleted of $numjobs jobs finished\n";
+
       if($numcompleted==$numjobs){
         $cflag=1;
         print "VALIDATION COMPLETE\n";
@@ -215,6 +215,8 @@ sub validate_slurm {
       }
     }
 
+    $datestring = localtime();
+    print "$numcompleted of $numjobs jobs finished at $datestring\n";
     # close($logFH) or die "Unable to close file: $logfile $!";
     sleep 30;
   }

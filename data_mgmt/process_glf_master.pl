@@ -215,7 +215,7 @@ sub validate_slurm {
       }
       $numcompleted = sum values %statushash;
 
-      if($numcompleted==$njs){
+      if($numcompleted>=$njs){
         $cflag=1;
         print "VALIDATION COMPLETE\n";
         last OUTER;

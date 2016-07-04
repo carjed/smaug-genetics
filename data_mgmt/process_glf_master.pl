@@ -179,7 +179,7 @@ sub validate_slurm {
   my %statushash=();
 
   foreach my $i (1..$numjobs){
-    $statushash{$_}=0;
+    $statushash{$i}=0;
   }
 
   my $cflag=0;

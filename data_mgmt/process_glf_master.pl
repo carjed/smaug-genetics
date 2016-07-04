@@ -178,7 +178,8 @@ sub validate_slurm {
   sleep 60;
   my %statushash=();
 
-  foreach my $i (1..$numjobs){
+  my $njs=$numjobs-1;
+  foreach my $i (1..$njs){
     $statushash{$i}=0;
   }
 
@@ -192,7 +193,7 @@ sub validate_slurm {
     #
     # open my $logFH, '<', $logfile or die "can't open $logfile: $!";
     my $numcompleted=0;
-    foreach my $i (1..$numjobs){
+    foreach my $i (1..$njs){
       # my $jobcmd="perl $parentdir/smaug-genetics/data_mgmt/process_glf_worker.pl --chr $chr --ind $i --chunk $chunksize --filelist $chrfilesub";
       # print $jobFH "$jobcmd\n";
 
@@ -214,7 +215,7 @@ sub validate_slurm {
       }
       $numcompleted = sum values %statushash;
 
-      if($numcompleted==$numjobs){
+      if($numcompleted==$njs){
         $cflag=1;
         print "VALIDATION COMPLETE\n";
         last OUTER;
@@ -222,7 +223,7 @@ sub validate_slurm {
     }
 
     $datestring = localtime();
-    print "$numcompleted of $numjobs jobs finished at $datestring\n";
+    print "$numcompleted of $njs jobs finished at $datestring\n";
     # close($logFH) or die "Unable to close file: $logfile $!";
     sleep 60;
   }

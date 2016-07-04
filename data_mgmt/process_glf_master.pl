@@ -198,7 +198,7 @@ sub validate_slurm {
 
       if($statushash{$i}!=1){
         my $grepstr = "${ID}_$i ";
-        my $status=`sacct -j $grepstr --format=jobid%30,state | awk '{print \$2}'`;
+        my $status=`sacct -X -j $grepstr --format=jobid%30,state | awk 'NR>2 {print \$2}'`;
         chomp($status);
 
         if($status eq "COMPLETED"){

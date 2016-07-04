@@ -175,7 +175,7 @@ sub validate_slurm {
   $datestring = localtime();
   print "Validation started at $datestring...\n";
 
-  sleep 30;
+  sleep 60;
   my %statushash=();
 
   foreach my $i (1..$numjobs){
@@ -224,6 +224,6 @@ sub validate_slurm {
     $datestring = localtime();
     print "$numcompleted of $numjobs jobs finished at $datestring\n";
     # close($logFH) or die "Unable to close file: $logfile $!";
-    sleep 30;
+    sleep 60;
   }
 }

@@ -191,21 +191,22 @@ sub validate_slurm {
       # my $jobcmd="perl $parentdir/smaug-genetics/data_mgmt/process_glf_worker.pl --chr $chr --ind $i --chunk $chunksize --filelist $chrfilesub";
       # print $jobFH "$jobcmd\n";
 
-      my $grepstr = "${ID}_$i ";
-      my $status=`sacct -j $ID --format=jobid%30,state | grep '$grepstr' | awk '{print \$2}'`;
-      chomp($status);
+      if($statushash{$i}!=1){
+        my $grepstr = "${ID}_$i ";
+        my $status=`sacct -j $grepstr --format=jobid%30,state | awk '{print \$2}'`;
+        chomp($status);
 
-      if($status eq "COMPLETED"){
-        $statushash{$i}=1;
-      } elsif($status eq "FAILED"){
-        $statushash{$i}=0;
-        # &forkExecWait($jobcmd);
-        my $requeuecmd="scontrol requeue $grepstr";
-        &forkExecWait($requeuecmd);
-      } else {
-        $statushash{$i}=0;
+        if($status eq "COMPLETED"){
+          $statushash{$i}=1;
+        } elsif($status eq "FAILED"){
+          $statushash{$i}=0;
+          # &forkExecWait($jobcmd);
+          my $requeuecmd="scontrol requeue $grepstr";
+          &forkExecWait($requeuecmd);
+        } else {
+          $statushash{$i}=0;
+        }
       }
-
       $numcompleted = sum values %statushash;
 
       if($numcompleted==$numjobs){

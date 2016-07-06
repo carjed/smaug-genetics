@@ -100,7 +100,7 @@ my $slurmcmd="sbatch $workerbatch";
 &forkExecWait($slurmcmd);
 
 # my $jobIDfile="$parentdir/output/glf_depth/chr$chr.jobID";
-my $rawID=`squeue --format \"%.24i %.9P %.24j %.8u %.2t %.10M %.6D\" -n $jobcmd | awk '{print \$1}'`;
+my $rawID=`squeue --format \"%.24i %.9P %.24j %.8u %.2t %.10M %.6D\" -n $jobcmd | awk 'NR==2 {print \$1}'`;
 my $ID=substr($rawID, 0, index($rawID, '_'));
 my $datestring = localtime();
 print "Batch job $ID queued at $datestring...\n";

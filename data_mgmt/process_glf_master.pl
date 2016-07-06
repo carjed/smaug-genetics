@@ -116,7 +116,8 @@ my $numdirs = `wc -l $f_dirlist | cut -d" " -f1`;
 chomp($numdirs);
 
 # initialize and run sbatch file
-$jobcmd="chr${chr}_glf_meandp";
+my $x = 1000 + int(rand(9999 - 1000));
+$jobcmd="chr${chr}_glf_meandp_$x";
 my $meandpbatch = "$parentdir/smaug-genetics/data_mgmt/slurm_glf_meandp.$chr.txt";
 open my $mdFH, '>', $meandpbatch or die "can't write to $meandpbatch: $!\n";
 print $mdFH "#!/bin/sh \n";

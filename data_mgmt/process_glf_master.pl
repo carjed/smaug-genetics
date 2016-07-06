@@ -87,7 +87,7 @@ print $wFH "#SBATCH --ntasks=1 \n";
 print $wFH "#SBATCH --mem=2000 \n";
 print $wFH "#SBATCH --time 20:00:00 \n";
 print $wFH "#SBATCH --job-name=$jobcmd \n";
-print $wFH "#SBATCH --partition=nomosix \n";
+print $wFH "#SBATCH --partition=bipolar \n";
 print $wFH "#SBATCH --array=1-$numjobs \n"; # change to 1-$numjobs
 print $wFH "#SBATCH --requeue \n";
 print $wFH "#SBATCH --exclude=inpsyght \n";

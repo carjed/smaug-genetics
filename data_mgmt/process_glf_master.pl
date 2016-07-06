@@ -89,7 +89,7 @@ print $wFH "#SBATCH --time 20:00:00 \n";
 print $wFH "#SBATCH --job-name=$jobcmd \n";
 print $wFH "#SBATCH --partition=nomosix \n";
 print $wFH "#SBATCH --array=1-$numjobs \n"; # change to 1-$numjobs
-print $wFH "#SBATCH --requeue \n";
+# print $wFH "#SBATCH --requeue \n";
 # print $wFH "#SBATCH --exclude=inpsyght \n";
 # print $wFH "#SBATCH --exclude=psoriasis-mc01,psoriasis-mc02 \n";
 print $wFH "#SBATCH --output=\"$slurmdir/slurmJob-%J.out\" --error=\"$slurmdir/slurmJob-%J.err\" \n";
@@ -129,7 +129,7 @@ print $mdFH "#SBATCH --time 20:00:00 \n";
 print $mdFH "#SBATCH --job-name=$jobcmd \n";
 print $mdFH "#SBATCH --partition=nomosix \n";
 print $mdFH "#SBATCH --array=1-$numdirs \n";
-print $mdFH "#SBATCH --requeue \n";
+# print $mdFH "#SBATCH --requeue \n";
 # print $mdFH "#SBATCH --exclude=inpsyght \n";
 # print $mdFH "#SBATCH --exclude=psoriasis-mc01,psoriasis-mc02 \n";
 print $mdFH "#SBATCH --output=\"$slurmdir/slurmJob-%J.out\" --error=\"$slurmdir/slurmJob-%J.err\" \n";

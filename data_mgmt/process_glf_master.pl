@@ -100,7 +100,7 @@ my $slurmcmd="sbatch $workerbatch";
 &forkExecWait($slurmcmd);
 
 # my $jobIDfile="$parentdir/output/glf_depth/chr$chr.jobID";
-my $rawID=`squeue -u jedidiah --format \"%.18i %.9P %.24j %.8u %.2t %.10M %.6D\" | grep \"$jobcmd\" | awk '{print \$1}'`;
+my $rawID=`squeue --format \"%.24i %.9P %.24j %.8u %.2t %.10M %.6D\" -n $jobcmd | awk '{print \$1}'`;
 my $ID=substr($rawID, 0, index($rawID, '_'));
 my $datestring = localtime();
 print "Batch job $ID queued at $datestring...\n";
@@ -139,7 +139,7 @@ close($mdFH) or die "Unable to close file: $meandpbatch $!";
 $slurmcmd="sbatch $meandpbatch";
 &forkExecWait($slurmcmd);
 
-$rawID=`squeue -u jedidiah --format \"%.24i %.9P %.24j %.8u %.2t %.10M %.6D\" -j $jobcmd | awk '{print \$1}'`;
+$rawID=`squeue --format \"%.24i %.9P %.24j %.8u %.2t %.10M %.6D\" -n $jobcmd | awk '{print \$1}'`;
 $ID=substr($rawID, 0, index($rawID, '_'));
 $datestring = localtime();
 print "Batch job $ID queued at $datestring...\n";
@@ -235,3 +235,10 @@ sub validate_slurm {
     sleep 60;
   }
 }
+
+##############################################################################
+# Alternative validation scheme--doesn't rely on sacct
+##############################################################################
+# sub validate_slurm2{
+#
+# }

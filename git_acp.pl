@@ -16,4 +16,4 @@ my $commit="$datestring: process glfs";
 
 my $addcmd=`git add *`;
 my $commitcmd=`git commit -m \"$commit\"`;
-my $pushcmd=`git push origin $branch`;
+# my $pushcmd=`git push origin $branch`;

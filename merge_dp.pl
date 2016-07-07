@@ -44,7 +44,7 @@ while(<@files>){
 
   print "$start\t$end\n";
   while(my $line=<$blockFH>){
-    chomp;
+    chomp($line);
     my @elements=split(/\t/, $line);
     my $pos=$elements[0];
 

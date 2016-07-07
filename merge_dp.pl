@@ -22,8 +22,8 @@ my $dpdir="$parentdir/output/glf_depth/meandp";
 
 my $rawfiles = `ls -v $dpdir/chr$chr.*.txt`;
 
-print "$rawfiles\n";
-my @files = split($rawfiles, "\n");
+# print "$rawfiles\n";
+my @files = split(/\n/, $rawfiles);
 
 
 

@@ -53,7 +53,7 @@ while(<$inFH>){
     $curchr=$chr;
     %dphash=();
 
-    my $chrfile="$dpdir/chr$curchr.dp.txt";
+    my $chrfile="$dpdir/chr$curchr.dp";
     my $chrFH;
     open($chrFH, '<', $chrfile) or
       die "Unable to open file $chrfile : $!";

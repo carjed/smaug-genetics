@@ -20,15 +20,17 @@ my $chr=22;
 my $parentdir="/net/bipolar/jedidiah/mutation";
 my $dpdir="$parentdir/output/glf_depth/meandp";
 
-my @files = glob("$dpdir/chr$chr.*.txt");
+my $rawfiles = `ls -v $dpdir/chr$chr.*.txt`;
+
+my @files = split($rawfiles, "\n");
 
 
 
-my @sortfiles=sort by_number @files;
-print join("\n", @sortfiles);
+# my @sortfiles=sort by_number @files;
+print join("\n", @files);
 
-sub by_number {
-    my ( $anum ) = $a =~ /(\d+)/;
-    my ( $bnum ) = $b =~ /(\d+)/;
-    ( $anum || 0 ) <=> ( $bnum || 0 );
-}
+# sub by_number {
+#     my ( $anum ) = $a =~ /(\d+)/;
+#     my ( $bnum ) = $b =~ /(\d+)/;
+#     ( $anum || 0 ) <=> ( $bnum || 0 );
+# }

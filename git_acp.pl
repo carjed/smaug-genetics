@@ -1,18 +1,33 @@
 #!/bin/perl
 
 ##############################################################################
-# Master script for glf processing
+# Macro for quickly adding, committing, and pushing changes to git repo
+# Must be run from within root folder of repo
+#
+# To-do:
+# [-] enable commit message and branch to be modified as options
+# [-]
 ##############################################################################
 
 use strict;
 use warnings;
 use POSIX;
+use Getopt::Long;
+use Pod::Usage;
 
 my $branch="develop";
+my $m="process glfs";
+my $help=0;
+my $man=0;
+
+# Set options and inputs
+GetOptions ('m=s'=> \$m,
+'b=s' => \$branch,
+'help|?'=> \$help,
+man => \$man) or pod2usage(1);
 
 my $datestring = localtime();
-# print "Batch job $ID queued at $datestring...\n";
-my $commit="$datestring: process glfs";
+my $commit="$datestring: $m";
 
 my $addcmd=`git add *`;
 my $commitcmd=`git commit -m \"$commit\"`;

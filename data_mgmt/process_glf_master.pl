@@ -105,7 +105,7 @@ my $ID=substr($rawID, 0, index($rawID, '_'));
 my $datestring = localtime();
 print "Batch job $ID queued at $datestring...\n";
 
-&validate_slurm($ID, $numjobs);
+&validate_slurm($ID, $numjobs, 120);
 
 my %filehash=();
 my $f_dirlist = "$parentdir/output/glf_depth/chr${chr}_glf_dirlist.txt";
@@ -144,7 +144,7 @@ $ID=substr($rawID, 0, index($rawID, '_'));
 $datestring = localtime();
 print "Batch job $ID queued at $datestring...\n";
 
-&validate_slurm($ID, $numdirs);
+&validate_slurm($ID, $numdirs, 600);
 
 ##############################################################################
 # Subroutine checks if folder is empty or not
@@ -178,6 +178,7 @@ sub forkExecWait {
 sub validate_slurm {
   my $ID=shift;
   my $numjobs=shift;
+  my $interval=shift;
 
   $datestring = localtime();
   print "Validation started at $datestring...\n";
@@ -232,7 +233,7 @@ sub validate_slurm {
     $datestring = localtime();
     print "$numcompleted of $njs jobs finished at $datestring\n";
     # close($logFH) or die "Unable to close file: $logfile $!";
-    sleep 60;
+    sleep $interval;
   }
 }
 

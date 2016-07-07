@@ -59,7 +59,7 @@ while(<$inFH>){
       die "Unable to open file $chrfile : $!";
 
     while(my $dp=<$chrFH>){
-      chomp;
+      chomp($dp);
       my @dpline=split(/\t/, $dp);
       my $dp_pos=$dpline[0];
       my $depth=$dpline[1];

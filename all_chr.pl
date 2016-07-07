@@ -3,12 +3,12 @@
 ##############################################################################
 # Run ref5.pl on all chromosomes--
 # update local nucleotide (adj) and binwidth (b) parameters as necesary
-# 
+#
 # Can be modified to a slurm array job
 ##############################################################################
 
-for my $i (11 .. 22) {
-	my $cmd = "perl ref5.pl --chr $i --mac 1 --adj 1 --b 100000 &";
+for my $i (1 .. 22) {
+	my $cmd = "perl ref5.pl --chr $i --mac 1 --adj 3 --b 1000000 --data strict &";
 	&forkExecWait($cmd);
 }
 

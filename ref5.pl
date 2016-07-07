@@ -4,7 +4,7 @@
 # SMAUG: Singleton Mutation Analysis Utility with Graphics
 ##############################################################################
 # SMAUG uses extremely rare variants to visualize changes in mutation rates
-# across the genome. The ref5.pl script takes bcftools summary files and 
+# across the genome. The ref5.pl script takes bcftools summary files and
 #
 # Jedidiah Carlson
 # Department of Bioinformatics
@@ -68,6 +68,7 @@ print "Local subsequence and CpG command entered simultaneously--overriding CpG 
 ##############################################################################
 
 make_path("$parentdir/images/chr$chr");
+# make_path("$parentdir/output/${subseq}bp_${bw}k_${macl}")
 my $imgdir="$parentdir/images/chr$chr";
 
 @annoin=split(',',join(',',@annoin));
@@ -85,7 +86,7 @@ if (@annoin) {
 			print "$_: invalid annotation. See help file.\n";
 		}
 	}
-	
+
 	if (@useannos) {
 		my $annodir=join('_',@useannos);
 		make_path("$parentdir/images/chr$chr/anno/$annodir");
@@ -101,6 +102,9 @@ if ($mac==1) {
 }
 if ($mac==2) {
 	$macl = "doubletons";
+}
+if ($mac==11){
+	$macl="common";
 }
 
 my $cpg_flag;
@@ -124,11 +128,13 @@ if ($adj!=0) {
 
 my $bw=$binwidth/1000;
 
-my $nextchr;
+my $nextchr='';
 if ($chr<22) {
 	$nextchr=$chr+1;
 } elsif ($chr==22) {
 	$nextchr="X";
+} else {
+	$nextchr="Y";
 }
 
 ##############################################################################
@@ -137,6 +143,7 @@ if ($chr<22) {
 ##############################################################################
 ####OLD####my $f_summ = "/net/bipolar/jedidiah/bcftools/summaries/$macl/all/chr$chr.$macl.summary.txt";
 
+make_path("$parentdir/output/${subseq}bp_${bw}k_${macl}");
 my $f_summ = "/net/bipolar/jedidiah/testpipe/summaries/${macl}_${data}/chr$chr.summary"; #main line for full processing
 # my $f_summ = "$parentdir/smaug-sandbox/scripts/human_chimp_chr10.summary";
 # my $f_summ = "/net/bipolar/jedidiah/testpipe/summaries/chr10.common.summary";
@@ -145,7 +152,7 @@ my $f_summ = "/net/bipolar/jedidiah/testpipe/summaries/${macl}_${data}/chr$chr.s
 # my $f_summ = "/net/bipolar/jedidiah/testpipe/vcfs/chr20.rq.summary";
 open my $summ, '<', $f_summ or die "can't open $f_summ: $!";
 
-my $outfile = "$parentdir/output/${subseq}bp_${bw}k/chr$chr.expanded.summary";
+my $outfile = "$parentdir/output/${subseq}bp_${bw}k_${macl}_${data}/chr$chr.expanded.summary";
 open(OUT, '>', $outfile) or die "can't write to $outfile: $!\n";
 
 if ($mac==1) {
@@ -155,7 +162,7 @@ if ($mac==1) {
 	print OUT "CHR\tPOS\tREF\tALT\tANNO\t";
 }
 
-my $bin_out = "$parentdir/output/${subseq}bp_${bw}k/chr$chr.bin_out.txt";
+my $bin_out = "$parentdir/output/${subseq}bp_${bw}k_${macl}/chr$chr.bin_out.txt";
 open(BIN, '>', $bin_out) or die "can't write to $bin_out: $!\n";
 
 my $seq=&getRef();
@@ -195,7 +202,7 @@ sub getRef{
 			$seq .=$_;
 		}
 	}
-	
+
 	return $seq;
 }
 
@@ -218,12 +225,12 @@ if ($cpg && $adj==0) {
 	open(TEMP, '>', $temp_fasta) or die "can't write to $temp_fasta: $!\n";
 	print TEMP ">chr$chr\n";
 	print TEMP "$seq\n";
-	
+
 	print "Running CpG Island analysis...\n";
 	my $cpgicmd="perl CpGcluster.pl temp.fasta 50 1E-5 > CpGCluster.log";
 	&forkExecWait($cpgicmd);
 	print "Done\n";
-	
+
 	my $f_cpgi = "$wdir/temp.cpg";
 	open my $cpgi, '<', $f_cpgi or die "can't open $f_cpgi: $!";
 
@@ -271,7 +278,7 @@ sub binCounts{
 
 		print "Processing subseq counts per bin\n";
 		for my $i (0 .. $numbins-1) {
-		
+
 			my $A = &nucCount($i, "A");
 			my $C = &nucCount($i, "C");
 			my $G = &nucCount($i, "G");
@@ -282,14 +289,14 @@ sub binCounts{
 			my %tri_count=();
 			@tri_count{@a}=@b;
 			$tri_count{$_}++ for @trinucs;
-			
+
 			my $sum_at=$A+$T;
 			my $sum_cg=$C+$G;
 			my $GC=0;
 			if (($sum_at+$sum_cg)!=0) {
 				$GC=($sum_cg/($sum_at+$sum_cg));
 			}
-			
+
 			$bin=$i+1;
 
 			print BIN "chr$chr\t$sum_at\t$sum_cg\t$GC\t$bin\t";
@@ -301,7 +308,7 @@ sub binCounts{
 					$altcount = reverse $altcount;
 					my $sum=$tri_count{$count}+$tri_count{$altcount};
 					print BIN "$sum\t";
-				# } 
+				# }
 			}
 			print BIN "\n";
 		}
@@ -310,7 +317,7 @@ sub binCounts{
 		print BIN "CHR\tAT\tCG\tprop_GC\tBIN\n";
 
 		for my $i (0 .. $numbins-1) {
-		
+
 			my $A = &nucCount($i, "A");
 			my $C = &nucCount($i, "C");
 			my $G = &nucCount($i, "G");
@@ -319,11 +326,11 @@ sub binCounts{
 			my $sum_at=$A+$T;
 			my $sum_cg=$C+$G;
 			my $GC=0;
-			
+
 			if (($sum_at+$sum_cg)!=0) {
 				$GC=($sum_cg/($sum_at+$sum_cg));
 			}
-			
+
 			$bin=$i+1;
 
 			print BIN "chr$chr\t$sum_at\t$sum_cg\t$GC\t$bin\n";
@@ -348,7 +355,7 @@ sub countSubSeq{
 	foreach my $count (sort keys %tri_count) {
 		if ($count !~ /N/) {
 			print BIN2 "$count\t$tri_count{$count}\n";
-		} 
+		}
 	}
 	print "Done\n";
 }
@@ -356,7 +363,7 @@ sub countSubSeq{
 sub nucCount{
 	my $binnum=shift;
 	my $nuc=shift;
-	
+
 	my $out = () = substr($seq, $binnum*$binwidth, $binwidth) =~ /$nuc/g;
 	return $out;
 }
@@ -397,7 +404,7 @@ if (@useannos) {
 }
 
 if ($cpg && $adj==0) {
-	
+
 	print OUT "PAIR\tCPGI\tGC\n";
 
 	foreach my $row (@NEWSUMM) {
@@ -425,7 +432,7 @@ if ($cpg && $adj==0) {
 		my $altlocalseq = reverse substr($altseq, $pos-$adj-1, $subseq);
 		my $gcprop = &getGC($pos);
 		my $distance = &getD2H($pos);
-		
+
 		print OUT "$row\t$localseq\t$altlocalseq\t$gcprop\t$distance\n";
 		#print OUT "$row\t$localseq\t$altlocalseq\t$gcprop\n";
 	}
@@ -440,7 +447,7 @@ if ($cpg && $adj==0) {
 		my $localseq = substr($seq, $pos-$adj-1, $subseq);
 		my $altlocalseq = reverse substr($altseq, $pos-$adj-1, $subseq);
 		my $gcprop = &getGC($pos);
-		
+
 		if($localseq =~ /^[ACGT]+$/){
 			print OUT "$row\t$localseq\t$altlocalseq\t$gcprop\n";
 		}
@@ -521,18 +528,18 @@ sub forkExecWait {
 sub getD2H {
 	my $site = shift;
 	my $hit=0;
-	
+
 	my @first = split(/\t/, $loci[0]);
-	my @last = split(/\t/, $loci[$#loci]);	
-	
+	my @last = split(/\t/, $loci[$#loci]);
+
 	if ($site < $first[2]-100) {
 		return $hit;
 		last;
 	} elsif ($site > $last[3]+100) {
 		return $hit;
-		last;	
-	}	
-	
+		last;
+	}
+
 	for my $i ($a_nu_start .. $#loci) {
 		my $locus=$loci[$i];
 		my @elements=split(/\t/, $locus);
@@ -542,9 +549,9 @@ sub getD2H {
 			$a_nu_start=$i;
 			return $hit;
 			last;
-		}	
-	}	
-	
+		}
+	}
+
 	return $hit;
 }
 
@@ -554,23 +561,23 @@ sub getD2H {
 ##############################################################################
 sub getCpGI {
 	my $site = shift;
-	my $hit=0;	
-	
+	my $hit=0;
+
 	my @first = split(/,/, $cpgi_index[0]);
-	my @last = split(/,/, $cpgi_index[$#cpgi_index]);	
-	
+	my @last = split(/,/, $cpgi_index[$#cpgi_index]);
+
 	if ($site < $first[0]) {
 		return $hit;
 		last;
 	} elsif ($site > $last[1]) {
 		return $hit;
-		last;	
-	}	
-	
+		last;
+	}
+
 	for my $i ($a_nu_start_cpg .. $#cpgi_index) {
 		my $cpgi_int = $cpgi_index[$i];
 		my @pair = split(/,/, $cpgi_int);
-		
+
 		if (($site >= $pair[0]) && ($site <= $pair[1])) {
 			$hit=1;
 			$a_nu_start_cpg=$i;
@@ -578,7 +585,7 @@ sub getCpGI {
 			last;
 		}
 	}
-	
+
 	return $hit;
 }
 
@@ -592,7 +599,7 @@ sub getGC {
 	my $region_s=$site-($binwidth/2);
 	#my $region_e=$site-$binwidth/2;
 	my $region=substr($seq,$region_s,$binwidth);
-	
+
 	my $abase=($region =~ tr/A//);
 	my $cbase=($region =~ tr/C//);
 	my $gbase=($region =~ tr/G//);
@@ -601,7 +608,7 @@ sub getGC {
 	my $gcsum=$cbase+$gbase;
 	my $total=$abase+$cbase+$gbase+$tbase;
 	my $gc_content=0.5;
-	
+
 	if ($total != 0) {
 		$gc_content = $gcsum/$total;
 	}
@@ -618,12 +625,12 @@ sub getGC {
 sub Hotspots {
 	my $f_hotspots = "$parentdir/reference_data/genetic_map/hotspots.txt"; #<-original hotspots input
 	open my $hotspots, '<', $f_hotspots or die "can't open $f_hotspots: $!";
-	
+
 	my $hotspots_bed = "$parentdir/reference_data/genetic_map/hotspots.bed"; #<-initialize bed output
 	open(HOTBED, '>', $hotspots_bed) or die "can't write to $hotspots_bed: $!\n";
 
 	print "Analyzing recombination hotspots...\n";
-	
+
 	####### Read in original hotspots
 	my $chrst;
 	readline($hotspots); #<-throws out header
@@ -634,7 +641,7 @@ sub Hotspots {
 			push (@loci, $_);
 		}
 	}
-	
+
 	####### Output hotspots in bed format
 	foreach (@loci) {
 		chomp;
@@ -644,51 +651,51 @@ sub Hotspots {
 		my $end=$elements[3];
 		print HOTBED "$chr\t$start\t$end\n";
 	}
-	
+
 	####### liftOver to hg19
 	my $liftOvercmd="$parentdir/reference_data/liftOver $hotspots_bed $parentdir/reference_data/hg17ToHg19.over.chain $parentdir/reference_data/genetic_map/hotspots_hg19.bed unMapped";
 	&forkExecWait($liftOvercmd);
-	
+
 	####### Read in liftOver output and per-site data
 	my $f_new_hotspots = "$parentdir/reference_data/genetic_map/hotspots_hg19.bed";
 	open my $new_hotspots, '<', $f_new_hotspots or die "can't open $f_new_hotspots: $!";
-	
+
 	my $f_site_data = "$parentdir/reference_data/genetic_map/genetic_map_GRCh37_chr$chr.txt";
 	open my $site_data, '<', $f_site_data or die "can't open $f_site_data: $!";
-	
+
 	####### Initialize outputs
 	my $hotspot_counts = 'hotspot_counts.txt';
 	open(HOTCOUNT, '>', $hotspot_counts) or die "can't write to $hotspot_counts: $!\n";
-	
+
 	my $new_sites = 'new_sites.txt';
 	open(NEWSITES, '>', $new_sites) or die "can't write to $new_sites: $!\n";
-	
+
 	my $bin_out3 = 'bin_out3.txt';
 	open(BIN3, '>', $bin_out3) or die "can't write to $bin_out3: $!\n";
-	
+
 	my @newloci;
 	while (<$new_hotspots>) {
 		push (@newloci, $_);
 	}
-	
+
 	print NEWSITES "Chromosome\tPOS\tRate\tMap\tStart\n";
-	
+
 	readline($site_data);
 	while(<$site_data>) {
 		chomp;
 		my @data=split(/\t/, $_);
 		my $site=$data[1];
 		my $hotspot;
-		
+
 		foreach my $row (@newloci) {
 			chomp;
 			my @elements=split(/\t/, $row);
-			
+
 			my $start=$elements[1]-100;
 			my $end=$elements[2]+100;
 			my $length=$end-$start;
 			my $center=$start+$length/2;
-			
+
 			if ($site >=$start && $site <= $end) {
 				$hotspot=$start+100;
 				last;
@@ -696,12 +703,12 @@ sub Hotspots {
 				$hotspot=0;
 			}
 		}
-		
+
 		if ($hotspot!=0) {
 			print NEWSITES "$_\t$hotspot\n";
 		}
 	}
-	
+
 	####### Process hg19 hotspots
 	my $summind=0;
 	my $oldend=0;
@@ -710,74 +717,74 @@ sub Hotspots {
 	foreach (@newloci) {
 		chomp;
 		my @elements=split(/\t/, $_);
-		
+
 		my $start=$elements[1]-100;
 		my $end=$elements[2]+100;
 		my $length=$end-$start;
 		my $center=$start+$length/2;
-		
+
 		my $d2e=$start-$oldend;
 		$oldend=$end;
-		
+
 		#Count tri-nucleotide sequences within hotspots
 		my $hotspot_seq=substr($seq,$start-1,$length);
 		$rc_seq.="$hotspot_seq.";
 		#print "$rc_seq\n";
-		
+
 		my $abase=($hotspot_seq =~ tr/A//);
 		my $cbase=($hotspot_seq =~ tr/C//);
 		my $gbase=($hotspot_seq =~ tr/G//);
 		my $tbase=($hotspot_seq =~ tr/T//);
-		
+
 		my $gcsum=$cbase+$gbase;
 		my $atsum=$abase+$tbase;
-		
+
 		print HOTCOUNT "$_\t$center\t$length\t$d2e\t$atsum\t$gcsum\t";
-		
+
 		my $atcount=0;
 		my $gccount=0;
-		
+
 		my $AT_CG=0;
 		my $AT_GC=0;
 		my $AT_TA=0;
-		
+
 		my $GC_AT=0;
 		my $GC_CG=0;
 		my $GC_TA=0;
-		
+
 		for my $i ($summind .. $#NEWSUMM) {
 			my $row = $NEWSUMM[$i];
-			
+
 			my @line=split(/\t/, $row);
 			my $pos=$line[1];
 			my $ref=$line[2];
 			my $alt=$line[3];
-			
+
 			if ($pos >=$start && $pos <= $end) {
 				#print "$pos:$ref\n";
 				$atcount++ if ($ref eq "A" or $ref eq "T");
 				$gccount++ if ($ref eq "C" or $ref eq "G");
-				
+
 				$AT_CG++ if ($ref eq "A" and $alt eq "C") or ($ref eq "T" and $alt eq "G");
 				$AT_GC++ if ($ref eq "A" and $alt eq "G") or ($ref eq "T" and $alt eq "C");
 				$AT_TA++ if ($ref eq "A" and $alt eq "T") or ($ref eq "T" and $alt eq "A");
-				
+
 				$GC_AT++ if ($ref eq "G" and $alt eq "A") or ($ref eq "C" and $alt eq "T");
 				$GC_CG++ if ($ref eq "G" and $alt eq "C") or ($ref eq "C" and $alt eq "G");
 				$GC_TA++ if ($ref eq "G" and $alt eq "T") or ($ref eq "C" and $alt eq "A");
-				
+
 				$summind=$i;
 			}
-			
+
 			if ($pos > $end) {
 				$summind=$i;
 				last;
 			}
-		}	
-		
+		}
+
 		print HOTCOUNT "$atcount\t$gccount\t$AT_CG\t$AT_GC\t$AT_TA\t$GC_AT\t$GC_CG\t$GC_TA\n";
 	}
-	
+
 	my @a= glob "{A,C,G,T}"x $subseq;
 	my @b = (0) x (scalar @a);
 
@@ -785,13 +792,13 @@ sub Hotspots {
 	my %tri_count=();
 	@tri_count{@a}=@b;
 	$tri_count{$_}++ for @trinucs;
-	
+
 
 	print BIN3 "SEQ\tCOUNT\n";
 	foreach my $count (sort keys %tri_count) {
 		if ($count !~ /N/) {
 			print BIN3 "$count\t$tri_count{$count}\n";
-		} 
+		}
 	}
 }
 
@@ -849,7 +856,7 @@ toggles extra analysis specific to CpG sites
 
 =item B<--hot>
 
-toggles extra analysis for distance to nearest recombination hotspot 
+toggles extra analysis for distance to nearest recombination hotspot
 
 =item B<--anno>
 

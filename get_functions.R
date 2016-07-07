@@ -20,12 +20,19 @@ insetPlot <- function(main, inset, loc) {
  }
 
 ##############################################################################
-# Get standard error estimate 
+# Get standard error estimate
 ##############################################################################
 std <- function(x) sqrt(var(x,na.rm=TRUE)/length(na.omit(x)))
 
 ##############################################################################
-# Function to reverse sequence--used to correctly plot right flank in 
+# Compute standard error for correlations
+##############################################################################
+corSE<-function(corval, ct){
+	sqrt((1-corval^2)/(ct-2))
+}
+
+##############################################################################
+# Function to reverse sequence--used to correctly plot right flank in
 # subsequence heatmaps
 ##############################################################################
 reverse_chars <- function(string){
@@ -38,7 +45,7 @@ reverse_chars <- function(string){
 # Function to install and load packages
 ##############################################################################
 usePackage <- function(p) {
-	
+
 	p <- as.character(substitute(p))
 
     if (!is.element(p, installed.packages()[,1])){
@@ -79,29 +86,35 @@ rrheat <- function(dat, f, levels, facetvar, nbp){
 	# limits=c(min(dat$v4), max(dat$v4))
 	geom_tile(data=dat, aes(x=v2a, y=v3, fill=v4))+
 	# geom_text(data=dat, aes(x=v2a, y=v3, label=v4a, family="Courier", size=0.1))+
-	geom_rect(data=f, size=1.4, colour="grey30", aes(xmin=xlo, xmax=xhi, ymin=ylo, ymax=yhi), fill=NA)+
-	scale_fill_gradientn("Relative Rate\n", 
-						 colours=myPalette((nbp-1)^4), 
-						 trans="log", 
-						 breaks=c(min(dat$v4), mean(dat$v4), max(dat$v4)),
-						 labels=c(round(min(dat$v4), 5), round(mean(dat$v4), 4), round(max(dat$v4), 3)),
-						 limits=c(min(dat$v4), max(dat$v4)))+
+	geom_rect(data=f, size=0.8, colour="grey30",
+		aes(xmin=xlo, xmax=xhi, ymin=ylo, ymax=yhi), fill=NA)+
+	scale_fill_gradientn("Relative Rate\n",
+		colours=myPalette((nbp-1)^4),
+		trans="log",
+		breaks=c(min(dat$v4), mean(dat$v4), max(dat$v4)),
+		labels=c(round(min(dat$v4), 5),
+	 		round(mean(dat$v4), 4),
+			round(max(dat$v4), 3)),
+		limits=c(min(dat$v4), max(dat$v4)))+
 	xlab("5' flank")+
 	ylab("3' flank")+
 	theme(
-		  legend.position="none",
-		  legend.title = element_text(size=18),
-		  legend.text = element_text(size=16),
-		  strip.text.x = element_text(size=40),
-		  axis.title.x = element_text(size=20),
-		  axis.title.y = element_text(size=20),
-	      axis.text.y = element_text(size=16, colour="black"),
-		  axis.text.x = element_text(size=16, colour="black"))+
+		# legend.position="none",
+		legend.title = element_text(size=18),
+	  legend.text = element_text(size=16),
+	  strip.text.x = element_text(size=20),
+	  axis.title.x = element_text(size=20),
+	  axis.title.y = element_text(size=20),
+    axis.text.y = element_text(size=6, colour="black"),
+	  axis.text.x = element_text(size=6, colour="black", angle=90, hjust=1))+
+		# axis.text.y = element_blank(),
+		# axis.text.x = element_blank())+
 	scale_x_discrete(labels=levels)+
-	facet_wrap(as.formula(paste("~", facetvar)), ncol=1, scales="free_x")
-	
+	facet_wrap(as.formula(paste("~", facetvar)), ncol=6, scales="free_x")
+
 	return(p)
-}	
+}
+
 ##############################################################################
 # QQ plot in ggplot2 with qqline
 ##############################################################################
@@ -115,14 +128,105 @@ ggQQ <- function (vec) # argument: vector of numbers
 
   d <- data.frame(resids = vec)
 
-  ggplot(d, aes(sample = resids)) + stat_qq() + geom_abline(slope = slope, intercept = int)
+  ggplot(d, aes(sample = resids)) +
+	stat_qq() +
+	geom_abline(slope = slope, intercept = int)
 
 }
 
 ##############################################################################
+# Negbin model processing functions
+##############################################################################
+
+# Run negbin model for each formula specified in formlist
+runMod <- function(formlist, data){
+	out <- lapply(formlist, function(x) glm.nb(x, data))
+	names(out) <- names(formlist)
+	return(out)
+}
+
+# Build list of fitted values (with CHR/BIN names) for each model
+getFits <- function(modlist, data){
+	out <- lapply(modlist,
+		function(x){
+			y <- fitted.values(x)
+			names(y) <- paste0(data$CHR, ".", data$BIN)
+			y
+		})
+	names(out) <- names(modlist)
+	return(out)
+}
+
+# Build list of dataframes for each model
+buildDF <- function(fitlist, data){
+	out <- lapply(fitlist,
+		function(x){
+			data.frame(CHR, Category2=cat1, BIN,
+				exp=x,
+				obs=data$obs,
+				# res=names(fitlist),
+				stringsAsFactors=F)
+		}
+	)
+	names(out) <- names(fitlist)
+	return(out)
+}
+
+##############################################################################
+# Append columns to windowed count data for all motif lengths
+##############################################################################
+getSubMotifs <- function(data, nts, b3){
+
+	# nts <- ifelse(grepl("^AT", cat1), "A", "C")
+	outdat <- data
+
+	# Loop currently just runs for 7->5bp motif aggregation;
+	# can run over 7->5->3 by setting last index to :1
+	for(j in ((nbp-1)/2-1):2){
+
+		# Specify iteration motif length
+		mlength <- (j+1)*2+1
+
+		# Define rule for substring evaluation
+		# griddef <- paste(c(rep("bases", j), "nts", rep("bases", j)), collapse=",")
+
+		griddef <- paste(c("bases", "bases", "nts", "b3", "bases"), collapse=",")
+
+		# Evaluate substring rule and get vector of submotifs
+		tris <- apply(eval(parse(text=paste("expand.grid(",griddef,")"))),
+			1, paste, collapse="")
+
+		# Loop through each substring and append column of
+		# aggregated counts
+		for(k in tris){
+			# Generate regex string; j is fixed per iteration
+			# (e.g., looking for internal 3-mers or 5-mers)
+			# so we search for all 3-mers or 5-mers by allowing
+			# any base preceding or following the internal motif
+			# regtri <- paste0("^", "[A-Z]{", j, "}", i, "[A-Z]{", j, "}")
+			regtri <- paste0("^[A-Z]", k, "[A-Z]")
+
+			# Extract sequences matching this submotif
+			z <- names(data)[grepl(regtri, names(data))]
+
+			# Ensure motif match vector includes only sequences
+			# corresponding to the appropriate motif length
+			z <- z[nchar(head(gsub("_[A-Z]*", "", z)))==mlength]
+
+			# Create column and append to df
+			tripct <- data %>%
+				dplyr::mutate_(.dots=setNames(paste(z, collapse="+"), k)) %>%
+				dplyr::select_(.dots=k)
+			outdat <- cbind(outdat, tripct)
+		}
+	}
+
+	return(outdat)
+}
+##############################################################################
 # Multiple plot function
 #
-# ggplot objects can be passed in ..., or to plotlist (as a list of ggplot objects)
+# ggplot objects passed in ..., or to plotlist (as list of ggplot objects)
 # - cols:   Number of columns in layout
 # - layout: A matrix specifying the layout. If present, 'cols' is ignored.
 #
@@ -184,7 +288,7 @@ multiplot <- function(..., plotlist=NULL, file, cols=1, layout=NULL) {
 #' $ myarg: chr "something"
 #'
 #' @title getArgs
-#' @param verbose print verbage to screen 
+#' @param verbose print verbage to screen
 #' @param defaults a named list of defaults, optional
 #' @return a named list
 #' @author Chris Wallace

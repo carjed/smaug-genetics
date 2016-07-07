@@ -24,7 +24,7 @@
 # ggsave(imgdir,"/chr22_kataegis.png", width=10, height=4)
 
 ##############################################################################
-# GC CONTENT HEATMAP	
+# GC CONTENT HEATMAP
 ##############################################################################
 # aggdata <- aggregate(GC ~ BIN+Category, data=chr22, mean)
 
@@ -40,3 +40,32 @@
 		# axis.text.x = element_text(angle = 90, hjust = 0.5),
 		# axis.text.y = element_text(angle = 90, hjust = 0.5))
 # suppressMessages(ggsave(gc_heat_out))
+
+##############################################################################
+# Old code from negbin_mod.r
+##############################################################################
+# compare.all$diff <- compare.all$obs-compare.all$exp
+# ca.gp <- group_by(compare.all, Category2, res)
+# compare.all <- mutate(ca.gp, dm=mean(diff), dsd=sd(diff), zscore=(diff-dm)/dsd)
+# compare.all$err <- abs(compare.all$diff)/compare.all$obs
+
+# get mean absolute error for each category/model
+# ca <- compare.all %>%
+# 	group_by(Category2, res) %>%
+# 	summarise(meanerr_s=mean(err_s),
+# 		meanerr=mean(err),
+# 		sderr=std(err),
+# 		meanobs=mean(obs),
+# 		sdobs=std(obs),
+# 		fold=meanerr_s/meanerr)
+#
+# caout <- paste0(parentdir, "/output/", nbp, "bp_err.txt")
+# write.table(ca, caout, col.names=T, row.names=F, quote=F, sep="\t")
+#
+# cad <- dcast(data.frame(ca), Category2~res, value.var="meanerr")
+
+# Calculate correlation between relative rates and #motifs
+# rate_motif_cor <- agg_5bp_100k %>%
+# 	mutate(rel=obs/nmotifs) %>%
+# 	group_by(Category2) %>%
+# 	summarise(cor=cor(rel, nmotifs, use="complete.obs"))

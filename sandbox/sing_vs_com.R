@@ -6,208 +6,475 @@
 # -Should be merged with mutation_method_corr.R
 ##############################################################################
 
-##############################################################################
-# Load packages and define color palettes
-##############################################################################
-suppressMessages(require(ggplot2))
-suppressMessages(require(plyr))
-suppressMessages(require(reshape2))
-suppressMessages(require(RColorBrewer))
+#!/usr/bin/Rscript
 
+##############################################################################
+# Script for running genome-wide models
+# Built under R version 3.2.2
+#
+# Usage:
+# ./mod_shell.r --summfile="/path/to/summaryfile"
+#				--binfile="/path/to/binfile"
+#				--binw=binwidth (integer)
+# 				--adj=number of bases in either direction to look
+# 				--run_agg=TRUE: aggregate data
+# 				--pcs=FALSE: use principal components for modeling
+# 				--negbin_model==TRUE: run negbin regression
+# 				--log_model=FALSE: run logit regression
+# 				--run_predict=FALSE: get predicted values
+# 				--categ="NN_NN" category to use for logit model
+##############################################################################
+
+##############################################################################
+# Setup: process args, load function helper script, load packages
+##############################################################################
+ptm <- proc.time()
+
+parentdir<-dirname(getwd())
+cat("Loading functions and packages...\n")
+
+source("get_functions.R")
+
+# Get args from command line; defaults defined below
+args <- getArgs(
+	defaults=list(adj=3,
+		binw=1000000,
+		summfile=paste0(parentdir, "/output/7bp_1000k_common/full.summary"),
+		binfile=paste0(parentdir, "/output/7bp_1000k_common/full_bin.txt"),
+		# summfile=paste0(parentdir, "/output/5bp_100k/full.summary"),
+		# binfile=paste0(parentdir, "/output/5bp_100k/full_bin.txt"),
+		# summfile=paste0(parentdir, "/output/7bp_1000k/chrX.expanded.summary"),
+		# binfile=paste0(parentdir, "/output/7bp_1000k/chrX.bin_out.txt"),
+		run_agg=TRUE,
+		pcs=FALSE,
+		categ="GC_CG",
+		negbin_model=TRUE,
+		log_model=FALSE,
+		run_predict=FALSE))
+
+# The usePackage function loads packages if they already exist,
+# otherwise installs from default CRAN repository
+suppressMessages(usePackage(ggplot2))
+suppressMessages(usePackage(dplyr))
+suppressMessages(usePackage(tidyr))
+suppressMessages(usePackage(reshape2))
+suppressMessages(usePackage(RColorBrewer))
+suppressMessages(usePackage(MASS))
+suppressMessages(usePackage(speedglm))
+suppressMessages(usePackage(boot))
+suppressMessages(usePackage(devtools))
+require(psych)
+# suppressMessages(usePackage(ggbio))
+
+# Manual toggle for installing ggbio package
+# Uses the install_github() function from devtools to pull latest version,
+# due to issue on some clusters where using
+# "source("https://bioconductor.org/biocLite.R")"
+# does not properly update the installer
+#
+# If this is not an issue, can simply run:
+# source("https://bioconductor.org/biocLite.R")
+# biocLite("ggbio", suppressUpdates=TRUE)
+install_ggbio <- 0
+if(install_ggbio){
+	install_github("Bioconductor/BiocInstaller")
+	biocLite("ggbio", suppressUpdates=TRUE)
+}
+
+# Get ideogram data for plotting track under chromosome
+# data(hg19IdeogramCyto, package = "biovizBase")
+
+# Parse args--command line options become objects, so instead of using
+# "args$summfile", we can just use "summfile"
+# Works as a lightweight version of attach(args), but explicitly defines objects
+# in future version, automatically parse numeric variables properly
+# Modified from: http://www.r-bloggers.com/extract-objects-from-a-list/
+
+cat("Script will run with the following parameters:\n")
+for(i in 1:length(args)){
+	##first extract the object value
+	tempobj=unlist(args[i])
+	varname=names(args[i])
+
+	# optional: print args
+	cat(varname, ":", tempobj, "\n")
+
+	##now create a new variable with the original name of the list item
+	eval(parse(text=paste(names(args)[i],"= tempobj")))
+}
+cat("\n")
+
+# Need to manually coerce binwidth and adj args to numeric
+binw <- as.numeric(binw)
+adj <- as.numeric(adj)
+
+# Define additional variables for cleaner strings, etc.
+bink <- binw/1000
+nbp <- adj*2+1
+
+datadir <- dirname(summfile)
+
+# Define color palettes
+myPaletteCat <- colorRampPalette(rev(brewer.pal(8, "Dark2")), space="Lab")
 myPalette <- colorRampPalette(rev(brewer.pal(11, "Spectral")), space="Lab")
 myPaletteB <- colorRampPalette(rev(brewer.pal(9, "Blues")), space="Lab")
-myPaletteG <- colorRampPalette(rev(brewer.pal(9, "Greens")), space="Lab")
 myPaletteR <- colorRampPalette(rev(brewer.pal(9, "Reds")), space="Lab")
-rb<-c(myPaletteB(6)[1:3],myPaletteR(6)[1:3])
-g<-myPaletteG(6)[1:3]
+myPaletteG <- colorRampPalette(rev(brewer.pal(9, "Greens")), space="Lab")
+
+myPaletteRdBu <- colorRampPalette(rev(brewer.pal(9, "RdBu")), space="Lab")
+myPaletteOrRd <- colorRampPalette(rev(brewer.pal(9, "OrRd")), space="Lab")
+myPalettePurples <- colorRampPalette(rev(brewer.pal(9, "Purples")), space="Lab")
+myPaletteBrBG <- colorRampPalette(rev(brewer.pal(9, "BrBG")), space="Lab")
+
+rb <- c(myPaletteB(6)[1:3],myPaletteR(6)[1:3])
+g <- myPaletteG(6)[1:3]
 rbg<-c(myPaletteB(6)[1:3],myPaletteR(6)[1:3], myPaletteG(6)[1:3])
 
-##############################################################################
-# Read data
-##############################################################################
-sing<-read.table("/net/bipolar/jedidiah/mutation/output/supp/chr10.cpgi.expanded.summary_S", stringsAsFactors=F)
-names(sing)<-c("CHR", "POS", "REF", "ALT", "DP", "AN", "ANNO", "SEQ", "ALTSEQ", "GC", "cpgi")
-spec<-read.table("/net/bipolar/jedidiah/mutation/output/supp/chr10.cpgi.expanded.summary_C", stringsAsFactors=F)
-names(spec)<-c("CHR", "POS", "REF", "ALT", "DP", "AN", "ANNO", "SEQ", "ALTSEQ", "GC", "cpgi")
-
-sing_bin<-read.table("/net/bipolar/jedidiah/mutation/output/supp/chr10.bin_out.txt_S", header=T, stringsAsFactors=F, check.names=F)
-spec_bin<-read.table("/net/bipolar/jedidiah/mutation/output/supp/chr10.bin_out.txt_C", header=T, stringsAsFactors=F, check.names=F)
-
-# chr10<-read.table("chr10.expanded.summary", header=T)
-# chr10$gp<-sample(0:1, nrow(chr10), replace=T)
-
-# sing<-chr10[chr10$gp==0,]
-# spec<-chr10[chr10$gp==1,]
-
-# sing_bin<-read.table("chr10.bin_out.txt", header=T, check.names=F)
-# spec_bin<-sing_bin
+tottime <- (proc.time()-ptm)[3]
+cat("Done (", tottime, "s)\n")
 
 ##############################################################################
-# Add category and bin columns
+# Read in data
 ##############################################################################
-binw<-100000
-adj<-1
-sing$BIN<-ceiling(sing$POS/binw)
+ptm <- proc.time()
 
-chr22<-sing
+if(!file.exists(summfile)){
+	cat("Merged summary/bin files do not exist---Merging now...\n")
 
-chr22$Sequence<-ifelse(
-	substr(chr22$SEQ,adj+1,adj+1)<substr(chr22$ALTSEQ,adj+1,adj+1),
-	paste0(chr22$SEQ,"(",chr22$ALTSEQ,")"),
-	paste0(chr22$ALTSEQ,"(",chr22$SEQ,")")
-)
-
-# Function to get reverse complement
-revcomp = function(DNAstr) {
-	step1 = chartr("ACGT","TGCA",DNAstr)
-	step2 = unlist(strsplit(step1, split=""))
-	step3 = rev(step2)
-	step4 = paste(step3, collapse="")
-	return(step4)
+	# Change ^SEQ to ^CHR--needed to fix bug in header of common variant data
+	combinecmd <- paste0(
+		"awk 'FNR==1 && NR!=1{while(/^SEQ/) getline; } 1 {print} ' ",
+		datadir, "/chr*.expanded.summary > ", datadir, "/full.summary")
+	combinecmd2 <- paste0(
+		"awk 'FNR==1 && NR!=1{while(/^CHR/) getline; } 1 {print} ' ",
+		datadir, "/chr*.bin_out.txt > ", datadir, "/full_bin.txt")
+	system(combinecmd)
+	system(combinecmd2)
 }
 
-# get complement of sequence columns in bin file and remove duplicates
-for(i in 5:((4^(adj*2+1))+4)){
-	names(sing_bin)[i]<-paste0(names(sing_bin)[i], "(", revcomp(names(sing_bin)[i]), ")" )
+cat("Reading summary file:", summfile, "...\n")
+
+summ_5bp_100k <- read.table(summfile, header=F, stringsAsFactors=F, skip=1)
+names(summ_5bp_100k)<-c(
+	"CHR", "POS", "REF", "ALT", "DP", "AN", "SEQ", "ALTSEQ", "GC")
+
+# summ_5bp_100k <- read.table(summfile, header=F, stringsAsFactors=F)
+# names(summ_5bp_100k)<-c(
+# 	"CHR", "POS", "REF", "ALT", "DP", "AN", "SEQ", "ALTSEQ", "GC", "SAMPLE")
+summ_5bp_100k$BIN <- ceiling(summ_5bp_100k$POS/binw)
+
+cat("Reading bin file:", binfile, "...\n")
+bins_5bp_100k <- read.table(binfile, header=T, stringsAsFactors=F, check.names=F)
+
+tottime <- (proc.time()-ptm)[3]
+cat("Done (", tottime, "s)\n")
+
+##############################################################################
+# Update data
+##############################################################################
+ptm <- proc.time()
+cat("Updating data...\n")
+source("update_dat.r")
+dat_5bp_100k <- updateData(summ_5bp_100k, bins_5bp_100k, adj)
+rm(summ_5bp_100k)
+rm(bins_5bp_100k)
+tottime<-(proc.time()-ptm)[3]
+cat("Done (", tottime, "s)\n")
+
+if(run_agg){
+	ptm <- proc.time()
+	cat("Aggregating data...\n")
+	source("agg_dat.r")
+	aggV <- aggData(dat_5bp_100k, adj) #<-modify the adj value for 3bp data
+
+	agg_5bp_100k <- aggV$oe
+	rates5 <- aggV$agg
+	summagg2 <- aggV$summagg2
+
+	ratefile <- paste0(parentdir, "/output/", nbp, "bp_", bink, "k_rates.txt")
+	write.table(rates5, ratefile, col.names=T, row.names=F, quote=F, sep="\t")
+
+	tottime <- (proc.time()-ptm)[3]
+	cat("Done (", tottime, "s)\n")
 }
 
-sing_bin2<-sing_bin[,names(sing_bin)%in%unique(chr22$Sequence)]
-sing_bin<-cbind(sing_bin[,1:4],sing_bin2)
+write.table(rates5, "/net/bipolar/jedidiah/mutation/output/5bp_100k_common_rates.txt", col.names=T, row.names=F, quote=F, sep="\t")
+write.table(agg_5bp_100k, "/net/bipolar/jedidiah/mutation/output/5bp_100k_common_bins.txt", col.names=T, row.names=F, quote=F, sep="\t")
 
-chr22$CAT<-paste(chr22$REF, chr22$ALT, sep="")
-chr22$Category[chr22$CAT=="AC" | chr22$CAT=="TG"]<-"AT_CG"
-chr22$Category[chr22$CAT=="AG" | chr22$CAT=="TC"]<-"AT_GC"
-chr22$Category[chr22$CAT=="AT" | chr22$CAT=="TA"]<-"AT_TA"
-chr22$Category[chr22$CAT=="GA" | chr22$CAT=="CT"]<-"GC_AT"
-chr22$Category[chr22$CAT=="GC" | chr22$CAT=="CG"]<-"GC_CG"
-chr22$Category[chr22$CAT=="GT" | chr22$CAT=="CA"]<-"GC_TA"
+agg_5bp_100k_common<-agg_5bp_100k
+rates5_common<-rates5
 
-chr22$Category<-ifelse((chr22$cpgi==0 & substr(chr22$Sequence,adj+1,adj+2)=="CG"), paste0("cpg_",chr22$Category), chr22$Category)
+##############################################################################
+##############################################################################
+##############################################################################
+# Repeat with singletons
+##############################################################################
+##############################################################################
+##############################################################################
+summfile=paste0(parentdir, "/output/7bp_1000k/full_j.summary")
+binfile=paste0(parentdir, "/output/7bp_1000k/full_bin.txt")
 
-xmax<-floor(max(chr22$BIN)/100)*100
 
-spec$BIN<-ceiling(spec$POS/binw)
-spec$CAT<-paste(spec$REF, spec$ALT, sep="")
+##############################################################################
+# Read in data
+##############################################################################
+ptm <- proc.time()
 
-spec$Sequence<-ifelse(
-	substr(spec$SEQ,adj+1,adj+1)<substr(spec$ALTSEQ,adj+1,adj+1),
-	paste0(spec$SEQ,"(",spec$ALTSEQ,")"),
-	paste0(spec$ALTSEQ,"(",spec$SEQ,")")
-)
+if(!file.exists(summfile)){
+	cat("Merged summary/bin files do not exist---Merging now...\n")
 
-# get complement of sequence columns in bin file and remove duplicates
-for(i in 5:((4^(adj*2+1))+4)){
-	names(spec_bin)[i]<-paste0(names(spec_bin)[i], "(", revcomp(names(spec_bin)[i]), ")" )
+	# Change ^SEQ to ^CHR--needed to fix bug in header of common variant data
+	combinecmd <- paste0(
+		"awk 'FNR==1 && NR!=1{while(/^SEQ/) getline; } 1 {print} ' ",
+		datadir, "/chr*.expanded.summary > ", datadir, "/full.summary")
+	combinecmd2 <- paste0(
+		"awk 'FNR==1 && NR!=1{while(/^CHR/) getline; } 1 {print} ' ",
+		datadir, "/chr*.bin_out.txt > ", datadir, "/full_bin.txt")
+	system(combinecmd)
+	system(combinecmd2)
 }
 
-spec_bin2<-spec_bin[,names(spec_bin)%in%unique(spec$Sequence)]
-spec_bin<-cbind(spec_bin[,1:4],spec_bin2)
+cat("Reading summary file:", summfile, "...\n")
 
+summ_5bp_100k <- read.table(summfile, header=F, stringsAsFactors=F, skip=1)
+names(summ_5bp_100k)<-c(
+	"CHR", "POS", "REF", "ALT", "DP", "AN", "SEQ", "ALTSEQ", "GC")
 
-spec$Category[spec$CAT=="AC" | spec$CAT=="TG"]<-"AT_CG"
-spec$Category[spec$CAT=="AG" | spec$CAT=="TC"]<-"AT_GC"
-spec$Category[spec$CAT=="AT" | spec$CAT=="TA"]<-"AT_TA"
-spec$Category[spec$CAT=="GA" | spec$CAT=="CT"]<-"GC_AT"
-spec$Category[spec$CAT=="GC" | spec$CAT=="CG"]<-"GC_CG"
-spec$Category[spec$CAT=="GT" | spec$CAT=="CA"]<-"GC_TA"
+# summ_5bp_100k <- read.table(summfile, header=F, stringsAsFactors=F)
+# names(summ_5bp_100k)<-c(
+# 	"CHR", "POS", "REF", "ALT", "DP", "AN", "SEQ", "ALTSEQ", "GC", "SAMPLE")
+summ_5bp_100k$BIN <- ceiling(summ_5bp_100k$POS/binw)
 
-spec$Category<-ifelse((spec$cpgi==0 & substr(spec$Sequence,adj+1,adj+2)=="CG"), paste0("cpg_",spec$Category), spec$Category)
+cat("Reading bin file:", binfile, "...\n")
+bins_5bp_100k <- read.table(binfile, header=T, stringsAsFactors=F, check.names=F)
 
-##############################################################################
-# Calculate subtype-specific relative rates per bin
-##############################################################################
-chr22b<-merge(chr22, sing_bin, by="BIN", all=TRUE)
-countsing<-count(chr22b, c("BIN", "AT", "CG", "prop_GC", "Category"))
-countsing<-merge(countsing, aggregate(freq~BIN, data=countsing, sum), by="BIN", all=TRUE)
-countsing$rel_prop<-countsing$freq.x/countsing$freq.y
-countsing<-countsing[order(countsing$BIN),]
-countsing$prop<-countsing$freq.x/100000
-
-chr22c<-merge(spec, spec_bin, by="BIN", all=TRUE)
-countspec<-count(chr22c, c("BIN", "AT", "CG", "prop_GC", "Category"))
-countspec<-merge(countspec, aggregate(freq~BIN, data=countspec, sum), by="BIN", all=TRUE)
-countspec$rel_prop<-countspec$freq.x/countspec$freq.y
-countspec<-countspec[order(countspec$BIN),]
-countspec$prop<-countspec$freq.x/100000
-
-names(countsing)[names(countsing)=="prop"]<-"sing_prop"
-names(countspec)[names(countspec)=="prop"]<-"spec_prop"
-
-names(countsing)[names(countsing)=="freq.x"]<-"sing_count"
-names(countspec)[names(countspec)=="freq.x"]<-"spec_count"
+tottime <- (proc.time()-ptm)[3]
+cat("Done (", tottime, "s)\n")
 
 ##############################################################################
-# Merge and sort combined data
+# Update data
 ##############################################################################
-fullcount<-merge(countsing, countspec, by=c("BIN", "Category"))
-fullcount<-fullcount[order(fullcount$BIN),]
-fullcount<-fullcount[complete.cases(fullcount),]
+ptm <- proc.time()
+cat("Updating data...\n")
+source("update_dat.r")
+dat_5bp_100k <- updateData(summ_5bp_100k, bins_5bp_100k, adj)
+rm(summ_5bp_100k)
+rm(bins_5bp_100k)
+tottime<-(proc.time()-ptm)[3]
+cat("Done (", tottime, "s)\n")
 
-##############################################################################
-# Calculate correlation in each subtype and create df
-##############################################################################
-cors<-round(c(
-		# cor(fullcount[fullcount$Category=="AT_CG",]$sing_prop, fullcount[fullcount$Category=="AT_CG",]$spec_prop),
-		# cor(fullcount[fullcount$Category=="AT_GC",]$sing_prop, fullcount[fullcount$Category=="AT_GC",]$spec_prop),
-		# cor(fullcount[fullcount$Category=="AT_TA",]$sing_prop, fullcount[fullcount$Category=="AT_TA",]$spec_prop),
-		# cor(fullcount[fullcount$Category=="GC_AT",]$sing_prop, fullcount[fullcount$Category=="GC_AT",]$spec_prop),
-		# cor(fullcount[fullcount$Category=="GC_CG",]$sing_prop, fullcount[fullcount$Category=="GC_CG",]$spec_prop),
-		# cor(fullcount[fullcount$Category=="GC_TA",]$sing_prop, fullcount[fullcount$Category=="GC_TA",]$spec_prop)
-		cor(fullcount[fullcount$Category=="AT_CG",]$sing_count, fullcount[fullcount$Category=="AT_CG",]$spec_count),
-		cor(fullcount[fullcount$Category=="AT_GC",]$sing_count, fullcount[fullcount$Category=="AT_GC",]$spec_count),
-		cor(fullcount[fullcount$Category=="AT_TA",]$sing_count, fullcount[fullcount$Category=="AT_TA",]$spec_count),
-		cor(fullcount[fullcount$Category=="GC_AT",]$sing_count, fullcount[fullcount$Category=="GC_AT",]$spec_count),
-		cor(fullcount[fullcount$Category=="GC_CG",]$sing_count, fullcount[fullcount$Category=="GC_CG",]$spec_count),
-		cor(fullcount[fullcount$Category=="GC_TA",]$sing_count, fullcount[fullcount$Category=="GC_TA",]$spec_count),
-		cor(fullcount[fullcount$Category=="cpg_GC_AT",]$sing_count, fullcount[fullcount$Category=="cpg_GC_AT",]$spec_count),
-		cor(fullcount[fullcount$Category=="cpg_GC_CG",]$sing_count, fullcount[fullcount$Category=="cpg_GC_CG",]$spec_count),
-		cor(fullcount[fullcount$Category=="cpg_GC_TA",]$sing_count, fullcount[fullcount$Category=="cpg_GC_TA",]$spec_count)
-	), 2)
+if(run_agg){
+	ptm <- proc.time()
+	cat("Aggregating data...\n")
+	source("agg_dat.r")
+	aggV <- aggData(dat_5bp_100k, adj) #<-modify the adj value for 3bp data
 
-cors<-paste0("r=",cors)
+	agg_5bp_100k <- aggV$oe
+	rates5 <- aggV$agg
+	summagg2 <- aggV$summagg2
 
-xpos<-rep(median(fullcount$sing_count), 9)
-ypos<-0.9*rep(max(fullcount$sing_count), 9)
+	ratefile <- paste0(parentdir, "/output/", nbp, "bp_", bink, "k_rates.txt")
+	write.table(rates5, ratefile, col.names=T, row.names=F, quote=F, sep="\t")
 
-
-
-
-
-fullcount$Category <- factor(fullcount$Category, levels = c("AT_CG", "AT_GC", "AT_TA", "GC_AT", "GC_CG", "GC_TA", "cpg_GC_AT", "cpg_GC_CG", "cpg_GC_TA"))
-# cats<-sort(unique(fullcount$Category))
-
-dat<-data.frame(xpos, ypos, levels(fullcount$Category), cors)
-names(dat)<-c("x", "y", "Category", "val")
-
-# dat$Category <- factor(dat$Category, levels = c("AT_CG", "AT_GC", "AT_TA", "GC_AT", "GC_CG", "GC_TA", "cpg_GC_AT", "cpg_GC_CG", "cpg_GC_TA"))
+	tottime <- (proc.time()-ptm)[3]
+	cat("Done (", tottime, "s)\n")
+}
 
 ##############################################################################
-# Scatter plot of relative rates in singleton vs. divergent sites
+# Plot correlation comparing per-bin counts
 ##############################################################################
-# my_grob = grobTree(textGrob("This text stays in place!", x=0.1,  y=0.95, hjust=0,
-  # gp=gpar(col="blue", fontsize=12, fontface="italic")))
+names(agg_5bp_100k_common)[4]<-"common_obs"
+bincts<-merge(agg_5bp_100k, agg_5bp_100k_common, by=c("CHR", "BIN", "Category2"))
 
-ggplot()+
-	geom_point(data=fullcount, aes(x=sing_count, y=spec_count, colour=Category, group=Category, size=prop_GC.y), alpha=0.4)+
+bincts %>% group_by(Category2) %>% summarise(cor=cor(obs, common_obs))
+
+ggplot(data=bincts,
+		aes(x=obs, y=common_obs, colour=Category2, group=Category2))+
+	geom_point(alpha=0.4)+
+	geom_smooth(method=lm, se=FALSE, colour="black")+
 	scale_colour_manual(values=rbg)+
 	xlab("Singletons")+
 	ylab("Common Variants (MAC>10)")+
 	# xlab("Group 1 Relative Rate")+
 	# ylab("Group 2 Relative Rate")+
 	theme_bw()+
-	geom_text(data=dat, aes(x=-Inf,y=Inf, label=val, hjust=0, vjust=1))+
-	facet_wrap(~Category, scales="free")
-ggsave("/net/bipolar/jedidiah/mutation/images/sing_com_corr.png", width=12.4, height=8.4)
+	theme(legend.position="none")+
+	# geom_text(data=dat, aes(x=-Inf, y=Inf, label=val, hjust=0, vjust=1), colour="black")+
+	facet_wrap(~Category2, scales="free")
+ggsave("/net/bipolar/jedidiah/mutation/images/sing_com_corr.png", width=6.2, height=4.2)
+
+##############################################################################
+# Plot heatmap of change in relative rates
+##############################################################################
+names(rates5_common)[8]<-"common_rel_prop"
+r5m<-merge(rates5[,c(2,3,4,7,8)],
+	rates5_common[,c(2,3,4,7,8)], by=c("Sequence", "Category2")) %>%
+	mutate(Category=gsub("cpg_", "", Category2)) %>%
+	#group_by(Category) %>%
+	mutate(nsing=sum(num.x),
+		ncommon=sum(num.y),
+		prop_s=num.x/nsing,
+		prop_c=num.y/ncommon,
+		prop_diff=prop_c/prop_s)
+
+r5m$prop_diff3<-r5m$prop_diff
+r5m$prop_diff3[r5m$prop_diff< 0.5]<- 0.5
+r5m$prop_diff3[r5m$prop_diff>2]<- 2
+
+r5m$prop_diff4<-r5m$num.x/r5m$num.y
+r5m$prop_diff4<-r5m$prop_diff4/mean(r5m$prop_diff4)
+
+r5m$prop_diff5<-r5m$prop_diff4
+r5m$prop_diff4[r5m$prop_diff4< 0.5]<- 0.5
+r5m$prop_diff4[r5m$prop_diff4>2]<- 2
+
+r5m$v2 <- substr(r5m$Sequence,1,adj)
+r5m$v2a <- as.character(lapply(as.vector(r5m$v2), reverse_chars))
+r5m$v2a <- factor(r5m$v2a)
+r5m$v3 <- substr(r5m$Sequence,adj+2,adj*2+1)
+
+nbox<-length(unique(r5m$v2a))
+nint<-nbox/4
+xhi <- rep(1:4,4)*nint+0.5
+xlo <- xhi-nint
+yhi <- rep(1:4,each=4)*nint+0.5
+ylo <- yhi-nint
+f <- data.frame(xlo,xhi,ylo,yhi)
+
+levs <- as.character(lapply(as.vector(levels(r5m$v2a)), reverse_chars))
 
 ggplot()+
-	geom_point(data=fullcount[fullcount$Category=="AT_GC",], aes(x=sing_count, y=spec_count, colour=prop_GC.y, size=5), alpha=0.6)+
-	scale_colour_gradientn(colours=myPalette(9))+
-	xlab("Singletons")+
-	ylab("Common Variants (MAC>10)")+
-	# xlab("Group 1 Relative Rate")+
-	# ylab("Group 2 Relative Rate")+
+	geom_tile(data=r5m, aes(x=v2, y=v3, fill=prop_diff4))+
+	geom_rect(data=f, size=0.8, colour="grey30",
+		aes(xmin=xlo, xmax=xhi, ymin=ylo, ymax=yhi), fill=NA)+
+	scale_fill_gradientn("Rs/Rc\n",
+		colours=myPaletteBrBG(nbp),
+		trans="log",
+		breaks=c(0.5, 1, 2),
+		labels=c("<0.5", "1", ">2"),
+		limits=c(0.5, 2.2))+
+	xlab("5' flank")+
+	ylab("3' flank")+
+	theme(legend.title = element_text(size=18),
+	  legend.text = element_text(size=16),
+	  strip.text.x = element_text(size=20),
+	  axis.title.x = element_text(size=20),
+	  axis.title.y = element_text(size=20),
+		axis.text.y = element_text(size=6, colour="black"),
+	  axis.text.x = element_text(size=6, colour="black", angle=90, hjust=1))+
+		# axis.text.y = element_blank(),
+		# axis.text.x = element_blank())+
+	scale_x_discrete(labels=levs)+
+	facet_wrap(~Category, ncol=3, scales="free_x")
+ggsave("/net/bipolar/jedidiah/mutation/images/rare_common_diff2.png",  height=12, width=24)
+
+ggplot(r5m, aes(x=Category2, y=prop_diff5, fill=Category2))+
+	geom_violin()+
+	geom_boxplot(width=0.2,alpha=0.4)+
+	geom_hline(yintercept=1, linetype="longdash")+
+	ylab("Rs/Rc")+
 	theme_bw()+
-	geom_text(data=dat, aes(x=-Inf,y=Inf, label=val, hjust=0, vjust=1))+
-ggsave("/net/bipolar/jedidiah/mutation/images/sing_com_corr_bgc.png", width=12.4, height=8.4)
+	theme(legend.position="none",
+		axis.text.x=element_text(size=14, angle=45, hjust=1, vjust=1),
+		axis.title.x=element_blank())
+ggsave("/net/bipolar/jedidiah/mutation/images/rare_common_dist.png")
 
+nsing<-sum(r5m$num.x)
+ncommon<-sum(r5m$num.y)
+pvals<-rep(0, nrow(r5m))
+for(i in 1:nrow(r5m)){
+	row<-r5m[i,]
 
+	test<-prop.test(c(ceiling(row$num.x/3.073), row$num.y), c(ceiling(nsing/3.073), ncommon))
+	pvals[i]<-test$p.value
+}
+r5m$pval<-pvals
+
+# Plot scatterplots of correlation
+r5m %>% group_by(Category2) %>% summarise(cor=cor(rel_prop, common_rel_prop))
+
+ggplot(data=r5m, aes(x=common_rel_prop, y=rel_prop, group=Category2, colour=Category2))+
+  geom_point(alpha=0.3, size=2)+
+  # geom_point(data=dat[dat$cluster!=2,], aes(x=eur, y=rel_prop, group=Category2), alpha=0.3)+
+  # geom_point(data=dat[dat$cluster==2,], aes(x=eur, y=rel_prop, group=Category2, colour=factor(ats)), alpha=0.3)+
+  geom_point(alpha=0.3)+
+  geom_smooth(method="lm", se=F)+
+  #geom_text_repel(data=dat[dat$cluster==2,], aes(label=SEQUENCE, colour=factor(ats)))+
+  facet_wrap(~Category2, scales="free")+
+  xlab("Relative rate (common)")+
+  ylab("Relative rate (ERVs)")+
+  scale_colour_brewer(palette="Set1")+
+  theme_bw()+
+  theme(legend.position="none",
+    strip.text.x=element_text(size=14),
+    legend.title=element_text(size=16),
+    axis.title.x=element_text(size=18),
+    axis.title.y=element_text(size=18))
+ggsave("/net/bipolar/jedidiah/mutation/images/sing_com_cor_rates.png")
+
+##############################################################################
+# Simulate correlations
+##############################################################################
+output<-data.frame()
+for(i in 1:50){
+	cat("running simulation", i, "of 50...\n")
+	simdat1<-dat_5bp_100k$summ[sample(nrow(dat_5bp_100k$summ), 24176074),]
+	simdat1$gp<-sample(0:1, nrow(simdat1), replace=T)
+
+	simdat<-simdat1 %>%
+		group_by(CHR, BIN, Category2, gp) %>%
+		summarise(count=n())
+
+	simdat$gp<-ifelse(simdat$gp==0,"gp1", "gp2")
+	simdat2<-simdat %>% spread(gp, count)
+	simdat2<-simdat2[complete.cases(simdat2),]
+
+	simcor<-simdat2 %>% group_by(Category2) %>% summarise(cor=cor(gp1, gp2))
+	output<-rbind(output, simcor)
+}
+
+simcor<-output %>%
+	group_by(Category2) %>%
+	summarise(corsim=mean(cor)) %>%
+	mutate(gp="sim")
+
+obscor<-bincts %>%
+	group_by(Category2) %>%
+	summarise(corobs=cor(obs, common_obs)) %>%
+	mutate(gp="obs")
+
+corcomb<-merge(simcor, obscor, by="Category2") %>%
+	group_by(Category2) %>%
+	summarise(cor.p=r.test(2897, corsim, corobs)$z)
+
+names(simcor)[2]<-"cor"
+names(obscor)[2]<-"cor"
+corplot<-rbind(simcor, obscor)
+corplot$gp<-as.factor(corplot$gp)
+corplot$gp<-relevel(corplot$gp, "sim")
+corplot<-corplot %>% group_by(Category2) %>% mutate(cormax=max(cor)) %>% arrange(Category2)
+
+corplot$xst<-seq(0.75,9.25,0.5)
+corplot$xend<-rep(1:9,each=2)
+
+corplot2<-merge(corplot, corcomb)
+corplot2$cor.p<-round(corplot2$cor.p, 1)
+
+ggplot(corplot2, aes(x=Category2, y=cor, fill=gp))+
+	geom_bar(position="dodge", stat="identity")+
+	geom_segment(aes(x=xst, xend=xst, yend=cormax+0.1)) +
+	geom_segment(aes(x=xst, xend=xend, y=cormax+0.1, yend=cormax+0.1)) +
+	geom_text(aes(y=cormax+0.2, label=cor.p)) +
+	scale_fill_manual("Correlation", values=myPaletteCat(4)[1:2], labels=c("Simulated", "Observed"))+
+	scale_y_continuous(breaks=c(0, 0.25, 0.5, 0.75, 1))+
+	# geom_errorbar(limits, position="dodge", width=1)+
+	theme_classic()+
+	theme(legend.title=element_blank(),
+		  legend.text=element_text(size=16),
+		  axis.title.x=element_text(size=20),
+		  axis.title.y=element_text(size=20),
+		axis.text.x=element_text(size=14, angle=45, hjust=1, vjust=1),
+		  axis.text.y=element_text(size=16))+
+	xlab("Category")+
+	ylab("Correlation")
+ggsave("/net/bipolar/jedidiah/mutation/images/sing_com_cor_bars.png", width=9.6, height=4.8)

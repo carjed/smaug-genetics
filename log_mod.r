@@ -9,7 +9,6 @@ suppressMessages(require(doSNOW))
 cluster <- makeCluster(8, type = "SOCK", outfile="")
 registerDoSNOW(cluster)
 
-
 binw <- 1000000
 bink <- binw/1000
 
@@ -71,7 +70,9 @@ nchr <- length(trainchr1)
 # Only subset if specified temp file does not exist
 testfile <- paste0(parentdir, "/output/logmod_data/chr22/chr22_",
 	categ, "_TTTCTTG(CAAGAAA).txt")
-if(!file.exists(testfile)){
+# if(!file.exists(testfile)){
+builddatouter <- FALSE;
+if(builddatouter){
 
 	modtime <- proc.time()
 	cat("Building data from training set...\n")
@@ -176,9 +177,12 @@ coefdat<-foreach(i=1:length(motifs), .combine=rbind) %dopar% {
 	tmpfile2 <- paste0(parentdir, "/output/logmod_data/motifs/",
 		categ, "_", escmotif, "_dp.txt")
 
-	da1 <- read.table(tmpfile, header=F, stringsAsFactors=F)
+	adddpcmd <- paste0("perl ", parentdir, "/smaug-genetics/add_dp.pl --in ", tmpfile, " --out ", tmpfile2)
+	system(adddpcmd)
+
+	da1 <- read.table(tmpfile2, header=F, stringsAsFactors=F)
 	names(da1) <- c("CHR", "BIN", "POS", "Sequence", "mut",
-		danames[-c(1:2,11)], "EXON")
+		danames[-c(1:2,11)], "EXON", "DP")
 
 	# Run logit model for categories with >10 singletons, return coefficients
 	# Otherwise, returns single marginal rate
@@ -200,7 +204,7 @@ coefdat<-foreach(i=1:length(motifs), .combine=rbind) %dopar% {
 		coefs
 	} else {
 		cat("Not enough data--using marginal rate only\n")
-		alt <- c(sum(da1$mut)/nrow(da1), rep(0,13))
+		alt <- c(sum(da1$mut)/nrow(da1), rep(0,14))
 		# alt
 	}
 

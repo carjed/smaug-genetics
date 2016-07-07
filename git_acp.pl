@@ -15,7 +15,7 @@ use POSIX;
 use Getopt::Long;
 use Pod::Usage;
 
-my $branch="develop";
+my $branch="master";
 my $m="process glfs";
 my $help=0;
 my $man=0;

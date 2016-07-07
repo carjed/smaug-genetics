@@ -22,4 +22,4 @@ my $dpdir="$parentdir/output/glf_depth/meandp";
 
 my @files = glob("$dpdir/chr$chr.*.txt");
 
-print "$_\n" while(@files);
+print join("\n", @files);

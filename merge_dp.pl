@@ -34,11 +34,15 @@ while(<@files>){
     die "Unable to open file $_ : $!";
 
   my @filepath=split m%/%, $_;
-  my @range=split(/./, $filepath[-1]);
-  my $start=$range[1];
-  my $end=$range[2];
 
-  print "$start\t$end\n";
+  print join("\n", @filepath);
+  my @range=split(/./, $filepath[-1]);
+  print join("\n", @range);
+
+  # my $start=$range[1];
+  # my $end=$range[2];
+  #
+  # print "$start\t$end\n";
   # while(my $line=<$FH>){
   #
   # }

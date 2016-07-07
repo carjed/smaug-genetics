@@ -22,4 +22,5 @@ my $dpdir="$parentdir/output/glf_depth/meandp";
 
 my @files = glob("$dpdir/chr$chr.*.txt");
 
-print join("\n", @files);
+my @sortfiles=sort{$a <=> $b} @files;
+print join("\n", @sortfiles);

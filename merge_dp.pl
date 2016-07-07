@@ -16,6 +16,13 @@ use Math::Round;
 use Cwd;
 
 my $chr=21;
+my $help=0;
+my $man=0;
+
+# Set options and inputs
+GetOptions ('chr=i'=> \$chr,
+'help|?'=> \$help,
+man => \$man) or pod2usage(1);
 
 my $parentdir="/net/bipolar/jedidiah/mutation";
 my $dpdir="$parentdir/output/glf_depth/meandp";

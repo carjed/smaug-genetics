@@ -35,14 +35,14 @@ while(<@files>){
 
   my @filepath=split m%/%, $_;
 
-  print join("\n", @filepath);
-  my @range=split(/./, $filepath[-1]);
-  print join("\n", @range);
+  # print join("\n", @filepath);
+  my @range=split(/\./, $filepath[-1]);
+  # print join("\n", @range);
 
-  # my $start=$range[1];
-  # my $end=$range[2];
-  #
-  # print "$start\t$end\n";
+  my $start=$range[1];
+  my $end=$range[2];
+
+  print "$start\t$end\n";
   # while(my $line=<$FH>){
   #
   # }

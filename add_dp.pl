@@ -34,7 +34,7 @@ pod2usage(0) if $help;
 pod2usage(-verbose => 2) if $man;
 
 my $inFH;
-open($inFH, '>', $in) or
+open($inFH, '<', $in) or
   die "Unable to open file $in : $!";
 
 my $curchr=0;

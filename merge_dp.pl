@@ -30,7 +30,7 @@ my $out="$dpdir/chr$chr.dp";
 open my $outFH, '>', $out or die "can't write to $out: $!\n";
 while(<@files>){
   my $blockFH;
-  open($blockFH, '>', $_) or
+  open($blockFH, '<', $_) or
     die "Unable to open file $_ : $!";
 
   my @filepath=split m%/%, $_;

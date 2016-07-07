@@ -20,15 +20,15 @@ my $chr=22;
 my $parentdir="/net/bipolar/jedidiah/mutation";
 my $dpdir="$parentdir/output/glf_depth/meandp";
 
-my $rawfiles = `ls -v $dpdir/chr$chr.*.txt`;
+my $rawfiles = `ls -v $dpdir/chr$chr.*.txt | cat > $dpdir/chr$chr.dp.txt`;
 
 # print "$rawfiles\n";
-my @files = split(/\n/, $rawfiles);
+# my @files = split(/\n/, $rawfiles);
 
 
 
 # my @sortfiles=sort by_number @files;
-print join("\n", @files);
+# print join("\n", @files);
 
 # sub by_number {
 #     my ( $anum ) = $a =~ /(\d+)/;

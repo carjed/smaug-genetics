@@ -22,5 +22,13 @@ my $dpdir="$parentdir/output/glf_depth/meandp";
 
 my @files = glob("$dpdir/chr$chr.*.txt");
 
-my @sortfiles=sort{$a <=> $b} @files;
+
+
+my @sortfiles=sort by_number @files;
 print join("\n", @sortfiles);
+
+sub by_number {
+    my ( $anum ) = $a =~ /(\d+)/;
+    my ( $bnum ) = $b =~ /(\d+)/;
+    ( $anum || 0 ) <=> ( $bnum || 0 );
+}

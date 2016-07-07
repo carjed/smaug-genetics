@@ -15,7 +15,7 @@ use List::Util qw(first max maxstr min minstr reduce shuffle sum);
 use Math::Round;
 use Cwd;
 
-my $chr=22;
+my $chr=21;
 
 my $parentdir="/net/bipolar/jedidiah/mutation";
 my $dpdir="$parentdir/output/glf_depth/meandp";
@@ -43,9 +43,15 @@ while(<@files>){
   my $end=$range[2];
 
   print "$start\t$end\n";
-  # while(my $line=<$FH>){
-  #
-  # }
+  while(my $line=<$FH>){
+    chomp;
+    my @elements=split(/\t/, $line);
+    my $pos=$elements[0];
+
+    if($pos>=$start && $pos<=$end){
+      print $outFH "$line\n";
+    }
+  }
 }
 
 

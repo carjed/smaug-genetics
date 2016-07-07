@@ -139,7 +139,7 @@ close($mdFH) or die "Unable to close file: $meandpbatch $!";
 $slurmcmd="sbatch $meandpbatch";
 &forkExecWait($slurmcmd);
 
-$rawID=`squeue --format \"%.24i %.9P %.24j %.8u %.2t %.10M %.6D\" -n $jobcmd | awk '{print \$1}'`;
+$rawID=`squeue --format \"%.24i %.9P %.24j %.8u %.2t %.10M %.6D\" -n $jobcmd | awk 'NR==2 {print \$1}'`;
 $ID=substr($rawID, 0, index($rawID, '_'));
 $datestring = localtime();
 print "Batch job $ID queued at $datestring...\n";

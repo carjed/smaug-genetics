@@ -173,6 +173,9 @@ coefdat<-foreach(i=1:length(motifs), .combine=rbind) %dopar% {
 	# Remove per-chromosome motif files once merged
 	# unlink(perchrtmp)
 
+	tmpfile2 <- paste0(parentdir, "/output/logmod_data/motifs/",
+		categ, "_", escmotif, "_dp.txt")
+
 	da1 <- read.table(tmpfile, header=F, stringsAsFactors=F)
 	names(da1) <- c("CHR", "BIN", "POS", "Sequence", "mut",
 		danames[-c(1:2,11)], "EXON")

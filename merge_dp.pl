@@ -20,11 +20,29 @@ my $chr=22;
 my $parentdir="/net/bipolar/jedidiah/mutation";
 my $dpdir="$parentdir/output/glf_depth/meandp";
 
-my $rawfiles = `ls -v $dpdir/chr$chr.*.txt | cat > $dpdir/chr$chr.dp.txt`;
+# my $rawfiles = `ls -v $dpdir/chr$chr.*.txt | xargs cat >> $dpdir/chr$chr.dp`;
+my $rawfiles = `ls -v $dpdir/chr$chr.*.txt`;
 
 # print "$rawfiles\n";
-# my @files = split(/\n/, $rawfiles);
+my @files = split(/\n/, $rawfiles);
 
+my $out="$dpdir/chr$chr.dp";
+open my $outFH, '>', $out or die "can't write to $out: $!\n";
+while(<@files>){
+  my $blockFH;
+  open($blockFH, '>', $_) or
+    die "Unable to open file $_ : $!";
+
+  my @filepath=split m%/%, $_;
+  my @range=split(/./, $filepath[-1]);
+  my $start=$range[1];
+  my $end=$range[2];
+
+  print "$start\t$end\n";
+  # while(my $line=<$FH>){
+  #
+  # }
+}
 
 
 # my @sortfiles=sort by_number @files;

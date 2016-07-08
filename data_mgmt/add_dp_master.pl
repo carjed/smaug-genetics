@@ -23,8 +23,8 @@ my $numjobs=4096;
 my $categ="AT_CG";
 
 my $jobcmd="${categ}_add_dp";
-my $slurmcmd = "$parentdir/smaug-genetics/data_mgmt/slurm_$jobcmd.txt";
-open my $wFH, '>', $slurmcmd or die "can't write to $slurmcmd: $!\n";
+my $workerbatch = "$parentdir/smaug-genetics/data_mgmt/slurm_$jobcmd.txt";
+open my $wFH, '>', $workerbatch or die "can't write to $workerbatch: $!\n";
 print $wFH "#!/bin/sh \n";
 print $wFH "#SBATCH --mail-type=FAIL \n";
 print $wFH "#SBATCH --mail-user=jedidiah\@umich.edu \n";
@@ -39,7 +39,8 @@ print $wFH "#SBATCH --requeue \n";
 # print $wFH "#SBATCH --exclude=psoriasis-mc01,psoriasis-mc02 \n";
 print $wFH "#SBATCH --output=\"$slurmdir/slurmJob-%J.out\" --error=\"$slurmdir/slurmJob-%J.err\" \n";
 print $wFH "srun perl $parentdir/smaug-genetics/data_mgmt/add_dp_worker.pl --in \${SLURM_ARRAY_TASK_ID} --categ $categ \n";
-close($wFH) or die "Unable to close file: $slurmcmd $!";
+close($wFH) or die "Unable to close file: $workerbatch $!";
+my $slurmcmd="sbatch $workerbatch";
 &forkExecWait($slurmcmd);
 
 ##############################################################################

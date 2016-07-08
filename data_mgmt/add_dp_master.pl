@@ -15,13 +15,16 @@ use List::Util qw(first max maxstr min minstr reduce shuffle sum);
 use Math::Round;
 
 my $parentdir="/net/bipolar/jedidiah/mutation";
+my $today = POSIX::strftime('%Y%m%d', localtime);
+my $slurmdir = "$parentdir/output/slurm/$today";
+  make_path("$slurmdir");
 
 my $numjobs=4096;
 my $categ="AT_CG";
 
 my $jobcmd="${categ}_add_dp";
 my $slurmcmd = "$parentdir/smaug-genetics/data_mgmt/slurm_$jobcmd.txt";
-open my $wFH, '>', $workerbatch or die "can't write to $workerbatch: $!\n";
+open my $wFH, '>', $slurmcmd or die "can't write to $slurmcmd: $!\n";
 print $wFH "#!/bin/sh \n";
 print $wFH "#SBATCH --mail-type=FAIL \n";
 print $wFH "#SBATCH --mail-user=jedidiah\@umich.edu \n";
@@ -36,7 +39,7 @@ print $wFH "#SBATCH --requeue \n";
 # print $wFH "#SBATCH --exclude=psoriasis-mc01,psoriasis-mc02 \n";
 print $wFH "#SBATCH --output=\"$slurmdir/slurmJob-%J.out\" --error=\"$slurmdir/slurmJob-%J.err\" \n";
 print $wFH "srun perl $parentdir/smaug-genetics/data_mgmt/add_dp_worker.pl --in \${SLURM_ARRAY_TASK_ID} --categ $categ \n";
-close($wFH) or die "Unable to close file: $workerbatch $!";
+close($wFH) or die "Unable to close file: $slurmcmd $!";
 &forkExecWait($slurmcmd);
 
 ##############################################################################

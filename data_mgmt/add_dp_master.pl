@@ -26,7 +26,7 @@ my $help=0;
 my $man=0;
 
 # Set options and inputs
-GetOptions ('q=s'=> \$query,
+GetOptions ('categ=s'=> \$categ,
 'help|?'=> \$help,
 man => \$man) or pod2usage(1);
 

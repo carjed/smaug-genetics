@@ -20,7 +20,15 @@ my $slurmdir = "$parentdir/output/slurm/$today";
   make_path("$slurmdir");
 
 my $numjobs=4096;
-my $categ="AT_CG";
+my $categ;
+
+my $help=0;
+my $man=0;
+
+# Set options and inputs
+GetOptions ('q=s'=> \$query,
+'help|?'=> \$help,
+man => \$man) or pod2usage(1);
 
 my $jobcmd="${categ}_add_dp";
 my $workerbatch = "$parentdir/smaug-genetics/data_mgmt/slurm_$jobcmd.txt";

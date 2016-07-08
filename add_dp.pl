@@ -17,7 +17,7 @@ use Cwd;
 
 # Specify parameters
 my $in;
-my $out;
+# my $out;
 my $help=0;
 my $man=0;
 
@@ -26,12 +26,15 @@ my $dpdir="$parentdir/output/glf_depth/meandp";
 
 # Set options and inputs
 GetOptions ('in=s'=> \$in,
-'out=s'=> \$out,
+# 'out=s'=> \$out,
 'help|?'=> \$help,
 man => \$man) or pod2usage(1);
 
 pod2usage(0) if $help;
 pod2usage(-verbose => 2) if $man;
+
+# my $new = $old =~ s/foo/bar/r;
+my $out = $in =~ s/.txt/_dp.txt/r;
 
 my $inFH;
 open($inFH, '<', $in) or

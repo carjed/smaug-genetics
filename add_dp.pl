@@ -35,11 +35,14 @@ man => \$man) or pod2usage(1);
 pod2usage(0) if $help;
 pod2usage(-verbose => 2) if $man;
 
-my $in=`ls -d $parentdir/output/logmod_data/motifs/$categ/* | sed -n ${i}p`;
+my $in=`ls -d $parentdir/output/logmod_data/motifs/$categ/*.txt | sed -n ${i}p`;
 chomp($in);
 # my $new = $old =~ s/foo/bar/r;
 my $out = $in =~ s/.txt/_dp.txt/r;
 $out =~ s/$categ\//$categ\/dp\//;
+
+my $outdir = dirname($out);
+make_path($outdir);
 
 my $inFH;
 open($inFH, '<', $in) or

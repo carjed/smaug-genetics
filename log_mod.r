@@ -155,7 +155,7 @@ coefdat<-foreach(i=1:length(motifs), .combine=rbind) %dopar% {
 	escmotif <- substr(motif, 0, nbp)
 
 	# Define name of temporary file for motif i
-	tmpfile <- paste0(parentdir, "/output/logmod_data/motifs/",
+	tmpfile <- paste0(parentdir, "/output/logmod_data/motifs/", categ, "/",
 		categ, "_", escmotif, ".txt")
 
 	perchrtmp <- paste0(parentdir,
@@ -174,7 +174,7 @@ coefdat<-foreach(i=1:length(motifs), .combine=rbind) %dopar% {
 	# Remove per-chromosome motif files once merged
 	# unlink(perchrtmp)
 
-	tmpfile2 <- paste0(parentdir, "/output/logmod_data/motifs/",
+	tmpfile2 <- paste0(parentdir, "/output/logmod_data/motifs/", categ, "/",
 		categ, "_", escmotif, "_dp.txt")
 
 	adddpcmd <- paste0("perl ", parentdir, "/smaug-genetics/add_dp.pl --in ", tmpfile, " --out ", tmpfile2)

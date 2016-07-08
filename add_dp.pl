@@ -16,7 +16,8 @@ use Math::Round;
 use Cwd;
 
 # Specify parameters
-my $in;
+my $i;
+my $categ;
 # my $out;
 my $help=0;
 my $man=0;
@@ -25,16 +26,20 @@ my $parentdir="/net/bipolar/jedidiah/mutation";
 my $dpdir="$parentdir/output/glf_depth/meandp";
 
 # Set options and inputs
-GetOptions ('in=s'=> \$in,
+GetOptions ('in=i'=> \$i,
 # 'out=s'=> \$out,
+'categ=s' => \$categ,
 'help|?'=> \$help,
 man => \$man) or pod2usage(1);
 
 pod2usage(0) if $help;
 pod2usage(-verbose => 2) if $man;
 
+my $in=`ls $parentdir/output/logmod_data/motifs/$categ/ | sed -n '$i'p`;
+chomp($in);
 # my $new = $old =~ s/foo/bar/r;
 my $out = $in =~ s/.txt/_dp.txt/r;
+$out =~ s/$categ\//$categ\/dp\//;
 
 my $inFH;
 open($inFH, '<', $in) or

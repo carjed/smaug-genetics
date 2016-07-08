@@ -26,13 +26,13 @@ print $wFH "#!/bin/sh \n";
 print $wFH "#SBATCH --mail-type=FAIL \n";
 print $wFH "#SBATCH --mail-user=jedidiah\@umich.edu \n";
 print $wFH "#SBATCH --ntasks=1 \n";
-print $wFH "#SBATCH --mem=2000 \n";
+print $wFH "#SBATCH --mem=5000 \n";
 print $wFH "#SBATCH --time 20:00:00 \n";
 print $wFH "#SBATCH --job-name=$jobcmd \n";
 print $wFH "#SBATCH --partition=nomosix \n";
 print $wFH "#SBATCH --array=1-$numjobs \n"; # change to 1-$numjobs
 print $wFH "#SBATCH --requeue \n";
-print $wFH "#SBATCH --exclude=r30,r14,inpsyght \n";
+# print $wFH "#SBATCH --exclude=r30,r14,inpsyght \n";
 # print $wFH "#SBATCH --exclude=psoriasis-mc01,psoriasis-mc02 \n";
 print $wFH "#SBATCH --output=\"$slurmdir/slurmJob-%J.out\" --error=\"$slurmdir/slurmJob-%J.err\" \n";
 print $wFH "srun perl $parentdir/smaug-genetics/data_mgmt/add_dp_worker.pl --in \${SLURM_ARRAY_TASK_ID} --categ $categ \n";

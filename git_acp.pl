@@ -15,7 +15,8 @@ use POSIX;
 use Getopt::Long;
 use Pod::Usage;
 
-my $branch="master";
+my $branch=`git rev-parse --abbrev-ref HEAD`;
+chomp($branch);
 my $m="process glfs";
 my $help=0;
 my $man=0;
@@ -29,6 +30,6 @@ man => \$man) or pod2usage(1);
 my $datestring = localtime();
 my $commit="$datestring: $m";
 
-my $addcmd=`git add *`;
+my $addcmd=`git add .`;
 my $commitcmd=`git commit -m \"$commit\"`;
-my $pushcmd=`git push origin $branch`;
+my $pushcmd=`git push -u origin $branch`;

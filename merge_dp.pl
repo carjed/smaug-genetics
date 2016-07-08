@@ -27,7 +27,7 @@ use Cwd;
 my $parentdir="/net/bipolar/jedidiah/mutation";
 my $dpdir="$parentdir/output/glf_depth/meandp";
 
-foreach my $chr (1..22){
+foreach my $chr (1..20){
   # my $rawfiles = `ls -v $dpdir/chr$chr.*.txt | xargs cat >> $dpdir/chr$chr.dp`;
   my $rawfiles = `ls -v $dpdir/chr$chr.*.txt`;
 

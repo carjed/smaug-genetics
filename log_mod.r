@@ -158,6 +158,8 @@ coefdat<-foreach(i=1:16, .combine=rbind) %dopar% {
 	tmpfile <- paste0(parentdir, "/output/logmod_data/motifs/", categ, "/",
 		categ, "_", escmotif, ".txt")
 
+	cat(tmpfile, "\n")
+
 	perchrtmp <- paste0(parentdir,
 		"/output/logmod_data/chr*/chr*_", categ, "_", motif, ".txt")
 
@@ -176,7 +178,7 @@ coefdat<-foreach(i=1:16, .combine=rbind) %dopar% {
 
 	tmpfile2 <- paste0(parentdir, "/output/logmod_data/motifs/", categ, "/",
 		categ, "_", escmotif, "_dp.txt")
-
+	cat(tmpfile2, "\n")
 	# adddpcmd <- paste0("perl ", parentdir, "/smaug-genetics/add_dp.pl --in ", tmpfile, " --out ", tmpfile2)
 	# system(adddpcmd)
 

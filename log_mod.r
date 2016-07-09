@@ -143,8 +143,8 @@ coefdat <- data.frame(stringsAsFactors=F)
 # int_only_rates <- data.frame(stringsAsFactors=F)
 motifs <- sort(unique(summfile1$Sequence))
 
-coefdat<-foreach(i=1:length(motifs), .combine=rbind) %dopar% {
-# coefdat<-foreach(i=1:16, .combine=rbind) %dopar% {
+# coefdat<-foreach(i=1:length(motifs), .combine=rbind) %dopar% {
+coefdat<-foreach(i=1:16, .combine=rbind) %dopar% {
 	# motif <- substr(motifs[i], 0, nbp)
 	motif <- motifs[i]
 	cat("Running model", i, "on", motif, "sites...\n")

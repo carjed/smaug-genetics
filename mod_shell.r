@@ -55,6 +55,7 @@ suppressMessages(usePackage(MASS))
 suppressMessages(usePackage(speedglm))
 suppressMessages(usePackage(boot))
 suppressMessages(usePackage(devtools))
+suppressMessages(usePackage(psych))
 # suppressMessages(usePackage(ggbio))
 
 # Manual toggle for installing ggbio package

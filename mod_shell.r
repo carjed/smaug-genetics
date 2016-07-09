@@ -39,10 +39,10 @@ args <- getArgs(
 		# binfile=paste0(parentdir, "/output/7bp_1000k/chrX.bin_out.txt"),
 		run_agg=TRUE,
 		pcs=FALSE,
-		categ="GC_CG",
+		categ="AT_CG",
 		negbin_model=TRUE,
-		log_model=FALSE,
-		run_predict=FALSE))
+		log_model=TRUE,
+		run_predict=TRUE))
 
 # The usePackage function loads packages if they already exist,
 # otherwise installs from default CRAN repository

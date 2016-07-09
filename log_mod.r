@@ -177,8 +177,8 @@ coefdat<-foreach(i=1:length(motifs), .combine=rbind) %dopar% {
 	tmpfile2 <- paste0(parentdir, "/output/logmod_data/motifs/", categ, "/",
 		categ, "_", escmotif, "_dp.txt")
 
-	adddpcmd <- paste0("perl ", parentdir, "/smaug-genetics/add_dp.pl --in ", tmpfile, " --out ", tmpfile2)
-	system(adddpcmd)
+	# adddpcmd <- paste0("perl ", parentdir, "/smaug-genetics/add_dp.pl --in ", tmpfile, " --out ", tmpfile2)
+	# system(adddpcmd)
 
 	da1 <- read.table(tmpfile2, header=F, stringsAsFactors=F)
 	names(da1) <- c("CHR", "BIN", "POS", "Sequence", "mut",

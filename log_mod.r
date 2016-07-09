@@ -176,7 +176,7 @@ coefdat<-foreach(i=1:16, .combine=rbind) %dopar% {
 	# Remove per-chromosome motif files once merged
 	# unlink(perchrtmp)
 
-	tmpfile2 <- paste0(parentdir, "/output/logmod_data/motifs/", categ, "/",
+	tmpfile2 <- paste0(parentdir, "/output/logmod_data/motifs/", categ, "/dp/",
 		categ, "_", escmotif, "_dp.txt")
 	cat(tmpfile2, "\n")
 	# adddpcmd <- paste0("perl ", parentdir, "/smaug-genetics/add_dp.pl --in ", tmpfile, " --out ", tmpfile2)

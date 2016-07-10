@@ -32,13 +32,14 @@ my $outfile = "$parentdir/smaug-genetics/slurm_predict.txt";
 open(OUT, '>', $outfile) or die "can't write to $outfile: $!\n";
 
 print OUT "#!/bin/sh \n";
-print OUT "#SBATCH --mail-type=ALL \n";
+print OUT "#SBATCH --mail-type=FAIL \n";
 print OUT "#SBATCH --mail-user=jedidiah\@umich.edu \n";
 print OUT "#SBATCH --ntasks=1 \n";
-print OUT "#SBATCH --mem=30000 \n";
+print OUT "#SBATCH --mem=6000 \n";
 print OUT "#SBATCH --time 08:00:00 \n";
 print OUT "#SBATCH --job-name=predict \n";
 print OUT "#SBATCH --partition=nomosix \n";
 print OUT "#SBATCH --array=$trainchr \n";
+print $wFH "#SBATCH --exclude=topmed,topmed2 \n";
 print OUT "#SBATCH --output=\"/net/bipolar/jedidiah/mutation/output/slurm/slurmJob-%J.out\" --error=\"/net/bipolar/jedidiah/mutation/output/slurm/slurmJob-%J.err\" \n";
 print OUT "srun perl /net/bipolar/jedidiah/mutation/smaug-genetics/predict.pl --chr \${SLURM_ARRAY_TASK_ID} --cat $cat --bink $bink \n";

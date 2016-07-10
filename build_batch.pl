@@ -37,7 +37,7 @@ print OUT "#SBATCH --mail-user=jedidiah\@umich.edu \n";
 print OUT "#SBATCH --ntasks=1 \n";
 print OUT "#SBATCH --mem=6000 \n";
 print OUT "#SBATCH --time 08:00:00 \n";
-print OUT "#SBATCH --job-name=predict \n";
+print OUT "#SBATCH --job-name=predict_$cat \n";
 print OUT "#SBATCH --partition=nomosix \n";
 print OUT "#SBATCH --array=$trainchr \n";
 print $wFH "#SBATCH --exclude=topmed,topmed2 \n";

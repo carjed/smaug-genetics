@@ -40,6 +40,6 @@ print OUT "#SBATCH --time 08:00:00 \n";
 print OUT "#SBATCH --job-name=predict_$cat \n";
 print OUT "#SBATCH --partition=nomosix \n";
 print OUT "#SBATCH --array=$trainchr \n";
-print $wFH "#SBATCH --exclude=topmed,topmed2 \n";
+print OUT "#SBATCH --exclude=topmed,topmed2 \n";
 print OUT "#SBATCH --output=\"/net/bipolar/jedidiah/mutation/output/slurm/slurmJob-%J.out\" --error=\"/net/bipolar/jedidiah/mutation/output/slurm/slurmJob-%J.err\" \n";
 print OUT "srun perl /net/bipolar/jedidiah/mutation/smaug-genetics/predict.pl --chr \${SLURM_ARRAY_TASK_ID} --cat $cat --bink $bink \n";

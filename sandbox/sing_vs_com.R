@@ -445,7 +445,7 @@ obscor<-bincts %>%
 
 corcomb<-merge(simcor, obscor, by="Category2") %>%
 	group_by(Category2) %>%
-	summarise(cor.p=-2*pnorm(-abs(r.test(2897, corsim, corobs)$z), log.p=T)
+	summarise(cor.p=-2*pnorm(-abs(r.test(2897, corsim, corobs)$z), log.p=T))
 
 names(simcor)[2]<-"cor"
 names(obscor)[2]<-"cor"

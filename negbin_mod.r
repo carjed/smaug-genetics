@@ -83,7 +83,7 @@ if(logit_curves){
 # Initialize data of motif counts to use as covariates in negbin model
 ##############################################################################
 cat("Initializing data for negbin models...\n")
-dat_5bp_100k$bin$CHR <- as.integer(substring(dat_5bp_100k$bin$CHR, 4))
+dat_5bp_100k$bin$CHR <- as.integer(gsub("chr", "", dat_5bp_100k$bin$CHR))
 
 names(dat_5bp_100k$bin) <- gsub('\\(', '_', names(dat_5bp_100k$bin))
 names(dat_5bp_100k$bin) <- gsub('\\)', '_', names(dat_5bp_100k$bin))

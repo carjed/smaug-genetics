@@ -445,14 +445,17 @@ obscor<-bincts %>%
 
 corcomb<-merge(simcor, obscor, by="Category2") %>%
 	group_by(Category2) %>%
-	summarise(cor.p=r.test(2897, corsim, corobs)$z)
+	summarise(cor.p=-2*pnorm(-abs(r.test(2897, corsim, corobs)$z), log.p=T)
 
 names(simcor)[2]<-"cor"
 names(obscor)[2]<-"cor"
 corplot<-rbind(simcor, obscor)
 corplot$gp<-as.factor(corplot$gp)
 corplot$gp<-relevel(corplot$gp, "sim")
-corplot<-corplot %>% group_by(Category2) %>% mutate(cormax=max(cor)) %>% arrange(Category2)
+corplot<-corplot %>%
+	group_by(Category2) %>%
+	mutate(cormax=max(cor)) %>%
+	arrange(Category2)
 
 corplot$xst<-seq(0.75,9.25,0.5)
 corplot$xend<-rep(1:9,each=2)

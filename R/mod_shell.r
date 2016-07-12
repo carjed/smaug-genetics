@@ -22,10 +22,10 @@
 ##############################################################################
 ptm <- proc.time()
 
-parentdir<-dirname(getwd())
+parentdir<-"/net/bipolar/jedidiah/mutation"
 cat("Loading functions and packages...\n")
 
-source("get_functions.r")
+source("./get_functions.r")
 
 # Get args from command line; defaults defined below
 args <- getArgs(
@@ -159,7 +159,7 @@ cat("Done (", tottime, "s)\n")
 ##############################################################################
 ptm <- proc.time()
 cat("Updating data...\n")
-source("update_dat.r")
+source("./update_dat.r")
 dat_5bp_100k <- updateData(summ_5bp_100k, bins_5bp_100k, adj)
 rm(summ_5bp_100k)
 rm(bins_5bp_100k)
@@ -175,7 +175,7 @@ cat("Done (", tottime, "s)\n")
 if(run_agg){
 	ptm <- proc.time()
 	cat("Aggregating data...\n")
-	source("agg_dat.r")
+	source("./agg_dat.r")
 	aggV <- aggData(dat_5bp_100k, adj) #<-modify the adj value for 3bp data
 
 	agg_5bp_100k <- aggV$oe
@@ -196,7 +196,7 @@ ptm <- proc.time()
 mutcov2file <- paste0(parentdir, "/output/logmod_data/", bink, "kb_mut_cov2.txt")
 if(!file.exists(mutcov2file)){
 	cat("Building covariate data...\n")
-	source("get_covs.r")
+	source("./get_covs.r")
 } else {
 	cat("Reading existing covariate datafile:", mutcov2file, "...\n")
 	mut_cov<-read.table(mutcov2file, header=F, stringsAsFactors=F)
@@ -223,7 +223,7 @@ cat("Done (", tottime, "s)\n")
 if(negbin_model){
 	cat("Initializing negbin regression model...\n")
 	ptm <- proc.time()
-	source("negbin_mod.r")
+	source("./negbin_mod.r")
 	tottime <- (proc.time()-ptm)[3]
 	cat("Done. Finished in", tottime, "seconds \n")
 }
@@ -234,7 +234,7 @@ if(negbin_model){
 if(log_model){
 	ptm <- proc.time()
 	cat("Initializing logistic regression model...\n")
-	source("log_mod.r")
+	source("./log_mod.r")
 	tottime <- (proc.time()-ptm)[3]
 	cat("Done. Model and predictions finished in", tottime, "seconds \n")
 }

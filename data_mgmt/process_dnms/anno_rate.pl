@@ -3,6 +3,9 @@
 ##############################################################################
 # Script takes list of chr/positions, annotates with rate and k-mer according
 # to specified file
+#
+# Currently used to annotate rocdat_comb.txt as rocdat_comb_3bp.txt, which is
+# passed to the roc.r script
 ##############################################################################
 
 use strict;

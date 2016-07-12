@@ -73,7 +73,7 @@ for(i in unique(rates5$Category2)){
 # ra1a %>% filter(model=="L5")
 logit_curves<-0
 if(logit_curves){
-  source("logit_curves.r")
+  source("./logit_curves.r")
 }
 
 ##############################################################################
@@ -207,7 +207,7 @@ if(overall){
 ##############################################################################
 ptm <- proc.time()
 cat("Running per-category models...\n")
-source("negbin_run.r")
+source("./negbin_run.r")
 tottime <- (proc.time()-ptm)[3]
 cat("Done (", tottime, "s)\n")
 

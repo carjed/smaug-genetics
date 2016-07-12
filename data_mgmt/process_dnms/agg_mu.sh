@@ -1,6 +1,7 @@
 #!/bin/bash
 
 ##############################################################################
+# Step 0: 
 # Merges per-category predicted rates into single chromosome file, sorted by
 # position
 ##############################################################################

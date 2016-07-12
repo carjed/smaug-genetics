@@ -1,5 +1,10 @@
 #!/bin/bash
 
+##############################################################################
+# Step 2:
+# Script combines
+##############################################################################
+
 # Extract CHR/POS format from GoNL DNMs raw data
 cut -f 2-3 /net/bipolar/jedidiah/mutation/reference_data/GoNL_DNMs.txt | tail -n +2 | sort -k1,1n > /net/bipolar/jedidiah/mutation/reference_data/GoNL_DNMs2.txt
 

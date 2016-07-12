@@ -1,7 +1,0 @@
-ped<-read.table("freeze4.20131216.v10.ped", header=T, stringsAsFactors=F)
-samples<-read.table("samples2.txt", header=F, stringsAsFactors=F)
-
-ped2<-ped[(ped$IID %in% samples$V1),]
-
-write.table(ped2, "freeze4.20131216.v11.ped", sep="\t", col.names=T, row.names=F, quote=F)
-savehistory("updateped.hist")

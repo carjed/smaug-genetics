@@ -23,9 +23,10 @@
 ptm <- proc.time()
 
 parentdir<-"/net/bipolar/jedidiah/mutation"
+
 cat("Loading functions and packages...\n")
-setwd(paste0(parentdir, "/R"))
-source("./get_functions.r")
+scriptdir <- dirname(sys.frame(1)$ofile)
+source(paste0(scriptdir, "/get_functions.r"))
 
 # Get args from command line; defaults defined below
 args <- getArgs(

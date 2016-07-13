@@ -37,7 +37,7 @@ rcrCol <- function(sites){
   feat_df$indices<-seq_along(1:nrow(feat_df))
   rates <- merge(ind_df, feat_df, by="indices", all.x=T, incomparables=0) %>%
     arrange(V2, V1) %>%
-    select(id)
+    select(RR)
 
   rates[is.na(rates)]<-0
   return(rates)

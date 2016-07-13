@@ -39,7 +39,7 @@ rcrCol <- function(sites){
     select(id)
 
   rates[is.na(rates)]<-0
-  return(rates)
+  return(as.vector(rates))
 }
 
 # Loop to add histone marks to site data

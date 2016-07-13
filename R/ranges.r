@@ -33,13 +33,14 @@ rcrCol <- function(sites){
   ind_df<-data.frame(V1=sites$V1, V2=sites$V2, indices)
 
   feat_df<-as.data.frame(feat_ranges)
+  names(feat_df)[-1]<-"RR"
   feat_df$indices<-seq_along(1:nrow(feat_df))
   rates <- merge(ind_df, feat_df, by="indices", all.x=T, incomparables=0) %>%
     arrange(V2, V1) %>%
     select(id)
 
   rates[is.na(rates)]<-0
-  return(as.vector(rates))
+  return(rates)
 }
 
 # Loop to add histone marks to site data

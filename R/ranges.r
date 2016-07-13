@@ -13,7 +13,6 @@ histCol <- function(sites, mark){
 }
 
 # Get CpG Island status of each site
-/net/bipolar/jedidiah/mutation/reference_data/cpg_islands_sorted.bed
 cpgiCol <- function(sites){
   file <- "/net/bipolar/jedidiah/mutation/reference_data/cpg_islands_sorted.bed"
   feat_ranges <- bed_to_granges(file, header=F)

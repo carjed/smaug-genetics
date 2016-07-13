@@ -90,7 +90,7 @@ if(builddatouter){
 			write.table(dat, posfile, col.names=F, row.names=F, quote=F, sep="\t")
 
 			perlcmd <- paste0("perl ",
-				parentdir, "/smaug-genetics/getNonMut.pl --b ", catopt,
+				parentdir, "/smaug-genetics/data_mgmt/logit_scripts/getNonMut.pl --b ", catopt,
 				" --chr ", chr,
 				" --categ ", categ,
 				" --bw ", 100,
@@ -158,7 +158,7 @@ coefdat<-foreach(i=1:length(motifs), .combine=rbind) %dopar% {
 	tmpfile <- paste0(parentdir, "/output/logmod_data/motifs/", categ, "/",
 		categ, "_", escmotif, ".txt")
 
-	cat(tmpfile, "\n")
+	# cat(tmpfile, "\n")
 
 	perchrtmp <- paste0(parentdir,
 		"/output/logmod_data/chr*/chr*_", categ, "_", motif, ".txt")
@@ -178,7 +178,7 @@ coefdat<-foreach(i=1:length(motifs), .combine=rbind) %dopar% {
 
 	tmpfile2 <- paste0(parentdir, "/output/logmod_data/motifs/", categ, "/dp/",
 		categ, "_", escmotif, "_dp.txt")
-	cat(tmpfile2, "\n")
+	# cat(tmpfile2, "\n")
 	# adddpcmd <- paste0("perl ", parentdir, "/smaug-genetics/add_dp.pl --in ", tmpfile, " --out ", tmpfile2)
 	# system(adddpcmd)
 
@@ -228,11 +228,11 @@ if(run_predict){
 	predictstr <- paste(predictchr, collapse=",")
 
 	buildbatchcmd <- paste0("perl ",
-		parentdir, "/smaug-genetics/build_batch.pl --trchr ", predictstr,
+		parentdir, "/smaug-genetics/data_mgmt/logit_scripts/build_batch.pl --trchr ", predictstr,
 		" --cat ", categ,
 		" --bink ", bink)
 	system(buildbatchcmd)
 
-	slurmcmd<-paste0("sbatch ", parentdir, "/smaug-genetics/slurm_predict.txt")
+	slurmcmd<-paste0("sbatch ", parentdir, "/smaug-genetics/data_mgmt/logit_scripts/slurm_predict.txt")
 	system(slurmcmd)
 }

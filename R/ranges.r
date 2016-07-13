@@ -1,6 +1,7 @@
 library(devtools)
 install_github('carjed/bedr')
 library(bedr)
+library(dplyr)
 
 sites<-read.table("/net/bipolar/jedidiah/mutation/output/logmod_data/motifs/GC_TA/dp/GC_TA_GTCCTGT_dp.txt", header=F)
 

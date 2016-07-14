@@ -144,15 +144,15 @@ coefdat <- data.frame(stringsAsFactors=F)
 motifs <- sort(unique(summfile1$Sequence))
 
 # coefdat <- foreach(i=1:length(motifs), .combine=rbind) %dopar% {
-coefdat <- foreach(i=1:16, .combine=rbind, .init=list(data.frame(), data.frame())) %dopar% {
+coefdat <- foreach(i=1:4, .combine=rbind, .init=list(data.frame(), data.frame())) %dopar% {
 	# motif <- substr(motifs[i], 0, nbp)
 	motif <- motifs[i]
 	cat("Running model", i, "on", motif, "sites...\n")
 
-	require(speedglm)
+	suppressMessages(require(speedglm))
 	# require(devtools)
 	# install_github('carjed/bedr')
-	require(bedr)
+	suppressMessages(require(bedr))
 	# require(dplyr)
 
 	# Shortened motif

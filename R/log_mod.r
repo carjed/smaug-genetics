@@ -158,7 +158,7 @@ newdat <- foreach(i=1:length(motifs),
 	# motif <- substr(motifs[i], 0, nbp)
 	motif <- motifs[i]
 	cat("Running model", i, "on", motif, "sites...\n")
-
+	options(useHTTPS=FALSE)
 	suppressMessages(require(speedglm, quietly=T))
 	suppressMessages(require(bedr, quietly=T))
 	suppressMessages(require(dplyr, quietly=T))

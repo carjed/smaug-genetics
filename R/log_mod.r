@@ -140,11 +140,12 @@ if(builddatouter){
 cat("Running model...\n")
 
 coefdat <- data.frame(stringsAsFactors=F)
+newdat<-list(data.frame(), data.frame())
 # int_only_rates <- data.frame(stringsAsFactors=F)
 motifs <- sort(unique(summfile1$Sequence))
 
 # coefdat <- foreach(i=1:length(motifs), .combine=rbind) %dopar% {
-coefdat <- foreach(i=1:4,
+newdat <- foreach(i=2:5,
 	.combine=rbind,
 	.packages=c("speedglm", "bedr", "dplyr"),
 	.init=list(data.frame(), data.frame())) %dopar% {
@@ -152,7 +153,7 @@ coefdat <- foreach(i=1:4,
 	motif <- motifs[i]
 	cat("Running model", i, "on", motif, "sites...\n")
 
-	suppressWarnings(suppressMessages(require(speedglm)))
+suppressPackageStartupMessages(require(speedglm)))
 	# require(devtools)
 	# install_github('carjed/bedr')
 	suppressWarnings(suppressMessages(require(bedr)))

@@ -149,8 +149,8 @@ comb <- function(x, ...) {
       mapply(rbind,x,...,SIMPLIFY=FALSE)
 }
 
-newdat <- foreach(i=1:length(motifs),
-# newdat <- foreach(i=1:100,
+# newdat <- foreach(i=1:length(motifs),
+newdat <- foreach(i=1:10,
 	# .packages=c("speedglm", "bedr", "dplyr"),
 	.combine='comb',
 	# .init=list(data.frame(), data.frame()),

@@ -258,6 +258,37 @@ rcrCol <- function(sites, file){
 }
 
 ##############################################################################
+# Get replication timing rate for each site
+##############################################################################
+repCol <- function(sites, repfile, binwidth){
+  reptime <- read.table(repfile, header=F, stringsAsFactors=F, sep="\t")
+  names(reptime) <- c("CHR", "END", "TIME")
+  reptime2<-reptime %>%
+    group_by(CHR) %>%
+    arrange(CHR, END) %>%
+    mutate(START=imputeStart(END))
+
+  feat_ranges <- GRanges(seqnames=paste0("chr",reptime2$CHR),
+                         ranges=IRanges(start=reptime2$START, end=reptime2$END), id=reptime2$TIME)
+  site_ranges <- GRanges(seqnames=paste0("chr",sites$CHR),
+                         ranges=IRanges(start=sites$POS, end=sites$POS))
+
+  indices <- findOverlaps(site_ranges, feat_ranges, type="within", select="first")
+  indices[is.na(indices)]<-0
+  ind_df <- data.frame(POS=sites$POS, CHR=sites$CHR, indices)
+
+  feat_df <- as.data.frame(feat_ranges)
+  feat_df$indices <- seq_along(1:nrow(feat_df))
+  rate_table <- merge(ind_df, feat_df, by="indices", all.x=T, incomparables=0) %>%
+    arrange(CHR, POS)
+
+  rates <- rate_table$id
+  rates[is.na(rates)] <- 0
+  return(as.numeric(rates))
+  # return(as.integer(site_ranges %within% feat_ranges))
+}
+
+##############################################################################
 # Check if site in bed file; returns 0 or 1
 ##############################################################################
 binaryCol <- function(sites, bedfile){

@@ -116,9 +116,10 @@ if(builddatouter){
 		}
 
 		# Subset chromosome file by motif
-		subcmd <- paste0("zcat ", parentdir, "/output/logmod_data/chr", chr, "_", categ, "_m.txt.gz | ",
-			"awk '{ print >> \"",
-				parentdir, "/output/logmod_data/chr", chr, "/chr", chr, "_", categ, "_\" ", "$4 \".txt\" }' ")
+		subcmd <- paste0("zcat ", parentdir, "/output/logmod_data/chr",
+			chr, "_", categ, "_m.txt.gz | awk '{ print >> \"", parentdir,
+				"/output/logmod_data/chr", chr, "/chr", chr, "_", categ, "_\" ",
+				"$4 \".txt\" }' ")
 
 		system(subcmd)
 	}
@@ -158,9 +159,11 @@ newdat <- foreach(i=1:length(motifs),
 	motif <- motifs[i]
 	cat("Running model", i, "on", motif, "sites...\n")
 
-	suppressPackageStartupMessages(library(speedglm, quietly=T))
-	suppressPackageStartupMessages(library(bedr, quietly=T))
-	suppressPackageStartupMessages(library(dplyr, quietly=T))
+	suppressMessages(require(speedglm, quietly=T))
+	suppressMessages(require(bedr, quietly=T))
+	suppressMessages(require(dplyr, quietly=T))
+	suppressMessages(require(BSgenome.Hsapiens.UCSC.hg19, quietly=T))
+	suppressMessages(require(Repitools, quietly=T))
 
 	# Shortened motif
 	escmotif <- substr(motif, 0, nbp)
@@ -189,9 +192,11 @@ newdat <- foreach(i=1:length(motifs),
 	sites <- read.table(pipe(incmd), header=F, stringsAsFactors=F)
 	names(sites) <- c("POS", "CHR", "BIN", "Sequence", "mut", "EXON", "DP")
 
-	# Loop to add histone marks to site data
-	hists <- c("H3K4me1", "H3K4me3", "H3K9ac", "H3K9me3", "H3K27ac", "H3K27me3", "H3K36me3")
+	# Initialize data for calculating GC content
+	sites_for_GC <- data.frame(position=sites$POS, chr=paste0("chr", sites$CHR))
 
+	# Add histone marks to site data
+	hists <- c("H3K4me1", "H3K4me3", "H3K9ac", "H3K9me3", "H3K27ac", "H3K27me3", "H3K36me3")
 	dflist <- list()
 	for(i in 1:length(hists)){
 	  mark <- hists[i]
@@ -205,10 +210,17 @@ newdat <- foreach(i=1:length(motifs),
 	sites <- cbind(sites, df)
 
 	# Add other features
-	sites$CpGI <- binaryCol(sites, "/net/bipolar/jedidiah/mutation/reference_data/cpg_islands_sorted.bed")
-	sites$RR <- rcrCol(sites, "/net/bipolar/jedidiah/mutation/reference_data/recomb_rate.bed")
-	sites$LAMIN <- binaryCol(sites, "/net/bipolar/jedidiah/mutation/reference_data/lamin_B1_LADS2.bed")
-	sites$DHS <- binaryCol(sites, "/net/bipolar/jedidiah/mutation/reference_data/DHS.bed")
+	sites$CpGI <- binaryCol(sites,
+		"/net/bipolar/jedidiah/mutation/reference_data/cpg_islands_sorted.bed")
+	sites$RR <- rcrCol(sites,
+		"/net/bipolar/jedidiah/mutation/reference_data/recomb_rate.bed")
+	sites$LAMIN <- binaryCol(sites,
+		"/net/bipolar/jedidiah/mutation/reference_data/lamin_B1_LADS2.bed")
+	sites$DHS <- binaryCol(sites,
+		"/net/bipolar/jedidiah/mutation/reference_data/DHS.bed")
+	sites$TIME <- repCol(sites,
+		"/net/bipolar/jedidiah/mutation/reference_data/lymph_rep_time.txt")
+	sites$GC <- gcContentCalc(sites_for_GC, 10000, organism=Hsapiens)
 
 	# Run logit model for categories with >10 singletons, return coefficients
 	# Otherwise, returns single marginal rate
@@ -228,7 +240,8 @@ newdat <- foreach(i=1:length(motifs),
 		coefs$Cov <- as.character(coefs$Cov)
 		rownames(coefs) <- NULL
 
-		coefs[,-1] <- data.frame(apply(coefs[,-1], 2, function(x) as.numeric(as.character(x))))
+		coefs[,-1] <- data.frame(apply(coefs[,-1], 2,
+			function(x) as.numeric(as.character(x))))
 		names(coefs) <- c("Cov", "Estimate", "SE", "Z", "pval")
 
 		coefs$Sequence <- escmotif
@@ -246,27 +259,26 @@ newdat <- foreach(i=1:length(motifs),
 	# 	for(j in 1:length(bin.split)){
 	# 		chr<-unique(bin.split[[j]]$CHR)
 	# 		bin<-unique(bin.split[[j]]$BIN)
-	# 		preddir <- paste0(parentdir, "/output/predicted/", categ, "/chr", chr, "/bin", bin, "/")
+	# 		preddir <- paste0(parentdir,
+					# "/output/predicted/", categ, "/chr", chr, "/bin", bin, "/")
 	# 		dir.create(preddir, recursive=T)
 	#
 	# 		predfile<-paste0(preddir, categ, "_", escmotif, ".txt")
-	# 		write.table(bin.split[[j]], predfile, col.names=F, row.names=F, quote=F, sep="\t")
+			# write.table(bin.split[[j]], predfile,
+			# 	col.names=F, row.names=F, quote=F, sep="\t")
 	# 	}
 	# }
 
 # New dir for each chromosome (faster to write, slower to sort?)
 	chr.split<-split(predicted, predicted$CHR)
 	for(i in 1:length(chr.split)){
-		# bin.split<-split(chr.split[[i]], chr.split[[i]]$BIN)
-		# for(j in 1:length(bin.split)){
-			chr<-unique(chr.split[[i]]$CHR)
-			# bin<-unique(bin.split[[j]]$BIN)
-			preddir <- paste0(parentdir, "/output/predicted/", categ, "/chr", chr, "/")#"/bin", bin, "/")
-			dir.create(preddir, recursive=T)
+		chr<-unique(chr.split[[i]]$CHR)
+		preddir <- paste0(parentdir, "/output/predicted/", categ, "/chr", chr, "/")
+		dir.create(preddir, recursive=T)
 
-			predfile<-paste0(preddir, categ, "_", escmotif, ".txt")
-			write.table(chr.split[[i]], predfile, col.names=F, row.names=F, quote=F, sep="\t")
-		# }
+		predfile<-paste0(preddir, categ, "_", escmotif, ".txt")
+		write.table(chr.split[[i]], predfile,
+			col.names=F, row.names=F, quote=F, sep="\t")
 	}
 
 	predfile <- paste0(parentdir, "/output/predicted/", categ, "/",
@@ -291,12 +303,13 @@ if(run_predict){
 	predictchr <- c(1:22)
 	predictstr <- paste(predictchr, collapse=",")
 
-	buildbatchcmd <- paste0("perl ",
-		parentdir, "/smaug-genetics/data_mgmt/logit_scripts/build_batch.pl --trchr ", predictstr,
+	buildbatchcmd <- paste0("perl ", parentdir,
+		"/smaug-genetics/data_mgmt/logit_scripts/build_batch.pl --trchr ", predictstr,
 		" --cat ", categ,
 		" --bink ", bink)
 	system(buildbatchcmd)
 
-	slurmcmd<-paste0("sbatch ", parentdir, "/smaug-genetics/data_mgmt/logit_scripts/slurm_predict.txt")
+	slurmcmd<-paste0("sbatch ", parentdir,
+		"/smaug-genetics/data_mgmt/logit_scripts/slurm_predict.txt")
 	system(slurmcmd)
 }

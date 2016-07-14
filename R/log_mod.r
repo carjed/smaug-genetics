@@ -153,11 +153,11 @@ newdat <- foreach(i=2:5,
 	motif <- motifs[i]
 	cat("Running model", i, "on", motif, "sites...\n")
 
-suppressPackageStartupMessages(require(speedglm)))
+	suppressPackageStartupMessages(library(speedglm, quietly=T))
 	# require(devtools)
 	# install_github('carjed/bedr')
-	suppressWarnings(suppressMessages(require(bedr)))
-	suppressWarnings(suppressMessages(require(dplyr)))
+	suppressPackageStartupMessages(library(bedr, quietly=T))
+	suppressPackageStartupMessages(library(dplyr, quietly=T))
 
 	# Shortened motif
 	escmotif <- substr(motif, 0, nbp)

@@ -58,6 +58,10 @@ suppressMessages(usePackage(speedglm))
 suppressMessages(usePackage(boot))
 suppressMessages(usePackage(devtools))
 suppressMessages(usePackage(psych))
+# Install the bedr package from github, if needed
+# require(devtools)
+# install_github('carjed/bedr')
+# require(bedr)
 # suppressMessages(usePackage(ggbio))
 
 # Manual toggle for installing ggbio package

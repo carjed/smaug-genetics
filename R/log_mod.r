@@ -140,22 +140,25 @@ if(builddatouter){
 cat("Running model...\n")
 
 coefdat <- data.frame(stringsAsFactors=F)
-newdat<-list(data.frame(), data.frame())
+# newdat<-list(data.frame(), data.frame())
 # int_only_rates <- data.frame(stringsAsFactors=F)
 motifs <- sort(unique(summfile1$Sequence))
 
-# coefdat <- foreach(i=1:length(motifs), .combine=rbind) %dopar% {
-newdat <- foreach(i=2:5,
-	.combine=rbind,
-	.packages=c("speedglm", "bedr", "dplyr"),
-	.init=list(data.frame(), data.frame())) %dopar% {
+comb <- function(x, ...) {
+      mapply(rbind,x,...,SIMPLIFY=FALSE)
+}
+
+newdat <- foreach(i=1:length(motifs),
+# newdat <- foreach(i=1:100,
+	# .packages=c("speedglm", "bedr", "dplyr"),
+	.combine='comb',
+	# .init=list(data.frame(), data.frame()),
+	.multicombine=T) %dopar% {
 	# motif <- substr(motifs[i], 0, nbp)
 	motif <- motifs[i]
 	cat("Running model", i, "on", motif, "sites...\n")
 
 	suppressPackageStartupMessages(library(speedglm, quietly=T))
-	# require(devtools)
-	# install_github('carjed/bedr')
 	suppressPackageStartupMessages(library(bedr, quietly=T))
 	suppressPackageStartupMessages(library(dplyr, quietly=T))
 
@@ -236,9 +239,43 @@ newdat <- foreach(i=2:5,
 		# alt
 	}
 
-	list(coefs, predicted)
-	# Remove motif file once model finished
-	# unlink(tmpfile)
+# New dir for each bin (slower to write, faster to sort)
+	# chr.split<-split(sites, sites$CHR)
+	# for(i in 1:length(chr.split)){
+	# 	bin.split<-split(chr.split[[i]], chr.split[[i]]$BIN)
+	# 	for(j in 1:length(bin.split)){
+	# 		chr<-unique(bin.split[[j]]$CHR)
+	# 		bin<-unique(bin.split[[j]]$BIN)
+	# 		preddir <- paste0(parentdir, "/output/predicted/", categ, "/chr", chr, "/bin", bin, "/")
+	# 		dir.create(preddir, recursive=T)
+	#
+	# 		predfile<-paste0(preddir, categ, "_", escmotif, ".txt")
+	# 		write.table(bin.split[[j]], predfile, col.names=F, row.names=F, quote=F, sep="\t")
+	# 	}
+	# }
+
+# New dir for each chromosome (faster to write, slower to sort?)
+	chr.split<-split(predicted, predicted$CHR)
+	for(i in 1:length(chr.split)){
+		# bin.split<-split(chr.split[[i]], chr.split[[i]]$BIN)
+		# for(j in 1:length(bin.split)){
+			chr<-unique(chr.split[[i]]$CHR)
+			# bin<-unique(bin.split[[j]]$BIN)
+			preddir <- paste0(parentdir, "/output/predicted/", categ, "/chr", chr, "/")#"/bin", bin, "/")
+			dir.create(preddir, recursive=T)
+
+			predfile<-paste0(preddir, categ, "_", escmotif, ".txt")
+			write.table(chr.split[[i]], predfile, col.names=F, row.names=F, quote=F, sep="\t")
+		# }
+	}
+
+	predfile <- paste0(parentdir, "/output/predicted/", categ, "/",
+		categ, "_", escmotif, ".txt")
+	write.table(predicted, predfile, col.names=F, row.names=F, quote=F, sep="\t")
+
+
+	# list(coefs, predicted)
+	list(coefs)
 }
 
 coeffile <- paste0(parentdir,

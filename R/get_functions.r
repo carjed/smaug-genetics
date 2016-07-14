@@ -299,6 +299,14 @@ binaryCol <- function(sites, bedfile){
 }
 
 ##############################################################################
+# Function determines start of interval from value in previous row
+##############################################################################
+imputeStart<-function(ends){
+  starts<-c(0, ends[-(length(ends))])
+  return(starts)
+}
+
+##############################################################################
 # Multiple plot function
 #
 # ggplot objects passed in ..., or to plotlist (as list of ggplot objects)

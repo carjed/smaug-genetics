@@ -152,7 +152,7 @@ coefdat <- foreach(i=1:16, .combine=rbind, .init=list(data.frame(), data.frame()
 	suppressMessages(require(speedglm))
 	# require(devtools)
 	# install_github('carjed/bedr')
-	suppressMessages(require(bedr))
+	# suppressMessages(require(bedr))
 	# require(dplyr)
 
 	# Shortened motif

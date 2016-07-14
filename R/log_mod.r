@@ -220,7 +220,8 @@ newdat <- foreach(i=1:10,
 		"/net/bipolar/jedidiah/mutation/reference_data/DHS.bed")
 	sites$TIME <- repCol(sites,
 		"/net/bipolar/jedidiah/mutation/reference_data/lymph_rep_time.txt")
-	sites$GC <- gcContentCalc(sites_for_GC, 10000, organism=Hsapiens)
+	sites$GC <- gcCol(sites, "/net/bipolar/jedidiah/mutation/output/3bp_10k/full_bin.txt")
+	# sites$GC <- gcContentCalc(sites_for_GC, 10000, organism=Hsapiens)
 
 	# Run logit model for categories with >10 singletons, return coefficients
 	# Otherwise, returns single marginal rate
@@ -280,11 +281,6 @@ newdat <- foreach(i=1:10,
 		write.table(chr.split[[i]], predfile,
 			col.names=F, row.names=F, quote=F, sep="\t")
 	}
-
-	predfile <- paste0(parentdir, "/output/predicted/", categ, "/",
-		categ, "_", escmotif, ".txt")
-	write.table(predicted, predfile, col.names=F, row.names=F, quote=F, sep="\t")
-
 
 	# list(coefs, predicted)
 	list(coefs)

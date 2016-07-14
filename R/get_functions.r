@@ -299,6 +299,38 @@ binaryCol <- function(sites, bedfile){
 }
 
 ##############################################################################
+# Get GC content in 10kb window (fix to sliding?)
+##############################################################################
+gcCol<-function(sites, gcfile){
+
+  incmd <- paste0("cut -f1,4,5 ", gcfile)
+  gcbins <- read.table(pipe(incmd), header=T, stringsAsFactors=F)
+  gcbins$start <- gcbins$BIN*10000-10000+1
+  gcbins$end <- gcbins$start+10000-1
+
+  gcbins<-gcbins %>% arrange(CHR, start)
+
+  feat_ranges <- GRanges(seqnames=gcbins$CHR,
+                         ranges=IRanges(start=gcbins$start, end=gcbins$end), id=gcbins$prop_GC)
+  site_ranges <- GRanges(seqnames=paste0("chr",sites$CHR),
+                         ranges=IRanges(start=sites$POS, end=sites$POS))
+
+  indices <- findOverlaps(site_ranges, feat_ranges, type="within", select="first")
+  indices[is.na(indices)]<-0
+  ind_df <- data.frame(POS=sites$POS, CHR=sites$CHR, indices)
+
+  feat_df <- as.data.frame(feat_ranges)
+  feat_df$indices <- seq_along(1:nrow(feat_df))
+  rate_table <- merge(ind_df, feat_df, by="indices", all.x=T, incomparables=0) %>%
+    arrange(CHR, POS)
+
+  rates <- rate_table$id
+  rates[is.na(rates)] <- 0
+  return(as.numeric(rates))
+  # return(as.integer(site_ranges %within% feat_ranges))
+}
+
+##############################################################################
 # Function determines start of interval from value in previous row
 ##############################################################################
 imputeStart<-function(ends){

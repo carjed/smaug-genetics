@@ -236,6 +236,38 @@ seauc<-function(auc, n){
 }
 
 ##############################################################################
+# Get recombination rate at each site
+##############################################################################
+rcrCol <- function(sites, file){
+  feat_ranges <- bed_to_granges(file, header=T)
+  site_ranges <- GRanges(seqnames=paste0("chr",sites$V2),
+                         ranges=IRanges(start=sites$V1, end=sites$V1))
+
+  indices <- findOverlaps(site_ranges, feat_ranges, type="within", select="first")
+  indices[is.na(indices)]<-0
+  ind_df<-data.frame(V1=sites$V1, V2=sites$V2, indices)
+
+  feat_df<-as.data.frame(feat_ranges)
+  feat_df$indices<-seq_along(1:nrow(feat_df))
+  rate_table <- merge(ind_df, feat_df, by="indices", all.x=T, incomparables=0) %>%
+    arrange(V2, V1)
+
+  rates<-rate_table$id
+  rates[is.na(rates)]<-0
+  return(as.numeric(rates))
+}
+
+##############################################################################
+# Check if site in bed file; returns 0 or 1
+##############################################################################
+binaryCol <- function(sites, bedfile){
+  feat_ranges <- bed_to_granges(bedfile, header=F)
+  site_ranges <- GRanges(seqnames=paste0("chr",sites$V2),
+                         ranges=IRanges(start=sites$V1, end=sites$V1))
+  return(as.integer(site_ranges %within% feat_ranges))
+}
+
+##############################################################################
 # Multiple plot function
 #
 # ggplot objects passed in ..., or to plotlist (as list of ggplot objects)

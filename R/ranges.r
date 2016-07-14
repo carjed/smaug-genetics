@@ -3,7 +3,7 @@ install_github('carjed/bedr')
 library(bedr)
 library(dplyr)
 
-sites<-read.table("/net/bipolar/jedidiah/mutation/output/logmod_data/motifs/GC_TA/dp/GC_TA_GTCCTGT_dp.txt", header=F)
+sites<-read.table(pipe("cut -f1-5,18,19 /net/bipolar/jedidiah/mutation/output/logmod_data/motifs/GC_TA/dp/GC_TA_GTCCTGT_dp.txt"), header=F)
 
 # Get inside/outside broad histone peak status for each site
 # histCol <- function(sites, mark){
@@ -34,14 +34,14 @@ rcrCol <- function(sites, file){
   ind_df<-data.frame(V1=sites$V1, V2=sites$V2, indices)
 
   feat_df<-as.data.frame(feat_ranges)
-  names(feat_df)[-1]<-"RR"
+  # names(feat_df)[-1]<-"RR"
   feat_df$indices<-seq_along(1:nrow(feat_df))
-  rates <- merge(ind_df, feat_df, by="indices", all.x=T, incomparables=0) %>%
-    arrange(V2, V1) %>%
-    select(RR)
+  rate_table <- merge(ind_df, feat_df, by="indices", all.x=T, incomparables=0) %>%
+    arrange(V2, V1)
 
+  rates<-rate_table$id
   rates[is.na(rates)]<-0
-  return(rates)
+  return(as.numeric(rates))
 }
 
 # Get lamin B1 status at each site
@@ -78,4 +78,4 @@ sites<-cbind(sites, df)
 sites$CpGI <- binaryCol(sites, "/net/bipolar/jedidiah/mutation/reference_data/cpg_islands_sorted.bed")
 sites$RR <- rcrCol(sites, "/net/bipolar/jedidiah/mutation/reference_data/recomb_rate.bed")
 sites$LAMIN <- binaryCol(sites, "/net/bipolar/jedidiah/mutation/reference_data/lamin_B1_LADS2.bed")
-sites$DHS <- binaryCOl(sites, "/net/bipolar/jedidiah/mutation/reference_data/DHS.bed")
+sites$DHS <- binaryCol(sites, "/net/bipolar/jedidiah/mutation/reference_data/DHS.bed")

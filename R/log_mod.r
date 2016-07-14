@@ -143,73 +143,96 @@ coefdat <- data.frame(stringsAsFactors=F)
 # int_only_rates <- data.frame(stringsAsFactors=F)
 motifs <- sort(unique(summfile1$Sequence))
 
-coefdat<-foreach(i=1:length(motifs), .combine=rbind) %dopar% {
-# coefdat<-foreach(i=1:16, .combine=rbind) %dopar% {
+# coefdat <- foreach(i=1:length(motifs), .combine=rbind) %dopar% {
+coefdat <- foreach(i=1:16, .combine=rbind, .init=list(data.frame(), data.frame())) %dopar% {
 	# motif <- substr(motifs[i], 0, nbp)
 	motif <- motifs[i]
 	cat("Running model", i, "on", motif, "sites...\n")
 
 	require(speedglm)
+	# require(devtools)
+	# install_github('carjed/bedr')
+	# require(bedr)
+	# require(dplyr)
 
 	# Shortened motif
 	escmotif <- substr(motif, 0, nbp)
 
 	# Define name of temporary file for motif i
-	tmpfile <- paste0(parentdir, "/output/logmod_data/motifs/", categ, "/",
-		categ, "_", escmotif, ".txt")
-
-	# cat(tmpfile, "\n")
-
-	perchrtmp <- paste0(parentdir,
-		"/output/logmod_data/chr*/chr*_", categ, "_", motif, ".txt")
+	# tmpfile <- paste0(parentdir, "/output/logmod_data/motifs/", categ, "/",
+	# 	categ, "_", escmotif, ".txt")
+	tmpfile <- paste0(parentdir, "/output/logmod_data/motifs/", categ, "/dp/",
+			categ, "_", escmotif, "_dp.txt")
 
 	# Merge per-chromosome motif files to single file
 	if(!(file.exists(tmpfile))){
-
 		cat("Merging ", motif, " files...\n")
+
+		perchrtmp <- paste0(parentdir,
+			"/output/logmod_data/chr*/chr*_", categ, "_", motif, ".txt")
 
 		catcmd1 <- paste0("find ", parentdir, "/output/logmod_data/chr* -name '*",
 			escmotif, "*.txt' | sort -V | xargs cat >> ", tmpfile)
 		system(catcmd1)
 	}
-
 	# Remove per-chromosome motif files once merged
 	# unlink(perchrtmp)
 
-	tmpfile2 <- paste0(parentdir, "/output/logmod_data/motifs/", categ, "/dp/",
-		categ, "_", escmotif, "_dp.txt")
-	# cat(tmpfile2, "\n")
-	# adddpcmd <- paste0("perl ", parentdir, "/smaug-genetics/add_dp.pl --in ", tmpfile, " --out ", tmpfile2)
-	# system(adddpcmd)
+	incmd <- paste0("cut -f1-5,18,19 ", tmpfile)
+	sites <- read.table(pipe(incmd), header=F, stringsAsFactors=F)
+	names(sites) <- c("POS", "CHR", "BIN", "Sequence", "mut", "EXON", "DP")
 
-	da1 <- read.table(tmpfile2, header=F, stringsAsFactors=F)
-	names(da1) <- c("CHR", "BIN", "POS", "Sequence", "mut",
-		danames[-c(1:2,11)], "EXON", "DP")
+	# Loop to add histone marks to site data
+	hists <- c("H3K4me1", "H3K4me3", "H3K9ac", "H3K9me3", "H3K27ac", "H3K27me3", "H3K36me3")
+
+	dflist <- list()
+	for(i in 1:length(hists)){
+	  mark <- hists[i]
+	  file <- paste0("/net/bipolar/jedidiah/mutation/reference_data/histone_marks/broad/sort.E062-", mark, ".bed")
+	  hist <- binaryCol(sites, file)
+	  dflist[[i]] <- hist
+	}
+
+	df <- as.data.frame(do.call(cbind, dflist))
+	names(df) <- hists
+	sites <- cbind(sites, df)
+
+	# Add other features
+	sites$CpGI <- binaryCol(sites, "/net/bipolar/jedidiah/mutation/reference_data/cpg_islands_sorted.bed")
+	sites$RR <- rcrCol(sites, "/net/bipolar/jedidiah/mutation/reference_data/recomb_rate.bed")
+	sites$LAMIN <- binaryCol(sites, "/net/bipolar/jedidiah/mutation/reference_data/lamin_B1_LADS2.bed")
+	sites$DHS <- binaryCol(sites, "/net/bipolar/jedidiah/mutation/reference_data/DHS.bed")
 
 	# Run logit model for categories with >10 singletons, return coefficients
 	# Otherwise, returns single marginal rate
-	if(sum(da1$mut)>10){
+	predicted <- sites[,c(2,1,3)]
+	coefs <- data.frame()
+	if(sum(sites$mut)>10){
 		log_mod_formula <- as.formula(paste("mut~",
-			paste(names(da1)[-(1:5)], collapse="+")))
-		log_mod <- speedglm(log_mod_formula, data=da1, family=binomial(), maxit=50)
+			paste(names(sites)[-(1:5)], collapse="+")))
+		log_mod <- speedglm(log_mod_formula, data=sites, family=binomial(), maxit=50)
+
+
+		predicted$mu <- predict(log_mod, newdata=sites)
 
 		# Get coefficients from model summary, clean up data formats
-		coefs<-data.frame(summary(log_mod)$coefficients, stringsAsFactors=F)
+		coefs <- data.frame(summary(log_mod)$coefficients, stringsAsFactors=F)
 		coefs <- cbind(Cov = rownames(coefs), coefs)
-		coefs$Cov<-as.character(coefs$Cov)
-		rownames(coefs)<-NULL
+		coefs$Cov <- as.character(coefs$Cov)
+		rownames(coefs) <- NULL
 
 		coefs[,-1] <- data.frame(apply(coefs[,-1], 2, function(x) as.numeric(as.character(x))))
-		names(coefs)<-c("Cov", "Estimate", "SE", "Z", "pval")
+		names(coefs) <- c("Cov", "Estimate", "SE", "Z", "pval")
 
-		coefs$Sequence<-escmotif
-		coefs
+		coefs$Sequence <- escmotif
+		# coefs
 	} else {
 		cat("Not enough data--using marginal rate only\n")
-		alt <- c(sum(da1$mut)/nrow(da1), rep(0,14))
+		predicted$mu <- sum(sites$mut)/nrow(sites)
 		# alt
 	}
 
+	list(coefs, predicted)
 	# Remove motif file once model finished
 	# unlink(tmpfile)
 }

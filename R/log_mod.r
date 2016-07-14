@@ -279,8 +279,8 @@ newdat <- foreach(i=1:length(motifs),
 }
 
 coeffile <- paste0(parentdir,
-	"/output/logmod_data/", categ, "_", bink, "kb_coefs_p.txt")
-write.table(coefdat, coeffile, col.names=F, row.names=F, quote=F, sep="\t")
+	"/output/logmod_data/", categ, "_", bink, "kb_coefs_bin.txt")
+write.table(newdat[[1]], coeffile, col.names=F, row.names=F, quote=F, sep="\t")
 
 ##############################################################################
 # If prediction is specified, creates and executes a slurm batch file

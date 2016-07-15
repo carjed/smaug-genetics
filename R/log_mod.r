@@ -15,6 +15,7 @@ source("./get_functions.r")
 
 args <- getArgs(
 	defaults=list(categ="AT_CG",
+		nmotifs=4096,
 		nodes=10))
 
 cat("Script will run with the following parameters:\n")
@@ -200,7 +201,7 @@ logitMod <- function(motif){
 	return(coefs)
 }
 
-covlist <- clusterApply(cluster, motifs, logitMod)
+covlist <- clusterApply(cluster, motifs[1:nmotifs], logitMod)
 fullcoef <- rbind_all(covlist)
 coeffile <- paste0(parentdir,
 	"/output/logmod_data/", categ, "_", bink, "kb_coefs_bin.txt")

@@ -12,7 +12,8 @@ suppressMessages(require(dplyr))
 source("./R/get_functions.r")
 
 args <- getArgs(
-	defaults=list(categ="AT_CG"))
+	defaults=list(categ="AT_CG",
+		nodes=10))
 
 cat("Script will run with the following parameters:\n")
 for(i in 1:length(args)){
@@ -28,7 +29,7 @@ for(i in 1:length(args)){
 }
 cat("\n")
 
-cluster <- makeCluster(100, type = "MPI", outfile="")
+cluster <- makeCluster(nodes, type = "MPI", outfile="")
 registerDoSNOW(cluster)
 
 nbp <- 7

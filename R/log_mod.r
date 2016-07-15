@@ -18,7 +18,7 @@ source("./get_functions.r")
 
 args <- getArgs(
 	defaults=list(
-		jobid=1,
+		jobid=25,
 		categ="AT_CG",
 		nmotifs=4096,
 		nodes=10))

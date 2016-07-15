@@ -88,6 +88,8 @@ logitMod <- function(motif, nbp, parentdir, categ){
 	suppressMessages(require(Repitools, quietly=T))
 	suppressMessages(require(boot, quietly=T))
 
+	source("./get_functions.r")
+	
 	# Merge per-chromosome motif files to single file
 	# Define name of temporary file for motif i
 	# sitefile <- paste0(parentdir, "/output/logmod_data/motifs/", categ, "/",

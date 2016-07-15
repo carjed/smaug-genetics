@@ -164,6 +164,7 @@ newdat <- foreach(i=1:length(motifs),
 	suppressMessages(require(dplyr, quietly=T))
 	suppressMessages(require(BSgenome.Hsapiens.UCSC.hg19, quietly=T))
 	suppressMessages(require(Repitools, quietly=T))
+	suppressMessages(require(boot, quietly=T))
 
 	# Shortened motif
 	escmotif <- substr(motif, 0, nbp)

@@ -74,9 +74,7 @@ comb <- function(x, ...) {
 ##############################################################################
 cat("Running model...\n")
 
-covlist <- clusterApply(cluster, motifs, runMod)
-
-runMod <- function(motif){
+logitMod <- function(motif){
 	escmotif <- substr(motif, 0, nbp)
 
 	cat("Running model on", motif, "sites...\n")
@@ -202,6 +200,7 @@ runMod <- function(motif){
 	return(coefs)
 }
 
+covlist <- clusterApply(cluster, motifs, logitMod)
 fullcoef <- rbind_all(covlist)
 coeffile <- paste0(parentdir,
 	"/output/logmod_data/", categ, "_", bink, "kb_coefs_bin.txt")

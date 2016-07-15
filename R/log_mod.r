@@ -6,17 +6,25 @@
 
 .libPaths( c( .libPaths(), "/exports/home/jedidiah/R/x86_64-pc-linux-gnu-library/2.13") )
 
-# suppressMessages(require(foreach))
-# suppressMessages(require(doSNOW))
-suppressMessages(require(snow))
-suppressMessages(require(dplyr))
+options(useHTTPS=FALSE)
+suppressMessages(require(speedglm, quietly=T))
+suppressMessages(require(bedr, quietly=T))
+suppressMessages(require(dplyr, quietly=T))
+suppressMessages(require(BSgenome.Hsapiens.UCSC.hg19, quietly=T))
+suppressMessages(require(Repitools, quietly=T))
+suppressMessages(require(boot, quietly=T))
 
 source("./get_functions.r")
 
 args <- getArgs(
-	defaults=list(categ="AT_CG",
+	defaults=list(
+		jobid=1,
+		categ="AT_CG",
 		nmotifs=4096,
 		nodes=10))
+
+	nbp <- 7
+	parentdir <- "/net/bipolar/jedidiah/mutation"
 
 cat("Script will run with the following parameters:\n")
 for(i in 1:length(args)){
@@ -32,7 +40,7 @@ for(i in 1:length(args)){
 }
 cat("\n")
 
-cluster <- makeCluster(nodes, type = "SOCK", outfile="/net/bipolar/jedidiah/mutation/snow.log")
+# cluster <- makeCluster(nodes, type = "SOCK", outfile="/net/bipolar/jedidiah/mutation/snow.log")
 # registerDoSNOW(cluster)
 
 binw <- 1000000
@@ -63,30 +71,21 @@ motifs <- motifdat %>%
 	dplyr::select(Sequence) %>%
 	unlist
 
-comb <- function(x, ...) {
-      mapply(rbind,x,...,SIMPLIFY=FALSE)
-}
+# comb <- function(x, ...) {
+#       mapply(rbind,x,...,SIMPLIFY=FALSE)
+# }
 
 ##############################################################################
 # Run models
 ##############################################################################
 cat("Running model...\n")
 
-nbp <- 7
-parentdir <- "/net/bipolar/jedidiah/mutation"
-
 logitMod <- function(motif, nbp, parentdir, categ){
 
 	escmotif <- substr(motif, 0, nbp)
 
 	cat("Running model on", motif, "sites...\n")
-	options(useHTTPS=FALSE)
-	suppressMessages(require(speedglm, quietly=T))
-	suppressMessages(require(bedr, quietly=T))
-	suppressMessages(require(dplyr, quietly=T))
-	suppressMessages(require(BSgenome.Hsapiens.UCSC.hg19, quietly=T))
-	suppressMessages(require(Repitools, quietly=T))
-	suppressMessages(require(boot, quietly=T))
+
 
 	source("./get_functions.r")
 
@@ -204,10 +203,13 @@ logitMod <- function(motif, nbp, parentdir, categ){
 	return(coefs)
 }
 
+coefs <- logitMod(motif=motifs[jobid], nbp=nbp, parentdir=parentdir, categ=categ)
 # Omit first motif to optimize memory usage
 # poly-A 7-mer data is very large; run independently
-covlist <- clusterApply(cluster, motifs[2:nmotifs], logitMod, nbp=nbp, parentdir=parentdir, categ=categ)
-fullcoef <- rbind_all(covlist)
+# covlist <- clusterApply(cluster, motifs[1:nmotifs], logitMod, nbp=nbp, parentdir=parentdir, categ=categ)
+# fullcoef <- rbind_all(covlist)
+escmotif <- substr(motif, 0, nbp)
+
 coeffile <- paste0(parentdir,
-	"/output/logmod_data/", categ, "_", bink, "kb_coefs_bin.txt")
-write.table(fullcoef, coeffile, col.names=F, row.names=F, quote=F, sep="\t")
+	"/output/logmod_data/", categ, "_", escmotif, "_coefs.txt")
+write.table(coefs, coeffile, col.names=F, row.names=F, quote=F, sep="\t")

@@ -32,7 +32,7 @@ for(i in 1:length(args)){
 }
 cat("\n")
 
-cluster <- makeCluster(nodes, type = "MPI", outfile="/net/bipolar/jedidiah/mutation/snow.log")
+cluster <- makeCluster(nodes, type = "SOCK", outfile="/net/bipolar/jedidiah/mutation/snow.log")
 # registerDoSNOW(cluster)
 
 binw <- 1000000

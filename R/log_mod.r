@@ -86,5 +86,6 @@ coefs <- logitMod(motif=runmotif, nbp=nbp, parentdir=parentdir, categ=categ)
 # fullcoef <- rbind_all(covlist)
 
 coefdir <- paste0(parentdir, "/output/logmod_data/coefs/", categ, "/")
+dir.create(coefdir, recursive=T)
 coeffile <- paste0(coefdir, categ, "_", escmotif, "_coefs.txt")
 write.table(coefs, coeffile, col.names=F, row.names=F, quote=F, sep="\t")

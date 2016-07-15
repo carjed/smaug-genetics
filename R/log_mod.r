@@ -89,7 +89,7 @@ logitMod <- function(motif, nbp, parentdir, categ){
 	suppressMessages(require(boot, quietly=T))
 
 	source("./get_functions.r")
-	
+
 	# Merge per-chromosome motif files to single file
 	# Define name of temporary file for motif i
 	# sitefile <- paste0(parentdir, "/output/logmod_data/motifs/", categ, "/",
@@ -113,7 +113,7 @@ logitMod <- function(motif, nbp, parentdir, categ){
 	names(sites) <- c("POS", "CHR", "BIN", "Sequence", "mut", "EXON", "DP")
 
 	# Initialize data for calculating GC content
-	sites_for_GC <- data.frame(position=sites$POS, chr=paste0("chr", sites$CHR))
+	# sites_for_GC <- data.frame(position=sites$POS, chr=paste0("chr", sites$CHR))
 
 	# Add histone marks to site data
 	hists <- c("H3K4me1", "H3K4me3", "H3K9ac", "H3K9me3", "H3K27ac", "H3K27me3", "H3K36me3")
@@ -204,7 +204,9 @@ logitMod <- function(motif, nbp, parentdir, categ){
 	return(coefs)
 }
 
-covlist <- clusterApply(cluster, motifs[1:nmotifs], logitMod, nbp=nbp, parentdir=parentdir, categ=categ)
+# Omit first motif to optimize memory usage
+# poly-A 7-mer data is very large; run independently
+covlist <- clusterApply(cluster, motifs[2:nmotifs], logitMod, nbp=nbp, parentdir=parentdir, categ=categ)
 fullcoef <- rbind_all(covlist)
 coeffile <- paste0(parentdir,
 	"/output/logmod_data/", categ, "_", bink, "kb_coefs_bin.txt")

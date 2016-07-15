@@ -14,6 +14,20 @@ source("./R/get_functions.r")
 args <- getArgs(
 	defaults=list(categ="AT_CG"))
 
+cat("Script will run with the following parameters:\n")
+for(i in 1:length(args)){
+	##first extract the object value
+	tempobj=unlist(args[i])
+	varname=names(args[i])
+
+	# optional: print args
+	cat(varname, ":", tempobj, "\n")
+
+	##now create a new variable with the original name of the list item
+	eval(parse(text=paste(names(args)[i],"= tempobj")))
+}
+cat("\n")
+
 cluster <- makeCluster(100, type = "MPI", outfile="")
 registerDoSNOW(cluster)
 

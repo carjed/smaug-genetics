@@ -74,7 +74,7 @@ comb <- function(x, ...) {
 ##############################################################################
 cat("Running model...\n")
 
-covlist <- clusterApply(cl, motifs, runMod)
+covlist <- clusterApply(cluster, motifs, runMod)
 
 runMod <- function(motif){
 	escmotif <- substr(motif, 0, nbp)

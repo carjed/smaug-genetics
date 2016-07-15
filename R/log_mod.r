@@ -4,12 +4,12 @@
 # Logistic regression model
 ##############################################################################
 
-suppressMessages(require(data.table))
-suppressMessages(require(foreach))
-suppressMessages(require(doSNOW))
+# suppressMessages(require(foreach))
+# suppressMessages(require(doSNOW))
+suppressMessages(require(snow))
 suppressMessages(require(dplyr))
 
-source("get_functions.r")
+source("./get_functions.r")
 
 args <- getArgs(
 	defaults=list(categ="AT_CG",
@@ -29,8 +29,8 @@ for(i in 1:length(args)){
 }
 cat("\n")
 
-cluster <- makeCluster(nodes, type = "MPI", outfile="")
-registerDoSNOW(cluster)
+cluster <- makeCluster(nodes, type = "MPI", outfile="/net/bipolar/jedidiah/mutation/snow.log")
+# registerDoSNOW(cluster)
 
 nbp <- 7
 parentdir <- "/net/bipolar/jedidiah/mutation"
@@ -72,13 +72,12 @@ comb <- function(x, ...) {
 ##############################################################################
 cat("Running model...\n")
 
-newdat <- foreach(i=1:length(motifs),
-# newdat <- foreach(i=1:10,
-.combine='comb', .multicombine=T) %dopar% {
-	motif <- motifs[i]
+covlist <- clusterApply(cl, motifs, runMod)
+
+runMod <- function(motif){
 	escmotif <- substr(motif, 0, nbp)
 
-	cat("Running model", i, "on", motif, "sites...\n")
+	cat("Running model on", motif, "sites...\n")
 	options(useHTTPS=FALSE)
 	suppressMessages(require(speedglm, quietly=T))
 	suppressMessages(require(bedr, quietly=T))
@@ -197,30 +196,11 @@ newdat <- foreach(i=1:length(motifs),
 	}
 
 	# list(coefs, predicted) #<- use to output predicted data as list element (high mem. usage!)
-	list(coefs)
+	# list(coefs)
+	return(coefs)
 }
 
+fullcoef <- rbind_all(covlist)
 coeffile <- paste0(parentdir,
 	"/output/logmod_data/", categ, "_", bink, "kb_coefs_bin.txt")
-write.table(newdat[[1]], coeffile, col.names=F, row.names=F, quote=F, sep="\t")
-
-##############################################################################
-# OLD PREDICTION METHOD WITH PERL SCRIPT
-# If prediction is specified, creates and executes a slurm batch file
-# to run predictions over all chromosomes specified in set
-##############################################################################
-# if(run_predict){
-#
-# 	predictchr <- c(1:22)
-# 	predictstr <- paste(predictchr, collapse=",")
-#
-# 	buildbatchcmd <- paste0("perl ", parentdir,
-# 		"/smaug-genetics/data_mgmt/logit_scripts/build_batch.pl --trchr ", predictstr,
-# 		" --cat ", categ,
-# 		" --bink ", bink)
-# 	system(buildbatchcmd)
-#
-# 	slurmcmd<-paste0("sbatch ", parentdir,
-# 		"/smaug-genetics/data_mgmt/logit_scripts/slurm_predict.txt")
-# 	system(slurmcmd)
-# }
+write.table(fullcoef, coeffile, col.names=F, row.names=F, quote=F, sep="\t")

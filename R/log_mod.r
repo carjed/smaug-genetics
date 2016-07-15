@@ -9,7 +9,7 @@ suppressMessages(require(foreach))
 suppressMessages(require(doSNOW))
 suppressMessages(require(dplyr))
 
-source("./R/get_functions.r")
+source("get_functions.r")
 
 args <- getArgs(
 	defaults=list(categ="AT_CG",

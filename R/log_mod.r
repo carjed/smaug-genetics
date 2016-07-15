@@ -70,8 +70,8 @@ motifs <- motifdat %>%
 	dplyr::select(Sequence) %>%
 	unlist
 
-runmotif<-motifs[jobid]
-
+runmotif <- motifs[jobid]
+escmotif <- substr(runmotif, 0, nbp)
 # comb <- function(x, ...) {
 #       mapply(rbind,x,...,SIMPLIFY=FALSE)
 # }
@@ -79,12 +79,11 @@ runmotif<-motifs[jobid]
 ##############################################################################
 # Run models
 ##############################################################################
-cat("Running model on", motif, "sites...\n")
+cat("Running model on", runmotif, "sites...\n")
 coefs <- logitMod(motif=runmotif, nbp=nbp, parentdir=parentdir, categ=categ)
 
 # covlist <- clusterApply(cluster, motifs[1:nmotifs], logitMod, nbp=nbp, parentdir=parentdir, categ=categ)
 # fullcoef <- rbind_all(covlist)
-escmotif <- substr(runmotif, 0, nbp)
 
 coefdir <- paste0(parentdir, "/output/logmod_data/coefs/", categ, "/")
 coeffile <- paste0(coefdir, categ, "_", escmotif, "_coefs.txt")
@@ -198,13 +197,13 @@ logitMod <- function(motif, nbp, parentdir, categ){
 	# }
 
 # New dir for each chromosome (faster to write, slower to sort?)
-	chr.split<-split(predicted, predicted$CHR)
+	chr.split <- split(predicted, predicted$CHR)
 	for(i in 1:length(chr.split)){
-		chr<-unique(chr.split[[i]]$CHR)
+		chr <- unique(chr.split[[i]]$CHR)
 		preddir <- paste0(parentdir, "/output/predicted/", categ, "/chr", chr, "/")
 		dir.create(preddir, recursive=T)
 
-		predfile<-paste0(preddir, categ, "_", escmotif, ".txt")
+		predfile <- paste0(preddir, categ, "_", escmotif, ".txt")
 		write.table(chr.split[[i]], predfile,
 			col.names=F, row.names=F, quote=F, sep="\t")
 	}

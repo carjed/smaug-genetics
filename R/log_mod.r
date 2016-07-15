@@ -23,6 +23,8 @@ args <- getArgs(
 		nmotifs=4096,
 		nodes=10))
 
+jobid <- as.numeric(jobid)
+
 	nbp <- 7
 	parentdir <- "/net/bipolar/jedidiah/mutation"
 
@@ -209,7 +211,7 @@ coefs <- logitMod(motif=runmotif, nbp=nbp, parentdir=parentdir, categ=categ)
 # poly-A 7-mer data is very large; run independently
 # covlist <- clusterApply(cluster, motifs[1:nmotifs], logitMod, nbp=nbp, parentdir=parentdir, categ=categ)
 # fullcoef <- rbind_all(covlist)
-escmotif <- substr(motif, 0, nbp)
+escmotif <- substr(runmotif, 0, nbp)
 
 coeffile <- paste0(parentdir,
 	"/output/logmod_data/", categ, "_", escmotif, "_coefs.txt")

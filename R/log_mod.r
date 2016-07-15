@@ -70,6 +70,8 @@ motifs <- motifdat %>%
 	dplyr::select(Sequence) %>%
 	unlist
 
+runmotif<-motifs[jobid]
+
 # comb <- function(x, ...) {
 #       mapply(rbind,x,...,SIMPLIFY=FALSE)
 # }
@@ -78,7 +80,20 @@ motifs <- motifdat %>%
 # Run models
 ##############################################################################
 cat("Running model on", motif, "sites...\n")
+coefs <- logitMod(motif=runmotif, nbp=nbp, parentdir=parentdir, categ=categ)
 
+# covlist <- clusterApply(cluster, motifs[1:nmotifs], logitMod, nbp=nbp, parentdir=parentdir, categ=categ)
+# fullcoef <- rbind_all(covlist)
+escmotif <- substr(runmotif, 0, nbp)
+
+coefdir <- paste0(parentdir, "/output/logmod_data/coefs/", categ, "/")
+coeffile <- paste0(coefdir, categ, "_", escmotif, "_coefs.txt")
+write.table(coefs, coeffile, col.names=F, row.names=F, quote=F, sep="\t")
+
+##############################################################################
+# Function for running logit model--given input motif,
+# writes predicted mutation rates and returns list of coefficient estimates
+##############################################################################
 logitMod <- function(motif, nbp, parentdir, categ){
 
 	escmotif <- substr(motif, 0, nbp)
@@ -198,14 +213,3 @@ logitMod <- function(motif, nbp, parentdir, categ){
 	# list(coefs)
 	return(coefs)
 }
-
-runmotif<-motifs[jobid]
-coefs <- logitMod(motif=runmotif, nbp=nbp, parentdir=parentdir, categ=categ)
-
-# covlist <- clusterApply(cluster, motifs[1:nmotifs], logitMod, nbp=nbp, parentdir=parentdir, categ=categ)
-# fullcoef <- rbind_all(covlist)
-escmotif <- substr(runmotif, 0, nbp)
-
-coefdir <- paste0(parentdir, "/output/logmod_data/coefs/", categ, "/")
-coeffile <- paste0(coefdir, categ, "_", escmotif, "_coefs.txt")
-write.table(coefs, coeffile, col.names=F, row.names=F, quote=F, sep="\t")

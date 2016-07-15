@@ -203,7 +203,8 @@ logitMod <- function(motif, nbp, parentdir, categ){
 	return(coefs)
 }
 
-coefs <- logitMod(motif=motifs[jobid], nbp=nbp, parentdir=parentdir, categ=categ)
+runmotif<-motifs[jobid]
+coefs <- logitMod(motif=runmotif, nbp=nbp, parentdir=parentdir, categ=categ)
 # Omit first motif to optimize memory usage
 # poly-A 7-mer data is very large; run independently
 # covlist <- clusterApply(cluster, motifs[1:nmotifs], logitMod, nbp=nbp, parentdir=parentdir, categ=categ)

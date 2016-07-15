@@ -233,7 +233,7 @@ newdat <- foreach(i=1:length(motifs),
 		log_mod <- speedglm(log_mod_formula, data=sites, family=binomial(), maxit=50)
 
 
-		predicted$mu <- predict(log_mod, newdata=sites)
+		predicted$mu <- round(inv.logit(predict(log_mod, newdata=sites), 6)
 
 		# Get coefficients from model summary, clean up data formats
 		coefs <- data.frame(summary(log_mod)$coefficients, stringsAsFactors=F)
@@ -249,7 +249,7 @@ newdat <- foreach(i=1:length(motifs),
 		# coefs
 	} else {
 		cat("Not enough data--using marginal rate only\n")
-		predicted$mu <- sum(sites$mut)/nrow(sites)
+		predicted$mu <- round(sum(sites$mut)/nrow(sites), 6)
 		# alt
 	}
 

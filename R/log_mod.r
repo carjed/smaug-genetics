@@ -23,8 +23,6 @@ args <- getArgs(
 		nmotifs=4096,
 		nodes=10))
 
-jobid <- as.numeric(jobid)
-
 	nbp <- 7
 	parentdir <- "/net/bipolar/jedidiah/mutation"
 
@@ -41,6 +39,8 @@ for(i in 1:length(args)){
 	eval(parse(text=paste(names(args)[i],"= tempobj")))
 }
 cat("\n")
+
+jobid <- as.numeric(jobid)
 
 # cluster <- makeCluster(nodes, type = "SOCK", outfile="/net/bipolar/jedidiah/mutation/snow.log")
 # registerDoSNOW(cluster)

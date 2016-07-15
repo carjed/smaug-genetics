@@ -4,6 +4,8 @@
 # Logistic regression model
 ##############################################################################
 
+.libPaths( c( .libPaths(), "/exports/home/jedidiah/R/x86_64-pc-linux-gnu-library/2.13") )
+
 # suppressMessages(require(foreach))
 # suppressMessages(require(doSNOW))
 suppressMessages(require(snow))

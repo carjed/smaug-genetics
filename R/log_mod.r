@@ -35,9 +35,6 @@ cat("\n")
 cluster <- makeCluster(nodes, type = "MPI", outfile="/net/bipolar/jedidiah/mutation/snow.log")
 # registerDoSNOW(cluster)
 
-nbp <- 7
-parentdir <- "/net/bipolar/jedidiah/mutation"
-
 binw <- 1000000
 bink <- binw/1000
 
@@ -75,7 +72,11 @@ comb <- function(x, ...) {
 ##############################################################################
 cat("Running model...\n")
 
-logitMod <- function(motif){
+nbp <- 7
+parentdir <- "/net/bipolar/jedidiah/mutation"
+
+logitMod <- function(motif, nbp, parentdir, categ){
+
 	escmotif <- substr(motif, 0, nbp)
 
 	cat("Running model on", motif, "sites...\n")
@@ -201,7 +202,7 @@ logitMod <- function(motif){
 	return(coefs)
 }
 
-covlist <- clusterApply(cluster, motifs[1:nmotifs], logitMod)
+covlist <- clusterApply(cluster, motifs[1:nmotifs], logitMod, nbp=nbp, parentdir=parentdir, categ=categ)
 fullcoef <- rbind_all(covlist)
 coeffile <- paste0(parentdir,
 	"/output/logmod_data/", categ, "_", bink, "kb_coefs_bin.txt")

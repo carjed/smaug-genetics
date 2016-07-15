@@ -9,4 +9,4 @@
 #SBATCH --partition=nomosix
 #SBATCH --output="/net/bipolar/jedidiah/mutation/output/slurm/slurmJob-%J.out" --error="/net/bipolar/jedidiah/mutation/output/slurm/slurmJob-%J.err"
 
-R CMD BATCH ./log_mod.r --categ="AT_GC" --nodes=400
+R CMD BATCH ./log_mod.r --categ="AT_GC" --nodes=80

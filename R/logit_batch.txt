@@ -2,10 +2,13 @@
 
 #SBATCH --mail-type=FAIL
 #SBATCH --mail-user=jedidiah@umich.edu
-#SBATCH --time=1-0
+#SBATCH --ntasks=1
+#SBATCH --mem=15000
+#SBATCH --time=10:00:00
 #SBATCH --job-name=test_logit_slurm
-#SBATCH --nodes=1-1
-#SBATCH --cpus-per-task=80
+#SBATCH --partition=nomosix
+#SBATCH --array=1-4096
+#SBATCH --requeue
 #SBATCH --output="/net/bipolar/jedidiah/mutation/output/slurm/slurmJob-%J.out" --error="/net/bipolar/jedidiah/mutation/output/slurm/slurmJob-%J.err"
 
-srun R CMD BATCH ./log_mod.r --categ="AT_GC" --nodes=80
+srun R CMD BATCH ./log_mod.r --categ="AT_CG" --jobid=$SLURM_ARRAY_TASK_ID

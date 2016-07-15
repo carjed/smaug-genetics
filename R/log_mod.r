@@ -4,7 +4,7 @@
 # Logistic regression model
 ##############################################################################
 
-.libPaths( c( .libPaths(), "/exports/home/jedidiah/R/x86_64-pc-linux-gnu-library/2.13") )
+.libPaths(c(.libPaths(), "/exports/home/jedidiah/R/x86_64-pc-linux-gnu-library/2.13"))
 
 options(useHTTPS=FALSE)
 suppressMessages(require(speedglm, quietly=T))
@@ -23,8 +23,8 @@ args <- getArgs(
 		nmotifs=4096,
 		nodes=10))
 
-	nbp <- 7
-	parentdir <- "/net/bipolar/jedidiah/mutation"
+nbp <- 7
+parentdir <- "/net/bipolar/jedidiah/mutation"
 
 cat("Script will run with the following parameters:\n")
 for(i in 1:length(args)){
@@ -44,9 +44,6 @@ jobid <- as.numeric(jobid)
 
 # cluster <- makeCluster(nodes, type = "SOCK", outfile="/net/bipolar/jedidiah/mutation/snow.log")
 # registerDoSNOW(cluster)
-
-binw <- 1000000
-bink <- binw/1000
 
 # Target mutation rate
 mu <- 1e-8
@@ -80,16 +77,13 @@ motifs <- motifdat %>%
 ##############################################################################
 # Run models
 ##############################################################################
-cat("Running model...\n")
+cat("Running model on", motif, "sites...\n")
 
 logitMod <- function(motif, nbp, parentdir, categ){
 
 	escmotif <- substr(motif, 0, nbp)
 
-	cat("Running model on", motif, "sites...\n")
-
-
-	source("./get_functions.r")
+	# source("./get_functions.r")
 
 	# Merge per-chromosome motif files to single file
 	# Define name of temporary file for motif i
@@ -207,12 +201,11 @@ logitMod <- function(motif, nbp, parentdir, categ){
 
 runmotif<-motifs[jobid]
 coefs <- logitMod(motif=runmotif, nbp=nbp, parentdir=parentdir, categ=categ)
-# Omit first motif to optimize memory usage
-# poly-A 7-mer data is very large; run independently
+
 # covlist <- clusterApply(cluster, motifs[1:nmotifs], logitMod, nbp=nbp, parentdir=parentdir, categ=categ)
 # fullcoef <- rbind_all(covlist)
 escmotif <- substr(runmotif, 0, nbp)
 
-coeffile <- paste0(parentdir,
-	"/output/logmod_data/", categ, "_", escmotif, "_coefs.txt")
+coefdir <- paste0(parentdir, "/output/logmod_data/coefs/", categ, "/")
+coeffile <- paste0(coefdir, categ, "_", escmotif, "_coefs.txt")
 write.table(coefs, coeffile, col.names=F, row.names=F, quote=F, sep="\t")

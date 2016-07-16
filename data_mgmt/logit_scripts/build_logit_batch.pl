@@ -18,12 +18,12 @@ my $parentdir="/net/bipolar/jedidiah/mutation";
 
 my $jobids=`sacct -j 27532888 --format=jobid%30,jobname%30,state | grep "FAILED" | grep "test_logit" | awk 'NR>1 {print \$1}' | sed 's/27532888_//g'`;
 
-print "$jobids\n";
+# print "$jobids\n";
 $jobids =~ s/\r?\n/,/g;
 $jobids =~ s/,$//; # get rid of last comma
 
 # initialize output
-my $outfile = "$parentdir/smaug-genetics/R/logit_batch.txt";
+my $outfile = "$parentdir/smaug-genetics/R/logit_batch_redo.txt";
 open(OUT, '>', $outfile) or die "can't write to $outfile: $!\n";
 
 print OUT "#!/bin/sh \n";

@@ -4,15 +4,15 @@
 # Logistic regression model
 ##############################################################################
 
-.libPaths(c(.libPaths(), "/exports/home/jedidiah/R/x86_64-pc-linux-gnu-library/2.13"))
+libpath<-"/net/snowwhite/home/jedidiah/R/x86_64-pc-linux-gnu-library/2.13"
 
 options(useHTTPS=FALSE)
-suppressMessages(require(speedglm, quietly=T))
-suppressMessages(require(bedr, quietly=T))
-suppressMessages(require(dplyr, quietly=T))
-suppressMessages(require(BSgenome.Hsapiens.UCSC.hg19, quietly=T))
-suppressMessages(require(Repitools, quietly=T))
-suppressMessages(require(boot, quietly=T))
+suppressMessages(require(speedglm, lib.loc=libpath, quietly=T))
+suppressMessages(require(bedr, lib.loc=libpath, quietly=T))
+suppressMessages(require(dplyr, lib.loc=libpath, quietly=T))
+suppressMessages(require(BSgenome.Hsapiens.UCSC.hg19, lib.loc=libpath, quietly=T))
+suppressMessages(require(Repitools, lib.loc=libpath, quietly=T))
+suppressMessages(require(boot, lib.loc=libpath, quietly=T))
 
 source("./get_functions.r")
 

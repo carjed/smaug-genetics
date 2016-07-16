@@ -12,4 +12,4 @@
 
 #SARRAY --range=1-4
 
-srun R CMD BATCH ./log_mod.r --categ="AT_CG"
+srun R CMD BATCH ./log_mod.r --categ="AT_CG" --jobid=${SLURM_ARRAYID}

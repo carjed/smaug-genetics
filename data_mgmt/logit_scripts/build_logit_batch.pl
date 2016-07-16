@@ -16,7 +16,7 @@ use Math::Round;
 
 my $parentdir="/net/bipolar/jedidiah/mutation";
 
-my $jobids=`sacct -j 27532888 --format=jobid%30,state | grep "FAILED" | awk 'NR>1 {print $1}' | grep -v "batch" | grep -v "\." | sed 's/27532888_//g' | head`;
+my $jobids=`sacct -j 27532888 --format=jobid%30,state | grep "FAILED" | awk 'NR>1 {print \$1}' | grep -v "batch" | grep -v "\." | sed 's/27532888_//g' | head`;
 $jobids =~ s/\r\n/,/g;
 $jobids =~ s/,$//; # get rid of last comma
 

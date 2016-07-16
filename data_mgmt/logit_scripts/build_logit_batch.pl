@@ -17,7 +17,7 @@ use Math::Round;
 my $parentdir="/net/bipolar/jedidiah/mutation";
 my $categ="AT_GC";
 
-my $jobids=`sacct -j 27532888 --format=jobid%30,jobname%30,state | grep "FAILED" | grep "test_logit" | awk 'NR>1 {print \$1}' | sed 's/^[0-9]+_//g'`;
+my $jobids=`sacct -j 27532888 --format=jobid%30,jobname%30,state | grep "FAILED" | grep "test_logit" | awk 'NR>1 {print \$1}' | sed 's/[0-9]+_//g'`;
 
 # print "$jobids\n";
 $jobids =~ s/\r?\n/,/g;

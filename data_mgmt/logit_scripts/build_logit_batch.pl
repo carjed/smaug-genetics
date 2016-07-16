@@ -38,6 +38,7 @@ print OUT "#SBATCH --job-name=logit_slurm \n";
 print OUT "#SBATCH --partition=nomosix \n";
 print OUT "#SBATCH --array=$jobids \n";
 print OUT "#SBATCH --requeue \n";
+print OUT "#SBATCH --exclude=dl3619 \n";
 # print OUT "#SBATCH --exclude=topmed,topmed2 \n";
 print OUT "#SBATCH --output=\"/net/bipolar/jedidiah/mutation/output/slurm/slurmJob-%J.out\" --error=\"/net/bipolar/jedidiah/mutation/output/slurm/slurmJob-%J.err\" \n";
 print OUT "srun Rscript log_mod.r --categ=$categ --jobid=\$SLURM_ARRAY_TASK_ID\n";

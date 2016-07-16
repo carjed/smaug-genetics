@@ -11,4 +11,4 @@
 #SBATCH --output="/net/bipolar/jedidiah/mutation/output/slurm/slurmJob-%J.out" --error="/net/bipolar/jedidiah/mutation/output/slurm/slurmJob-%J.err"
 #SBATCH --array=1-4
 
-srun R CMD BATCH ./log_mod.r --categ="AT_CG" --jobid=$SLURM_ARRAY_TASK_ID
+srun Rscript ./log_mod.r --categ="AT_CG" --jobid=$SLURM_ARRAY_TASK_ID

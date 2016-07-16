@@ -15,8 +15,9 @@ use List::Util qw(first max maxstr min minstr reduce shuffle sum);
 use Math::Round;
 
 my $parentdir="/net/bipolar/jedidiah/mutation";
+my $categ="AT_GC";
 
-my $jobids=`sacct -j 27532888 --format=jobid%30,jobname%30,state | grep "FAILED" | grep "test_logit" | awk 'NR>1 {print \$1}' | sed 's/27532888_//g'`;
+my $jobids=`sacct -j 27532888 --format=jobid%30,jobname%30,state | grep "FAILED" | grep "test_logit" | awk 'NR>1 {print \$1}' | sed 's/^[0-9]+_//g'`;
 
 # print "$jobids\n";
 $jobids =~ s/\r?\n/,/g;
@@ -38,4 +39,4 @@ print OUT "#SBATCH --array=$jobids \n";
 print OUT "#SBATCH --requeue \n";
 # print OUT "#SBATCH --exclude=topmed,topmed2 \n";
 print OUT "#SBATCH --output=\"/net/bipolar/jedidiah/mutation/output/slurm/slurmJob-%J.out\" --error=\"/net/bipolar/jedidiah/mutation/output/slurm/slurmJob-%J.err\" \n";
-print OUT "srun Rscript log_mod.r --categ=AT_GC --jobid=\$SLURM_ARRAY_TASK_ID\n";
+print OUT "srun Rscript log_mod.r --categ=$categ --jobid=\$SLURM_ARRAY_TASK_ID\n";

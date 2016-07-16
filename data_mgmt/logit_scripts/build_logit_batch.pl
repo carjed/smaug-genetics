@@ -37,7 +37,7 @@ print OUT "#SBATCH --mail-user=jedidiah\@umich.edu \n";
 print OUT "#SBATCH --ntasks=1 \n";
 print OUT "#SBATCH --mem=6000 \n";
 print OUT "#SBATCH --time 10:00:00 \n";
-print OUT "#SBATCH --job-name=logit_slurm \n";
+print OUT "#SBATCH --job-name=logit_slurm_${categ} \n";
 print OUT "#SBATCH --partition=nomosix \n";
 print OUT "#SBATCH --array=$jobids \n";
 print OUT "#SBATCH --requeue \n";

@@ -18,14 +18,13 @@ source("./get_functions.r")
 
 args <- getArgs(
 	defaults=list(
+		jobid=25,
 		categ="AT_CG",
 		nmotifs=4096,
 		nodes=10))
 
 nbp <- 7
 parentdir <- "/net/bipolar/jedidiah/mutation"
-jobid <- Sys.getenv('SLURM_ARRAYID')
-jobid <- as.numeric(jobid)
 
 cat("Script will run with the following parameters:\n")
 for(i in 1:length(args)){
@@ -41,7 +40,7 @@ for(i in 1:length(args)){
 }
 cat("\n")
 
-
+jobid <- as.numeric(jobid)
 
 # cluster <- makeCluster(nodes, type = "SOCK", outfile="/net/bipolar/jedidiah/mutation/snow.log")
 # registerDoSNOW(cluster)

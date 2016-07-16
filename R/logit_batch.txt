@@ -6,9 +6,9 @@
 #SBATCH --mem=15000
 #SBATCH --time=10:00:00
 #SBATCH --job-name=test_logit_slurm
-#SBATCH --partition=bipolar
+#SBATCH --partition=nomosix
 #SBATCH --requeue
 #SBATCH --output="/net/bipolar/jedidiah/mutation/output/slurm/slurmJob-%J.out" --error="/net/bipolar/jedidiah/mutation/output/slurm/slurmJob-%J.err"
-#SBATCH --array=1-4
+#SBATCH --array=1-4096
 
 srun Rscript ./log_mod.r --categ="AT_CG" --jobid=$SLURM_ARRAY_TASK_ID

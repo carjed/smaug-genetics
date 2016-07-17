@@ -21,7 +21,7 @@ my $jobid=27532888;
 GetOptions('categ=s' => \$categ,
 			'jobid=i' => \$jobid);
 
-my $jobids=`sacct -j $jobid --format=jobid%30,jobname%30,state | grep "FAILED" | grep "test_logit" | awk '{print \$1}' | sed 's/${jobid}_//g'`;
+my $jobids=`sacct -j $jobid --format=jobid%30,jobname%30,state | grep "FAILED" | grep -v "\\\." | awk '{print \$1}' | sed 's/${jobid}_//g'`;
 
 # print "$jobids\n";
 $jobids =~ s/\r?\n/,/g;

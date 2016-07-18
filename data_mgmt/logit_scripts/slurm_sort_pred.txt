@@ -3,7 +3,7 @@
 #SBATCH --mail-type=FAIL
 #SBATCH --mail-user=jedidiah@umich.edu
 #SBATCH --ntasks=1
-#SBATCH --mem=2000
+#SBATCH --mem=4000
 #SBATCH --time=2:00:00
 #SBATCH --job-name=sort_pred
 #SBATCH --partition=nomosix
@@ -11,4 +11,4 @@
 #SBATCH --output="/net/bipolar/jedidiah/mutation/output/slurm/slurmJob-%J.out" --error="/net/bipolar/jedidiah/mutation/output/slurm/slurmJob-%J.err"
 #SBATCH --array=1-22
 
-srun cat /net/bipolar/jedidiah/mutation/output/predicted/GC_TA/chr${SLURM_ARRAY_TASK_ID}/* | sort -n -k2 > /net/bipolar/jedidiah/mutation/output/predicted/GC_TA/chr${SLURM_ARRAY_TASK_ID}.full.txt
+srun cat /net/bipolar/jedidiah/mutation/output/predicted/GC_CG/chr${SLURM_ARRAY_TASK_ID}/* | sort -n -k2 > /net/bipolar/jedidiah/mutation/output/predicted/GC_CG/chr${SLURM_ARRAY_TASK_ID}.GC_CG.txt

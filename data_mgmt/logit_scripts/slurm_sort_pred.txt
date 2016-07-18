@@ -8,7 +8,8 @@
 #SBATCH --job-name=sort_pred
 #SBATCH --partition=nomosix
 #SBATCH --requeue
+#SBATCH --exclude=r30,r14
 #SBATCH --output="/net/bipolar/jedidiah/mutation/output/slurm/slurmJob-%J.out" --error="/net/bipolar/jedidiah/mutation/output/slurm/slurmJob-%J.err"
-#SBATCH --array=1-2
+#SBATCH --array=1-22
 
-srun cat /net/bipolar/jedidiah/mutation/output/predicted/GC_AT/chr${SLURM_ARRAY_TASK_ID}/* | sort -n -k2 > /net/bipolar/jedidiah/mutation/output/predicted/GC_AT/chr${SLURM_ARRAY_TASK_ID}.GC_AT.txt
+srun cat /net/bipolar/jedidiah/mutation/output/predicted/AT_TA/chr${SLURM_ARRAY_TASK_ID}/* | sort -n -k2 > /net/bipolar/jedidiah/mutation/output/predicted/AT_TA/chr${SLURM_ARRAY_TASK_ID}.AT_TA.txt

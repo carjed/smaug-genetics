@@ -33,7 +33,7 @@ ptm <- proc.time()
 parentdir<-dirname(getwd())
 cat("Loading functions and packages...\n")
 
-source("R/get_functions.R")
+source("R/get_functions.r")
 
 # Get args from command line; defaults defined below
 args <- getArgs(

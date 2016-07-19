@@ -37,7 +37,7 @@ GetOptions (
 'ref=s' => \$f_fasta,
 man => \$man) or pod2usage(1);
 
-$subseq = $adj*2+1;
+my $subseq = $adj*2+1;
 
 pod2usage(0) if $help;
 pod2usage(-verbose => 2) if $man;

@@ -33,7 +33,7 @@ ptm <- proc.time()
 parentdir<-dirname(getwd())
 cat("Loading functions and packages...\n")
 
-source("get_functions.R")
+source("R/get_functions.R")
 
 # Get args from command line; defaults defined below
 args <- getArgs(
@@ -162,12 +162,12 @@ summ_5bp_100k$BIN <- ceiling(summ_5bp_100k$POS/binw)
 
 bins_5bp_100k <- read.table(binfile, header=T, stringsAsFactors=F, check.names=F)
 
-source("update_dat.r")
+source("R/update_dat.r")
 dat_5bp_100k <- updateData(summ_5bp_100k, bins_5bp_100k, adj)
 rm(summ_5bp_100k)
 rm(bins_5bp_100k)
 
-source("agg_dat.r")
+source("R/agg_dat.r")
 aggV <- aggData(dat_5bp_100k, adj) #<-modify the adj value for 3bp data
 
 agg_5bp_100k <- aggV$oe

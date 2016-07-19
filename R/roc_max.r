@@ -12,34 +12,53 @@ cbbPalette <- c("#000000", "#E69F00", "#56B4E9", "#009E73", "#F0E442", "#0072B2"
 
 # Read data
 cat("Reading data...\n")
-chrpf<-read.table("/net/bipolar/jedidiah/mutation/output/predicted/full/rocdat_comb_7bp.txt", header=F)
-names(chrpf)<-c("CHR", "POS", "MU", "OBS", "SEQ3", "MU3")
+maxc <- read.table("/net/bipolar/jedidiah/mutation/maxc_7bp.txt", header=T, stringsAsFactors=F)
+maxc$Category <- gsub("cpg_", "", maxc$Category2)
+chrpf <- read.table("/net/bipolar/jedidiah/mutation/output/predicted/full/rocdat_comb_7bp.txt", header=F)
+names(chrpf) <- c("CHR", "POS", "MU", "OBS", "SEQ3", "MU3")
 
 # Remove CpGs and sites with mu=0
-chrpf<-chrpf[substr(chrpf$SEQ3, 2, 3)!="CG" & chrpf$MU>0,]
+# chrpf<-chrpf[substr(chrpf$SEQ3, 2, 3)!="CG" & chrpf$MU>0,]
+chrpf <- chrpf[chrpf$MU>0,]
 
 # Read DNMs
 cat("Reading DNMs...\n")
-dnms_full<-read.table("/net/bipolar/jedidiah/mutation/reference_data/DNMs/GoNL_DNMs.txt", header=T, stringsAsFactors=F)
-dnms_full<-dnms_full[,1:3]
-names(dnms_full)[1:3]<-c("ID", "CHR", "POS")
+dnms_full <- read.table("/net/bipolar/jedidiah/mutation/reference_data/DNMs/GoNL_DNMs.txt", header=T, stringsAsFactors=F)
+dnms_full$CAT <- paste(dnms_full$REF, dnms_full$ALT, sep="")
+
+# Manually remove bins near chr20 centromere
+# chr22 <- chr22[ which(chr22$BIN<260 | chr22$BIN>300),]
+dnms_full$Category[dnms_full$CAT=="AC" | dnms_full$CAT=="TG"] <- "AT_CG"
+dnms_full$Category[dnms_full$CAT=="AG" | dnms_full$CAT=="TC"] <- "AT_GC"
+dnms_full$Category[dnms_full$CAT=="AT" | dnms_full$CAT=="TA"] <- "AT_TA"
+dnms_full$Category[dnms_full$CAT=="GA" | dnms_full$CAT=="CT"] <- "GC_AT"
+dnms_full$Category[dnms_full$CAT=="GC" | dnms_full$CAT=="CG"] <- "GC_CG"
+dnms_full$Category[dnms_full$CAT=="GT" | dnms_full$CAT=="CA"] <- "GC_TA"
+
+dnms_full <- dnms_full[,c(1:3,9)]
+names(dnms_full) <- c("ID", "CHR", "POS", "Category")
+chrpfdnm <- chrpfdnm %>% filter(SEQ3 %in% maxc$Sequence & )
 
 # Duplicate data, merge with DNMs to get ID
 # chrpf<-chrp
 cat("Annotating with ID...\n")
-chrpf<-merge(chrpf, dnms_full, by=c("CHR", "POS"), all.x=T)
+chrpf <- merge(chrpf, dnms_full, by=c("CHR", "POS"), all.x=T)
 chrpf$ID[is.na(chrpf$ID)] <- "all"
 
 # Subset to non-DNMs and DNMs
 cat("Splitting by DNM status...\n")
-chrpfa<-chrpf[chrpf$ID=="all",]
-chrpfa<-chrpfa[sample(nrow(chrpfa), 1000000),]
-chrpfdnm<-chrpf[chrpf$ID!="all",]
+chrpfa <- chrpf[chrpf$ID=="all",]
+chrpfa <- chrpfa[sample(nrow(chrpfa), 1000000),]
+chrpfdnm <- chrpf[chrpf$ID!="all",]
+chrpfdnm <- chrpfdnm %>% filter(SEQ3 %in% maxc$Sequence)
+params <- chrpfdnm %>% group_by(ID) %>% summarise(n=n()) %>% summarise(mean=mean(n), sd=sd(n))
 
 # Combine data
 cat("Creating combined data...\n")
-chrp<-rbind(chrpfdnm, chrpfa) %>% arrange(MU)
+chrp <- rbind(chrpfdnm, chrpfa) %>% arrange(MU)
 chrp$prop <- cumsum(chrp$OBS)/sum(chrp$OBS)
+
+chrp <- chrp %>% filter(SEQ3 %in% maxc$Sequence)
 
 ##############################################################################
 # Calculate individual-level AUC from the GoNL DNMs
@@ -50,10 +69,10 @@ chrp$prop <- cumsum(chrp$OBS)/sum(chrp$OBS)
 # AUC under logit model
 # Permuted AUC under logit model
 ##############################################################################
-nperm<-258
+nperm <- 258
 
-aucperm<-rep(0,nperm)
-aucperm3<-aucperm
+aucperm <- rep(0,nperm)
+aucperm3 <- aucperm
 
 ids<-unique(chrpfdnm$ID)
 numind<-length(ids)
@@ -63,7 +82,7 @@ aucind3<-aucind
 for(i in 1:nperm){
 	### Run permutations
 	cat("Permuting AUC", "(", i, "of", nperm, ")...\n")
-	ndnms<-round(rnorm(1, 42.7, 10.3), 0)
+	ndnms<-round(rnorm(1, params$mean, params$sd), 0)
 	nsamp<-1000000
 
 	chrpsub<-rbind(chrpfdnm[sample(nrow(chrpfdnm), ndnms),], chrpfa) %>%
@@ -163,7 +182,7 @@ for(i in 1:nsim){
 	cat("Running simulation", i, "of", nsim, "...\n")
 	nsample <- 20000
 	mutated <- c()
-	nsites<-round(rnorm(1, 42.7, 10.3), 0)
+	nsites<-round(rnorm(1, params$mean, params$sd), 0)
 
 	while(length(mutated) < nsites){
 		rowind <- sample(nrow(chrp), nsample)
@@ -308,7 +327,7 @@ ggplot()+
 ggsave("/net/bipolar/jedidiah/mutation/images/auc_hist.png", height=4, width=4)
 
 # Add paternal age
-ages<-read.table("/net/bipolar/jedidiah/mutation/reference_data/gonl_fam_age.txt", header=T)
+ages<-read.table("/net/bipolar/jedidiah/mutation/reference_data/DNMs/gonl_fam_age.txt", header=T)
 names(ages)<-c("ID", "nDNM", "FatherAge", "MotherAge", "Coverage")
 plotaucobsonly<-rbind(auclogitobs, auc3merobs)
 plotaucobsonly$ID<-c(ids, ids)

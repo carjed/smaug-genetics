@@ -25,13 +25,13 @@ my $help=0;
 my $man=0;
 # my $chr;
 my $adj=1;
-
+# my $f_rates;
 my $f_fasta = "$parentdir/reference_data/human_g1k_v37.fasta";
 
 GetOptions (
 # 'chr=i'=> \$chr,
 'adj=i' => \$adj,
-'f_rates=s' => \$f_rates,
+# 'f_rates=s' => \$f_rates,
 'ref=s' => \$f_fasta,
 'help|?'=> \$help,
 'ref=s' => \$f_fasta,

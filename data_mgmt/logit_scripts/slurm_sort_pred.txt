@@ -12,4 +12,4 @@
 #SBATCH --output="/net/bipolar/jedidiah/mutation/output/slurm/slurmJob-%J.out" --error="/net/bipolar/jedidiah/mutation/output/slurm/slurmJob-%J.err"
 #SBATCH --array=1-22
 
-srun cat /net/bipolar/jedidiah/mutation/output/predicted/AT_GC/chr${SLURM_ARRAY_TASK_ID}/* | sort -n -k2 > /net/bipolar/jedidiah/mutation/output/predicted/AT_GC/chr${SLURM_ARRAY_TASK_ID}.AT_GC.txt
+srun cat /net/bipolar/jedidiah/mutation/output/predicted/AT_CG/chr${SLURM_ARRAY_TASK_ID}/* | sort -n -k2 > /net/bipolar/jedidiah/mutation/output/predicted/AT_CG/chr${SLURM_ARRAY_TASK_ID}.AT_CG.txt

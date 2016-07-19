@@ -58,7 +58,7 @@ while (<$rates>){
 }
 
 # my $f_positions="/net/bipolar/jedidiah/mutation/output/predicted/chr${chr}_full_mask.txt";
-my $f_positions="$parentdir/output/predicted/full/rocdat_comb_mask.txt";
+my $f_positions="$parentdir/output/predicted/full/rocdat_comb_sort.txt";
 # my $f_positions="/net/bipolar/jedidiah/mutation/reference_data/uk10k_dnms_s.txt";
 open my $positions, '<', $f_positions or die "can't open $f_positions: $!";
 

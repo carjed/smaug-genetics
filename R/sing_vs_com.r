@@ -158,45 +158,21 @@ summ_5bp_100k <- read.table(summfile, header=F, stringsAsFactors=F, skip=1)
 names(summ_5bp_100k)<-c(
 	"CHR", "POS", "REF", "ALT", "DP", "AN", "SEQ", "ALTSEQ", "GC")
 
-# summ_5bp_100k <- read.table(summfile, header=F, stringsAsFactors=F)
-# names(summ_5bp_100k)<-c(
-# 	"CHR", "POS", "REF", "ALT", "DP", "AN", "SEQ", "ALTSEQ", "GC", "SAMPLE")
 summ_5bp_100k$BIN <- ceiling(summ_5bp_100k$POS/binw)
 
-cat("Reading bin file:", binfile, "...\n")
 bins_5bp_100k <- read.table(binfile, header=T, stringsAsFactors=F, check.names=F)
 
-tottime <- (proc.time()-ptm)[3]
-cat("Done (", tottime, "s)\n")
-
-##############################################################################
-# Update data
-##############################################################################
-ptm <- proc.time()
-cat("Updating data...\n")
 source("update_dat.r")
 dat_5bp_100k <- updateData(summ_5bp_100k, bins_5bp_100k, adj)
 rm(summ_5bp_100k)
 rm(bins_5bp_100k)
-tottime<-(proc.time()-ptm)[3]
-cat("Done (", tottime, "s)\n")
 
-if(run_agg){
-	ptm <- proc.time()
-	cat("Aggregating data...\n")
-	source("agg_dat.r")
-	aggV <- aggData(dat_5bp_100k, adj) #<-modify the adj value for 3bp data
+source("agg_dat.r")
+aggV <- aggData(dat_5bp_100k, adj) #<-modify the adj value for 3bp data
 
-	agg_5bp_100k <- aggV$oe
-	rates5 <- aggV$agg
-	summagg2 <- aggV$summagg2
-
-	ratefile <- paste0(parentdir, "/output/", nbp, "bp_", bink, "k_rates.txt")
-	write.table(rates5, ratefile, col.names=T, row.names=F, quote=F, sep="\t")
-
-	tottime <- (proc.time()-ptm)[3]
-	cat("Done (", tottime, "s)\n")
-}
+agg_5bp_100k <- aggV$oe
+rates5 <- aggV$agg
+summagg2 <- aggV$summagg2
 
 write.table(rates5, "/net/bipolar/jedidiah/mutation/output/5bp_100k_common_rates.txt", col.names=T, row.names=F, quote=F, sep="\t")
 write.table(agg_5bp_100k, "/net/bipolar/jedidiah/mutation/output/5bp_100k_common_bins.txt", col.names=T, row.names=F, quote=F, sep="\t")
@@ -214,71 +190,26 @@ rates5_common<-rates5
 summfile=paste0(parentdir, "/output/7bp_1000k/full_j.summary")
 binfile=paste0(parentdir, "/output/7bp_1000k/full_bin.txt")
 
-
-##############################################################################
-# Read in data
-##############################################################################
-ptm <- proc.time()
-
-if(!file.exists(summfile)){
-	cat("Merged summary/bin files do not exist---Merging now...\n")
-
-	# Change ^SEQ to ^CHR--needed to fix bug in header of common variant data
-	combinecmd <- paste0(
-		"awk 'FNR==1 && NR!=1{while(/^SEQ/) getline; } 1 {print} ' ",
-		datadir, "/chr*.expanded.summary > ", datadir, "/full.summary")
-	combinecmd2 <- paste0(
-		"awk 'FNR==1 && NR!=1{while(/^CHR/) getline; } 1 {print} ' ",
-		datadir, "/chr*.bin_out.txt > ", datadir, "/full_bin.txt")
-	system(combinecmd)
-	system(combinecmd2)
-}
-
-cat("Reading summary file:", summfile, "...\n")
-
 summ_5bp_100k <- read.table(summfile, header=F, stringsAsFactors=F, skip=1)
 names(summ_5bp_100k)<-c(
 	"CHR", "POS", "REF", "ALT", "DP", "AN", "SEQ", "ALTSEQ", "GC")
 
-# summ_5bp_100k <- read.table(summfile, header=F, stringsAsFactors=F)
-# names(summ_5bp_100k)<-c(
-# 	"CHR", "POS", "REF", "ALT", "DP", "AN", "SEQ", "ALTSEQ", "GC", "SAMPLE")
 summ_5bp_100k$BIN <- ceiling(summ_5bp_100k$POS/binw)
 
-cat("Reading bin file:", binfile, "...\n")
 bins_5bp_100k <- read.table(binfile, header=T, stringsAsFactors=F, check.names=F)
-
-tottime <- (proc.time()-ptm)[3]
-cat("Done (", tottime, "s)\n")
 
 ##############################################################################
 # Update data
 ##############################################################################
-ptm <- proc.time()
-cat("Updating data...\n")
-source("update_dat.r")
 dat_5bp_100k <- updateData(summ_5bp_100k, bins_5bp_100k, adj)
 rm(summ_5bp_100k)
 rm(bins_5bp_100k)
-tottime<-(proc.time()-ptm)[3]
-cat("Done (", tottime, "s)\n")
 
-if(run_agg){
-	ptm <- proc.time()
-	cat("Aggregating data...\n")
-	source("agg_dat.r")
-	aggV <- aggData(dat_5bp_100k, adj) #<-modify the adj value for 3bp data
+aggV <- aggData(dat_5bp_100k, adj) #<-modify the adj value for 3bp data
 
-	agg_5bp_100k <- aggV$oe
-	rates5 <- aggV$agg
-	summagg2 <- aggV$summagg2
-
-	ratefile <- paste0(parentdir, "/output/", nbp, "bp_", bink, "k_rates.txt")
-	write.table(rates5, ratefile, col.names=T, row.names=F, quote=F, sep="\t")
-
-	tottime <- (proc.time()-ptm)[3]
-	cat("Done (", tottime, "s)\n")
-}
+agg_5bp_100k <- aggV$oe
+rates5 <- aggV$agg
+summagg2 <- aggV$summagg2
 
 ##############################################################################
 # Plot correlation comparing per-bin counts
@@ -294,7 +225,7 @@ ggplot(data=bincts,
 	geom_smooth(method=lm, se=FALSE, colour="black")+
 	scale_colour_manual(values=rbg)+
 	xlab("Singletons")+
-	ylab("Common Variants (MAC>10)")+
+	ylab("Polymorphisms (MAC>10)")+
 	# xlab("Group 1 Relative Rate")+
 	# ylab("Group 2 Relative Rate")+
 	theme_bw()+
@@ -463,16 +394,11 @@ corplot<-corplot %>%
 	mutate(cormax=max(cor)) %>%
 	arrange(Category2)
 
-
-
-
 corplot$xst<-seq(0.75,9.25,0.5)
 corplot$xend<-rep(1:9,each=2)
 
 corplot2<-merge(corplot, corcomb)
 corplot2$cor.p<-round(corplot2$cor.p, 1)
-
-
 
 ggplot(corplot2, aes(x=Category2, y=cor, fill=gp))+
 	geom_bar(position="dodge", stat="identity")+

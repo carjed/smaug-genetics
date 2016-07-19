@@ -12,15 +12,16 @@ cbbPalette <- c("#000000", "#E69F00", "#56B4E9", "#009E73", "#F0E442", "#0072B2"
 
 # Read data
 cat("Reading data...\n")
-chrpf<-read.table("/net/bipolar/jedidiah/mutation/output/predicted/full/rocdat_comb_3bp.txt", header=F)
+chrpf<-read.table("/net/bipolar/jedidiah/mutation/output/predicted/full/rocdat_comb_7bp.txt", header=F)
 names(chrpf)<-c("CHR", "POS", "MU", "OBS", "SEQ3", "MU3")
 
 # Remove CpGs and sites with mu=0
-chrpf<-chrpf[substr(chrpf$SEQ3, 2, 3)!="CG" & chrpf$MU>0,]
+# chrpf<-chrpf[substr(chrpf$SEQ3, 2, 3)!="CG" & chrpf$MU>0,]
+chrpf<-chrpf[chrpf$MU>0,]
 
 # Read DNMs
 cat("Reading DNMs...\n")
-dnms_full<-read.table("/net/bipolar/jedidiah/mutation/reference_data/GoNL_DNMs.txt", header=T, stringsAsFactors=F)
+dnms_full<-read.table("/net/bipolar/jedidiah/mutation/reference_data/DNMs/GoNL_DNMs.txt", header=T, stringsAsFactors=F)
 dnms_full<-dnms_full[,1:3]
 names(dnms_full)[1:3]<-c("ID", "CHR", "POS")
 

@@ -131,7 +131,7 @@ while(<$positions>){
 		}
 
 		# print OUT "$chr\t$i\t$hash{$sequence}\n";
-		if($seq){
+		if($seqflag){
 			print OUT "$linestr\t$sequence\t$hash{$sequence}[$catind]\t\n";
 		}	else {
 			print OUT "$linestr\t$hash{$sequence}[$catind]\t\n";

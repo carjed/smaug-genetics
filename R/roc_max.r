@@ -7,15 +7,15 @@ cbbPalette <- c("#000000", "#E69F00", "#56B4E9", "#009E73", "#F0E442", "#0072B2"
 ##############################################################################
 # Read and process data
 ##############################################################################
-# chrp<-read.table("/net/bipolar/jedidiah/mutation/output/predicted/full/chr18_comb.txt", header=F)
-# chrp<-read.table("/net/bipolar/jedidiah/mutation/output/predicted/chr18_1pct_mask.txt", header=F)
+# chrp <- read.table("/net/bipolar/jedidiah/mutation/output/predicted/full/chr18_comb.txt", header=F)
+# chrp <- read.table("/net/bipolar/jedidiah/mutation/output/predicted/chr18_1pct_mask.txt", header=F)
 
 # Read data
 cat("Reading data...\n")
 maxc <- read.table("/net/bipolar/jedidiah/mutation/maxc_7bp.txt", header=T, stringsAsFactors=F)
 maxc$Category <- gsub("cpg_", "", maxc$Category2)
 chrpf <- read.table("/net/bipolar/jedidiah/mutation/output/predicted/full/rocdat_comb2_7bp.txt", header=F)
-names(chrpf) <- c("CHR", "POS", "BIN", "MU", "OBS", "Category", "SEQ", "MU_S", "SEQ.1", "MU_C")
+names(chrpf) <- c("CHR", "POS", "BIN", "MU", "OBS", "Category", "SEQ", "MU_C", "MU_S")
 
 # Remove CpGs and sites with mu=0
 # chrpf<-chrpf[substr(chrpf$SEQ, 2, 3)!="CG" & chrpf$MU>0,]
@@ -69,7 +69,7 @@ chrp <- rbind(chrpfdnm, chrpfa) %>%
 # chrpsub <- rbind(chrpfdnm[sample(nrow(chrpfdnm), ndnms),], chrpfa) %>%
 #   arrange(MU)
 # chrpsub$prop <- cumsum(chrpsub$OBS)/sum(chrpsub$OBS)
-nsamp <- 100000
+# nsamp <- 100000
 chrp1 <- chrp %>%
   group_by(Category) %>%
   arrange(MU) %>%
@@ -91,11 +91,15 @@ chrp3 <- chrp %>%
   arrange(MU_C, prop) %>%
   mutate(ntile=ntile(MU_C, 1000), group="Common")
 
-auctmp1 <- chrp1 %>% summarise(AUC=1-sum(prop)/nrow(chrp))
-auctmp2 <- chrp2 %>% summarise(AUC=1-sum(prop)/nrow(chrp))
-auctmp3 <- chrp3 %>% summarise(AUC=1-sum(prop)/nrow(chrp))
+# auctmp1 <- chrp1 %>% summarise(AUC=1-sum(prop)/nrow(chrp))
+# auctmp2 <- chrp2 %>% summarise(AUC=1-sum(prop)/nrow(chrp))
+# auctmp3 <- chrp3 %>% summarise(AUC=1-sum(prop)/nrow(chrp))
 
 full_auc_dat <- rbind_all(list(chrp1, chrp2, chrp3))
+
+full_auc <- full_auc_dat %>%
+  group_by(Category) %>%
+  summarise(AUC=1-sum(prop)/nrow(chrp))
 
 ggplot()+
   geom_line(data=full_auc_dat,

@@ -14,11 +14,11 @@ cbbPalette <- c("#000000", "#E69F00", "#56B4E9", "#009E73", "#F0E442", "#0072B2"
 cat("Reading data...\n")
 maxc <- read.table("/net/bipolar/jedidiah/mutation/maxc_7bp.txt", header=T, stringsAsFactors=F)
 maxc$Category <- gsub("cpg_", "", maxc$Category2)
-chrpf <- read.table("/net/bipolar/jedidiah/mutation/output/predicted/full/rocdat_comb_7bp.txt", header=F)
-names(chrpf) <- c("CHR", "POS", "MU", "OBS", "SEQ3", "MU3")
+chrpf <- read.table("/net/bipolar/jedidiah/mutation/output/predicted/full/rocdat_comb2_7bp.txt", header=F)
+names(chrpf) <- c("CHR", "POS", "MU", "OBS", "SEQ", "MU_C", "SEQ.1", "MU_S")
 
 # Remove CpGs and sites with mu=0
-# chrpf<-chrpf[substr(chrpf$SEQ3, 2, 3)!="CG" & chrpf$MU>0,]
+# chrpf<-chrpf[substr(chrpf$SEQ, 2, 3)!="CG" & chrpf$MU>0,]
 # chrpf <- chrpf[chrpf$MU>0,]
 
 # Read DNMs
@@ -50,18 +50,18 @@ chrpfa <- chrpf[chrpf$ID=="all",]
 chrpfa <- chrpfa[sample(nrow(chrpfa), 1000000),]
 chrpfdnm <- chrpf[chrpf$ID!="all",]
 
-# chrpfdnm <- chrpfdnm %>% filter(SEQ3 %in% maxc$Sequence)
-# chrpfdnm2 <- merge(chrpfdnm, dnms_full, by=c("CHR", "POS", "ID", "Category"))
-# names(chrpfdnm2)[7]<-"Sequence"
-# chrpfdnm <- merge(chrpfdnm2, maxc, by=c("Sequence", "Category")) %>%
-#   dplyr::select(CHR, POS, MU, OBS, SEQ3=Sequence, MU3, ID, Category)
+chrpfdnm <- chrpfdnm %>% filter(SEQ %in% maxc$Sequence)
+chrpfdnm2 <- merge(chrpfdnm, dnms_full, by=c("CHR", "POS", "ID", "Category"))
+names(chrpfdnm2)[7]<-"Sequence"
+chrpfdnm <- merge(chrpfdnm2, maxc, by=c("Sequence", "Category")) %>%
+  dplyr::select(CHR, POS, MU, OBS, SEQ=Sequence, MU3, ID, Category)
 
 # Combine data
 cat("Creating combined data...\n")
 chrp <- rbind(chrpfdnm, chrpfa) %>% arrange(MU)
 chrp$prop <- cumsum(chrp$OBS)/sum(chrp$OBS)
 
-# chrp <- chrp %>% filter(SEQ3 %in% maxc$Sequence)
+chrp <- chrp %>% filter(SEQ %in% maxc$Sequence)
 
 # chrpsub <- rbind(chrpfdnm[sample(nrow(chrpfdnm), ndnms),], chrpfa) %>%
 #   arrange(MU)
@@ -262,14 +262,14 @@ chrp2_lb<-chrp2_nt_sim %>%
   # summarise(lb=t.test(val)$conf.int[1]) %>%
 	summarise(lb=max(val)) %>%
   mutate(group="lb") %>%
-  select(group, ntile, lb)
+  dplyr::select(group, ntile, lb)
 
 chrp2_ub<-chrp2_nt_sim %>%
   group_by(ntile) %>%
   # summarise(ub=t.test(val)$conf.int[2]) %>%
 	summarise(ub=min(val)) %>%
   mutate(group="ub") %>%
-  select(group, ntile, ub)
+  dplyr::select(group, ntile, ub)
 
 # Add bounds to data frame
 chrp2_nt_obs$lb <- chrp2_lb$lb

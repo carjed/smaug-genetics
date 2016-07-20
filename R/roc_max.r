@@ -19,7 +19,7 @@ names(chrpf) <- c("CHR", "POS", "MU", "OBS", "SEQ3", "MU3")
 
 # Remove CpGs and sites with mu=0
 # chrpf<-chrpf[substr(chrpf$SEQ3, 2, 3)!="CG" & chrpf$MU>0,]
-chrpf <- chrpf[chrpf$MU>0,]
+# chrpf <- chrpf[chrpf$MU>0,]
 
 # Read DNMs
 cat("Reading DNMs...\n")
@@ -37,7 +37,6 @@ dnms_full$Category[dnms_full$CAT=="GT" | dnms_full$CAT=="CA"] <- "GC_TA"
 
 dnms_full <- dnms_full[,c(1:3,9)]
 names(dnms_full) <- c("ID", "CHR", "POS", "Category")
-chrpfdnm <- chrpfdnm %>% filter(SEQ3 %in% maxc$Sequence & )
 
 # Duplicate data, merge with DNMs to get ID
 # chrpf<-chrp
@@ -50,15 +49,40 @@ cat("Splitting by DNM status...\n")
 chrpfa <- chrpf[chrpf$ID=="all",]
 chrpfa <- chrpfa[sample(nrow(chrpfa), 1000000),]
 chrpfdnm <- chrpf[chrpf$ID!="all",]
-chrpfdnm <- chrpfdnm %>% filter(SEQ3 %in% maxc$Sequence)
-params <- chrpfdnm %>% group_by(ID) %>% summarise(n=n()) %>% summarise(mean=mean(n), sd=sd(n))
+
+# chrpfdnm <- chrpfdnm %>% filter(SEQ3 %in% maxc$Sequence)
+# chrpfdnm2 <- merge(chrpfdnm, dnms_full, by=c("CHR", "POS", "ID", "Category"))
+# names(chrpfdnm2)[7]<-"Sequence"
+# chrpfdnm <- merge(chrpfdnm2, maxc, by=c("Sequence", "Category")) %>%
+#   dplyr::select(CHR, POS, MU, OBS, SEQ3=Sequence, MU3, ID, Category)
 
 # Combine data
 cat("Creating combined data...\n")
 chrp <- rbind(chrpfdnm, chrpfa) %>% arrange(MU)
 chrp$prop <- cumsum(chrp$OBS)/sum(chrp$OBS)
 
-chrp <- chrp %>% filter(SEQ3 %in% maxc$Sequence)
+# chrp <- chrp %>% filter(SEQ3 %in% maxc$Sequence)
+
+# chrpsub <- rbind(chrpfdnm[sample(nrow(chrpfdnm), ndnms),], chrpfa) %>%
+#   arrange(MU)
+# chrpsub$prop <- cumsum(chrpsub$OBS)/sum(chrpsub$OBS)
+nsamp <- 100000
+chrp2 <- chrp %>%
+  arrange(MU, prop) %>%
+  mutate(ntile=ntile(MU, 1000))
+
+chrp3 <- chrp %>% arrange(MU3)
+chrp3$prop <- cumsum(chrp3$OBS)/sum(chrp3$OBS)
+chrp3a <- chrp3 %>%
+  arrange(MU3, prop) %>%
+  mutate(ntile=ntile(MU3, 1000))
+
+auctmp <- chrp2 %>% summarise(AUC=1-sum(prop)/nrow(chrp))
+# aucperm[i] <- auctmp$AUC
+auctmp3 <- chrp3a %>% summarise(AUC=1-sum(prop)/nrow(chrp))
+# aucperm3[i] <- auctmp3$AUC
+
+params <- chrpfdnm %>% group_by(ID) %>% summarise(n=n()) %>% summarise(mean=mean(n), sd=sd(n))
 
 ##############################################################################
 # Calculate individual-level AUC from the GoNL DNMs
@@ -74,27 +98,27 @@ nperm <- 258
 aucperm <- rep(0,nperm)
 aucperm3 <- aucperm
 
-ids<-unique(chrpfdnm$ID)
-numind<-length(ids)
-aucind<-rep(0, numind)
-aucind3<-aucind
+ids <- unique(chrpfdnm$ID)
+numind <- length(ids)
+aucind <- rep(0, numind)
+aucind3 <- aucind
 
 for(i in 1:nperm){
 	### Run permutations
 	cat("Permuting AUC", "(", i, "of", nperm, ")...\n")
-	ndnms<-round(rnorm(1, params$mean, params$sd), 0)
-	nsamp<-1000000
+	ndnms <- round(rnorm(1, params$mean, params$sd), 0)
+	nsamp <- 1000000
 
-	chrpsub<-rbind(chrpfdnm[sample(nrow(chrpfdnm), ndnms),], chrpfa) %>%
+	chrpsub <- rbind(chrpfdnm[sample(nrow(chrpfdnm), ndnms),], chrpfa) %>%
 		arrange(MU)
 	chrpsub$prop <- cumsum(chrpsub$OBS)/sum(chrpsub$OBS)
-	chrpsub2<-chrpsub[sample(nrow(chrpsub), nsamp),] %>%
+	chrpsub2 <- chrpsub[sample(nrow(chrpsub), nsamp),] %>%
 	  arrange(MU) %>%
 	  mutate(ntile=ntile(MU, 1000))
 
-	chrpsub3<-chrpsub %>% arrange(MU3)
+	chrpsub3 <- chrpsub %>% arrange(MU3)
 	chrpsub3$prop <- cumsum(chrpsub3$OBS)/sum(chrpsub3$OBS)
-	chrpsub3a<-chrpsub3[sample(nrow(chrpsub3), nsamp),] %>%
+	chrpsub3a <- chrpsub3[sample(nrow(chrpsub3), nsamp),] %>%
 		arrange(MU3, prop) %>%
 		mutate(ntile=ntile(MU3, 1000))
 

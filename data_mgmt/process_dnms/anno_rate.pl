@@ -27,12 +27,14 @@ my $man=0;
 my $adj=1;
 # my $f_rates;
 my $f_fasta = "$parentdir/reference_data/human_g1k_v37.fasta";
+my $f_positions;
 
 GetOptions (
 # 'chr=i'=> \$chr,
 'adj=i' => \$adj,
 # 'f_rates=s' => \$f_rates,
 'ref=s' => \$f_fasta,
+'in=s' => \$f_positions,
 'help|?'=> \$help,
 'ref=s' => \$f_fasta,
 man => \$man) or pod2usage(1);
@@ -69,7 +71,7 @@ while (<$rates>){
 # my $f_positions="/net/bipolar/jedidiah/mutation/output/predicted/chr${chr}_full_mask.txt";
 # my $f_positions="$parentdir/output/predicted/full/rocdat_comb_sort.txt";
 # my $f_positions="$parentdir/output/predicted/full/rocdat_comb_7bp.txt";
-my $f_positions="$parentdir/output/rocdat.txt";
+# my $f_positions="$parentdir/output/rocdat.txt";
 # my $f_positions="/net/bipolar/jedidiah/mutation/reference_data/uk10k_dnms_s.txt";
 open my $positions, '<', $f_positions or die "can't open $f_positions: $!";
 

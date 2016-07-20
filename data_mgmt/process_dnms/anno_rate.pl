@@ -42,6 +42,15 @@ my $subseq = $adj*2+1;
 pod2usage(0) if $help;
 pod2usage(-verbose => 2) if $man;
 
+my %cathash = (
+    AT_CG => 0,
+    AT_GC => 1,
+    AT_TA => 2,
+		GC_AT => 3,
+    GC_CG => 4,
+    GC_TA => 5,
+);
+
 # Initialize and hash rate table
 my $f_rates = "$parentdir/ERV_${subseq}bp_rates.txt";
 open my $rates, '<', $f_rates or die "can't open $f_rates: $!";
@@ -53,18 +62,20 @@ while (<$rates>){
 	my @line=split(/\t/, $_);
 	my $key=$line[0];
 	# my $vals=join("\t", nearest(0.0001, @line[1 .. $#line]));
-	my $vals=sum(@line[1 .. $#line]);
-	$hash{$key}=$vals;
+	# my $vals=sum(@line[1 .. $#line]);
+	$hash{$key}=[@line[1 .. $#line]];
 }
 
 # my $f_positions="/net/bipolar/jedidiah/mutation/output/predicted/chr${chr}_full_mask.txt";
 # my $f_positions="$parentdir/output/predicted/full/rocdat_comb_sort.txt";
-my $f_positions="$parentdir/output/predicted/full/rocdat_comb_7bp.txt";
+# my $f_positions="$parentdir/output/predicted/full/rocdat_comb_7bp.txt";
+my $f_positions="$parentdir/output/rocdat.txt";
 # my $f_positions="/net/bipolar/jedidiah/mutation/reference_data/uk10k_dnms_s.txt";
 open my $positions, '<', $f_positions or die "can't open $f_positions: $!";
 
 # Initialize output file
-my $outfile ="$parentdir/output/predicted/full/rocdat_comb2_${subseq}bp.txt";
+# my $outfile ="$parentdir/output/predicted/full/rocdat_comb2_${subseq}bp.txt";
+my $outfile ="$parentdir/output/rocdat.${subseq}bp.txt";
 # my $outfile ="$parentdir/reference_data/uk10kdnms_3mer.txt";
 open(OUT, '>', $outfile) or die "can't write to $outfile: $!\n";
 # print OUT "CHR\tPOS\tAT_CG\tAT_GC\tAT_TA\tGC_AT\tGC_CG\tGC_TA\n";
@@ -86,6 +97,8 @@ while(<$positions>){
 	my @line=split(/\t/, $_);
 	my $sitechr=$line[0];
 	my $pos=$line[1];
+	my $categ=$line[5];
+	my $catind=$cathash{$categ};
 
 	if($sitechr!=$prevchr){
 		$seq=&getRef($sitechr);
@@ -110,7 +123,7 @@ while(<$positions>){
 		}
 
 		# print OUT "$chr\t$i\t$hash{$sequence}\n";
-		print OUT "$linestr\t$sequence\t$hash{$sequence}\t\n";
+		print OUT "$linestr\t$sequence\t$hash{$sequence}[$catind]\t\n";
 	}
 
 	$prevchr=$sitechr;

@@ -15,7 +15,7 @@ cat("Reading data...\n")
 maxc <- read.table("/net/bipolar/jedidiah/mutation/maxc_7bp.txt", header=T, stringsAsFactors=F)
 maxc$Category <- gsub("cpg_", "", maxc$Category2)
 chrpf <- read.table("/net/bipolar/jedidiah/mutation/output/predicted/full/rocdat_comb2_7bp.txt", header=F)
-names(chrpf) <- c("CHR", "POS", "MU", "OBS", "SEQ", "MU_C", "SEQ.1", "MU_S")
+names(chrpf) <- c("CHR", "POS", "BIN", "MU", "OBS", "Category", "SEQ", "MU_C", "SEQ.1", "MU_S")
 
 # Remove CpGs and sites with mu=0
 # chrpf<-chrpf[substr(chrpf$SEQ, 2, 3)!="CG" & chrpf$MU>0,]
@@ -50,37 +50,65 @@ chrpfa <- chrpf[chrpf$ID=="all",]
 chrpfa <- chrpfa[sample(nrow(chrpfa), 1000000),]
 chrpfdnm <- chrpf[chrpf$ID!="all",]
 
-chrpfdnm <- chrpfdnm %>% filter(SEQ %in% maxc$Sequence)
-chrpfdnm2 <- merge(chrpfdnm, dnms_full, by=c("CHR", "POS", "ID", "Category"))
-names(chrpfdnm2)[7]<-"Sequence"
-chrpfdnm <- merge(chrpfdnm2, maxc, by=c("Sequence", "Category")) %>%
-  dplyr::select(CHR, POS, MU, OBS, SEQ=Sequence, MU3, ID, Category)
+# chrpfdnm <- chrpfdnm %>% filter(SEQ %in% maxc$Sequence)
+# chrpfdnm2 <- merge(chrpfdnm, dnms_full, by=c("CHR", "POS", "ID", "Category"))
+# names(chrpfdnm2)[7]<-"Sequence"
+# chrpfdnm <- merge(chrpfdnm2, maxc, by=c("Sequence", "Category")) %>%
+#   dplyr::select(CHR, POS, MU, OBS, SEQ=Sequence, MU_C, SEQ.1, MU_S, ID, Category)
 
 # Combine data
 cat("Creating combined data...\n")
 chrp <- rbind(chrpfdnm, chrpfa) %>% arrange(MU)
 chrp$prop <- cumsum(chrp$OBS)/sum(chrp$OBS)
 
-chrp <- chrp %>% filter(SEQ %in% maxc$Sequence)
+chrp <- chrp %>% filter((SEQ %in% maxc$Sequence) & (Category %in% maxc$Category))
 
 # chrpsub <- rbind(chrpfdnm[sample(nrow(chrpfdnm), ndnms),], chrpfa) %>%
 #   arrange(MU)
 # chrpsub$prop <- cumsum(chrpsub$OBS)/sum(chrpsub$OBS)
 nsamp <- 100000
-chrp2 <- chrp %>%
+chrp1 <- chrp %>%
+  arrange(MU) %>%
+  mutate(prop=cumsum(OBS)/sum(OBS)) %>%
   arrange(MU, prop) %>%
-  mutate(ntile=ntile(MU, 1000))
+  mutate(ntile=ntile(MU, 1000), group="Logit")
 
-chrp3 <- chrp %>% arrange(MU3)
-chrp3$prop <- cumsum(chrp3$OBS)/sum(chrp3$OBS)
-chrp3a <- chrp3 %>%
-  arrange(MU3, prop) %>%
-  mutate(ntile=ntile(MU3, 1000))
+chrp2 <- chrp %>%
+  arrange(MU_S) %>%
+  mutate(prop=cumsum(OBS)/sum(OBS)) %>%
+  arrange(MU_S, prop) %>%
+  mutate(ntile=ntile(MU_S, 1000), group="ERVs")
 
-auctmp <- chrp2 %>% summarise(AUC=1-sum(prop)/nrow(chrp))
-# aucperm[i] <- auctmp$AUC
-auctmp3 <- chrp3a %>% summarise(AUC=1-sum(prop)/nrow(chrp))
-# aucperm3[i] <- auctmp3$AUC
+chrp3 <- chrp %>%
+  arrange(MU_C) %>%
+  mutate(prop=cumsum(OBS)/sum(OBS)) %>%
+  arrange(MU_C, prop) %>%
+  mutate(ntile=ntile(MU_C, 1000), group="Common")
+
+auctmp1 <- chrp1 %>% summarise(AUC=1-sum(prop)/nrow(chrp))
+auctmp2 <- chrp2 %>% summarise(AUC=1-sum(prop)/nrow(chrp))
+auctmp3 <- chrp3 %>% summarise(AUC=1-sum(prop)/nrow(chrp))
+
+full_auc_dat <- rbind_all(list(chrp1, chrp2, chrp3))
+
+ggplot()+
+  geom_line(data=full_auc_dat,
+		aes(x=(1000-ntile)/1000, y=1-prop, group=group, colour=group), size=1.2)+
+  geom_abline(intercept=0, slope=1)+
+  # geom_ribbon(data=full_auc_bounds,
+	# 	aes(x=(1000-ntile)/1000, y=1-val, ymin=1-ub, ymax=1-lb), alpha=0.2)+
+	scale_colour_manual(values=cbbPalette[2:4])+
+  coord_cartesian(xlim=c(0,1))+
+	xlab("False Positive Rate")+
+	ylab("True Positive Rate")+
+  theme_bw()+
+	theme(
+		# legend.position="none",
+		axis.title.x=element_text(size=20),
+		axis.title.y=element_text(size=20))
+  # scale_y_continuous(limits=c(0,1))+
+  # scale_x_continuous(limits=c(0,1000), labels=c())
+ggsave("/net/bipolar/jedidiah/mutation/images/pseudo_roc_curves.png", height=4, width=7.25)
 
 params <- chrpfdnm %>% group_by(ID) %>% summarise(n=n()) %>% summarise(mean=mean(n), sd=sd(n))
 

@@ -30,6 +30,7 @@ my $f_fasta = "$parentdir/reference_data/human_g1k_v37.fasta";
 my $f_positions;
 my $f_rates;
 my $seqflag;
+my $outfile;
 
 GetOptions (
 # 'chr=i'=> \$chr,
@@ -37,6 +38,7 @@ GetOptions (
 # 'f_rates=s' => \$f_rates,
 'ref=s' => \$f_fasta,
 'in=s' => \$f_positions,
+'out=s' => \$outfile,
 'seq' => \$seqflag,
 'rates=s' => \$f_rates,
 'help|?'=> \$help,
@@ -81,7 +83,7 @@ open my $positions, '<', $f_positions or die "can't open $f_positions: $!";
 
 # Initialize output file
 # my $outfile ="$parentdir/output/predicted/full/rocdat_comb2_${subseq}bp.txt";
-my $outfile ="$parentdir/output/rocdat.${subseq}bp.txt";
+# my $outfile ="$parentdir/output/rocdat.${subseq}bp.txt";
 # my $outfile ="$parentdir/reference_data/uk10kdnms_3mer.txt";
 open(OUT, '>', $outfile) or die "can't write to $outfile: $!\n";
 # print OUT "CHR\tPOS\tAT_CG\tAT_GC\tAT_TA\tGC_AT\tGC_CG\tGC_TA\n";

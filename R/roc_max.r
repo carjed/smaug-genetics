@@ -23,7 +23,7 @@ names(chrpf) <- c("CHR", "POS", "BIN", "MU", "OBS", "Category", "SEQ", "MU_S", "
 
 # Read DNMs
 cat("Reading DNMs...\n")
-dnms_full <- read.table("/net/bipolar/jedidiah/mutation/reference_data/DNMs/GoNL_DNMs.txt", header=T, stringsAsFactors=F)
+dnms_full <-  read.table("/net/bipolar/jedidiah/mutation/reference_data/DNMs/GoNL_DNMs.txt", header=T, stringsAsFactors=F)
 dnms_full$CAT <- paste(dnms_full$REF, dnms_full$ALT, sep="")
 
 # Manually remove bins near chr20 centromere

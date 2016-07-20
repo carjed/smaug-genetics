@@ -29,6 +29,7 @@ my $adj=1;
 my $f_fasta = "$parentdir/reference_data/human_g1k_v37.fasta";
 my $f_positions;
 my $f_rates;
+my $seqflag;
 
 GetOptions (
 # 'chr=i'=> \$chr,
@@ -36,6 +37,7 @@ GetOptions (
 # 'f_rates=s' => \$f_rates,
 'ref=s' => \$f_fasta,
 'in=s' => \$f_positions,
+'seq' => \$seqflag,
 'rates=s' => \$f_rates,
 'help|?'=> \$help,
 'ref=s' => \$f_fasta,
@@ -127,7 +129,11 @@ while(<$positions>){
 		}
 
 		# print OUT "$chr\t$i\t$hash{$sequence}\n";
-		print OUT "$linestr\t$sequence\t$hash{$sequence}[$catind]\t\n";
+		if($seq){
+			print OUT "$linestr\t$sequence\t$hash{$sequence}[$catind]\t\n";
+		}	else {
+			print OUT "$linestr\t$hash{$sequence}[$catind]\t\n";
+		}
 	}
 
 	$prevchr=$sitechr;

@@ -15,7 +15,7 @@ cat("Reading data...\n")
 maxc <- read.table("/net/bipolar/jedidiah/mutation/maxc_7bp.txt", header=T, stringsAsFactors=F)
 maxc$Category <- gsub("cpg_", "", maxc$Category2)
 chrpf <- read.table("/net/bipolar/jedidiah/mutation/output/predicted/full/rocdat_comb2_7bp.txt", header=F)
-names(chrpf) <- c("CHR", "POS", "BIN", "MU", "OBS", "Category", "SEQ", "MU_C", "SEQ.1", "MU_S")
+names(chrpf) <- c("CHR", "POS", "BIN", "MU", "OBS", "Category", "SEQ", "MU_S", "SEQ.1", "MU_C")
 
 # Remove CpGs and sites with mu=0
 # chrpf<-chrpf[substr(chrpf$SEQ, 2, 3)!="CG" & chrpf$MU>0,]
@@ -58,28 +58,34 @@ chrpfdnm <- chrpf[chrpf$ID!="all",]
 
 # Combine data
 cat("Creating combined data...\n")
-chrp <- rbind(chrpfdnm, chrpfa) %>% arrange(MU)
-chrp$prop <- cumsum(chrp$OBS)/sum(chrp$OBS)
+chrp <- rbind(chrpfdnm, chrpfa) %>%
+  group_by(Category) %>%
+  mutate(prop=cumsum(OBS)/sum(OBS)) %>%
+  arrange(MU, prop)
+# chrp$prop <- cumsum(chrp$OBS)/sum(chrp$OBS)
 
-chrp <- chrp %>% filter((SEQ %in% maxc$Sequence) & (Category %in% maxc$Category))
+# chrp <- chrp %>% filter((SEQ %in% maxc$Sequence) & (Category %in% maxc$Category))
 
 # chrpsub <- rbind(chrpfdnm[sample(nrow(chrpfdnm), ndnms),], chrpfa) %>%
 #   arrange(MU)
 # chrpsub$prop <- cumsum(chrpsub$OBS)/sum(chrpsub$OBS)
 nsamp <- 100000
 chrp1 <- chrp %>%
+  group_by(Category) %>%
   arrange(MU) %>%
   mutate(prop=cumsum(OBS)/sum(OBS)) %>%
   arrange(MU, prop) %>%
   mutate(ntile=ntile(MU, 1000), group="Logit")
 
 chrp2 <- chrp %>%
+  group_by(Category) %>%
   arrange(MU_S) %>%
   mutate(prop=cumsum(OBS)/sum(OBS)) %>%
   arrange(MU_S, prop) %>%
   mutate(ntile=ntile(MU_S, 1000), group="ERVs")
 
 chrp3 <- chrp %>%
+  group_by(Category) %>%
   arrange(MU_C) %>%
   mutate(prop=cumsum(OBS)/sum(OBS)) %>%
   arrange(MU_C, prop) %>%

@@ -28,6 +28,7 @@ my $adj=1;
 # my $f_rates;
 my $f_fasta = "$parentdir/reference_data/human_g1k_v37.fasta";
 my $f_positions;
+my $f_rates;
 
 GetOptions (
 # 'chr=i'=> \$chr,
@@ -35,6 +36,7 @@ GetOptions (
 # 'f_rates=s' => \$f_rates,
 'ref=s' => \$f_fasta,
 'in=s' => \$f_positions,
+'rates=s' => \$f_rates,
 'help|?'=> \$help,
 'ref=s' => \$f_fasta,
 man => \$man) or pod2usage(1);
@@ -54,7 +56,7 @@ my %cathash = (
 );
 
 # Initialize and hash rate table
-my $f_rates = "$parentdir/ERV_${subseq}bp_rates.txt";
+# my $f_rates = "$parentdir/ERV_${subseq}bp_rates.txt";
 open my $rates, '<', $f_rates or die "can't open $f_rates: $!";
 readline($rates); #<-throws out header
 # print "Hashing rate table...\n";

@@ -1,7 +1,7 @@
 #!/bin/bash
 
 ##############################################################################
-# Step 0: 
+# Step 0:
 # Merges per-category predicted rates into single chromosome file, sorted by
 # position
 ##############################################################################
@@ -9,9 +9,11 @@
 chr=$1
 
 paste /net/bipolar/jedidiah/mutation/output/predicted/chr${chr}_AT_CG_predicted.txt <(cut -d $'\t' -f3 /net/bipolar/jedidiah/mutation/output/predicted/chr${chr}_AT_GC_predicted.txt) > /net/bipolar/jedidiah/mutation/output/predicted/chr${chr}_tmp2.txt
+
 paste /net/bipolar/jedidiah/mutation/output/predicted/chr${chr}_tmp2.txt <(cut -d $'\t' -f3 /net/bipolar/jedidiah/mutation/output/predicted/chr${chr}_AT_TA_predicted.txt) | awk -v OFS='\t' '{print $1,$3+$4+$5}' > /net/bipolar/jedidiah/mutation/output/predicted/chr${chr}_AT.txt
 
 paste /net/bipolar/jedidiah/mutation/output/predicted/chr${chr}_GC_AT_predicted.txt <(cut -d $'\t' -f3 /net/bipolar/jedidiah/mutation/output/predicted/chr${chr}_GC_CG_predicted.txt) > /net/bipolar/jedidiah/mutation/output/predicted/chr${chr}_tmp.txt
+
 paste /net/bipolar/jedidiah/mutation/output/predicted/chr${chr}_tmp.txt <(cut -d $'\t' -f3 /net/bipolar/jedidiah/mutation/output/predicted/chr${chr}_GC_TA_predicted.txt) | awk -v OFS='\t' '{print $1,$3+$4+$5}' > /net/bipolar/jedidiah/mutation/output/predicted/chr${chr}_GC.txt
 
 cat /net/bipolar/jedidiah/mutation/output/predicted/chr${chr}_AT.txt /net/bipolar/jedidiah/mutation/output/predicted/chr${chr}_GC.txt | sort -n -k1,1 > /net/bipolar/jedidiah/mutation/output/predicted/full/chr${chr}_full.txt

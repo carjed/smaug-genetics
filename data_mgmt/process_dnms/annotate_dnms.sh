@@ -9,6 +9,8 @@
 # chr=$1
 categ=$1
 
+rm -f /net/bipolar/jedidiah/mutation/reference_data/DNMs/GoNL_${categ}.anno.txt
+
 for i in {1..22}
 do
   grep -Fwf  <(grep "\s$i\s" /net/bipolar/jedidiah/mutation/reference_data/DNMs/GoNL_${categ}.txt | cut -f 3)  /net/bipolar/jedidiah/mutation/output/predicted/chr$i.${categ}.txt | awk -v categ="$categ" '{print $0"\t"1"\t"categ}' >> /net/bipolar/jedidiah/mutation/reference_data/DNMs/GoNL_${categ}.anno.txt

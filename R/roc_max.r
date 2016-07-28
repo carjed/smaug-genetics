@@ -68,7 +68,7 @@ subWrapper <- function(data, sim=T){
   outdat <- bind_rows(list(chrp_gfasc, chrp_erv, chrp_common, chrp_av))
 
   if(sim){
-    chrp_sim_max <- simMu(data, 100)
+    chrp_sim_max <- simMu(data, nsim=10, nobs=100000, chunksize=50000)
     outdat <- rbind(outdat, chrp_sim_max)
   }
 
@@ -80,9 +80,10 @@ subWrapper <- function(data, sim=T){
 # Bernoulli(mu)==1; loop continues until we have simulated the same number
 # of sites as in observed data
 ##############################################################################
-simMu <- function(data, nsim){
+simMu <- function(data, nsim, nobs, chunksize){
   nsim <- nsim
-  nobs <- sum(data$OBS)
+  # nobs <- sum(data$OBS)
+	nsample <- chunksize
 
   full_auc_sim <- data.frame()
   full_auc_sim_dat <- data.frame()
@@ -91,7 +92,7 @@ simMu <- function(data, nsim){
 
   for(i in 1:nsim){
   	cat("Running simulation", i, "of", nsim, "...\n")
-  	nsample <- 20000
+  	nsample <- chunksize
   	mutated <- c()
   	# nsites<-round(rnorm(1, params$mean, params$sd), 0)
     nsites <- nobs
@@ -195,6 +196,26 @@ chrpfa <- chrpf[chrpf$ID=="all",]
 chrpfa <- chrpfa[sample(nrow(chrpfa), 1000000),]
 chrpfdnm <- chrpf[chrpf$ID!="all",]
 
+dnm_agg <- chrpfdnm %>%
+	group_by(Category.x=as.character(Category.x), SEQ=substr(SEQ, 3, 5)) %>%
+	summarise(ndnm=n())
+
+ rates3 <- read.table("/net/bipolar/jedidiah/mutation/output/3bp_1000k_rates.txt", header=T, stringsAsFactors=F)
+
+rates3$Category.x <- gsub("cpg_", "", rates3$Category2)
+rates3$SEQ <- substr(rates3$Sequence, 1, 3)
+r3m <- merge(dnm_agg, rates3, by=c("Category.x", "SEQ"))
+
+rates_3 <- r3m %>%
+	mutate(rel_prop3=ndnm/COUNT) %>%
+  dplyr::select(Sequence, Category.x, rel_prop3) %>%
+  spread(Category.x, rel_prop3)
+
+rates_3[is.na(rates_3)] <- 0
+
+write.table(rates_3, "/net/bipolar/jedidiah/mutation/dnm_3bp_rates.txt", col.names=T, row.names=F, quote=F, sep="\t")
+
+
 # Recombine data
 cat("Creating combined data...\n")
 chrp <- rbind(chrpfdnm, chrpfa) %>%
@@ -203,7 +224,7 @@ chrp <- rbind(chrpfdnm, chrpfa) %>%
   arrange(MU, prop)
 
 # Process data for each model
-full_auc_dat <- subWrapper(chrp, sim=F)
+full_auc_dat <- subWrapper(chrp, sim=T)
 
 # Get table of AUC for each mutation type/model combo
 full_auc <- full_auc_dat %>%
@@ -251,9 +272,17 @@ coefs <- read.table("/net/bipolar/jedidiah/mutation/output/logmod_data/coefs/coe
 
 names(coefs) <- c("Cov", "Est", "SE", "Z", "pval", "Sequence", "Category")
 
+# coefs$qval <- p.adjust(coefs$pval)
 splitCoefs <- function(x){
   coefs %>%
-    filter(Cov==x, pval<0.01) %>%
+    # filter(Cov==x, pval<1e-08) %>%
+		filter(Cov==x) %>%
+		# mutate(qval=p.adjust(pval)) %>%
+		# filter(qval<0.1) %>%
+		mutate(ntile=ntile(pval, 100)) %>%
+		filter(ntile<=10) %>%
+		# filter(ntile<=25 | ntile>=75) %>%
+		# filter(exp(Est)>1.5 | exp(Est)<0.67) %>%
     dplyr::select(Sequence, Category)
 }
 
@@ -268,11 +297,49 @@ matchMotifs <- function(x) {
 chrp_maxc_features <- lapply(coef_split, function(x) matchMotifs(x))
 
 maxc_auc_feat <- lapply(chrp_maxc_features, function(x) subWrapper(x, sim=F))
+# test <- bind_rows(maxc_auc_feat, .id="id")
+
+aucCalc <- function(x){
+  x %>%
+    dplyr::filter(grepl("^E|^G", group)) %>%
+    group_by(group, Category.x) %>%
+    summarise(AUC=1-sum(prop)/n())
+    # spread(Category.x, AUC)
+}
+
+cov_auc <- lapply(maxc_auc_feat, function(x) aucCalc(x))
+cov_auc_dat <- bind_rows(cov_auc, .id="id")
+cov_auc_dat <- cov_auc_dat[complete.cases(cov_auc_dat),]
+
+cov_auc_dat <- cov_auc_dat %>% filter(!grepl("Intercept|DP", id))
+
+ggplot(cov_auc_dat, aes(x=id, y=AUC, colour=group, fill=group, group=group))+
+  geom_bar(stat="identity", position="dodge")+
+	# geom_point()+
+  facet_wrap(~Category.x)+
+  coord_cartesian(ylim=c(0.5, 0.85))+
+	coord_flip()+
+	# theme_bw()
+ggsave("/net/bipolar/jedidiah/mutation/images/test_bar.png")
+
+cov_erv <- cov_auc_dat %>% filter(grepl("^E", group))
+cov_logit <- cov_auc_dat %>% filter(!grepl("^E", group))
+cov_logit$diff <- cov_logit$AUC-cov_erv$AUC
+t.test(cov_logit$diff)
+
+cov_logit$dir <- ifelse(cov_logit$diff<=0, "lower", "higher")
+ggplot(cov_logit, aes(x=id, y=diff, colour=dir, fill=dir))+
+	geom_bar(stat="identity", position="dodge")+
+	scale_fill_brewer(palette="Set1")+
+	scale_colour_brewer(palette="Set1")+
+	# geom_point()+
+  facet_wrap(~Category.x)+
+  coord_cartesian(ylim=c(0.5, 0.85))+
+	coord_flip()+
+	geom_hline(yintercept=0, linetype="dashed")+
+	xlab("AUC_[]")
+	theme_bw()
+ggsave("/net/bipolar/jedidiah/mutation/images/diff_bar.png", height=6, width=12)
+
 
 # mapply(plotROC, maxc_auc_feat, paste0("/net/bipolar/jedidiah/mutation/images/", seq_along(max_auc_feat), "_roc.png"))
-
-
-# maxc_auc_dhs <- maxc_auc_dhs_dat %>%
-#   group_by(group, Category.x) %>%
-#   summarise(AUC=1-sum(prop)/n()) %>%
-#   spread(Category.x, AUC)

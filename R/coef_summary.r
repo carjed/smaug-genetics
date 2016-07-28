@@ -1,6 +1,10 @@
 coefs <- read.table("/net/bipolar/jedidiah/mutation/output/logmod_data/coefs/coefs_full.txt", header=F, stringsAsFactors=F)
 
-names(coefs) <- c("Cov", "Est", "SE", "Z", "pval", "Sequence", "Category2")
+names(coefs) <- c("Cov", "Est", "SE", "Z", "pval", "Sequence", "Category")
+
+ coefs_dhs <- coefs %>%
+  filter(Cov=="DHS", pval<0.05) %>%
+  dplyr::select(Sequence, Category)
 
 rates <- read.table("/net/bipolar/jedidiah/mutation/output/7bp_1000k_rates.txt", header=T, stringsAsFactors=F)
 rates$Sequence <- substr(rates$Sequence, 0, 7)

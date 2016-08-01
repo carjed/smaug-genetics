@@ -69,7 +69,7 @@ subWrapper <- function(data, sim=T){
 
   if(sim){
     chrp_sim_max <- simMu(data, nsim=10, nobs=100000, chunksize=50000)
-    outdat <- rbind(outdat, chrp_sim_max)
+    outdat <- rbind(data.frame(outdat), data.frame(chrp_sim_max))
   }
 
   return(outdat)

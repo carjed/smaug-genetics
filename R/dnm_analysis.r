@@ -1,3 +1,14 @@
+suppressMessages(usePackage(ggplot2))
+suppressMessages(usePackage(dplyr))
+suppressMessages(usePackage(tidyr))
+suppressMessages(usePackage(reshape2))
+suppressMessages(usePackage(RColorBrewer))
+suppressMessages(usePackage(MASS))
+suppressMessages(usePackage(speedglm))
+suppressMessages(usePackage(boot))
+suppressMessages(usePackage(devtools))
+suppressMessages(usePackage(psych))
+
 source("./R/get_functions.r")
 
 runTest <- function(cov, dir){

@@ -21,7 +21,7 @@ runTest <- function(cov, dir){
 
   dnmstmp <- chrpfdnm[paste0(chrpfdnm$Category.x, "_", chrpfdnm$Sequence) %in%
     paste0(covdir$Category, "_", covdir$Sequence),]
-  if(nrow(dnmstmpup)>=5){
+  if(nrow(dnmstmp)>=5){
     if(cov=="GC"){
       covbase <- "/net/bipolar/jedidiah/mutation/reference_data/high_gc"
       dnmstmp$GC <- gcCol(dnmstmp,

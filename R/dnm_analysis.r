@@ -1,4 +1,4 @@
-source("./get_functions.r")
+source("./R/get_functions.r")
 
 runTest <- function(cov, dir){
   covtmp <- covdat %>% filter(Cov==cov)

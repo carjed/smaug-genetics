@@ -19,7 +19,7 @@ runTest <- function(cov, dir){
     covdir <- covtmp %>% filter(Est<0)
   }
 
-  dnmstmp <- chrpfdnm[paste0(chrpfdnm$Category.x, "_", substr(chrpfdnm$SEQ, 0, 7) %in%
+  dnmstmp <- chrpfdnm[paste0(chrpfdnm$Category.x, "_", substr(chrpfdnm$SEQ, 0, 7)) %in%
     paste0(covdir$Category, "_", covdir$Sequence),]
   if(nrow(dnmstmp)>=5){
     if(cov=="GC"){

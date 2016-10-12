@@ -130,6 +130,13 @@ rb <- c(myPaletteB(6)[1:3],myPaletteR(6)[1:3])
 g <- myPaletteG(6)[1:3]
 rbg<-c(myPaletteB(6)[1:3],myPaletteR(6)[1:3], myPaletteG(6)[1:3])
 
+darken <- function(color, factor=1.4){
+    col <- col2rgb(color)
+    col <- col/factor
+    col <- rgb(t(col), maxColorValue=255)
+    col
+}
+
 tottime <- (proc.time()-ptm)[3]
 cat("Done (", tottime, "s)\n")
 
@@ -191,6 +198,7 @@ summfile=paste0(parentdir, "/output/7bp_1000k/full_j.summary")
 binfile=paste0(parentdir, "/output/7bp_1000k/full_bin.txt")
 
 summ_5bp_100k <- read.table(summfile, header=F, stringsAsFactors=F, skip=1)
+summ_5bp_100k <- summ_5bp_100k[sample(nrow(summ_5bp_100k), 12088037),]
 names(summ_5bp_100k)<-c(
 	"CHR", "POS", "REF", "ALT", "DP", "AN", "SEQ", "ALTSEQ", "GC")
 
@@ -245,14 +253,14 @@ r5m<-merge(rates5[,c(2,3,4,7,8)],
 	mutate(nsing=sum(num.x),
 		ncommon=sum(num.y),
 		prop_s=num.x/nsing,
-		prop_c=num.y/ncommon,
-		prop_diff=prop_c/prop_s)
+		prop_p=num.y/ncommon,
+		prop_diff=prop_p/prop_s)
 
 r5m$prop_diff3<-r5m$prop_diff
 r5m$prop_diff3[r5m$prop_diff< 0.5]<- 0.5
 r5m$prop_diff3[r5m$prop_diff>2]<- 2
 
-r5m$prop_diff4<-r5m$num.x/r5m$num.y
+r5m$prop_diff4<-r5m$num.y/r5m$num.x
 r5m$prop_diff4<-r5m$prop_diff4/mean(r5m$prop_diff4)
 
 r5m$prop_diff5<-r5m$prop_diff4
@@ -278,7 +286,7 @@ ggplot()+
 	geom_tile(data=r5m, aes(x=v2, y=v3, fill=prop_diff4))+
 	geom_rect(data=f, size=0.8, colour="grey30",
 		aes(xmin=xlo, xmax=xhi, ymin=ylo, ymax=yhi), fill=NA)+
-	scale_fill_gradientn("Rs/Rc\n",
+	scale_fill_gradientn("Rp/Rs\n",
 		colours=myPaletteBrBG(nbp),
 		trans="log",
 		breaks=c(0.5, 1, 2),
@@ -299,7 +307,43 @@ ggplot()+
 	facet_wrap(~Category, ncol=3, scales="free_x")
 ggsave("/net/bipolar/jedidiah/mutation/images/rare_common_diff2.png",  height=12, width=24)
 
-orderedcats<-c("AT_CG", "AT_GC", "AT_TA", "GC_AT", "GC_CG", "GC_TA", "cpg_GC_AT", "cpg_GC_CG", "cpg_GC_TA")
+# t-test for significant difference between Rs/Rp
+r5ma<-r5m
+r5ma$pval<-0
+for(i in 1:nrow(r5m)){
+  row<-r5ma[i,]
+  r5ma[i,]$pval<-prop.test(c(row$num.x, row$num.y),
+    c(row$COUNT.x, row$COUNT.y))$p.value
+}
+
+##############################################################################
+# Test for heteroscedasticity
+##############################################################################
+orderedcats<-c("AT_CG", "AT_GC", "AT_TA",
+	"GC_AT", "GC_CG", "GC_TA",
+	"cpg_GC_AT", "cpg_GC_CG", "cpg_GC_TA")
+
+dat<-data.frame()
+for(i in orderedcats){
+  r5m1 <- r5m %>% filter(Category2==i)
+  r5m2 <- r5m1 %>% filter(num.x>=100 & num.y>=100)
+  p1 <- lm(rel_prop~common_rel_prop+num.x+num.y, data=r5m1)
+  p2 <- lm(rel_prop~common_rel_prop+num.x+num.y, data=r5m2)
+  t1 <- bptest(p1)
+  t2 <- bptest(p2)
+  fullcor <- cor(r5m1$rel_prop, r5m1$common_rel_prop, method="spearman")
+  subcor <- cor(r5m2$rel_prop, r5m2$common_rel_prop, method="spearman")
+
+  fullcor <- cor(r5m1$rel_prop, r5m1$common_rel_prop)
+  subcor <- cor(r5m2$rel_prop, r5m2$common_rel_prop)
+
+  newrow1 <- data.frame(Category=i, Data="full", Cor=fullcor, Dim=nrow(r5m1), pval=t1$p.value)
+  newrow2 <- data.frame(Category=i, Data="sub", Cor=subcor, Dim=nrow(r5m2), pval=t2$p.value)
+  dat<-rbind(dat, newrow1)
+  dat<-rbind(dat, newrow2)
+}
+
+
 r5m$Category2<-factor(r5m$Category2, levels=orderedcats)
 ggplot(r5m, aes(x=Category2, y=prop_diff5, fill=Category2))+
 	geom_violin()+
@@ -326,24 +370,114 @@ r5m$pval<-pvals
 # Plot scatterplots of correlation
 r5m %>% group_by(Category2) %>% summarise(cor=cor(rel_prop, common_rel_prop))
 
-ggplot(data=r5m, aes(x=common_rel_prop, y=rel_prop, group=Category2, colour=Category2))+
+myPaletteCat <- colorRampPalette(brewer.pal(12, "Paired"))
+cols <- myPaletteCat(12)[c(8,10,12,2,4,6,1,3,5)]
+
+r5m$log.Rp.Rs <- ifelse(abs(log(r5m$prop_diff5)) > 0.223, ">0.223", "<0.223")
+ggplot(data=r5m, aes(x=rel_prop, y=common_rel_prop, group=Category2, colour=log.Rp.Rs))+
   geom_point(alpha=0.3, size=2)+
   # geom_point(data=dat[dat$cluster!=2,], aes(x=eur, y=rel_prop, group=Category2), alpha=0.3)+
   # geom_point(data=dat[dat$cluster==2,], aes(x=eur, y=rel_prop, group=Category2, colour=factor(ats)), alpha=0.3)+
-  geom_point(alpha=0.3)+
+  # geom_point(alpha=0.3)+
   geom_smooth(method="lm", se=F)+
+	geom_abline(intercept=0, linetype="dashed")+
   #geom_text_repel(data=dat[dat$cluster==2,], aes(label=SEQUENCE, colour=factor(ats)))+
   facet_wrap(~Category2, scales="free")+
-  xlab("Relative rate (common)")+
-  ylab("Relative rate (ERVs)")+
-  scale_colour_brewer(palette="Set1")+
-  theme_bw()+
-  theme(legend.position="none",
+  xlab("Relative rate (ERVs)")+
+  ylab("Relative rate (Common)")+
+	scale_x_log10()+
+	scale_y_log10()+
+  # scale_colour_manual(values=cols)+
+	scale_colour_brewer("|log(Rp/Rs)|", palette="Dark2")+
+  theme_classic()+
+  theme(#legend.position="none",
     strip.text.x=element_text(size=14),
     legend.title=element_text(size=16),
     axis.title.x=element_text(size=18),
     axis.title.y=element_text(size=18))
-ggsave("/net/bipolar/jedidiah/mutation/images/sing_com_cor_rates.png")
+ggsave("/net/bipolar/jedidiah/mutation/images/sing_com_cor_rates.png", width=9, height=9)
+
+r5m<-r5m %>%
+	mutate(Category2 = plyr::mapvalues(Category2, orderedcats1, orderedcats2))
+
+r5m$Category2 <- factor(r5m$Category2, levels=orderedcats2)
+
+r5m2 <- r5m %>% dplyr::select(-Category2)
+ggplot(data=r5m, aes(x=rel_prop, y=common_rel_prop))+
+  geom_point(data=r5m2, alpha=0.3, size=2, colour="grey70")+
+	geom_point(aes(group=Category2, colour=Category2), alpha=0.3, size=2)+
+  xlab("Relative rate (ERVs)")+
+  ylab("Relative rate (Common)")+
+	geom_smooth(method="lm", se=F, colour="black")+
+	geom_abline(intercept=0, linetype="dashed")+
+	scale_x_log10()+
+	scale_y_log10()+
+	scale_colour_manual("Mutation Type", values=cols)+
+	facet_wrap(~Category2, scales="free", dir="v")+
+  theme_bw()+
+  theme(
+		legend.position="none",
+    strip.text.x=element_text(size=14),
+    legend.title=element_text(size=16),
+    axis.title.x=element_text(size=18),
+    axis.title.y=element_text(size=18))
+ggsave("/net/bipolar/jedidiah/mutation/images/sing_com_cor_rates_facet.png", width=9, height=9)
+
+ggplot(data=r5m, aes(x=rel_prop, y=common_rel_prop))+
+  # geom_point(data=r5m2, alpha=0.3, size=2, colour="grey70")+
+	geom_point(aes(group=Category2, colour=Category2), alpha=0.3, size=2)+
+  xlab("Relative rate (ERVs)")+
+  ylab("Relative rate (Common)")+
+	scale_x_log10()+
+	scale_y_log10()+
+	scale_colour_manual("Mutation Type", values=cols)+
+	guides(colour = guide_legend(nrow=3, override.aes = list(alpha=1)))+
+	# facet_wrap(~Category2, scales="free")+
+  theme_bw()+
+  theme(
+		legend.position="bottom",
+    strip.text.x=element_text(size=14),
+    legend.title=element_text(size=16),
+    axis.title.x=element_text(size=18),
+    axis.title.y=element_text(size=18))
+ggsave("/net/bipolar/jedidiah/mutation/images/sing_com_cor_rates_no_facet.png", width=6, height=6)
+
+
+pcadat <- prcomp(r5m[r5m$Category2=="A>G",c(5,8)])
+
+dat <- data.frame(cbind(pcadat$x, r5m[r5m$Category2=="A>G",]))
+
+# k<-kmeans(pca$x, 5)
+# dat$kmcl<-k$cluster
+dat$cluster <- ifelse(dat$PC2>0.003, 2,1)
+dat$Sequence <- substr(dat$Sequence, 0, 7)
+dat$cgs <- ifelse(substr(dat$Sequence, 1,2)%in%c("CC", "CG", "GG", "GC"), 1,0)
+dat$ts <- ifelse(grepl("T", dat$Sequence), 0,1)
+dat$num_GC_flank <- ifelse(str_count(dat$Sequence, "A|T")<=3,">=4","<4")
+dat$maxc <- ifelse(abs(log(dat$prop_diff5))>0.223, "N", "Y")
+dat$maxc <- factor(dat$maxc, levels=c("Y", "N"))
+
+ggplot(data=dat,
+		aes(x=rel_prop, y=common_rel_prop, group=Category2, colour=maxc, shape=num_GC_flank))+
+  geom_point(alpha=0.3, size=4)+
+	scale_colour_brewer(palette="Set2")+
+	# geom_point(data=dat[dat$num_AT_flank!=">2",], alpha=0.3, size=2)+
+  # geom_point(data=dat[dat$cluster!=2,], aes(x=eur, y=rel_prop, group=Category2), alpha=0.3)+
+  # geom_point(data=dat[dat$cluster==2,], aes(x=eur, y=rel_prop, group=Category2, colour=factor(ats)), alpha=0.3)+
+  # geom_point(alpha=0.3)+
+  #geom_text_repel(data=dat[dat$cluster==2,], aes(label=SEQUENCE, colour=factor(ats)))+
+  #facet_wrap(~Category2, scales="free")+
+  xlab("Relative rate (ERVs)")+
+  ylab("Relative rate (Common)")+
+	guides(shape = guide_legend("#G/C bases in flanking region"),
+		colour = guide_legend("0.8<Rp/Rs<1.25 ?", override.aes = list(alpha=1)))+
+  # scale_colour_brewer("# G/C bases in flank", palette="Dark2")+
+  theme_bw()+
+  theme(legend.position = "bottom",
+    legend.title=element_text(size=16),
+    axis.title.x=element_text(size=18),
+    axis.title.y=element_text(size=18))
+ggsave("/net/bipolar/jedidiah/mutation/images/AT_GC_scatter.png", width=8, height=6)
 
 ##############################################################################
 # Simulate correlations

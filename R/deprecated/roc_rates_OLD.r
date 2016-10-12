@@ -348,3 +348,112 @@ fao<-plotaucobsonly %>%
 #            label = paste("AUC =", round(calc_auc(basicplot)$AUC, 2)))+
 # 	style_roc()
 # ggsave("/net/bipolar/jedidiah/mutation/images/chr18_roc2.png")
+
+############################################
+# Server dump below here
+############################################
+# dnm_agg3 <- chrpfdnm %>%
+# 	group_by(Category.x=as.character(Category.x), SEQ=substr(SEQ, 3, 5)) %>%
+# 	summarise(ndnm=n())
+#
+# rates3 <- read.table("/net/bipolar/jedidiah/mutation/output/3bp_1000k_rates.txt", header=T, stringsAsFactors=F)
+#
+# rates3$Category.x <- gsub("cpg_", "", rates3$Category2)
+# rates3$SEQ <- substr(rates3$Sequence, 1, 3)
+# r3m <- merge(dnm_agg, rates3, by=c("Category.x", "SEQ"))
+#
+# rates_3 <- r3m %>%
+# 	mutate(rel_prop3=ndnm/COUNT) %>%
+#   dplyr::select(Sequence, Category.x, rel_prop3) %>%
+#   spread(Category.x, rel_prop3)
+#
+# rates_3[is.na(rates_3)] <- 0
+
+chrp_maxc_d <- chrp_maxc %>%
+  filter(!grepl("^goldmann", ID)) %>%
+  group_by(Category.x, SEQ) %>%
+  summarise(ndnms=sum(OBS)) %>%
+  mutate(SEQ3=substr(SEQ, 3, 5),
+    SEQ5=substr(SEQ, 2, 6),
+    SEQ7=substr(SEQ, 1, 7))
+
+getDNMRates <- function(mlength){
+  infile <- paste0("/net/bipolar/jedidiah/mutation/output/", mlength, "bp_1000k_rates.txt")
+  rates <- read.table(infile, header=T, stringsAsFactors=F)
+
+  rates$Category.x <- gsub("cpg_", "", rates$Category2)
+  rates$SEQ <- substr(rates$Sequence, 1, mlength)
+
+  dnm_agg <- chrpfdnm %>%
+    # filter(grepl("^goldmann", ID)) %>%
+  	group_by(Category.x=as.character(Category.x),
+    SEQ=substr(SEQ, 4-(mlength-1)/2, 4+(mlength-1)/2)) %>%
+  	summarise(ndnm=n())
+
+  r3m <- merge(dnm_agg, rates, by=c("Category.x", "SEQ"))
+
+  rates_out <- r3m %>%
+  	mutate(dnm_rel_prop=ndnm/COUNT,
+      Category2=ifelse(substr(Sequence,4,5)=="CG",
+        paste0("cpg_", Category.x),
+        Category.x)) %>%
+    filter(ndnm>=4) %>%
+    dplyr::select(Sequence, SEQ, Category2, ndnm, dnm_rel_prop) #%>%
+    # spread(Category.x, rel_prop)
+}
+
+r3a <- getDNMRates(3)
+r5a <- getDNMRates(5)
+r7a <- getDNMRates(7)
+
+r2<-rates %>%
+  group_by(Category2) %>%
+  mutate(rk=ntile(desc(rel_prop), 100)) %>%
+  filter(rk<21)
+rates_m <- merge(rates, r7a, by=c("Category2", "Sequence"))
+rmc <- rates_m %>%
+  # filter(ndnm>=6) %>%
+  group_by(Category2) %>%
+  summarise(cor=cor(rel_prop, dnm_rel_prop),
+    cor_s=cor(rel_prop, dnm_rel_prop, method="spearman"))
+
+ggplot(rates_m, aes(x=dnm_rel_prop, y=rel_prop, colour=Category2))+
+  geom_point()+
+  facet_wrap(~Category2, scales="free")
+ggsave("/net/bipolar/jedidiah/mutation/images/dnm_rate_scatter.png")
+
+chrp_maxc_d2 <- dplyr::select(
+  merge(chrp_maxc_d, r3a,
+    by.x=c("Category.x", "SEQ3"), by.y=c("Category.x", "SEQ")),
+  Category.x, SEQ, SEQ3, SEQ5, SEQ7, ndnms, rp3=rel_prop)
+
+chrp_maxc_d2 <- dplyr::select(
+  merge(chrp_maxc_d2, r5a,
+    by.x=c("Category.x", "SEQ5"), by.y=c("Category.x", "SEQ"), all.x=T),
+  Category.x, SEQ, SEQ3, SEQ5, SEQ7, ndnms, rp3, rp5=rel_prop)
+
+chrp_maxc_d2 <- dplyr::select(
+  merge(chrp_maxc_d2, r7a,
+    by.x=c("Category.x", "SEQ7"), by.y=c("Category.x", "SEQ"), all.x=T),
+  Category.x, SEQ, SEQ3, SEQ5, SEQ7, ndnms, rp3, rp5, rp7=rel_prop)
+
+chrp_maxc_d3 <- chrp_maxc_d2 %>%
+  mutate(rel_prop=ifelse(ndnms>0, rp7, ifelse(!is.na(rp5), rp5, rp3))) %>%
+  dplyr::select(Category.x, Sequence=SEQ, rel_prop) #%>%
+  # spread(Category.x, rel_prop)
+
+chrp_maxc_d3[is.na(chrp_maxc_d3)] <- 0
+
+
+chrp_maxc_m <- merge(chrp_maxc[!grepl("^gonl", chrp_maxc$ID),], chrp_maxc_d3,
+  by.x=c("Category.x", "SEQ"), by.y=c("Category.x", "Sequence"))
+
+maxc_auc_dat2 <- subWrapper(chrp_maxc_m, sim=F)
+chrp_m <- subByModel(chrp_maxc_m, "rel_prop", "DNMs")
+
+maxc_auc_dat3 <- bind_rows(maxc_auc_dat2, chrp_m)
+
+fig_max_dat2 <- maxc_auc_dat3 %>%
+	filter(grepl("^E|^B|^D", group)) %>%
+  filter(!grepl("^gonl", ID))
+plotROC(fig_max_dat2, "/net/bipolar/jedidiah/mutation/images/pseudo_roc_curves_maxc_dnm_2.png")

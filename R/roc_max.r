@@ -1,156 +1,26 @@
-require(ggplot2)
-require(dplyr)
-require(tidyr)
-
-writecats <- 0
-
-cbbPalette <- c("#000000", "#E69F00", "#56B4E9", "#009E73", "#F0E442", "#0072B2", "#D55E00", "#CC79A7")
-
-##############################################################################
-# Function checks if elements in a exist in b
-# Output is binary vector of length same as b
-##############################################################################
-toBin <- function(a,b){
-	as.numeric(is.element(b,a))
-}
-
-##############################################################################
-# Function for plotting ROC curves
-##############################################################################
-plotROC <- function(data, outfile){
-  colindex <- length(unique(data$group))+1
-
-  ggplot()+
-    geom_line(data=data,
-  		aes(x=(5000-ntile)/5000, y=1-prop, group=group, colour=group), size=1.2)+
-    geom_abline(intercept=0, slope=1)+
-    facet_wrap(~Category.x)+
-    # geom_ribbon(data=full_auc_bounds,
-  	# 	aes(x=(1000-ntile)/1000, y=1-val, ymin=1-ub, ymax=1-lb), alpha=0.2)+
-  	scale_colour_manual(values=cbbPalette[2:colindex])+
-    coord_cartesian(xlim=c(0,1))+
-  	xlab("False Positive Rate")+
-  	ylab("True Positive Rate")+
-    theme_bw()+
-  	theme(
-  		# legend.position="none",
-  		axis.title.x=element_text(size=20),
-  		axis.title.y=element_text(size=20))
-    # scale_y_continuous(limits=c(0,1))+
-    # scale_x_continuous(limits=c(0,1000), labels=c())
-  ggsave(outfile, height=9, width=12)
-}
-
-##############################################################################
-# Function subsets data by specified model and re-sorts by corresponding mu
-##############################################################################
-subByModel <- function(data, mucol, groupname){
-
-  outdat <- data %>%
-    group_by(Category.x) %>%
-    arrange_(mucol) %>%
-    mutate(prop=cumsum(OBS)/sum(OBS)) %>%
-    arrange_(mucol, "prop") %>%
-    mutate(mutmp=mucol, ntile=ntile(mutmp, 5000), group=groupname) %>%
-    dplyr::select(-mutmp)
-
-    return(outdat)
-}
-
-##############################################################################
-# Wrapper function for subByModel
-##############################################################################
-subWrapper <- function(data, sim=T){
-  chrp_gfasc <- subByModel(data, "MU", "GFASC")
-  chrp_erv <- subByModel(data, "MU_S", "ERV 7-mers")
-  chrp_common <- subByModel(data, "MU_C", "BRIDGES polymorphism 7-mers")
-  chrp_av <- subByModel(data, "MU_A", "Aggarwala 7-mers")
-  outdat <- bind_rows(list(chrp_gfasc, chrp_erv, chrp_common, chrp_av))
-
-  if(sim){
-    chrp_sim_max <- simMu(data, nsim=10, nobs=100000, chunksize=50000)
-    outdat <- rbind(data.frame(outdat), data.frame(chrp_sim_max))
-  }
-
-  return(outdat)
-}
-
-##############################################################################
-# Function simulates mutations by randomly selecting sites and checking if
-# Bernoulli(mu)==1; loop continues until we have simulated the same number
-# of sites as in observed data
-##############################################################################
-simMu <- function(data, nsim, nobs, chunksize){
-  nsim <- nsim
-  # nobs <- sum(data$OBS)
-	nsample <- chunksize
-
-  full_auc_sim <- data.frame()
-  full_auc_sim_dat <- data.frame()
-
-  chrptmp <- data
-
-  for(i in 1:nsim){
-  	cat("Running simulation", i, "of", nsim, "...\n")
-  	nsample <- chunksize
-  	mutated <- c()
-  	# nsites<-round(rnorm(1, params$mean, params$sd), 0)
-    nsites <- nobs
-
-  	while(length(mutated) < nsites){
-  		rowind <- sample(nrow(chrptmp), nsample)
-  		row <- chrptmp[rowind,]
-  		mu <- row$MU
-
-  		batch <- sapply(mu, function(x) rbinom(1,1,x))
-  		mutated <- c(mutated, row$POS[which(as.logical(batch))])
-  	}
-
-  	chrptmp$OBS <- toBin(mutated, chrptmp$POS)
-
-    grouptmp <- paste0("sim", i)
-    chrptmpsub <- subByModel(chrptmp, "MU", grouptmp)
-
-    full_auc_tmp <- chrptmpsub %>%
-      group_by(group, Category.x) %>%
-      summarise(AUC=1-sum(prop)/n())
-
-    full_auc_sim <- rbind(full_auc_sim, as.data.frame(full_auc_tmp))
-    full_auc_sim_dat <- rbind(full_auc_sim_dat, as.data.frame(chrptmpsub))
-  }
-
-  # Subset data to simulations with maximum AUC
-  full_auc_sim_max <- full_auc_sim %>%
-    group_by(Category.x) %>%
-    filter(AUC==max(AUC))
-
-  full_auc_sim_dat2 <- merge(full_auc_sim_dat, full_auc_sim_max, by=c("group", "Category.x"))
-  full_auc_sim_dat2$group <- "max"
-  full_auc_sim_dat2 <- full_auc_sim_dat2 %>%
-    dplyr::select_(.dots=c(names(data), "ntile", "group"))
-
-  return(full_auc_sim_dat2)
-}
-
 ##############################################################################
 # Read and process data
 ##############################################################################
 {
 	# Read data
 	cat("Reading data...\n")
-	chrpf <- read.table("/net/bipolar/jedidiah/mutation/output/rocdat.7bp.2.txt", header=F)
-	names(chrpf) <- c("CHR", "POS", "BIN", "MU", "OBS", "Category", "SEQ", "MU_C", "MU_S", "MU_A")
+	chrpf <- read.table("/net/bipolar/jedidiah/mutation/output/rocdat.7bp.2.txt",
+		header=F, stringsAsFactors=F)
+	names(chrpf) <- c("CHR", "POS", "BIN", "MU", "OBS", "Category", "SEQ",
+		"MU_C", "MU_S", "MU_A")
 
 	# Remove sites with mu=0
 	chrpf <- chrpf[chrpf$MU>0,]
 
 	# Read DNMs
 	cat("Reading DNMs...\n")
-	dnms_full <-  read.table("/net/bipolar/jedidiah/mutation/reference_data/DNMs/GoNL_DNMs.txt", header=T, stringsAsFactors=F)
+	dnms_full <- read.table("/net/bipolar/jedidiah/mutation/reference_data/DNMs/GoNL_DNMs.txt",
+		header=T, stringsAsFactors=F)
 	dnms_full <- dnms_full[,1:5]
 	names(dnms_full) <- c("ID", "CHR", "POS", "REF", "ALT")
 
-	gdnms <- read.table("/net/bipolar/jedidiah/mutation/reference_data/DNMs/goldmann_2016_dnms.txt", header=T, stringsAsFactors=F)
+	gdnms <- read.table("/net/bipolar/jedidiah/mutation/reference_data/DNMs/goldmann_2016_dnms.txt",
+		header=T, stringsAsFactors=F)
 	gdnms$ID <- "goldmann"
 	gdnms <- gdnms[,c(7,1,2,4,5)]
 	names(gdnms) <- c("ID", "CHR", "POS", "REF", "ALT")
@@ -173,6 +43,7 @@ simMu <- function(data, nsim, nobs, chunksize){
 	}
 	# Write DNM data per category with columns ID, CHR, POS, Category
 	# Necessary if rocdat.7bp.txt not yet created
+	writecats <- 0
 	if(writecats){
 	  orderedcats <- sort(unique(dnms_full$Category))
 	  for(i in 1:6){
@@ -194,26 +65,6 @@ chrpfa <- chrpf[chrpf$ID=="all",]
 chrpfa <- chrpfa[sample(nrow(chrpfa), 1000000),]
 chrpfdnm <- chrpf[chrpf$ID!="all",]
 
-dnm_agg <- chrpfdnm %>%
-	group_by(Category.x=as.character(Category.x), SEQ=substr(SEQ, 3, 5)) %>%
-	summarise(ndnm=n())
-
-rates3 <- read.table("/net/bipolar/jedidiah/mutation/output/3bp_1000k_rates.txt", header=T, stringsAsFactors=F)
-
-rates3$Category.x <- gsub("cpg_", "", rates3$Category2)
-rates3$SEQ <- substr(rates3$Sequence, 1, 3)
-r3m <- merge(dnm_agg, rates3, by=c("Category.x", "SEQ"))
-
-rates_3 <- r3m %>%
-	mutate(rel_prop3=ndnm/COUNT) %>%
-  dplyr::select(Sequence, Category.x, rel_prop3) %>%
-  spread(Category.x, rel_prop3)
-
-rates_3[is.na(rates_3)] <- 0
-
-write.table(rates_3, "/net/bipolar/jedidiah/mutation/dnm_3bp_rates.txt", col.names=T, row.names=F, quote=F, sep="\t")
-
-
 # Recombine data
 cat("Creating combined data...\n")
 chrp <- rbind(chrpfdnm, chrpfa) %>%
@@ -221,114 +72,522 @@ chrp <- rbind(chrpfdnm, chrpfa) %>%
   mutate(prop=cumsum(OBS)/sum(OBS)) %>%
   arrange(MU, prop)
 
-# Process data for each model
-full_auc_dat <- subWrapper(chrp, sim=F)
+# Output 3-mer rates calculated on DNMs
+dnm_rates<-0
+if(dnm_rates){
+	dnm_agg <- chrpfdnm %>%
+		group_by(Category.x=as.character(Category.x), SEQ=substr(SEQ, 3, 5)) %>%
+		summarise(ndnm=n())
 
-# Get table of AUC for each mutation type/model combo
-full_auc <- full_auc_dat %>%
-  group_by(group, Category.x) %>%
-  summarise(AUC=1-sum(prop)/n()) %>%
-  spread(Category.x, AUC)
+	rates3 <- read.table("/net/bipolar/jedidiah/mutation/output/3bp_1000k_rates.txt",
+		header=T, stringsAsFactors=F)
+	rates3$Category.x <- gsub("cpg_", "", rates3$Category2)
+	rates3$SEQ <- substr(rates3$Sequence, 1, 3)
+	r3m <- merge(dnm_agg, rates3, by=c("Category.x", "SEQ"))
 
-roc_plotdat <- full_auc_dat[sample(nrow(full_auc_dat), .1*nrow(full_auc_dat)),]
+	rates_3 <- r3m %>%
+		mutate(rel_prop3=ndnm/COUNT) %>%
+	  dplyr::select(Sequence, Category.x, rel_prop3) %>%
+	  spread(Category.x, rel_prop3)
 
-plotdat_auc <- roc_plotdat %>%
-  group_by(group, Category.x) %>%
-  summarise(AUC=1-sum(prop)/n()) %>%
-  spread(Category.x, AUC)
-# Plot common vs A&V rates
+	rates_3[is.na(rates_3)] <- 0
 
-# Plot everything together
-plotROC(roc_plotdat, "/net/bipolar/jedidiah/mutation/images/pseudo_roc_curves.png")
-
-# Plot common vs A&V
-fig_a_dat <- roc_plotdat %>%
-  filter(grepl("^A|B", group))
-
-plotROC(fig_a_dat, "/net/bipolar/jedidiah/mutation/images/av_vs_common_roc.png")
-
-# Plot common vs ERVs
-fig_b_dat <- roc_plotdat %>%
-  filter(grepl("^E|B", group))
-
-plotROC(fig_b_dat, "/net/bipolar/jedidiah/mutation/images/common_vs_erv_roc.png")
-
-# Plot ERVs vs logit
-fig_k_dat <- roc_plotdat %>%
-	filter(grepl("^G|^E", group))
-plotROC(fig_k_dat, "/net/bipolar/jedidiah/mutation/images/erv_vs_logit_roc.png")
-
-fig_k2_dat <- roc_plotdat %>%
-	filter(grepl("^G|^E|^m", group))
-plotROC(fig_k2_dat, "/net/bipolar/jedidiah/mutation/images/erv_vs_logit_max_roc.png")
-
-##############################################################################
-# Subset to max contrast
-##############################################################################
-maxc <- read.table("/net/bipolar/jedidiah/mutation/maxc_7bp.txt", header=T, stringsAsFactors=F)
-maxc$Category <- gsub("cpg_", "", maxc$Category2)
-chrp_maxc <- chrp %>%
-  dplyr::filter(paste0(SEQ, ".", Category.x) %in%
-								paste0(maxc$Sequence, ".", maxc$Category))
-
-maxc_auc_dat <- subWrapper(chrp_maxc, sim=F)
-
-maxc_plotdat <- maxc_auc_dat[sample(nrow(maxc_auc_dat), .1*nrow(maxc_auc_dat)),]
-
-# fig_max_dat <- maxc_plotdat %>%
-# 	filter(grepl("^E|B", group))
-# Plot all models under max contrast
-fig_max_dat <- maxc_auc_dat %>%
-	filter(grepl("^E|^B", group))
-plotROC(fig_max_dat, "/net/bipolar/jedidiah/mutation/images/pseudo_roc_curves_maxc.png")
-
-maxc_extra <- 0
-if(maxc_extra){
-	maxc_sum <- maxc_auc_dat %>%
-		# mutate(SEQ3=substr(SEQ,3,5))%>%
-		# group_by(Category.x) %>%
-		group_by(Category.x, SEQ) %>%
-		summarise(n=sum(OBS)) %>%
-		dplyr::filter(n>0)
-
-	# chrp_maxc2 <- merge(maxc_sum[,1:2], chrp_maxc, by=c("Category.x"))
-	chrp_maxc$SEQ3 <- substr(chrp_maxc$SEQ, 3, 5)
-
-	chrp_maxc2 <- merge(maxc_sum[,1:2], chrp_maxc, by=c("Category.x", "SEQ"))
-	# chrp_maxc2 <- merge(maxc_sum[,1:2], chrp_maxc[!grepl("^gonl", chrp_maxc$ID),], by=c("Category.x", "SEQ"))
-	maxc_auc_dat2 <- subWrapper(chrp_maxc2, sim=F)
-
-	maxc_auc2 <- maxc_auc_dat2 %>%
-	  # group_by(group, Category.x) %>%
-		group_by(group, Category.x, SEQ) %>%
-	  summarise(AUC=1-sum(prop)/n()) #%>%
-	  #spread(Category.x, AUC)
-
-	# maxc_auc2 %>% arrange(Category.x, group) %>% data.frame()
-	maxc_auc2 %>% arrange(Category.x, SEQ, group) %>% head(20)
-	maxc_auc2 %>% group_by(group) %>% summarise(AUC=mean(AUC))
-	maxc_test<-maxc_auc2 %>%
-		group_by(group, Category.x) %>%
-		# summarise(AUC=mean(AUC)) %>%
-		arrange(Category.x) %>%
-		spread(group, AUC) %>%
-		data.frame()
-
-	names(maxc_test) <- c("Category.x", "SEQ", "AV", "BP", "ERV", "GFASC")
-	maxc_test$diff <- maxc_test$ERV-maxc_test$BP
-	maxc_test %>% group_by(Category.x)%>% summarise(diff=mean(diff), n=n())
-	# not by seq
-	# maxc_auc <- maxc_auc_dat %>%
-	#   group_by(group, Category.x) %>%
-	#   summarise(AUC=1-sum(prop)/n()) %>%
-	#   spread(Category.x, AUC)
+	write.table(rates_3, "/net/bipolar/jedidiah/mutation/dnm_3bp_rates.txt",
+		col.names=T, row.names=F, quote=F, sep="\t")
 }
 
 ##############################################################################
-# Compare ERV model with logit--get max contrast coefficients
+# Add columns for 5-mer, 3-mer, and 1-mer rates
 ##############################################################################
-{
-	coefs <- read.table("/net/bipolar/jedidiah/mutation/output/logmod_data/coefs/coefs_full.txt", header=F, stringsAsFactors=F)
+rates5 <- read.table("/net/bipolar/jedidiah/mutation/output/5bp_1000k_rates.txt",
+	header=T, stringsAsFactors=F)
+r5r <- data.frame(Category.x=gsub("cpg_", "", rates5$Category2),
+	SEQ5=substr(rates5$Sequence, 1, 5),
+	MU_5=rates5$rel_prop, stringsAsFactors=F)
+chrp$SEQ5 <- substr(chrp$SEQ, 2, 6)
+chrp <- merge(chrp, r5r, by=c("Category.x", "SEQ5"), all.x=T)
+
+rates3 <- read.table("/net/bipolar/jedidiah/mutation/output/3bp_1000k_rates.txt",
+	header=T, stringsAsFactors=F)
+r3r <- data.frame(Category.x=gsub("cpg_", "", rates3$Category2),
+	SEQ3=substr(rates3$Sequence, 1, 3),
+	MU_3=rates3$rel_prop, stringsAsFactors=F)
+chrp$SEQ3 <- substr(chrp$SEQ, 3, 5)
+chrp <- merge(chrp, r3r, by=c("Category.x", "SEQ3"))
+
+rates1 <- rates3 %>%
+	mutate(Category.x=gsub("cpg_", "", Category2)) %>%
+	group_by(Category.x) %>%
+	summarise(n=sum(num), COUNT=sum(COUNT), MU_1=n/COUNT) %>%
+	dplyr::select(Category.x, MU_1)
+chrp <- merge(chrp, rates1, by=c("Category.x"))
+
+##############################################################################
+# Add columns for downsampled ERV 7-mers and Common 7-mers
+# Must have run sing_vs_com.r
+##############################################################################
+r7s <- r5m %>%
+	dplyr::select(Category.x=Category,
+		SEQ=Sequence,
+		MU_7S=rel_prop,
+		MU_7P=common_rel_prop)
+chrp <- merge(chrp, r7s, by=c("Category.x", "SEQ"))
+
+runDNMLogit<-function(data, group){
+	if(nrow(data)>1e6){
+		logmod1a<-glm(OBS~Category.x, data=data, family=binomial())
+		logmod1b<-glm(OBS~Category, data=data, family=binomial())
+		logmod3<-glm(OBS~Category+MU_3, data=data, family=binomial())
+	  logmod5<-glm(OBS~Category+MU_3+resid5, data=data, family=binomial())
+	  logmod7<-glm(OBS~Category+MU_3+resid5+resid7, data=data, family=binomial())
+	  logmodS<-glm(OBS~Category+MU_7S, data=data, family=binomial())
+	  logmodP<-glm(OBS~Category+MU_7P, data=data, family=binomial())
+	  logmodA<-glm(OBS~Category+MU_A, data=data, family=binomial())
+	  logmodL<-glm(OBS~Category+MU_3+resid5+resid7+residL, data=data, family=binomial())
+		outdat<-list(logmod1a, logmod1b, logmod3, logmod5, logmod7, logmodL,
+			logmodS, logmodP, logmodA)
+	} else {
+		logmod3<-glm(OBS~MU_3, data=data, family=binomial())
+		logmod5<-glm(OBS~MU_3+resid5, data=data, family=binomial())
+		logmod7<-glm(OBS~MU_3+resid5+resid7, data=data, family=binomial())
+		logmodS<-glm(OBS~MU_7S, data=data, family=binomial())
+		logmodP<-glm(OBS~MU_7P, data=data, family=binomial())
+		logmodA<-glm(OBS~MU_A, data=data, family=binomial())
+		logmodL<-glm(OBS~MU_3+resid5+resid7+residL, data=data, family=binomial())
+		outdat<-list(logmod3, logmod5, logmod7, logmodL,
+			logmodS, logmodP, logmodA)
+	}
+
+  return(outdat)
+}
+
+overall_dat <- chrp %>%
+  mutate(Category =
+      plyr::mapvalues(Category, orderedcats1, orderedcats2)) %>%
+  mutate(resid5=MU_5-MU_3, resid7=MU_S-MU_5, residL=MU-MU_S)
+overall_models <- runDNMLogit(overall_dat, "FULL")
+
+test1a1b <- lrtest(overall_models[[1]], overall_models[[2]])
+test1b3 <- lrtest(overall_models[[2]], overall_models[[3]])
+test35 <- lrtest(overall_models[[3]], overall_models[[4]])
+test57 <- lrtest(overall_models[[4]], overall_models[[5]])
+test7L <- lrtest(overall_models[[5]], overall_models[[6]])
+fulllist<-list(test1a1b, test1b3, test35, test57, test7L)
+
+pvals <- lapply(fulllist, function(x) x[[5]][2])
+
+rsq<-unlist(lapply(overall_models, function(x) NagelkerkeR2(x)))[c(2,4,6,8,10,12,14,16,18)]
+aic<-unlist(lapply(overall_models, function(x) AIC(x)))
+mod<-c("1-mers", "1-mers+CpGs", "3-mers", "5-mers", "7-mers", "7-mers+features",
+ "ERVs", "Common", "AV")
+combineddat<-data.frame(group="FULL", category=categ, mod, rsq, aic)
+
+combineddat %>%
+  filter(mod %in% mod[1:6]) %>%
+ggplot()+
+  geom_bar(aes(x=category, y=rsq, fill=mod), stat="identity", position="dodge")+
+  scale_fill_manual("Model", values=cbbPalette[c(1,5,4,6,7,8)])+
+  theme_bw()+
+  theme(
+      legend.text=element_text(size=14),
+      axis.title.x=element_blank(),
+      axis.title.y=element_text(size=16),
+      axis.text.x=element_blank(),
+      axis.text.y=element_text(size=14))+
+  ylab(expression(paste("Fraction of variance explained (Nagelkerke ", R^2, ")", sep="")))
+ggsave("/net/bipolar/jedidiah/mutation/images/Lv7v5v3_rsq_full.png", width=4, height=6)
+
+# fulldat <- list()
+fulldat <- data.frame()
+lrtestdat <- data.frame()
+for(i in 1:length(orderedcats)){
+  categ <- orderedcats2[i]
+
+  overall_dat <- chrp %>%
+    mutate(Category =
+        plyr::mapvalues(Category, orderedcats1, orderedcats2)) %>%
+    filter(Category==categ) %>%
+    mutate(resid5=MU_5-MU_3, resid7=MU_S-MU_5, residL=MU-MU_S)
+  overall_models <- runDNMLogit(overall_dat, "FULL")
+
+  test53 <- lrtest(overall_models[[1]], overall_models[[2]])
+  test75 <- lrtest(overall_models[[2]], overall_models[[3]])
+  testL7 <- lrtest(overall_models[[3]], overall_models[[4]])
+  pval53 <- test53[[5]][2]
+  pval75 <- test75[[5]][2]
+  pvalL7 <- testL7[[5]][2]
+  pvals <- c(pval53, pval75, pvalL7)
+  mods <- c("5-mers", "7-mers", "Logit")
+  lrtests <- data.frame(category=categ, mod=mods, pvals)
+  lrtestdat <- bind_rows(lrtestdat, lrtests)
+
+  rsq<-unlist(lapply(overall_models, function(x) NagelkerkeR2(x)))[c(2,4,6,8,10,12,14)]
+  aic<-unlist(lapply(overall_models, function(x) AIC(x)))
+  mod<-c("3-mers", "5-mers", "7-mers", "7-mers+features", "ERVs", "Common", "AV")
+  df<-data.frame(group="FULL", category=categ, mod, rsq, aic)
+  # return(df)
+
+  # maxc_dat <- chrp %>%
+  #   mutate(Category =
+  #       plyr::mapvalues(Category, orderedcats1, orderedcats2)) %>%
+  #   filter(Category==categ)
+  # maxc_dat <- merge(maxc_dat, maxc, by=c("Category.x", "SEQ"))
+  # maxc_models <- runDNMLogit(maxc_dat, "MAXC")
+
+  fulldat <- bind_rows(fulldat, df)
+  # fulldat <- bind_rows(fulldat, overall_models, maxc_models)
+
+  # fas_dat <- chrp_coef2 %>%
+  #   mutate(Category =
+  #       plyr::mapvalues(Category, orderedcats1, orderedcats2)) %>%
+  #   filter(Category==categ)
+  #
+  # if(nrow(fas_dat)>0){
+  #   fas_models <- runDNMLogit(fas_dat, "FAS")
+  #   fulldat <- bind_rows(fulldat, fas_models)
+  # }
+}
+
+fd2<-fulldat %>% filter(mod=="7-mers" | mod=="5-mers" | mod=="3-mers" | mod=="7-mers+features")
+# %>%
+fd3 <- fd2 %>%
+	dplyr::select(-aic) %>%
+	spread(mod, rsq)
+
+fd3$fold<-fd3[,5]/fd3[,4]
+fd3$fold2<-fd3[,5]/fd3[,3]
+
+ngroups <- 9
+nmodels <- 4
+nbars <- ngroups*nmodels
+
+st_once <- c(seq(1, nbars, nmodels), seq(nmodels, nbars, nmodels))
+st_twice <- setdiff(1:nbars, st_once)
+st_selection <- sort(c(st_once, rep(st_twice, each=2)))
+
+end_none <- seq(1, nbars, nmodels)
+end_twice <- setdiff(1:nbars, end_none)
+end_selection <- sort(c(rep(end_twice, each=2)))
+
+vertst <- sort(c(rep(c(1:ngroups-1/9), each=2),
+	rep(c(1:ngroups+1/9), each=2),
+	c(1:ngroups+1/3),
+	c(1:ngroups-1/3)))
+vertend <- vertst
+
+horizst <- sort(c(
+	c(1:ngroups-1/3),
+	c(1:ngroups-1/9),
+	c(1:ngroups+1/9)))
+horizend <- sort(c(
+	c(1:ngroups-1/9),
+	c(1:ngroups+1/9),
+	c(1:ngroups+1/3)))
+
+# Build data for geom_segment call in plot
+corplot<-data.frame(
+	xst=vertst,
+  xend=vertend,
+  yst=fd2$rsq[st_selection]+.001,
+  yend=fd2$rsq[end_selection]+.01)
+
+corplot2 <- data.frame(
+	xst=horizst,
+  xend=horizend,
+  yst=fd2$rsq[unique(end_selection)]+.01,
+  yend=fd2$rsq[unique(end_selection)]+.01,
+  pval=signif(lrtestdat$pvals, 2))
+
+corplot2$pval <- ifelse(corplot2$pval<0.001, "***",
+	ifelse(corplot2$pval<0.01, "**", ifelse(corplot2$pval<0.05, "*", " ")))
+
+# Plot pseudo-r^2 for 7-mers vs 5-mers vs 3-mers
+rsqdat<-fulldat %>%
+  filter(mod=="7-mers" | mod=="5-mers" | mod=="3-mers" | mod=="7-mers+features") %>%
+  filter(group=="FULL") %>%
+  mutate(Category =
+      factor(plyr::mapvalues(category, orderedcats2, orderedcats2), levels=orderedcats2))
+ggplot(rsqdat)+
+  geom_bar(aes(x=Category, y=rsq, fill=mod), stat="identity", position="dodge")+
+  scale_fill_manual("Model", values=cbbPalette[c(4,6,7,8)])+
+  geom_segment(data=corplot, aes(x=xst, xend=xend, y=yst, yend=yend))+
+  geom_segment(data=corplot2, aes(x=xst, xend=xend, y=yst, yend=yend))+
+  geom_text(data=corplot2, aes(x=xst+1/9, y=yst+.005, label=pval, angle=90), size=6)+
+  scale_y_continuous(limits=c(0,0.1))+
+  theme_bw()+
+  theme(
+      legend.text=element_text(size=14),
+      axis.title.x=element_text(size=16),
+      axis.title.y=element_text(size=16),
+    axis.text.x=element_text(size=14, angle=45, hjust=1, vjust=1),
+      axis.text.y=element_text(size=14))+
+  xlab("Mutation Type")+
+  ylab(expression(paste("Fraction of variance explained (Nagelkerke ", R^2, ")", sep="")))
+ggsave("/net/bipolar/jedidiah/mutation/images/Lv7v5v3_rsq.png", width=12, height=6)
+
+# Plot pseudo-r^2 for 7-mers vs logit
+rsqdatL<-fulldat %>%
+  filter(mod=="7-mers" | mod=="7-mers+features") %>%
+  filter(group=="FULL") %>%
+  mutate(Category =
+      factor(plyr::mapvalues(category, orderedcats2, orderedcats2), levels=orderedcats2))
+ggplot(rsqdatL)+
+  geom_bar(aes(x=Category, y=rsq, fill=mod), stat="identity", position="dodge")+
+  scale_fill_manual("Model", values=cbbPalette[c(7,8)])+
+  # geom_segment(data=corplot, aes(x=xst, xend=xend, y=yst, yend=yend))+
+  # geom_segment(data=corplot2, aes(x=xst, xend=xend, y=yst, yend=yend))+
+  # geom_text(data=corplot2, aes(x=xst+1/6, y=yst+.005, label=pval, angle=90))+
+  # scale_y_continuous(limits=c(0,0.08))+
+  theme_bw()+
+  theme(
+      legend.text=element_text(size=14),
+      axis.title.x=element_text(size=16),
+      axis.title.y=element_text(size=16),
+    axis.text.x=element_text(size=14, angle=45, hjust=1, vjust=1),
+      axis.text.y=element_text(size=14))+
+  xlab("Mutation Type")+
+  ylab(expression(paste("Fraction of variance explained (Nagelkerke ", R^2, ")", sep="")))
+ggsave("/net/bipolar/jedidiah/mutation/images/7v5v3_rsqL.png", width=12, height=6)
+
+# Plot pseudo-r^2 for ERVs vs Common
+rsqdatEC<-fulldat %>%
+	filter(mod=="AV" | mod=="Common" | mod=="ERVs") %>%
+  filter(group=="FULL") %>%
+  mutate(Category =
+      factor(plyr::mapvalues(category, orderedcats2, orderedcats2), levels=orderedcats2))
+ggplot(rsqdatEC)+
+	geom_bar(aes(x=Category, y=rsq, fill=mod), stat="identity", position="dodge")+
+	scale_fill_manual("Model", values=c("grey30", cbbPalette[c(3,7)]))+
+	theme_bw()+
+	theme(
+			legend.text=element_text(size=14),
+			axis.title.x=element_text(size=16),
+			axis.title.y=element_text(size=16),
+		axis.text.x=element_text(size=14, angle=45, hjust=1, vjust=1),
+			axis.text.y=element_text(size=14))+
+	xlab("Mutation Type")+
+	ylab(expression(paste("Fraction of variance explained (Nagelkerke ", R^2, ")", sep="")))
+ggsave("/net/bipolar/jedidiah/mutation/images/AvCvS_rsq.png", width=12, height=6)
+
+
+oldmodnames <- unique(fulldat$mod)
+
+newmodnames <- c("3-mers", "5-mers", "7-mers", "7-mers+features",
+	"7-mers (downsampled BRIDGES ERVs)",
+	"7-mers (BRIDGES polymorphisms)",
+	"7-mers (1KG intergenic variants)")
+
+newmodnamesord <- c("7-mers (1KG intergenic variants)",
+	"7-mers (BRIDGES polymorphisms)",
+	"7-mers (downsampled BRIDGES ERVs)",
+	"3-mers", "5-mers", "7-mers", "7-mers+features")
+
+rsqdatFULL<-fulldat %>%
+  filter(group=="FULL") %>%
+  mutate(Category =
+      factor(plyr::mapvalues(category, orderedcats2, orderedcats2), levels=orderedcats2)) %>%
+	mutate(mod=
+		factor(plyr::mapvalues(mod, oldmodnames, newmodnames), levels=newmodnamesord))
+
+
+# rsqdatFULL$mod <- factor(rsqdatFULL$mod, levels=
+ggplot(rsqdatFULL)+
+  geom_bar(aes(x=Category, y=rsq, fill=mod), stat="identity", position="dodge")+
+  scale_fill_manual("Model", values=c(brewer.pal(8, "Set3")[4:6], cbbPalette[c(4,6,7,8)]))+
+  # geom_segment(data=corplot, aes(x=xst, xend=xend, y=yst, yend=yend))+
+  # geom_segment(data=corplot2, aes(x=xst, xend=xend, y=yst, yend=yend))+
+  # geom_text(data=corplot2, aes(x=xst+1/6, y=yst+.005, label=pval, angle=90))+
+  # scale_y_continuous(limits=c(0,0.08))+
+  theme_bw()+
+  theme(
+      legend.text=element_text(size=14),
+      axis.title.x=element_text(size=16),
+      axis.title.y=element_text(size=16),
+    axis.text.x=element_text(size=14, angle=45, hjust=1, vjust=1),
+      axis.text.y=element_text(size=14))+
+  xlab("Mutation Type")+
+  ylab(expression(paste("Fraction of variance explained (Nagelkerke ", R^2, ")", sep="")))
+ggsave("/net/bipolar/jedidiah/mutation/images/all_rsq.png", width=12, height=6)
+
+combineddat %>%
+  # filter(mod=="AV" | mod=="Common" | mod=="ERVs") %>%
+	# filter(mod=="Common" | mod=="ERVs") %>%
+	mutate(mod=factor(plyr::mapvalues(mod, oldmodnames, newmodnames), levels=newmodnamesord)) %>%
+ggplot()+
+  geom_bar(aes(x=category, y=rsq, fill=mod), stat="identity", position="dodge")+
+  scale_fill_manual("Model", values=c(brewer.pal(8, "Set3")[4:6], cbbPalette[c(4,6,7,8)]))+
+  theme_bw()+
+  theme(
+      legend.text=element_text(size=14),
+      axis.title.x=element_blank(),
+      axis.title.y=element_text(size=16),
+      axis.text.x=element_blank(),
+      axis.text.y=element_text(size=14))+
+  ylab(expression(paste("Fraction of variance explained (Nagelkerke ", R^2, ")", sep="")))
+ggsave("/net/bipolar/jedidiah/mutation/images/all_rsq_full.png", width=8, height=6)
+
+
+
+rsqdatFULL %>%
+	filter(grepl("BRIDGES", mod)) %>%
+ggplot()+
+  geom_bar(aes(x=Category, y=rsq, fill=mod), stat="identity", position="dodge")+
+  scale_fill_manual("Model", values=brewer.pal(8, "Set3")[5:6])+
+  # geom_segment(data=corplot, aes(x=xst, xend=xend, y=yst, yend=yend))+
+  # geom_segment(data=corplot2, aes(x=xst, xend=xend, y=yst, yend=yend))+
+  # geom_text(data=corplot2, aes(x=xst+1/6, y=yst+.005, label=pval, angle=90))+
+  # scale_y_continuous(limits=c(0,0.08))+
+  theme_bw()+
+  theme(
+      legend.text=element_text(size=14),
+      axis.title.x=element_text(size=16),
+      axis.title.y=element_text(size=16),
+    axis.text.x=element_text(size=14, angle=45, hjust=1, vjust=1),
+      axis.text.y=element_text(size=14))+
+  xlab("Mutation Type")+
+  ylab(expression(paste("Fraction of variance explained (Nagelkerke ", R^2, ")", sep="")))
+ggsave("/net/bipolar/jedidiah/mutation/images/EvC_rsq.png", width=12, height=6)
+
+combineddat %>%
+  # filter(mod=="AV" | mod=="Common" | mod=="ERVs") %>%
+	filter(mod=="Common" | mod=="ERVs") %>%
+	mutate(mod=plyr::mapvalues(mod, c("Common", "ERVs"),
+		c("7-mers (BRIDGES polymorphisms)", "7-mers (downsampled BRIDGES ERVs)"))) %>%
+ggplot()+
+  geom_bar(aes(x=category, y=rsq, fill=mod), stat="identity", position="dodge")+
+  scale_fill_manual("Model", values=brewer.pal(8, "Set3")[5:6])+
+  theme_bw()+
+  theme(
+      legend.text=element_text(size=14),
+      axis.title.x=element_blank(),
+      axis.title.y=element_text(size=16),
+      axis.text.x=element_blank(),
+      axis.text.y=element_text(size=14))+
+  ylab(expression(paste("Fraction of variance explained (Nagelkerke ", R^2, ")", sep="")))
+ggsave("/net/bipolar/jedidiah/mutation/images/AvCvS_rsq_full.png", width=4, height=6)
+
+##############################################################################
+# Get prediction curves under each model
+##############################################################################
+
+# Temp code for pred curves
+tmp <- 0
+if(tmp){
+	chrp_gfasc <- subByModel(chrp, "MU", "GFASC")
+	head(chrp_gfasc) %>% data.frame()
+
+	full_auc_dat <- subWrapper(chrp, sim=F)
+	full_auc_dat %>%
+		arrange(group, Category.x, ntile) %>%
+		filter(Category.x=="GC_AT") %>%
+		tail() %>%
+		data.frame()
+
+	outdat <- chrp %>%
+		mutate_(mutmp="MU") %>%
+		group_by(Category.x) %>%
+		arrange(desc(mutmp)) %>%
+		mutate(prop=cumsum(OBS)/sum(OBS)) %>%
+		# dplyr::select(-mutmp) %>%
+		# arrange_(mucol, "prop") %>%
+		# mutate(mutmp=mucol, ntile=dense_rank(mutmp), group=groupname) %>%
+		mutate(ntile=min_rank(desc(mutmp)), group="GFASC") %>%
+		dplyr::select(-mutmp)
+}
+
+pred_curves <- 0
+if(pred_curves){
+	full_auc_dat <- subWrapper(chrp, sim=T)
+
+	# Get table of AUC for each mutation type/model combo
+	full_auc2 <- full_auc_dat %>%
+	  group_by(group, Category.x) %>%
+	  summarise(AUC=sum(prop)/n()) %>%
+	  spread(Category.x, AUC)
+
+	newrow <- c("Relative change in AUC", (full_auc2[5,-1]-0.5)/(full_auc2[3,-1]-0.5))
+	full_auc2 <- data.frame(rbind(as.matrix(full_auc2), newrow))
+
+	roc_plotdat <- full_auc_dat[sample(nrow(full_auc_dat), .1*nrow(full_auc_dat)),] %>%
+		group_by(group, Category.x, ntile) %>%
+		summarise(prop=min(prop), n=mean(n))
+
+	# Plot everything together
+	plotROC(roc_plotdat, "/net/bipolar/jedidiah/mutation/images/pseudo_roc_curves_all.png")
+
+	# Plot 3-mers only
+	roc_plotdat_seq <- roc_plotdat %>%
+		filter(grepl("^ERV 3", group))
+	plotROC(roc_plotdat_seq, "/net/bipolar/jedidiah/mutation/images/pseudo_roc_curves_seq_3.png")
+
+	# Plot 3-mers vs 5-mers
+	roc_plotdat_seq <- roc_plotdat %>%
+		filter(grepl("^ERV 5|^ERV 3", group))
+	plotROC(roc_plotdat_seq, "/net/bipolar/jedidiah/mutation/images/pseudo_roc_curves_seq_5_3.png")
+
+	# Plot 7-mers vs 5-mers vs 3-mers
+	roc_plotdat_seq <- roc_plotdat %>%
+		filter(grepl("^E", group))
+	plotROC(roc_plotdat_seq, "/net/bipolar/jedidiah/mutation/images/pseudo_roc_curves_seq.png")
+
+	# Plot common vs A&V
+	fig_a_dat <- roc_plotdat %>%
+	  filter(grepl("^A|B", group))
+	plotROC(fig_a_dat, "/net/bipolar/jedidiah/mutation/images/av_vs_common_roc.png")
+
+	# Plot common vs ERVs
+	fig_b_dat <- roc_plotdat %>%
+	  filter(grepl("^E|B", group))
+	plotROC(fig_b_dat, "/net/bipolar/jedidiah/mutation/images/common_vs_erv_roc.png")
+
+	# Plot ERVs vs logit
+	fig_k_dat <- roc_plotdat %>%
+		filter(grepl("^G|^E", group))
+	plotROC(fig_k_dat, "/net/bipolar/jedidiah/mutation/images/erv_vs_logit_roc.png")
+
+	# Plot ERVs vs logit vs simulated max
+	fig_k2_dat <- roc_plotdat %>%
+		filter(grepl("^G|^E|^m", group))
+	plotROC(fig_k2_dat, "/net/bipolar/jedidiah/mutation/images/erv_vs_logit_max_roc.png")
+}
+
+##############################################################################
+# ROC on 7-mers with max contrast between ERVs and polymorphisms
+##############################################################################
+maxc_roc<-0
+if(maxc_roc){
+	maxc <- read.table("/net/bipolar/jedidiah/mutation/maxc_7bp.txt", header=T, stringsAsFactors=F)
+	maxc$Category <- gsub("cpg_", "", maxc$Category2)
+	chrp_maxc <- chrp %>%
+	  dplyr::filter(paste0(SEQ, ".", Category.x) %in%
+									paste0(maxc$Sequence, ".", maxc$Category))
+
+	maxc_auc_dat <- subWrapper(chrp_maxc, sim=F)
+
+	maxc_auc <- maxc_auc_dat %>%
+	  group_by(group, Category.x) %>%
+		# filter(grepl("^B|^E", group)) %>%
+	  summarise(AUC=sum(prop)/n()) %>%
+	  spread(Category.x, AUC)
+
+	newrow<-c("Relative change in AUC", (maxc_auc[2,-1]-0.5)/(maxc_auc[1,-1]-0.5))
+	maxc_auc <- data.frame(rbind(as.matrix(maxc_auc), newrow))
+
+	maxc_plotdat <- maxc_auc_dat[sample(nrow(maxc_auc_dat), .1*nrow(maxc_auc_dat)),]
+
+	# fig_max_dat <- maxc_plotdat %>%
+	# 	filter(grepl("^E|B", group))
+	# Plot all models under max contrast
+	fig_max_dat <- maxc_auc_dat %>%
+		filter(grepl("^E|^B", group))
+	plotROC(fig_max_dat, "/net/bipolar/jedidiah/mutation/images/pseudo_roc_curves_maxc.png")
+}
+
+# Additional max contrast analyses, with features
+maxc_extra1 <- 0
+if(maxc_extra1){
+	coefs <- read.table("/net/bipolar/jedidiah/mutation/output/logmod_data/coefs/coefs_full.txt",
+		header=F, stringsAsFactors=F)
 
 	names(coefs) <- c("Cov", "Est", "SE", "Z", "pval", "Sequence", "Category")
 
@@ -351,10 +610,18 @@ if(maxc_extra){
 
 	matchMotifs <- function(x) {
 	  chrp %>%
-	    dplyr::filter((substr(SEQ,0,7) %in% x$Sequence) && (Category.x %in% x$Category))
+			# ungroup() %>%
+			# mutate(Category.x=as.character(Category.x)) %>%
+	    dplyr::filter((substr(SEQ,1,7) %in% x$Sequence) & (Category.x %in% x$Category))
 	}
 
-	chrp_maxc_features <- lapply(coef_split, function(x) matchMotifs(x))
+	maxc_feat <- data.frame(Sequence=plotdat$Sequence,
+		Category=as.character(gsub("cpg_", "", plotdat$Category)))
+	chrp_maxc_features<-matchMotifs(maxc_feat)
+	maxc_auc_feat <- subWrapper(chrp_maxc_features, sim=F)
+	cov_auc<-aucCalc(maxc_auc_feat)
+
+	chrp_maxc_features <- lapply(maxc_feat, function(x) matchMotifs(x))
 
 	maxc_auc_feat <- lapply(chrp_maxc_features, function(x) subWrapper(x, sim=F))
 	# test <- bind_rows(maxc_auc_feat, .id="id")
@@ -401,6 +668,50 @@ if(maxc_extra){
 		theme_bw()
 	ggsave("/net/bipolar/jedidiah/mutation/images/diff_bar.png", height=6, width=12)
 }
+
+maxc_extra2 <- 0
+if(maxc_extra2){
+	maxc_sum <- maxc_auc_dat %>%
+		# mutate(SEQ3=substr(SEQ,3,5))%>%
+		# group_by(Category.x) %>%
+		group_by(Category.x, SEQ) %>%
+		summarise(n=sum(OBS)) %>%
+		dplyr::filter(n>0)
+
+	# chrp_maxc2 <- merge(maxc_sum[,1:2], chrp_maxc, by=c("Category.x"))
+	chrp_maxc$SEQ3 <- substr(chrp_maxc$SEQ, 3, 5)
+
+	chrp_maxc2 <- merge(maxc_sum[,1:2], chrp_maxc, by=c("Category.x", "SEQ"))
+	# chrp_maxc2 <- merge(maxc_sum[,1:2],
+		# chrp_maxc[!grepl("^gonl", chrp_maxc$ID),], by=c("Category.x", "SEQ"))
+	maxc_auc_dat2 <- subWrapper(chrp_maxc2, sim=F)
+
+	maxc_auc2 <- maxc_auc_dat2 %>%
+	  # group_by(group, Category.x) %>%
+		group_by(group, Category.x, SEQ) %>%
+	  summarise(AUC=1-sum(prop)/n()) #%>%
+	  #spread(Category.x, AUC)
+
+	# maxc_auc2 %>% arrange(Category.x, group) %>% data.frame()
+	maxc_auc2 %>% arrange(Category.x, SEQ, group) %>% head(20)
+	maxc_auc2 %>% group_by(group) %>% summarise(AUC=mean(AUC))
+	maxc_test<-maxc_auc2 %>%
+		group_by(group, Category.x) %>%
+		# summarise(AUC=mean(AUC)) %>%
+		arrange(Category.x) %>%
+		spread(group, AUC) %>%
+		data.frame()
+
+	names(maxc_test) <- c("Category.x", "SEQ", "AV", "BP", "ERV", "GFASC")
+	maxc_test$diff <- maxc_test$ERV-maxc_test$BP
+	maxc_test %>% group_by(Category.x)%>% summarise(diff=mean(diff), n=n())
+	# not by seq
+	# maxc_auc <- maxc_auc_dat %>%
+	#   group_by(group, Category.x) %>%
+	#   summarise(AUC=1-sum(prop)/n()) %>%
+	#   spread(Category.x, AUC)
+}
+
 
 ##############################################################################
 # ROC by GoNL individual

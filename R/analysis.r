@@ -8,12 +8,21 @@ suppressMessages(usePackage(speedglm))
 suppressMessages(usePackage(boot))
 suppressMessages(usePackage(devtools))
 suppressMessages(usePackage(psych))
+suppressMessages(usePackage(lmtest))
 
 source("./R/get_functions.r")
 source("./R/roc_functions.r")
 
 cbbPalette <- c("#000000", "#E69F00", "#56B4E9", "#009E73", "#F0E442", "#0072B2", "#D55E00", "#e7baea")
 myPaletteCat <- colorRampPalette(brewer.pal(12, "Paired"))
+# myPaletteCat <- colorRampPalette(rev(brewer.pal(8, "Dark2")), space="Lab")
+myPalette <- colorRampPalette(rev(brewer.pal(11, "Spectral")), space="Lab")
+myPaletteB <- colorRampPalette(rev(brewer.pal(9, "Blues")), space="Lab")
+myPaletteR <- colorRampPalette(rev(brewer.pal(9, "Reds")), space="Lab")
+myPaletteG <- colorRampPalette(rev(brewer.pal(9, "Greens")), space="Lab")
+rb <- c(myPaletteB(6)[1:3],myPaletteR(6)[1:3])
+g <- myPaletteG(6)[1:3]
+
 
 orderedcats <- c("AT_CG", "AT_GC", "AT_TA",
   "GC_AT", "GC_CG", "GC_TA",
@@ -31,7 +40,7 @@ cols <- myPaletteCat(12)[c(10,2,1,8,4,3,12,6,5)] #<- colors if using this orderi
 
 ptm <- proc.time()
 cat("Plotting K-mer heatmaps...\n")
-source("./R/kmer_heatmap.r")
+source("./R/kmer_heatmaps.r")
 tottime <- (proc.time()-ptm)[3]
 cat("Done (", tottime, "s)\n")
 

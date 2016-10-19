@@ -162,6 +162,8 @@ runDNMLogit<-function(data, group){
 }
 
 overall_dat <- chrp %>%
+	mutate(Category=ifelse(substr(SEQ,adj+1,adj+2)=="CG",
+									paste0("cpg_",Category.x), Category.x)) %>%
   mutate(Category =
       plyr::mapvalues(Category, orderedcats1, orderedcats2)) %>%
   mutate(resid5=MU_5-MU_3, resid7=MU_S-MU_5, residL=MU-MU_S)

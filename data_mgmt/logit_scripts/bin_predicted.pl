@@ -34,8 +34,8 @@ if ($chr lt '22') {
 	$nextchr="Y";
 }
 
-my $f_data = "$parentdir/output/predicted/chr${chr}_${cat}_predicted.txt";
-my $outfile = "$parentdir/output/predicted/chr${chr}_${cat}_binned.txt";
+my $f_data = "$parentdir/output/predicted/chr${chr}.${cat}.txt";
+my $outfile = "$parentdir/output/predicted/binned/chrs/chr${chr}_${cat}_binned.txt";
 # my $cpgoutfile = "$parentdir/output/predicted/chr${chr}_${cat}_binned_cpg.txt";
 
 # initialize input file
@@ -68,16 +68,16 @@ my $adj=1;
 
 my $firstLine = <$data>;
 my @linearr=split(/\t/, $firstLine);
-my $PREVBIN = ceil($linearr[1]/10);
+my $PREVBIN = ceil($linearr[2]/10);
 my $SUM=0;
 my $CPGSUM=0;
 seek $data, 0, 0;
 while (<$data>){
 	chomp;
 	my @line=split(/\t/, $_);
-	my $POS=$line[0];
-	my $BIN=ceil($line[1]/10); # Bin no. in predicted data is 100kb; coerce to 1Mb
-	my $MU=$line[2];
+	my $POS=$line[1];
+	my $BIN=ceil($line[2]/10); # Bin no. in predicted data is 100kb; coerce to 1Mb
+	my $MU=$line[3];
 
 	my $localseq = substr($seq, $POS-1, 2);
 	my $altlocalseq = reverse substr($altseq, $POS-1, 2);

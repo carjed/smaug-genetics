@@ -206,8 +206,10 @@ for(i in 1:length(orderedcats)){
   categ <- orderedcats2[i]
 
   overall_dat <- chrp %>%
-    mutate(Category =
-        plyr::mapvalues(Category, orderedcats1, orderedcats2)) %>%
+		mutate(Category=ifelse(substr(SEQ,adj+1,adj+2)=="CG",
+										paste0("cpg_",Category.x), Category.x)) %>%
+		mutate(Category =
+				plyr::mapvalues(Category, orderedcats1, orderedcats2)) %>%
     filter(Category==categ) %>%
     mutate(resid5=MU_5-MU_3, resid7=MU_S-MU_5, residL=MU-MU_S)
   overall_models <- runDNMLogit(overall_dat, "FULL")

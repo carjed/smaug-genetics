@@ -9,6 +9,7 @@ suppressMessages(usePackage(boot))
 suppressMessages(usePackage(devtools))
 suppressMessages(usePackage(psych))
 suppressMessages(usePackage(lmtest))
+suppressMessages(usePackage(fmsb))
 
 source("./R/get_functions.r")
 source("./R/roc_functions.r")

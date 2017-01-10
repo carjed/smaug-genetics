@@ -10,17 +10,10 @@ cat("Loading functions and packages...\n")
 
 source("R/get_functions.r")
 
-# Get args from command line; defaults defined below
-args <- getArgs(
-	defaults=list(adj=3,
-		binw=1000000,
-		summfile=paste0(parentdir, "/output/7bp_1000k_common/full.summary"),
-		binfile=paste0(parentdir, "/output/7bp_1000k_common/full_bin.txt")
-	))
-
-# Need to manually coerce binwidth and adj args to numeric
-binw <- as.numeric(binw)
-adj <- as.numeric(adj)
+adj <- 3
+binw <- 1000000
+summfile <- paste0(parentdir, "/output/7bp_1000k_common/full.summary")
+binfile <- paste0(parentdir, "/output/7bp_1000k_common/full_bin.txt")
 
 # Define additional variables for cleaner strings, etc.
 bink <- binw/1000

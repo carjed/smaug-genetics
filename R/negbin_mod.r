@@ -120,27 +120,27 @@ binscpgGC <- dat_5bp_100k$bin %>%
 a3 <- merge(agg_cov, rates1[,c(1,2,4)], by="Category2")
 # a3$exp1 <- a3$nmotifs*a3$rel_prop1
 
-logit_gcta<-read.table("/net/bipolar/jedidiah/mutation/output/predicted/binned/GC_TA_binned.txt", header=F, stringsAsFactors=F)
+logit_gcta<-read.table(paste0(parentdir, "/output/predicted/binned/GC_TA_binned.txt"), header=F, stringsAsFactors=F)
 names(logit_gcta)<-c("CHR", "BIN", "GC_TA", "cpg_GC_TA")
 lgcta<-logit_gcta %>% gather(Category2, LSUM, GC_TA:cpg_GC_TA)
 
-logit_gccg<-read.table("/net/bipolar/jedidiah/mutation/output/predicted/binned/GC_CG_binned.txt", header=F, stringsAsFactors=F)
+logit_gccg<-read.table(paste0(parentdir, "/output/predicted/binned/GC_CG_binned.txt"), header=F, stringsAsFactors=F)
 names(logit_gccg)<-c("CHR", "BIN", "GC_CG", "cpg_GC_CG")
 lgccg<-logit_gccg %>% gather(Category2, LSUM, GC_CG:cpg_GC_CG)
 
-logit_gcat<-read.table("/net/bipolar/jedidiah/mutation/output/predicted/binned/GC_AT_binned.txt", header=F, stringsAsFactors=F)
+logit_gcat<-read.table(paste0(parentdir, "/output/predicted/binned/GC_AT_binned.txt"), header=F, stringsAsFactors=F)
 names(logit_gcat)<-c("CHR", "BIN", "GC_AT", "cpg_GC_AT")
 lgcat<-logit_gcat %>% gather(Category2, LSUM, GC_AT:cpg_GC_AT)
 
-logit_atcg<-read.table("/net/bipolar/jedidiah/mutation/output/predicted/binned/AT_CG_binned.txt", header=F, stringsAsFactors=F)
+logit_atcg<-read.table(paste0(parentdir, "/output/predicted/binned/AT_CG_binned.txt"), header=F, stringsAsFactors=F)
 names(logit_atcg)<-c("CHR", "BIN", "LSUM")
 latcg<-logit_atcg %>% mutate(Category2="AT_CG") %>% dplyr::select(CHR, BIN, Category2, LSUM)
 
-logit_atgc<-read.table("/net/bipolar/jedidiah/mutation/output/predicted/binned/AT_GC_binned.txt", header=F, stringsAsFactors=F)
+logit_atgc<-read.table(paste0(parentdir, "/output/predicted/binned/AT_GC_binned.txt"), header=F, stringsAsFactors=F)
 names(logit_atgc)<-c("CHR", "BIN", "LSUM")
 latgc<-logit_atgc %>% mutate(Category2="AT_GC") %>% dplyr::select(CHR, BIN, Category2, LSUM)
 
-logit_atta<-read.table("/net/bipolar/jedidiah/mutation/output/predicted/binned/AT_TA_binned.txt", header=F, stringsAsFactors=F)
+logit_atta<-read.table(paste0(parentdir, "/output/predicted/binned/AT_TA_binned.txt"), header=F, stringsAsFactors=F)
 names(logit_atta)<-c("CHR", "BIN", "LSUM")
 latta<-logit_atta %>% mutate(Category2="AT_TA") %>% dplyr::select(CHR, BIN, Category2, LSUM)
 
@@ -300,7 +300,7 @@ ggplot(comp.mods, aes(x=obs, y=exp, group=res, colour=res))+
   facet_wrap(~res, scales="free")+
   theme_bw()+
   theme(legend.position="none")
-ggsave("/net/bipolar/jedidiah/mutation/images/1mb_scatter.png", height=4, width=5.5)
+ggsave(paste0(parentdir, "/images/1mb_scatter.png"), height=4, width=5.5)
 
 
 ##############################################################################
@@ -312,7 +312,7 @@ data(hg19IdeogramCyto, package = "biovizBase")
 ic2<-as.data.frame(hg19IdeogramCyto)
 
 # Read in chromosome lengths for specifying plot range
-chrlen<-read.table("/net/bipolar/jedidiah/mutation/reference_data/hg19.genome", header=T, stringsAsFactors=F)
+chrlen<-read.table(paste0(parentdir, "/reference_data/hg19.genome"), header=T, stringsAsFactors=F)
 
 plotlist<-list()
 for(i in 1:22){
@@ -375,11 +375,11 @@ for(i in 1:22){
     guides(fill=FALSE, colour = guide_legend(nrow = 3))
   plotlist[[i]]<-p2
   p2
-  ratiofile<-paste0("/net/bipolar/jedidiah/mutation/images/chr",i,"_ratio.png")
+  ratiofile<-paste0(parentdir, "/images/chr",i,"_ratio.png")
   ggsave(ratiofile, width=10, height=5)
 }
 
-pdf("/net/bipolar/jedidiah/mutation/images/allchr.pdf", onefile=T,
+pdf(paste0(parentdir, "/images/allchr.pdf"), onefile=T,
   width=8, height=88, paper="letter")
 multiplot(plotlist=plotlist[1:4], cols=1)
 multiplot(plotlist=plotlist[5:8], cols=1)

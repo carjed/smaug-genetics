@@ -1,9 +1,9 @@
 # Read table of coefficients output from logit models
-coefs <- read.table("/net/bipolar/jedidiah/mutation/output/logmod_data/coefs/coefs_full.txt", header=F, stringsAsFactors=F)
+coefs <- read.table(paste0(parentdir, "/output/logmod_data/coefs/coefs_full.txt"), header=F, stringsAsFactors=F)
 names(coefs) <- c("Cov", "Est", "SE", "Z", "pval", "Sequence", "Category")
 coefs$Category <- ifelse(substr(coefs$Sequence, 4, 5)=="CG", paste0("cpg_", coefs$Category), coefs$Category)
 
-ratefile <- "/net/bipolar/jedidiah/mutation/output/7bp_1000k_rates.txt"
+ratefile <- paste0(parentdir, "/output/7bp_1000k_rates.txt")
 rates <- read.table(ratefile, header=T, stringsAsFactors=F)
 
 rates <- rates %>%
@@ -39,17 +39,18 @@ plotcts <- plotdat %>%
   group_by(Cov, Category, dir) %>%
   summarise(n=n()) %>%
   mutate(Estmax=ifelse(dir=="Up", 3, 0.5)) %>%
-  mutate(Estmax=ifelse(Cov=="CpGI", ifelse(dir=="Up", 18, 0.08), Estmax), label=n) %>%
-  filter(n>2)
+  mutate(Estmax=ifelse(Cov=="CpGI", ifelse(dir=="Up", 10, 0.125), Estmax), label=n) %>%
+  filter(n>4)
 plotcts$Category <- factor(plotcts$Category, levels=orderedcats2)
 plotcts$Cov <- factor(plotcts$Cov, levels=orderedcovs)
 
 # ggplot()+
+svglite(paste0(parentdir, "/images/coef_violin2.svg"), width=7, height=7)
 plotdat %>% filter(Cov!="CpGI") %>%
 ggplot(aes(x=Category, y=exp(Est), alpha=factor(dir), fill=Category))+
   geom_hline(yintercept=1, linetype="dashed")+
   geom_text(data=plotcts[plotcts$Cov!="CpGI",],
-    aes(x=Category, y=Estmax, label=label, colour=Category), size=4)+
+    aes(x=Category, y=Estmax, label=label, colour=Category), vjust=1, size=4, angle=90)+
   geom_violin(position="identity", scale="area")+
   scale_fill_manual(values=cols, drop=FALSE)+
   scale_colour_manual(values=cols, drop=FALSE)+
@@ -62,36 +63,48 @@ ggplot(aes(x=Category, y=exp(Est), alpha=factor(dir), fill=Category))+
   theme_bw()+
   guides(fill = guide_legend(nrow = 3))+
   theme(legend.position="bottom",
-  strip.text=element_text(size=16),
+  legend.title=element_blank(),
+  strip.text=element_text(size=12),
   axis.text.x=element_blank(),
   axis.title.x=element_blank(),
-  axis.text.y=element_text(size=14),
-  axis.title.y=element_text(size=16))
-ggsave("/net/bipolar/jedidiah/mutation/images/coef_violin2.svg", width=14, height=8)
+  axis.text.y=element_text(size=10),
+  axis.title.y=element_text(size=12))
+dev.off()
+# ggsave(paste0(parentdir, "/images/coef_violin2.svg"), width=7, height=7)
 
-plotdat %>% filter(Cov=="CpGI") %>%
+# my_svg <- function(file, width, height) {
+#    library(RSvgDevice)
+#    devSVG(file = file, width = width, height = height, bg = "white", fg = "black",
+#           onefile = TRUE, xmlHeader = TRUE)
+# }
+
+svglite(paste0(parentdir, "/images/coef_violin2_cpgi2.svg"), width=7, height=7)
+plotdat %>%
 ggplot(aes(x=Category, y=exp(Est), alpha=factor(dir), fill=Category))+
   geom_hline(yintercept=1, linetype="dashed")+
   geom_text(data=plotcts[plotcts$Cov=="CpGI",],
-    aes(x=Category, y=Estmax, label=label, colour=Category), size=4)+
+    aes(x=Category, y=Estmax, label=label, colour=Category), vjust=1, angle=90, size=4)+
   geom_violin(position="identity", scale="area")+
   scale_fill_manual(values=cols, drop=FALSE)+
   scale_colour_manual(values=cols, drop=FALSE)+
   scale_x_discrete(drop=FALSE)+
-  scale_y_log10(breaks=c(.125, .25, 0.5, 1, 2, 4, 8))+
+  scale_y_log10(breaks=c(.125, .25, 0.5, 1, 2, 4, 8), labels=c(.125, .25, 0.5, 1, 2, 4, 8))+
   # scale_y_log10(breaks=c(0.5, 1, 2))+
   scale_alpha_discrete(range = c(0.95, 0.96), guide=F)+
-  facet_wrap(~Cov, ncol=4, drop=T)+
-  # ylab("odds ratio for mutability")+
+  facet_wrap(~Cov, ncol=4, drop=F)+
+  # facet_wrap(~Cov, ncol=4, drop=T)+
+  ylab("odds ratio for mutability")+
   theme_bw()+
   guides(fill = guide_legend(nrow = 3))+
-  theme(legend.position="none",
-  strip.text=element_text(size=16),
+  theme(legend.position="bottom",
+  legend.title=element_blank(),
+  strip.text=element_text(size=12),
   axis.text.x=element_blank(),
   axis.title.x=element_blank(),
-  axis.text.y=element_text(size=14),
-  axis.title.y=element_text(size=16))
-ggsave("/net/bipolar/jedidiah/mutation/images/coef_violin2_cpgi.svg", width=6, height=4)
+  axis.text.y=element_text(size=10),
+  axis.title.y=element_text(size=12))
+dev.off()
+# ggsave(paste0(parentdir, "/images/coef_violin2_cpgi2.svg"), width=7, height=7)
 
 coefs <- coefs %>%
   mutate(Category = plyr::mapvalues(Category, orderedcats1, orderedcats2))
@@ -115,7 +128,7 @@ ggplot(aes(fill=Category))+
   axis.title.x=element_blank(),
   axis.text.y=element_text(size=14),
   axis.title.y=element_text(size=16))
-ggsave("/net/bipolar/jedidiah/mutation/images/coef_violin_full.png", width=9, height=8)
+ggsave(paste0(parentdir, "/images/coef_violin_full.png"), width=9, height=8)
 
 ##############################################################################
 # Code below is used to validate specific results of feature-associated subtypes
@@ -138,39 +151,39 @@ runTest <- function(cov, dir){
     paste0(covdir$Category, "_", covdir$Sequence),]
   if(nrow(dnmstmp)>=5){
     if(cov=="GC"){
-      covbase <- "/net/bipolar/jedidiah/mutation/reference_data/high_gc"
+      covbase <- paste0(parentdir, "/reference_data/high_gc")
       dnmstmp$GC <- gcCol(dnmstmp,
-        "/net/bipolar/jedidiah/mutation/output/3bp_10k/full_bin.txt")
+        paste0(parentdir, "/output/3bp_10k/full_bin.txt"))
       dnmstmp$inside <- ifelse(dnmstmp$GC>=0.55, 1, 0)
     } else if(cov=="TIME"){
       dnmstmp$TIME <- repCol(dnmstmp,
-        "/net/bipolar/jedidiah/mutation/reference_data/lymph_rep_time.txt")
+        paste0(parentdir, "/reference_data/lymph_rep_time.txt"))
       if(dir=="Down"){
-        covbase <- "/net/bipolar/jedidiah/mutation/reference_data/late_rt"
+        covbase <- paste0(parentdir, "/reference_data/late_rt")
         dnmstmp$inside <- ifelse(dnmstmp$TIME<=-1.25, 1, 0)
       } else if(dir=="Up"){
-        covbase <- "/net/bipolar/jedidiah/mutation/reference_data/early_rt"
+        covbase <- paste0(parentdir, "/reference_data/early_rt")
         dnmstmp$inside <- ifelse(dnmstmp$TIME>=1.25, 1, 0)
       }
     } else if(cov=="RR"){
-      covbase <- "/net/bipolar/jedidiah/mutation/reference_data/high_rr"
+      covbase <- paste0(parentdir, "/reference_data/high_rr")
       dnmstmp$RR <- rcrCol(dnmstmp,
-        "/net/bipolar/jedidiah/mutation/reference_data/recomb_rate.bed")
+        paste0(parentdir, "/reference_data/recomb_rate.bed"))
       dnmstmp$inside <- ifelse(dnmstmp$RR>=2, 1, 0)
     } else if(cov=="DHS"){
-      covbase <- "/net/bipolar/jedidiah/mutation/reference_data/DHS"
+      covbase <- paste0(parentdir, "/reference_data/DHS")
       covbed <- paste0(covbase, ".bed")
       dnmstmp$inside <- binaryCol(dnmstmp, covbed)
     } else if(cov=="CpGI"){
-      covbase <- "/net/bipolar/jedidiah/mutation/reference_data/cpg_islands_sorted"
+      covbase <- paste0(parentdir, "/reference_data/cpg_islands_sorted")
       covbed <- paste0(covbase, ".bed")
       dnmstmp$inside <- binaryCol(dnmstmp, covbed)
     } else if(cov=="LAMIN"){
-      covbase <- "/net/bipolar/jedidiah/mutation/reference_data/lamin_B1_LADS2"
+      covbase <- paste0(parentdir, "/reference_data/lamin_B1_LADS2")
       covbed <- paste0(covbase, ".bed")
       dnmstmp$inside <- binaryCol(dnmstmp, covbed)
     } else {
-      covbase <- paste0("/net/bipolar/jedidiah/mutation/reference_data/histone_marks/broad/sort.E062-", cov)
+      covbase <- paste0(parentdir, "/reference_data/histone_marks/broad/sort.E062-", cov)
       covbed <- paste0(covbase, ".bed")
       dnmstmp$inside <- binaryCol(dnmstmp, covbed)
     }
@@ -178,12 +191,12 @@ runTest <- function(cov, dir){
     obs <- sum(dnmstmp$inside)
 
     seqs <- unlist(c(covdir$Sequence, lapply(covdir$Sequence, revcomp)))
-    write.table(seqs, "/net/bipolar/jedidiah/mutation/seqs.txt", col.names=F, row.names=F, quote=F, sep="\t")
+    write.table(seqs, paste0(parentdir, "/seqs.txt"), col.names=F, row.names=F, quote=F, sep="\t")
 
-    grepcmd <- paste0("grep -o -Ff /net/bipolar/jedidiah/mutation/seqs.txt ", covbase, ".fa | sort | uniq -c > /net/bipolar/jedidiah/mutation/testcounts.txt")
+    grepcmd <- paste0("grep -o -Ff ", parentdir, "/seqs.txt ", covbase, ".fa | sort | uniq -c > ", parentdir, "/testcounts.txt")
     system(grepcmd)
 
-    motifcts <- read.table("/net/bipolar/jedidiah/mutation/testcounts.txt", header=F, stringsAsFactors=F)
+    motifcts <- read.table(paste0(parentdir, "/testcounts.txt"), header=F, stringsAsFactors=F)
 
     names(motifcts) <- c("Count", "SEQ")
     motifcts$REVSEQ <- unlist(lapply(motifcts$SEQ, revcomp))
@@ -241,10 +254,10 @@ for(i in 1:nrow(td2)){
   ci <- prop.test(row$value, row$n)$conf.int[1:2]*row$n
   names(ci) <- c("lo", "hi")
   if(row$dir=="Up"){
-    binom.pval <- binom.test(x=row$value, n=row$n, p=row$propexp,
+    binom.pval <- binom.test(x=as.integer(row$value), n=row$n, p=row$propexp,
       alternative="greater")$p.value
   } else {
-    binom.pval <- binom.test(x=row$value, n=row$n, p=row$propexp,
+    binom.pval <- binom.test(x=as.integer(row$value), n=row$n, p=row$propexp,
       alternative="less")$p.value
   }
 
@@ -281,4 +294,4 @@ ggplot(td3[td3$value>60,],
     axis.text.x = element_text(size=14, angle=45, vjust=1, hjust=1),
     axis.title.x=element_blank())+
   guides(colour=FALSE)
-ggsave("/net/bipolar/jedidiah/mutation/images/covbars_full.png", width=12, height=8)
+ggsave(paste0(parentdir, "/images/covbars_full.png"), width=12, height=8)

@@ -78,44 +78,6 @@ make.data<-function(filename, chunksize, skiprows,...){
 }
 
 ##############################################################################
-# plot nbp heatmaps
-##############################################################################
-rrheat <- function(dat, f, levels, facetvar, nbp){
-	p <- ggplot()+
-	# log(v4*10000+1,2)
-	# limits=c(min(dat$v4), max(dat$v4))
-	geom_tile(data=dat, aes(x=v2a, y=v3, fill=v4))+
-	# geom_text(data=dat, aes(x=v2a, y=v3, label=v4a, family="Courier", size=0.1))+
-	geom_rect(data=f, size=0.8, colour="grey30",
-		aes(xmin=xlo, xmax=xhi, ymin=ylo, ymax=yhi), fill=NA)+
-	scale_fill_gradientn("Relative Rate\n",
-		colours=myPalette((nbp-1)^4),
-		trans="log",
-		breaks=c(min(dat$v4), mean(dat$v4), max(dat$v4)),
-		labels=c(round(min(dat$v4), 5),
-	 		round(mean(dat$v4), 4),
-			round(max(dat$v4), 3)),
-		limits=c(min(dat$v4), max(dat$v4)))+
-	xlab("5' flank")+
-	ylab("3' flank")+
-	theme(
-		# legend.position="none",
-		legend.title = element_text(size=18),
-	  legend.text = element_text(size=16),
-	  strip.text.x = element_text(size=20),
-	  axis.title.x = element_text(size=20),
-	  axis.title.y = element_text(size=20),
-    axis.text.y = element_text(size=6, colour="black"),
-	  axis.text.x = element_text(size=6, colour="black", angle=90, hjust=1))+
-		# axis.text.y = element_blank(),
-		# axis.text.x = element_blank())+
-	scale_x_discrete(labels=levels)+
-	facet_wrap(as.formula(paste("~", facetvar)), ncol=6, scales="free_x")
-
-	return(p)
-}
-
-##############################################################################
 # QQ plot in ggplot2 with qqline
 ##############################################################################
 ggQQ <- function (vec) # argument: vector of numbers
@@ -269,7 +231,8 @@ repCol <- function(sites, repfile, binwidth){
     mutate(START=imputeStart(END))
 
   feat_ranges <- GRanges(seqnames=paste0("chr",reptime2$CHR),
-                         ranges=IRanges(start=reptime2$START, end=reptime2$END), id=reptime2$TIME)
+                         ranges=IRanges(start=reptime2$START, end=reptime2$END),
+												 id=reptime2$TIME)
   site_ranges <- GRanges(seqnames=paste0("chr",sites$CHR),
                          ranges=IRanges(start=sites$POS, end=sites$POS))
 
@@ -311,7 +274,8 @@ gcCol<-function(sites, gcfile){
   gcbins<-gcbins %>% arrange(CHR, start)
 
   feat_ranges <- GRanges(seqnames=gcbins$CHR,
-                         ranges=IRanges(start=gcbins$start, end=gcbins$end), id=gcbins$prop_GC)
+                         ranges=IRanges(start=gcbins$start, end=gcbins$end),
+												 id=gcbins$prop_GC)
   site_ranges <- GRanges(seqnames=paste0("chr",sites$CHR),
                          ranges=IRanges(start=sites$POS, end=sites$POS))
 
@@ -374,11 +338,13 @@ logitMod <- function(motif, nbp, parentdir, categ){
 	# sites_for_GC <- data.frame(position=sites$POS, chr=paste0("chr", sites$CHR))
 
 	# Add histone marks to site data
-	hists <- c("H3K4me1", "H3K4me3", "H3K9ac", "H3K9me3", "H3K27ac", "H3K27me3", "H3K36me3")
+	hists <- c("H3K4me1", "H3K4me3", "H3K9ac", "H3K9me3",
+		"H3K27ac", "H3K27me3", "H3K36me3")
 	dflist <- list()
 	for(i in 1:length(hists)){
 	  mark <- hists[i]
-	  file <- paste0(parentdir, "/reference_data/histone_marks/broad/sort.E062-", mark, ".bed")
+	  file <- paste0(parentdir, "/reference_data/histone_marks/broad/sort.E062-",
+			mark, ".bed")
 	  hist <- binaryCol(sites, file)
 	  dflist[[i]] <- hist
 	}
@@ -389,16 +355,16 @@ logitMod <- function(motif, nbp, parentdir, categ){
 
 	# Add other features
 	sites$CpGI <- binaryCol(sites,
-		"/net/bipolar/jedidiah/mutation/reference_data/cpg_islands_sorted.bed")
+		paste0(parentdir, "/reference_data/cpg_islands_sorted.bed"))
 	sites$RR <- rcrCol(sites,
-		"/net/bipolar/jedidiah/mutation/reference_data/recomb_rate.bed")
+		paste0(parentdir, "/reference_data/recomb_rate.bed"))
 	sites$LAMIN <- binaryCol(sites,
-		"/net/bipolar/jedidiah/mutation/reference_data/lamin_B1_LADS2.bed")
+		paste0(parentdir, "/reference_data/lamin_B1_LADS2.bed"))
 	sites$DHS <- binaryCol(sites,
-		"/net/bipolar/jedidiah/mutation/reference_data/DHS.bed")
+		paste0(parentdir, "/reference_data/DHS.bed"))
 	sites$TIME <- repCol(sites,
-		"/net/bipolar/jedidiah/mutation/reference_data/lymph_rep_time.txt")
-	sites$GC <- gcCol(sites, "/net/bipolar/jedidiah/mutation/output/3bp_10k/full_bin.txt")
+		paste0(parentdir, "/reference_data/lymph_rep_time.txt"))
+	sites$GC <- gcCol(sites, paste0(parentdir, "/output/3bp_10k/full_bin.txt"))
 	# sites$GC <- gcContentCalc(sites_for_GC, 10000, organism=Hsapiens)
 
 	# Run logit model for categories with >10 singletons, return coefficients

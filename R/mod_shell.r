@@ -22,7 +22,7 @@
 ##############################################################################
 ptm <- proc.time()
 
-parentdir<-"/net/bipolar/jedidiah/mutation"
+parentdir <- dirname(getwd())
 
 cat("Loading functions and packages...\n")
 scriptdir <- dirname(sys.frame(1)$ofile)
@@ -59,7 +59,7 @@ suppressMessages(usePackage(boot))
 suppressMessages(usePackage(devtools))
 suppressMessages(usePackage(psych))
 # Install the bedr package from github, if needed
-# require(devtools)
+
 # install_github('carjed/bedr')
 # require(bedr)
 # suppressMessages(usePackage(ggbio))

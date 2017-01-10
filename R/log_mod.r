@@ -4,7 +4,7 @@
 # Logistic regression model
 ##############################################################################
 
-libpath<-"/net/snowwhite/home/jedidiah/R/x86_64-pc-linux-gnu-library/2.13"
+libpath <- "~/R/x86_64-pc-linux-gnu-library/2.13"
 
 options(useHTTPS=FALSE)
 suppressMessages(require(speedglm, lib.loc=libpath, quietly=T))
@@ -24,7 +24,7 @@ args <- getArgs(
 		nodes=10))
 
 nbp <- 7
-parentdir <- "/net/bipolar/jedidiah/mutation"
+# parentdir <- "/net/bipolar/jedidiah/mutation"
 
 cat("Script will run with the following parameters:\n")
 for(i in 1:length(args)){
@@ -42,7 +42,7 @@ cat("\n")
 
 jobid <- as.numeric(jobid)
 
-# cluster <- makeCluster(nodes, type = "SOCK", outfile="/net/bipolar/jedidiah/mutation/snow.log")
+# cluster <- makeCluster(nodes, type = "SOCK", outfile="paste0(parentdir, "/snow.log"))
 # registerDoSNOW(cluster)
 
 # Target mutation rate
@@ -61,7 +61,7 @@ mut_cats <- c("AT_CG", "AT_GC", "AT_TA", "GC_AT", "GC_CG", "GC_TA")
 # subset reference data to only AT or GC bases
 catopt <- substr(categ,0,2)
 
-motiffile <- "/net/bipolar/jedidiah/mutation/output/7bp_1000k_rates.txt"
+motiffile <- paste0(parentdir, "/output/7bp_1000k_rates.txt")
 incmd <- paste0("cut -f1-3 ", motiffile)
 motifdat <- read.table(pipe(incmd), header=T, stringsAsFactors=F)
 motifs <- motifdat %>%

@@ -10,15 +10,6 @@ aggData <- function(datfile, adj){
 	mct <- datfile$mct
 	nbp <- adj*2+1
 
-	# summfile <- dat_5bp_100k$summ
-	# binfile <- dat_5bp_100k$bin
-
-	# summfile <- dat_5bp_2$summ
-	# binfile <- dat_5bp_2$bin
-
-	# summfile <-summfile[summfile$CHR==2 & summfile$BIN<=600 & summfile$BIN>=300,]
-	# binfile <- binfile[binfile$CHR=="chr2" & binfile$BIN<=600 & binfile$BIN>=300,]
-
 	# Compute Ts/Tv by bin--can use as filter set to exclude windows with Ts/Tv
 	# below a certain threshold
 	cat("Computing Ts/Tv per bin...\n")

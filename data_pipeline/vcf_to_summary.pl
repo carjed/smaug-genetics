@@ -1,50 +1,61 @@
 #!/usr/local/bin/perl
 use strict;
 use warnings;
+use POSIX;
+use Getopt::Long;
+use Pod::Usage;
 use File::Basename;
 use File::Path qw(make_path);
+use List::Util qw(first max maxstr min minstr reduce shuffle sum);
 use Cwd;
+use Benchmark;
 
 ################################################################################
 # Singleton Analysis Pipeline
 # 	-create initial summary files to be passed to ref5.pl
 ################################################################################
+my $help=0;
+my $man=0;
+
+### Mandatory inputs
+# Default vcf to load
+my $invcf = "/net/bipolar/jedidiah/testpipe/vcfs/merged.ma.vcf.gz"; # singletons, including multiallelic sites
+# my $invcf = "/net/bipolar/jedidiah/testpipe/vcfs/merged.new.vcf.gz"; # common variants
+
+# Default summary directory
+my $outdir="/net/bipolar/jedidiah/testpipe/summaries/singletons_full";
+
+### Optional inputs
+# If --common option specified, outputs summary for common variants (MAC>10)
+my $common;
+
+# Copies per-chromosome VCFs from another directory to avoid overwriting
+my $makecopy;
+
+# Specify project folder for VCFs
+my $vcfdir="/net/bipolar/jedidiah/testpipe/vcfs";
+
+GetOptions ('invcf=s'=> \$invcf,
+'outdir=s'=> \$outdir,
+'common' => \$common,
+'makecopy' => \$makecopy,
+'vcfdir=s' => \$vcfdir,
+'help|?'=> \$help,
+man => \$man) or pod2usage(1);
 
 ################################################################################
-# initialize directories
-# -$dir is location of program and input files
-# -$projdir is location of output; assumed to contain /vcfs subfolder containing
-#	at least 1 vcf file
-#
-# check if input files exist and process ped file if needed
+# Copies original vcfs to project directory
+# Must modify hard-coded paths for original vcfs
 ################################################################################
-my $dir=getcwd;
+if ($makecopy) {
+	my @vcfs;
+	my @chrindex=(1..22);
+	foreach my $chr (@chrindex){
+		push(@vcfs,
+			"/net/bipolar/lockeae/final_freeze/snps/vcfs/chr$chr/chr$chr.filtered.sites.vcf.gz");
+	}
 
-my $projdir="/net/bipolar/jedidiah/testpipe";
-my $vcfloc="$projdir/vcfs";
-make_path("$projdir/summaries/doubletons",
-	"$projdir/summaries/cases",
-	"$projdir/summaries/controls");
-
-# my $summloc="$projdir/summaries";
-my $summloc="$projdir/summaries/common";
-my $summloc2="$projdir/summaries/doubletons";
-
-my $bcftools="/net/bipolar/jedidiah/bcftools/bcftools";
-my $vcftools="/net/bipolar/jedidiah/vcftools_0.1.10/bin/vcftools";
-
-my $vcfin=1;
-# my @vcfs = </net/bipolar/lockeae/freeze4/vcfs/anno/final/*.vcf.gz>;
-my @vcfs;
-my @chrindex=(1..22);
-foreach my $chr (@chrindex){
-	push(@vcfs,
-		"/net/bipolar/lockeae/final_freeze/snps/vcfs/chr$chr/chr$chr.filtered.sites.vcf.gz");
-}
-# my @vcfs = </net/bipolar/lockeae/final_freeze/snps/vcfs/*.vcf.gz>;
-
-if ($vcfin!=1) {
-	print "Copying VCFs to project directory and updating headers...\n";
+	print "Copying VCFs to project directory...\n";
 	foreach my $file (@vcfs) {
 		my $filename=fileparse($file);
 		# my $subfile = substr($filename, index($filename, 'chr'), index($filename, 'anno'));
@@ -53,31 +64,39 @@ if ($vcfin!=1) {
 			index($filename, 'modified'));
 		my $chr = substr($subfile, 0, index($subfile, '.'));
 		#print "$chr\n";
-		# my $tabix ="tabix -r newheader.txt $file > $vcfloc/$chr.anno.vcf.gz";
+		# my $tabix ="tabix -r newheader.txt $file > $vcfdir/$chr.anno.vcf.gz";
 		# &forkExecWait($tabix);
 
 		# my $tabix="tabix -p vcf $file"
-		my $cpvcf="cp $file $vcfloc/$chr.vcf.gz";
+		my $cpvcf="cp $file $vcfdir/$chr.vcf.gz";
 		&forkExecWait($cpvcf);
 	}
+
+	my $concatcmd="perl /net/bipolar/jedidiah/vcftools_0.1.10/perl/vcf-concat $vcfdir/chr*.vcf.gz | gzip -c > $vcfdir/merged.vcf.gz";
+	&forkExecWait($concatcmd);
+
+	my $maparse="perl ";
+
 	print "Done\n";
 }
 
+################################################################################
+# Get per-chromosome summary files from bcftools
+################################################################################
 my $script = 1;
 
-################################################################################
-#Produce summary files of singleton sites for cases, controls, and combined vcfs
-################################################################################
 if ($script==1){
 	foreach my $chr (1..22) {
         # my $filename=fileparse($file);
         # my $path=dirname($file);
 		# my $chr = substr($filename, 0, index($filename, '.'));
-		# my $file = "/net/bipolar/jedidiah/testpipe/vcfs/merged.ma.vcf.gz"; # singletons, including multiallelic sites
-		# my $cmd="bcftools query -i 'FILTER=\"PASS\"' -r $chr -f '%CHROM\t%POS\t%REF\t%ALT\t%INFO/AB\t%INFO/AN\n' $file > $summloc/chr$chr.summary";
+		my $cmd;
+		if(common){
+			$cmd="bcftools query -i 'AC>10 && FILTER=\"PASS\"' -r $chr -f '%CHROM\t%POS\t%REF\t%ALT\t%INFO/AB\t%INFO/AN\n' $invcf > $outdir/chr$chr.common.summary";
+		} else {
+			$cmd="bcftools query -i 'FILTER=\"PASS\"' -r $chr -f '%CHROM\t%POS\t%REF\t%ALT\t%INFO/AB\t%INFO/AN\n' $invcf > $outdir/chr$chr.summary";
+		}
 
-		my $file = "/net/bipolar/jedidiah/testpipe/vcfs/merged.new.vcf.gz"; # common variants
-		my $cmd="bcftools query -i 'AC>10 && FILTER=\"PASS\"' -r $chr -f '%CHROM\t%POS\t%REF\t%ALT\t%INFO/AB\t%INFO/AN\n' $file > $summloc/chr$chr.summary";
 		&forkExecWait($cmd);
 	}
 }

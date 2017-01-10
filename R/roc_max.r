@@ -4,7 +4,7 @@
 {
 	# Read data
 	cat("Reading data...\n")
-	chrpf <- read.table("/net/bipolar/jedidiah/mutation/output/rocdat.7bp.2.txt",
+	chrpf <- read.table(paste0(parentdir, "/output/rocdat.7bp.2.txt"),
 		header=F, stringsAsFactors=F)
 	names(chrpf) <- c("CHR", "POS", "BIN", "MU", "OBS", "Category", "SEQ",
 		"MU_C", "MU_S", "MU_A")
@@ -14,12 +14,12 @@
 
 	# Read DNMs
 	cat("Reading DNMs...\n")
-	dnms_full <- read.table("/net/bipolar/jedidiah/mutation/reference_data/DNMs/GoNL_DNMs.txt",
+	dnms_full <- read.table(paste0(parentdir, "/reference_data/DNMs/GoNL_DNMs.txt"),
 		header=T, stringsAsFactors=F)
 	dnms_full <- dnms_full[,1:5]
 	names(dnms_full) <- c("ID", "CHR", "POS", "REF", "ALT")
 
-	gdnms <- read.table("/net/bipolar/jedidiah/mutation/reference_data/DNMs/goldmann_2016_dnms.txt",
+	gdnms <- read.table(paste0(parentdir, "/reference_data/DNMs/goldmann_2016_dnms.txt"),
 		header=T, stringsAsFactors=F)
 	gdnms$ID <- "goldmann"
 	gdnms <- gdnms[,c(7,1,2,4,5)]
@@ -79,7 +79,7 @@ if(dnm_rates){
 		group_by(Category.x=as.character(Category.x), SEQ=substr(SEQ, 3, 5)) %>%
 		summarise(ndnm=n())
 
-	rates3 <- read.table("/net/bipolar/jedidiah/mutation/output/3bp_1000k_rates.txt",
+	rates3 <- read.table(paste0(parentdir, "/output/3bp_1000k_rates.txt"),
 		header=T, stringsAsFactors=F)
 	rates3$Category.x <- gsub("cpg_", "", rates3$Category2)
 	rates3$SEQ <- substr(rates3$Sequence, 1, 3)
@@ -92,14 +92,14 @@ if(dnm_rates){
 
 	rates_3[is.na(rates_3)] <- 0
 
-	write.table(rates_3, "/net/bipolar/jedidiah/mutation/dnm_3bp_rates.txt",
+	write.table(rates_3, paste0(parentdir, "/dnm_3bp_rates.txt"),
 		col.names=T, row.names=F, quote=F, sep="\t")
 }
 
 ##############################################################################
 # Add columns for 5-mer, 3-mer, and 1-mer rates
 ##############################################################################
-rates5 <- read.table("/net/bipolar/jedidiah/mutation/output/5bp_1000k_rates.txt",
+rates5 <- read.table(paste0(parentdir, "/output/5bp_1000k_rates.txt"),
 	header=T, stringsAsFactors=F)
 r5r <- data.frame(Category.x=gsub("cpg_", "", rates5$Category2),
 	SEQ5=substr(rates5$Sequence, 1, 5),
@@ -107,7 +107,7 @@ r5r <- data.frame(Category.x=gsub("cpg_", "", rates5$Category2),
 chrp$SEQ5 <- substr(chrp$SEQ, 2, 6)
 chrp <- merge(chrp, r5r, by=c("Category.x", "SEQ5"), all.x=T)
 
-rates3 <- read.table("/net/bipolar/jedidiah/mutation/output/3bp_1000k_rates.txt",
+rates3 <- read.table(paste0(parentdir, "/output/3bp_1000k_rates.txt"),
 	header=T, stringsAsFactors=F)
 r3r <- data.frame(Category.x=gsub("cpg_", "", rates3$Category2),
 	SEQ3=substr(rates3$Sequence, 1, 3),
@@ -137,15 +137,28 @@ runDNMLogit<-function(data, group){
 	if(nrow(data)>1e6){
 		logmod1a<-glm(OBS~Category.x, data=data, family=binomial())
 		logmod1b<-glm(OBS~Category, data=data, family=binomial())
-		logmod3<-glm(OBS~Category+MU_3, data=data, family=binomial())
-	  logmod5<-glm(OBS~Category+MU_3+resid5, data=data, family=binomial())
-	  logmod7<-glm(OBS~Category+MU_3+resid5+resid7, data=data, family=binomial())
+		logmod3<-glm(OBS~Category+resid3, data=data, family=binomial())
+		logmod5<-glm(OBS~Category+resid3+resid5, data=data, family=binomial())
+		logmod7<-glm(OBS~Category+resid3+resid5+resid7, data=data, family=binomial())
+		logmodL<-glm(OBS~Category+resid3+resid5+resid7+residL, data=data, family=binomial())
+
+		# logmod3<-glm(OBS~Category.x+MU_3, data=data, family=binomial())
+		# logmod5<-glm(OBS~MU_1+resid5, data=data, family=binomial())
+		# logmod5<-glm(OBS~Category.x+MU_5, data=data, family=binomial())
+		# logmod7<-glm(OBS~MU_1+resid7, data=data, family=binomial())
+		# logmod7<-glm(OBS~Category.x+MU_S, data=data, family=binomial())
+		# logmodL<-glm(OBS~MU_1+residLa, data=data, family=binomial())
+
 	  logmodS<-glm(OBS~Category+MU_7S, data=data, family=binomial())
 	  logmodP<-glm(OBS~Category+MU_7P, data=data, family=binomial())
 	  logmodA<-glm(OBS~Category+MU_A, data=data, family=binomial())
-	  logmodL<-glm(OBS~Category+MU_3+resid5+resid7+residL, data=data, family=binomial())
+		#
+		# logmod1a<-glm(OBS~Category+MU_1, data=data, family=binomial())
+		logmod3a<-glm(OBS~Category+MU_3, data=data, family=binomial())
+		logmod5a<-glm(OBS~Category+MU_5, data=data, family=binomial())
+		logmod7a<-glm(OBS~Category+MU_S, data=data, family=binomial())
 		outdat<-list(logmod1a, logmod1b, logmod3, logmod5, logmod7, logmodL,
-			logmodS, logmodP, logmodA)
+			logmodS, logmodP, logmodA, logmod1a, logmod3a, logmod5a, logmod7a)
 	} else {
 		logmod3<-glm(OBS~MU_3, data=data, family=binomial())
 		logmod5<-glm(OBS~MU_3+resid5, data=data, family=binomial())
@@ -164,9 +177,15 @@ runDNMLogit<-function(data, group){
 overall_dat <- chrp %>%
 	mutate(Category=ifelse(substr(SEQ,adj+1,adj+2)=="CG",
 									paste0("cpg_",Category.x), Category.x)) %>%
-  mutate(Category =
-      plyr::mapvalues(Category, orderedcats1, orderedcats2)) %>%
-  mutate(resid5=MU_5-MU_3, resid7=MU_S-MU_5, residL=MU-MU_S)
+  # mutate(Category =
+  #     plyr::mapvalues(Category, orderedcats1, orderedcats2)) %>%
+  mutate(resid3=MU_3-MU_1,
+		resid5=MU_5-MU_3,
+		resid7=MU_S-MU_5,
+		residL=MU-MU_S,
+		resid5a=MU_5-MU_1,
+		resid7a=MU_S-MU_1,
+		residLa=MU-MU_1)
 overall_models <- runDNMLogit(overall_dat, "FULL")
 
 test1a1b <- lrtest(overall_models[[1]], overall_models[[2]])
@@ -179,6 +198,7 @@ fulllist<-list(test1a1b, test1b3, test35, test57, test7L)
 pvals <- lapply(fulllist, function(x) x[[5]][2])
 
 rsq<-unlist(lapply(overall_models, function(x) NagelkerkeR2(x)))[c(2,4,6,8,10,12,14,16,18)]
+rsq<-unlist(lapply(overall_models, function(x) NagelkerkeR2(x)))[c(2,4,6,8,10,12,14,16,18,20,22,24,26)]
 aic<-unlist(lapply(overall_models, function(x) AIC(x)))
 mod<-c("1-mers", "1-mers+CpGs", "3-mers", "5-mers", "7-mers", "7-mers+features",
  "ERVs", "Common", "AV")
@@ -188,7 +208,8 @@ combineddat %>%
   filter(mod %in% mod[1:6]) %>%
 ggplot()+
   geom_bar(aes(x=category, y=rsq, fill=mod), stat="identity", position="dodge")+
-  scale_fill_manual("Model", values=cbbPalette[c(1,5,4,6,7,8)])+
+  # scale_fill_manual("Model", values=cbbPalette[c(1,5,4,6,7,8)])+
+	scale_fill_manual("Model", values=c(iwhPalette[c(1,2,3,4,5,9)]))+
   theme_bw()+
   theme(
       legend.text=element_text(size=14),
@@ -197,7 +218,7 @@ ggplot()+
       axis.text.x=element_blank(),
       axis.text.y=element_text(size=14))+
   ylab(expression(paste("Fraction of variance explained (Nagelkerke ", R^2, ")", sep="")))
-ggsave("/net/bipolar/jedidiah/mutation/images/Lv7v5v3_rsq_full.png", width=4, height=6)
+ggsave(paste0(parentdir, "/images/Lv7v5v3_rsq_full.png"), width=4, height=6)
 
 # fulldat <- list()
 fulldat <- data.frame()
@@ -313,7 +334,8 @@ rsqdat<-fulldat %>%
       factor(plyr::mapvalues(category, orderedcats2, orderedcats2), levels=orderedcats2))
 ggplot(rsqdat)+
   geom_bar(aes(x=Category, y=rsq, fill=mod), stat="identity", position="dodge")+
-  scale_fill_manual("Model", values=cbbPalette[c(4,6,7,8)])+
+  # scale_fill_manual("Model", values=cbbPalette[c(4,6,7,8)])+
+	scale_fill_manual("Model", values=c(iwhPalette[c(3,4,5,9)]))+
   geom_segment(data=corplot, aes(x=xst, xend=xend, y=yst, yend=yend))+
   geom_segment(data=corplot2, aes(x=xst, xend=xend, y=yst, yend=yend))+
   geom_text(data=corplot2, aes(x=xst+1/9, y=yst+.005, label=pval, angle=90), size=6)+
@@ -327,7 +349,7 @@ ggplot(rsqdat)+
       axis.text.y=element_text(size=14))+
   xlab("Mutation Type")+
   ylab(expression(paste("Fraction of variance explained (Nagelkerke ", R^2, ")", sep="")))
-ggsave("/net/bipolar/jedidiah/mutation/images/Lv7v5v3_rsq.png", width=12, height=6)
+ggsave(paste0(parentdir, "/images/Lv7v5v3_rsq.png"), width=12, height=6)
 
 # Plot pseudo-r^2 for 7-mers vs logit
 rsqdatL<-fulldat %>%
@@ -351,7 +373,7 @@ ggplot(rsqdatL)+
       axis.text.y=element_text(size=14))+
   xlab("Mutation Type")+
   ylab(expression(paste("Fraction of variance explained (Nagelkerke ", R^2, ")", sep="")))
-ggsave("/net/bipolar/jedidiah/mutation/images/7v5v3_rsqL.png", width=12, height=6)
+ggsave(paste0(parentdir, "/images/7v5v3_rsqL.png"), width=12, height=6)
 
 # Plot pseudo-r^2 for ERVs vs Common
 rsqdatEC<-fulldat %>%
@@ -371,20 +393,21 @@ ggplot(rsqdatEC)+
 			axis.text.y=element_text(size=14))+
 	xlab("Mutation Type")+
 	ylab(expression(paste("Fraction of variance explained (Nagelkerke ", R^2, ")", sep="")))
-ggsave("/net/bipolar/jedidiah/mutation/images/AvCvS_rsq.png", width=12, height=6)
+ggsave(paste0(parentdir, "/images/AvCvS_rsq.png"), width=12, height=6)
 
 
 oldmodnames <- unique(fulldat$mod)
 
 newmodnames <- c("3-mers", "5-mers", "7-mers", "7-mers+features",
 	"7-mers (downsampled BRIDGES ERVs)",
-	"7-mers (BRIDGES polymorphisms)",
-	"7-mers (1KG intergenic variants)")
+	"7-mers (BRIDGES MAC10+ variants)",
+	"7-mers (1KG EUR intergenic variants)")
 
-newmodnamesord <- c("7-mers (1KG intergenic variants)",
-	"7-mers (BRIDGES polymorphisms)",
+newmodnamesord <- c("3-mers", "5-mers", "7-mers",
 	"7-mers (downsampled BRIDGES ERVs)",
-	"3-mers", "5-mers", "7-mers", "7-mers+features")
+	"7-mers (BRIDGES MAC10+ variants)",
+	"7-mers (1KG EUR intergenic variants)",
+	"7-mers+features")
 
 rsqdatFULL<-fulldat %>%
   filter(group=="FULL") %>%
@@ -397,7 +420,8 @@ rsqdatFULL<-fulldat %>%
 # rsqdatFULL$mod <- factor(rsqdatFULL$mod, levels=
 ggplot(rsqdatFULL)+
   geom_bar(aes(x=Category, y=rsq, fill=mod), stat="identity", position="dodge")+
-  scale_fill_manual("Model", values=c(brewer.pal(8, "Set3")[4:6], cbbPalette[c(4,6,7,8)]))+
+  # scale_fill_manual("Model", values=c(cbbPalette[c(4,6,7)], brewer.pal(8, "Set3")[c(5,6,4)], cbbPalette[8]))+
+	scale_fill_manual("Model", values=c(iwhPalette[c(3:9)]))+
   # geom_segment(data=corplot, aes(x=xst, xend=xend, y=yst, yend=yend))+
   # geom_segment(data=corplot2, aes(x=xst, xend=xend, y=yst, yend=yend))+
   # geom_text(data=corplot2, aes(x=xst+1/6, y=yst+.005, label=pval, angle=90))+
@@ -411,7 +435,7 @@ ggplot(rsqdatFULL)+
       axis.text.y=element_text(size=14))+
   xlab("Mutation Type")+
   ylab(expression(paste("Fraction of variance explained (Nagelkerke ", R^2, ")", sep="")))
-ggsave("/net/bipolar/jedidiah/mutation/images/all_rsq.png", width=12, height=6)
+ggsave(paste0(parentdir, "/images/all_rsq.png"), width=12, height=6)
 
 combineddat %>%
   # filter(mod=="AV" | mod=="Common" | mod=="ERVs") %>%
@@ -419,7 +443,9 @@ combineddat %>%
 	mutate(mod=factor(plyr::mapvalues(mod, oldmodnames, newmodnames), levels=newmodnamesord)) %>%
 ggplot()+
   geom_bar(aes(x=category, y=rsq, fill=mod), stat="identity", position="dodge")+
-  scale_fill_manual("Model", values=c(brewer.pal(8, "Set3")[4:6], cbbPalette[c(4,6,7,8)]))+
+  # scale_fill_manual("Model", values=c(cbbPalette[c(4,6,7)], brewer.pal(8, "Set3")[c(5,6,4)], cbbPalette[8]))+
+	# scale_fill_manual("Model", values=c(brewer.pal(9, "Set3")[c(3:9)]))+
+	scale_fill_manual("Model", values=c(iwhPalette[c(3:9)]))+
   theme_bw()+
   theme(
       legend.text=element_text(size=14),
@@ -428,7 +454,7 @@ ggplot()+
       axis.text.x=element_blank(),
       axis.text.y=element_text(size=14))+
   ylab(expression(paste("Fraction of variance explained (Nagelkerke ", R^2, ")", sep="")))
-ggsave("/net/bipolar/jedidiah/mutation/images/all_rsq_full.png", width=8, height=6)
+ggsave(paste0(parentdir, "/images/all_rsq_full.png"), width=8, height=6)
 
 
 
@@ -436,7 +462,8 @@ rsqdatFULL %>%
 	filter(grepl("BRIDGES", mod)) %>%
 ggplot()+
   geom_bar(aes(x=Category, y=rsq, fill=mod), stat="identity", position="dodge")+
-  scale_fill_manual("Model", values=brewer.pal(8, "Set3")[5:6])+
+  # scale_fill_manual("Model", values=brewer.pal(8, "Set3")[5:6])+
+	scale_fill_manual("Model", values=c(iwhPalette[c(6,7)]))+
   # geom_segment(data=corplot, aes(x=xst, xend=xend, y=yst, yend=yend))+
   # geom_segment(data=corplot2, aes(x=xst, xend=xend, y=yst, yend=yend))+
   # geom_text(data=corplot2, aes(x=xst+1/6, y=yst+.005, label=pval, angle=90))+
@@ -450,16 +477,22 @@ ggplot()+
       axis.text.y=element_text(size=14))+
   xlab("Mutation Type")+
   ylab(expression(paste("Fraction of variance explained (Nagelkerke ", R^2, ")", sep="")))
-ggsave("/net/bipolar/jedidiah/mutation/images/EvC_rsq.png", width=12, height=6)
+ggsave(paste0(parentdir, "/images/EvC_rsq.png"), width=12, height=6)
 
 combineddat %>%
   # filter(mod=="AV" | mod=="Common" | mod=="ERVs") %>%
 	filter(mod=="Common" | mod=="ERVs") %>%
 	mutate(mod=plyr::mapvalues(mod, c("Common", "ERVs"),
-		c("7-mers (BRIDGES polymorphisms)", "7-mers (downsampled BRIDGES ERVs)"))) %>%
+		c("7-mers (BRIDGES MAC10+ variants)", "7-mers (downsampled BRIDGES ERVs)"))) %>%
+combineddat %>%
+  # filter(mod=="AV" | mod=="Common" | mod=="ERVs") %>%
+	# filter(mod=="Common" | mod=="ERVs") %>%
+	mutate(mod=factor(plyr::mapvalues(mod, oldmodnames, newmodnames), levels=newmodnamesord)) %>%
+	filter(grepl("BRIDGES", mod)) %>%
 ggplot()+
   geom_bar(aes(x=category, y=rsq, fill=mod), stat="identity", position="dodge")+
-  scale_fill_manual("Model", values=brewer.pal(8, "Set3")[5:6])+
+  # scale_fill_manual("Model", values=brewer.pal(8, "Set3")[5:6])+
+	scale_fill_manual("Model", values=c(iwhPalette[c(6,7)]))+
   theme_bw()+
   theme(
       legend.text=element_text(size=14),
@@ -468,7 +501,7 @@ ggplot()+
       axis.text.x=element_blank(),
       axis.text.y=element_text(size=14))+
   ylab(expression(paste("Fraction of variance explained (Nagelkerke ", R^2, ")", sep="")))
-ggsave("/net/bipolar/jedidiah/mutation/images/AvCvS_rsq_full.png", width=4, height=6)
+ggsave(paste0(parentdir, "/images/EvC_rsq_full.png"), width=8, height=6)
 
 ##############################################################################
 # Get prediction curves under each model
@@ -517,42 +550,42 @@ if(pred_curves){
 		summarise(prop=min(prop), n=mean(n))
 
 	# Plot everything together
-	plotROC(roc_plotdat, "/net/bipolar/jedidiah/mutation/images/pseudo_roc_curves_all.png")
+	plotROC(roc_plotdat, paste0(parentdir, "/images/pseudo_roc_curves_all.png"))
 
 	# Plot 3-mers only
 	roc_plotdat_seq <- roc_plotdat %>%
 		filter(grepl("^ERV 3", group))
-	plotROC(roc_plotdat_seq, "/net/bipolar/jedidiah/mutation/images/pseudo_roc_curves_seq_3.png")
+	plotROC(roc_plotdat_seq, paste0(parentdir, "/images/pseudo_roc_curves_seq_3.png"))
 
 	# Plot 3-mers vs 5-mers
 	roc_plotdat_seq <- roc_plotdat %>%
 		filter(grepl("^ERV 5|^ERV 3", group))
-	plotROC(roc_plotdat_seq, "/net/bipolar/jedidiah/mutation/images/pseudo_roc_curves_seq_5_3.png")
+	plotROC(roc_plotdat_seq, paste0(parentdir, "/images/pseudo_roc_curves_seq_5_3.png"))
 
 	# Plot 7-mers vs 5-mers vs 3-mers
 	roc_plotdat_seq <- roc_plotdat %>%
 		filter(grepl("^E", group))
-	plotROC(roc_plotdat_seq, "/net/bipolar/jedidiah/mutation/images/pseudo_roc_curves_seq.png")
+	plotROC(roc_plotdat_seq, paste0(parentdir, "/images/pseudo_roc_curves_seq.png"))
 
 	# Plot common vs A&V
 	fig_a_dat <- roc_plotdat %>%
 	  filter(grepl("^A|B", group))
-	plotROC(fig_a_dat, "/net/bipolar/jedidiah/mutation/images/av_vs_common_roc.png")
+	plotROC(fig_a_dat, paste0(parentdir, "/images/av_vs_common_roc.png"))
 
 	# Plot common vs ERVs
 	fig_b_dat <- roc_plotdat %>%
 	  filter(grepl("^E|B", group))
-	plotROC(fig_b_dat, "/net/bipolar/jedidiah/mutation/images/common_vs_erv_roc.png")
+	plotROC(fig_b_dat, paste0(parentdir, "/images/common_vs_erv_roc.png"))
 
 	# Plot ERVs vs logit
 	fig_k_dat <- roc_plotdat %>%
 		filter(grepl("^G|^E", group))
-	plotROC(fig_k_dat, "/net/bipolar/jedidiah/mutation/images/erv_vs_logit_roc.png")
+	plotROC(fig_k_dat, paste0(parentdir, "/images/erv_vs_logit_roc.png"))
 
 	# Plot ERVs vs logit vs simulated max
 	fig_k2_dat <- roc_plotdat %>%
 		filter(grepl("^G|^E|^m", group))
-	plotROC(fig_k2_dat, "/net/bipolar/jedidiah/mutation/images/erv_vs_logit_max_roc.png")
+	plotROC(fig_k2_dat, paste0(parentdir, "/images/erv_vs_logit_max_roc.png"))
 }
 
 ##############################################################################
@@ -560,7 +593,7 @@ if(pred_curves){
 ##############################################################################
 maxc_roc<-0
 if(maxc_roc){
-	maxc <- read.table("/net/bipolar/jedidiah/mutation/maxc_7bp.txt", header=T, stringsAsFactors=F)
+	maxc <- read.table(paste0(parentdir, "/maxc_7bp.txt"), header=T, stringsAsFactors=F)
 	maxc$Category <- gsub("cpg_", "", maxc$Category2)
 	chrp_maxc <- chrp %>%
 	  dplyr::filter(paste0(SEQ, ".", Category.x) %in%
@@ -584,13 +617,13 @@ if(maxc_roc){
 	# Plot all models under max contrast
 	fig_max_dat <- maxc_auc_dat %>%
 		filter(grepl("^E|^B", group))
-	plotROC(fig_max_dat, "/net/bipolar/jedidiah/mutation/images/pseudo_roc_curves_maxc.png")
+	plotROC(fig_max_dat, paste0(parentdir, "/images/pseudo_roc_curves_maxc.png"))
 }
 
 # Additional max contrast analyses, with features
 maxc_extra1 <- 0
 if(maxc_extra1){
-	coefs <- read.table("/net/bipolar/jedidiah/mutation/output/logmod_data/coefs/coefs_full.txt",
+	coefs <- read.table(paste0(parentdir, "/output/logmod_data/coefs/coefs_full.txt"),
 		header=F, stringsAsFactors=F)
 
 	names(coefs) <- c("Cov", "Est", "SE", "Z", "pval", "Sequence", "Category")
@@ -651,7 +684,7 @@ if(maxc_extra1){
 	  coord_cartesian(ylim=c(0.5, 0.85))+
 		coord_flip()+
 		# theme_bw()
-	ggsave("/net/bipolar/jedidiah/mutation/images/test_bar.png")
+	ggsave(paste0(parentdir, "/images/test_bar.png"))
 
 	cov_erv <- cov_auc_dat %>% filter(grepl("^E", group))
 	cov_logit <- cov_auc_dat %>% filter(!grepl("^E", group))
@@ -670,7 +703,7 @@ if(maxc_extra1){
 		geom_hline(yintercept=0, linetype="dashed")+
 		# xlab("AUC_[]")+
 		theme_bw()
-	ggsave("/net/bipolar/jedidiah/mutation/images/diff_bar.png", height=6, width=12)
+	ggsave(paste0(parentdir, "/images/diff_bar.png"), height=6, width=12)
 }
 
 maxc_extra2 <- 0
@@ -757,5 +790,5 @@ if(gonl_ind){
 
 
 	# ggplot(auc_ind, aes(x=group, y=))
-	# mapply(plotROC, maxc_auc_feat, paste0("/net/bipolar/jedidiah/mutation/images/", seq_along(max_auc_feat), "_roc.png"))
+	# mapply(plotROC, maxc_auc_feat, paste0(parentdir, "/images/", seq_along(max_auc_feat), "_roc.png"))
 }

@@ -137,10 +137,10 @@ runDNMLogit<-function(data, group){
 	if(nrow(data)>1e6){
 		logmod1a<-glm(OBS~Category.x, data=data, family=binomial())
 		logmod1b<-glm(OBS~Category, data=data, family=binomial())
-		logmod3<-glm(OBS~Category+resid3, data=data, family=binomial())
-		logmod5<-glm(OBS~Category+resid3+resid5, data=data, family=binomial())
-		logmod7<-glm(OBS~Category+resid3+resid5+resid7, data=data, family=binomial())
-		logmodL<-glm(OBS~Category+resid3+resid5+resid7+residL, data=data, family=binomial())
+		logmod3<-glm(OBS~Category+MU_1+resid3, data=data, family=binomial())
+		logmod5<-glm(OBS~Category+MU_1+resid3+resid5, data=data, family=binomial())
+		logmod7<-glm(OBS~Category+MU_1+resid3+resid5+resid7, data=data, family=binomial())
+		logmodL<-glm(OBS~Category+MU_1+resid3+resid5+resid7+residL, data=data, family=binomial())
 
 		# logmod3<-glm(OBS~Category.x+MU_3, data=data, family=binomial())
 		# logmod5<-glm(OBS~MU_1+resid5, data=data, family=binomial())
@@ -198,15 +198,15 @@ fulllist<-list(test1a1b, test1b3, test35, test57, test7L)
 pvals <- lapply(fulllist, function(x) x[[5]][2])
 
 rsq<-unlist(lapply(overall_models, function(x) NagelkerkeR2(x)))[c(2,4,6,8,10,12,14,16,18)]
-rsq<-unlist(lapply(overall_models, function(x) NagelkerkeR2(x)))[c(2,4,6,8,10,12,14,16,18,20,22,24,26)]
-aic<-unlist(lapply(overall_models, function(x) AIC(x)))
+# rsq<-unlist(lapply(overall_models, function(x) NagelkerkeR2(x)))[c(2,4,6,8,10,12,14,16,18,20,22,24,26)]
+aic<-unlist(lapply(overall_models, function(x) AIC(x)))[1:9]
 mod<-c("1-mers", "1-mers+CpGs", "3-mers", "5-mers", "7-mers", "7-mers+features",
  "ERVs", "Common", "AV")
 combineddat<-data.frame(group="FULL", category=categ, mod, rsq, aic)
 
-combineddat %>%
-  filter(mod %in% mod[1:6]) %>%
-ggplot()+
+rsq_full_dat<- combineddat %>%
+  filter(mod %in% mod[1:6])
+Lv7v5v3_full<-ggplot(rsq_full_dat)+
   geom_bar(aes(x=category, y=rsq, fill=mod), stat="identity", position="dodge")+
   # scale_fill_manual("Model", values=cbbPalette[c(1,5,4,6,7,8)])+
 	scale_fill_manual("Model", values=c(iwhPalette[c(1,2,3,4,5,9)]))+
@@ -332,7 +332,7 @@ rsqdat<-fulldat %>%
   filter(group=="FULL") %>%
   mutate(Category =
       factor(plyr::mapvalues(category, orderedcats2, orderedcats2), levels=orderedcats2))
-ggplot(rsqdat)+
+Lv7v5v3<-ggplot(rsqdat)+
   geom_bar(aes(x=Category, y=rsq, fill=mod), stat="identity", position="dodge")+
   # scale_fill_manual("Model", values=cbbPalette[c(4,6,7,8)])+
 	scale_fill_manual("Model", values=c(iwhPalette[c(3,4,5,9)]))+
@@ -458,9 +458,9 @@ ggsave(paste0(parentdir, "/images/all_rsq_full.png"), width=8, height=6)
 
 
 
-rsqdatFULL %>%
-	filter(grepl("BRIDGES", mod)) %>%
-ggplot()+
+evcdat<- rsqdatFULL %>%
+	filter(grepl("BRIDGES", mod))
+EvC<-ggplot(evcdat)+
   geom_bar(aes(x=Category, y=rsq, fill=mod), stat="identity", position="dodge")+
   # scale_fill_manual("Model", values=brewer.pal(8, "Set3")[5:6])+
 	scale_fill_manual("Model", values=c(iwhPalette[c(6,7)]))+
@@ -479,17 +479,18 @@ ggplot()+
   ylab(expression(paste("Fraction of variance explained (Nagelkerke ", R^2, ")", sep="")))
 ggsave(paste0(parentdir, "/images/EvC_rsq.png"), width=12, height=6)
 
-combineddat %>%
+EvC_full_dat <- combineddat %>%
   # filter(mod=="AV" | mod=="Common" | mod=="ERVs") %>%
 	filter(mod=="Common" | mod=="ERVs") %>%
 	mutate(mod=plyr::mapvalues(mod, c("Common", "ERVs"),
 		c("7-mers (BRIDGES MAC10+ variants)", "7-mers (downsampled BRIDGES ERVs)"))) %>%
-combineddat %>%
+# combineddat %>%
   # filter(mod=="AV" | mod=="Common" | mod=="ERVs") %>%
 	# filter(mod=="Common" | mod=="ERVs") %>%
 	mutate(mod=factor(plyr::mapvalues(mod, oldmodnames, newmodnames), levels=newmodnamesord)) %>%
-	filter(grepl("BRIDGES", mod)) %>%
-ggplot()+
+	filter(grepl("BRIDGES", mod))
+
+EvC_full<-ggplot(EvC_full_dat)+
   geom_bar(aes(x=category, y=rsq, fill=mod), stat="identity", position="dodge")+
   # scale_fill_manual("Model", values=brewer.pal(8, "Set3")[5:6])+
 	scale_fill_manual("Model", values=c(iwhPalette[c(6,7)]))+

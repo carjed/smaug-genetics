@@ -16,6 +16,10 @@ suppressMessages(usePackage(fmsb))
 suppressMessages(usePackage(stringr))
 suppressMessages(usePackage(hexbin))
 suppressMessages(usePackage(cowplot))
+suppressMessages(usePackage(grid))
+suppressMessages(usePackage(gridExtra))
+suppressMessages(usePackage(grid))
+suppressMessages(usePackage(gtable))
 
 # Set custom library path for bedr package
 libpath <- "~/R/x86_64-pc-linux-gnu-library/2.13"
@@ -35,6 +39,7 @@ myPaletteB <- colorRampPalette(rev(brewer.pal(9, "Blues")), space="Lab")
 myPaletteR <- colorRampPalette(rev(brewer.pal(9, "Reds")), space="Lab")
 myPaletteG <- colorRampPalette(rev(brewer.pal(9, "Greens")), space="Lab")
 myPaletteO <- colorRampPalette(rev(brewer.pal(11, "RdBu")), space="Lab")
+myPaletteBrBG <- colorRampPalette(rev(brewer.pal(11, "BrBG")), space="Lab")
 
 rb <- c(myPaletteB(6)[1:3],myPaletteR(6)[1:3])
 g <- myPaletteG(6)[1:3]

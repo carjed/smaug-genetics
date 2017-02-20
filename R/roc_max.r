@@ -122,6 +122,8 @@ rates1 <- rates3 %>%
 	dplyr::select(Category.x, MU_1)
 chrp <- merge(chrp, rates1, by=c("Category.x"))
 
+
+
 ##############################################################################
 # Add columns for downsampled ERV 7-mers and Common 7-mers
 # Must have run sing_vs_com.r
@@ -135,40 +137,46 @@ chrp <- merge(chrp, r7s, by=c("Category.x", "SEQ"))
 
 runDNMLogit<-function(data, group){
 	if(nrow(data)>1e6){
-		logmod1a<-glm(OBS~Category.x, data=data, family=binomial())
-		logmod1b<-glm(OBS~Category, data=data, family=binomial())
-		logmod3<-glm(OBS~Category+MU_1+resid3, data=data, family=binomial())
-		logmod5<-glm(OBS~Category+MU_1+resid3+resid5, data=data, family=binomial())
-		logmod7<-glm(OBS~Category+MU_1+resid3+resid5+resid7, data=data, family=binomial())
-		logmodL<-glm(OBS~Category+MU_1+resid3+resid5+resid7+residL, data=data, family=binomial())
+		logmod1<-glm(OBS~MU_1, data=data, family=binomial())
+		# logmod1b<-glm(OBS~Category, data=data, family=binomial())
+		logmod3<-glm(OBS~MU_1+resid3, data=data, family=binomial())
+		logmod5<-glm(OBS~MU_1+resid3+resid5, data=data, family=binomial())
+		logmod7<-glm(OBS~MU_1+resid3+resid5+resid7, data=data, family=binomial())
+		logmodL<-glm(OBS~MU_1+resid3+resid5+resid7+residL, data=data, family=binomial())
 
-		# logmod3<-glm(OBS~Category.x+MU_3, data=data, family=binomial())
-		# logmod5<-glm(OBS~MU_1+resid5, data=data, family=binomial())
-		# logmod5<-glm(OBS~Category.x+MU_5, data=data, family=binomial())
-		# logmod7<-glm(OBS~MU_1+resid7, data=data, family=binomial())
-		# logmod7<-glm(OBS~Category.x+MU_S, data=data, family=binomial())
-		# logmodL<-glm(OBS~MU_1+residLa, data=data, family=binomial())
-
-	  logmodS<-glm(OBS~Category+MU_7S, data=data, family=binomial())
-	  logmodP<-glm(OBS~Category+MU_7P, data=data, family=binomial())
-	  logmodA<-glm(OBS~Category+MU_A, data=data, family=binomial())
+	  logmodS<-glm(OBS~MU_7S, data=data, family=binomial())
+	  logmodP<-glm(OBS~MU_7P, data=data, family=binomial())
+	  logmodA<-glm(OBS~MU_A, data=data, family=binomial())
 		#
-		# logmod1a<-glm(OBS~Category+MU_1, data=data, family=binomial())
-		logmod3a<-glm(OBS~Category+MU_3, data=data, family=binomial())
-		logmod5a<-glm(OBS~Category+MU_5, data=data, family=binomial())
-		logmod7a<-glm(OBS~Category+MU_S, data=data, family=binomial())
-		outdat<-list(logmod1a, logmod1b, logmod3, logmod5, logmod7, logmodL,
-			logmodS, logmodP, logmodA, logmod1a, logmod3a, logmod5a, logmod7a)
+		logmod1a<-glm(OBS~MU_1, data=data, family=binomial())
+		logmod3a<-glm(OBS~MU_3, data=data, family=binomial())
+		logmod5a<-glm(OBS~MU_5, data=data, family=binomial())
+		logmod7a<-glm(OBS~MU_S, data=data, family=binomial())
+		logmodLa<-glm(OBS~MU, data=data, family=binomial())
+		logmodSa<-glm(OBS~MU_7S, data=data, family=binomial())
+		logmodPa<-glm(OBS~MU_7P, data=data, family=binomial())
+		logmodAa<-glm(OBS~MU_A, data=data, family=binomial())
+		outdat<-list(logmod1, logmod3, logmod5, logmod7, logmodL,
+			logmodS, logmodP, logmodA,
+			logmod1a, logmod3a, logmod5a, logmod7a, logmodLa,
+			logmodSa, logmodPa, logmodAa)
 	} else {
 		logmod3<-glm(OBS~MU_3, data=data, family=binomial())
 		logmod5<-glm(OBS~MU_3+resid5, data=data, family=binomial())
 		logmod7<-glm(OBS~MU_3+resid5+resid7, data=data, family=binomial())
+		logmodL<-glm(OBS~MU_3+resid5+resid7+residL, data=data, family=binomial())
+
 		logmodS<-glm(OBS~MU_7S, data=data, family=binomial())
 		logmodP<-glm(OBS~MU_7P, data=data, family=binomial())
 		logmodA<-glm(OBS~MU_A, data=data, family=binomial())
-		logmodL<-glm(OBS~MU_3+resid5+resid7+residL, data=data, family=binomial())
+
+		# logmod3a<-glm(OBS~MU_3, data=data, family=binomial())
+		# logmod5a<-glm(OBS~MU_5, data=data, family=binomial())
+		# logmod7a<-glm(OBS~MU_S, data=data, family=binomial())
+		# logmodLa<-glm(OBS~MU, data=data, family=binomial())
 		outdat<-list(logmod3, logmod5, logmod7, logmodL,
 			logmodS, logmodP, logmodA)
+			# logmod3a, logmod5a, logmod7a, logmodLa)
 	}
 
   return(outdat)
@@ -188,28 +196,28 @@ overall_dat <- chrp %>%
 		residLa=MU-MU_1)
 overall_models <- runDNMLogit(overall_dat, "FULL")
 
-test1a1b <- lrtest(overall_models[[1]], overall_models[[2]])
-test1b3 <- lrtest(overall_models[[2]], overall_models[[3]])
-test35 <- lrtest(overall_models[[3]], overall_models[[4]])
-test57 <- lrtest(overall_models[[4]], overall_models[[5]])
-test7L <- lrtest(overall_models[[5]], overall_models[[6]])
-fulllist<-list(test1a1b, test1b3, test35, test57, test7L)
+test13 <- lrtest(overall_models[[1]], overall_models[[2]])
+test35 <- lrtest(overall_models[[2]], overall_models[[3]])
+test57 <- lrtest(overall_models[[3]], overall_models[[4]])
+test7L <- lrtest(overall_models[[4]], overall_models[[5]])
+fulllist<-list(test13, test35, test57, test7L)
 
 pvals <- lapply(fulllist, function(x) x[[5]][2])
 
-rsq<-unlist(lapply(overall_models, function(x) NagelkerkeR2(x)))[c(2,4,6,8,10,12,14,16,18)]
+rsq<-unlist(lapply(overall_models, function(x) NagelkerkeR2(x)))[seq(2, 2*length(overall_models), by=2)]
 # rsq<-unlist(lapply(overall_models, function(x) NagelkerkeR2(x)))[c(2,4,6,8,10,12,14,16,18,20,22,24,26)]
-aic<-unlist(lapply(overall_models, function(x) AIC(x)))[1:9]
-mod<-c("1-mers", "1-mers+CpGs", "3-mers", "5-mers", "7-mers", "7-mers+features",
- "ERVs", "Common", "AV")
+aic<-unlist(lapply(overall_models, function(x) AIC(x)))[1:length(overall_models)]
+mod<-c("1-mers", "3-mers", "5-mers", "7-mers", "7-mers+features",
+ "ERVs", "Common", "AV", "1-mers*", "3-mers*", "5-mers*", "7-mers*",
+ "7-mers+features*", "ERVs*", "Common*", "AV*")
 combineddat<-data.frame(group="FULL", category=categ, mod, rsq, aic)
 
 rsq_full_dat<- combineddat %>%
-  filter(mod %in% mod[1:6])
+  filter(mod %in% mod[1:5])
 Lv7v5v3_full<-ggplot(rsq_full_dat)+
   geom_bar(aes(x=category, y=rsq, fill=mod), stat="identity", position="dodge")+
   # scale_fill_manual("Model", values=cbbPalette[c(1,5,4,6,7,8)])+
-	scale_fill_manual("Model", values=c(iwhPalette[c(1,2,3,4,5,9)]))+
+	scale_fill_manual("Model", values=c(iwhPalette[c(1,3,4,5,9)]))+
   theme_bw()+
   theme(
       legend.text=element_text(size=14),
@@ -218,7 +226,7 @@ Lv7v5v3_full<-ggplot(rsq_full_dat)+
       axis.text.x=element_blank(),
       axis.text.y=element_text(size=14))+
   ylab(expression(paste("Fraction of variance explained (Nagelkerke ", R^2, ")", sep="")))
-ggsave(paste0(parentdir, "/images/Lv7v5v3_rsq_full.png"), width=4, height=6)
+# ggsave(paste0(parentdir, "/images/Lv7v5v3_rsq_full.png"), width=4, height=6)
 
 # fulldat <- list()
 fulldat <- data.frame()
@@ -349,7 +357,13 @@ Lv7v5v3<-ggplot(rsqdat)+
       axis.text.y=element_text(size=14))+
   xlab("Mutation Type")+
   ylab(expression(paste("Fraction of variance explained (Nagelkerke ", R^2, ")", sep="")))
-ggsave(paste0(parentdir, "/images/Lv7v5v3_rsq.png"), width=12, height=6)
+# ggsave(paste0(parentdir, "/images/Lv7v5v3_rsq.png"), width=12, height=6)
+
+Lv7v5v3_full<-ggplotGrob(Lv7v5v3_full)
+Lv7v5v3<-ggplotGrob(Lv7v5v3)
+
+g<-arrangeGrob(Lv7v5v3_full, Lv7v5v3, nrow=1, widths=c(1,2))
+ggsave(paste0(parentdir, "/images/Lv7v5v3_rsq_combined.svg"), width=12, height=6, g)
 
 # Plot pseudo-r^2 for 7-mers vs logit
 rsqdatL<-fulldat %>%
@@ -417,31 +431,11 @@ rsqdatFULL<-fulldat %>%
 		factor(plyr::mapvalues(mod, oldmodnames, newmodnames), levels=newmodnamesord))
 
 
-# rsqdatFULL$mod <- factor(rsqdatFULL$mod, levels=
-ggplot(rsqdatFULL)+
-  geom_bar(aes(x=Category, y=rsq, fill=mod), stat="identity", position="dodge")+
-  # scale_fill_manual("Model", values=c(cbbPalette[c(4,6,7)], brewer.pal(8, "Set3")[c(5,6,4)], cbbPalette[8]))+
-	scale_fill_manual("Model", values=c(iwhPalette[c(3:9)]))+
-  # geom_segment(data=corplot, aes(x=xst, xend=xend, y=yst, yend=yend))+
-  # geom_segment(data=corplot2, aes(x=xst, xend=xend, y=yst, yend=yend))+
-  # geom_text(data=corplot2, aes(x=xst+1/6, y=yst+.005, label=pval, angle=90))+
-  # scale_y_continuous(limits=c(0,0.08))+
-  theme_bw()+
-  theme(
-      legend.text=element_text(size=14),
-      axis.title.x=element_text(size=16),
-      axis.title.y=element_text(size=16),
-    axis.text.x=element_text(size=14, angle=45, hjust=1, vjust=1),
-      axis.text.y=element_text(size=14))+
-  xlab("Mutation Type")+
-  ylab(expression(paste("Fraction of variance explained (Nagelkerke ", R^2, ")", sep="")))
-ggsave(paste0(parentdir, "/images/all_rsq.png"), width=12, height=6)
-
-combineddat %>%
+alldat<-combineddat[2:8,] %>%
   # filter(mod=="AV" | mod=="Common" | mod=="ERVs") %>%
 	# filter(mod=="Common" | mod=="ERVs") %>%
-	mutate(mod=factor(plyr::mapvalues(mod, oldmodnames, newmodnames), levels=newmodnamesord)) %>%
-ggplot()+
+	mutate(mod=factor(plyr::mapvalues(mod, oldmodnames, newmodnames), levels=newmodnamesord))
+all_full<-ggplot(alldat)+
   geom_bar(aes(x=category, y=rsq, fill=mod), stat="identity", position="dodge")+
   # scale_fill_manual("Model", values=c(cbbPalette[c(4,6,7)], brewer.pal(8, "Set3")[c(5,6,4)], cbbPalette[8]))+
 	# scale_fill_manual("Model", values=c(brewer.pal(9, "Set3")[c(3:9)]))+
@@ -449,21 +443,19 @@ ggplot()+
   theme_bw()+
   theme(
       legend.text=element_text(size=14),
+			legend.position="none",
       axis.title.x=element_blank(),
       axis.title.y=element_text(size=16),
       axis.text.x=element_blank(),
       axis.text.y=element_text(size=14))+
   ylab(expression(paste("Fraction of variance explained (Nagelkerke ", R^2, ")", sep="")))
-ggsave(paste0(parentdir, "/images/all_rsq_full.png"), width=8, height=6)
+# ggsave(paste0(parentdir, "/images/all_rsq_full.png"), width=8, height=6)
 
-
-
-evcdat<- rsqdatFULL %>%
-	filter(grepl("BRIDGES", mod))
-EvC<-ggplot(evcdat)+
+# rsqdatFULL$mod <- factor(rsqdatFULL$mod, levels=
+all<-ggplot(rsqdatFULL)+
   geom_bar(aes(x=Category, y=rsq, fill=mod), stat="identity", position="dodge")+
-  # scale_fill_manual("Model", values=brewer.pal(8, "Set3")[5:6])+
-	scale_fill_manual("Model", values=c(iwhPalette[c(6,7)]))+
+  # scale_fill_manual("Model", values=c(cbbPalette[c(4,6,7)], brewer.pal(8, "Set3")[c(5,6,4)], cbbPalette[8]))+
+	scale_fill_manual("Model", values=c(iwhPalette[c(3:9)]))+
   # geom_segment(data=corplot, aes(x=xst, xend=xend, y=yst, yend=yend))+
   # geom_segment(data=corplot2, aes(x=xst, xend=xend, y=yst, yend=yend))+
   # geom_text(data=corplot2, aes(x=xst+1/6, y=yst+.005, label=pval, angle=90))+
@@ -471,13 +463,42 @@ EvC<-ggplot(evcdat)+
   theme_bw()+
   theme(
       legend.text=element_text(size=14),
+			legend.position=c(0.4,0.7),
+			legend.background = element_rect(colour = "black"),
       axis.title.x=element_text(size=16),
       axis.title.y=element_text(size=16),
     axis.text.x=element_text(size=14, angle=45, hjust=1, vjust=1),
       axis.text.y=element_text(size=14))+
   xlab("Mutation Type")+
   ylab(expression(paste("Fraction of variance explained (Nagelkerke ", R^2, ")", sep="")))
-ggsave(paste0(parentdir, "/images/EvC_rsq.png"), width=12, height=6)
+# ggsave(paste0(parentdir, "/images/all_rsq.png"), width=12, height=6)
+
+all_full<-ggplotGrob(all_full)
+all<-ggplotGrob(all)
+g<-arrangeGrob(all_full, all, nrow=1, widths=c(1,2))
+ggsave(paste0(parentdir, "/images/all_rsq_combined.png"), width=12, height=6, g)
+
+evcdat<- rsqdatFULL %>%
+	filter(grepl("BRIDGES", mod))
+EvC<-ggplot(evcdat)+
+  geom_bar(aes(x=Category, y=rsq, fill=mod), stat="identity", position="dodge")+
+  # scale_fill_manual("Model", values=brewer.pal(8, "Set3")[5:6])+
+	scale_fill_manual("Model", values=c(iwhPalette[c(6,7)]), guide = guide_legend(nrow=2))+
+  # geom_segment(data=corplot, aes(x=xst, xend=xend, y=yst, yend=yend))+
+  # geom_segment(data=corplot2, aes(x=xst, xend=xend, y=yst, yend=yend))+
+  # geom_text(data=corplot2, aes(x=xst+1/6, y=yst+.005, label=pval, angle=90))+
+  # scale_y_continuous(limits=c(0,0.08))+
+  theme_bw()+
+  theme(
+      legend.text=element_text(size=14),
+			legend.position="bottom",
+      axis.title.x=element_text(size=16),
+      axis.title.y=element_text(size=16),
+    axis.text.x=element_text(size=14, angle=45, hjust=1, vjust=1),
+      axis.text.y=element_text(size=14))+
+  xlab("Mutation Type")+
+  ylab(expression(paste("Fraction of variance explained (Nagelkerke ", R^2, ")", sep="")))
+# ggsave(paste0(parentdir, "/images/EvC_rsq.png"), width=12, height=6)
 
 EvC_full_dat <- combineddat %>%
   # filter(mod=="AV" | mod=="Common" | mod=="ERVs") %>%
@@ -497,12 +518,18 @@ EvC_full<-ggplot(EvC_full_dat)+
   theme_bw()+
   theme(
       legend.text=element_text(size=14),
+			legend.position="none",
       axis.title.x=element_blank(),
       axis.title.y=element_text(size=16),
       axis.text.x=element_blank(),
       axis.text.y=element_text(size=14))+
   ylab(expression(paste("Fraction of variance explained (Nagelkerke ", R^2, ")", sep="")))
-ggsave(paste0(parentdir, "/images/EvC_rsq_full.png"), width=8, height=6)
+# ggsave(paste0(parentdir, "/images/EvC_rsq_full.png"), width=8, height=6)
+
+EvC_full<-ggplotGrob(EvC_full)
+EvC<-ggplotGrob(EvC)
+g<-arrangeGrob(EvC_full, EvC, nrow=1, widths=c(1,2))
+ggsave(paste0(parentdir, "/images/EvC_rsq_combined.png"), width=12, height=8, g)
 
 ##############################################################################
 # Get prediction curves under each model

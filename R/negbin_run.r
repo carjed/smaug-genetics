@@ -137,5 +137,13 @@ for(j in 1:length(mut_cats)) {
 
   # Append model predictions to full df
 	compare.all <- rbind(compare.all, bind_rows(moddat))
-  modsumm[[j]]<-summary(models$full)
+	marg_nm <- aggcatm %>%
+		dplyr::select(CHR, Category2, BIN, exp=marg, obs) %>%
+		mutate(res="marg_nm")
+	logit_nm <- aggcatm %>%
+		dplyr::select(CHR, Category2, BIN, exp=LSUM, obs) %>%
+		mutate(res="logit_nm")
+	compare.all <- rbind(compare.all, marg_nm, logit_nm)
+
+  modsumm[[j]] <- summary(models$full)
 }

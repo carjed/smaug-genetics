@@ -3,6 +3,14 @@ coefs <- read.table(paste0(parentdir, "/output/logmod_data/coefs/coefs_full.txt"
 names(coefs) <- c("Cov", "Est", "SE", "Z", "pval", "Sequence", "Category")
 coefs$Category <- ifelse(substr(coefs$Sequence, 4, 5)=="CG", paste0("cpg_", coefs$Category), coefs$Category)
 
+coefsout <- coefs %>%
+  mutate(Category = plyr::mapvalues(Category, orderedcats1, orderedcats2))
+coefsout$Category <- factor(coefsout$Category, levels=orderedcats2)
+
+write.table(coefsout, paste0(parentdir, "/output/logmod_data/coefs/supplementary_table_7.txt"),
+  quote=F, col.names=T, row.names=F, sep="\t")
+# coefs$Cov <- factor(plotcts$Cov, levels=orderedcovs)
+
 ratefile <- paste0(parentdir, "/output/7bp_1000k_rates.txt")
 rates <- read.table(ratefile, header=T, stringsAsFactors=F)
 

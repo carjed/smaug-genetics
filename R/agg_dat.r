@@ -68,7 +68,7 @@ aggData <- function(datfile, adj){
 			group_by(CHR, BIN, Category2) %>%
 			summarise(obs=sum(obs, na.rm=T))
 
-		datalist<- list("agg"=aggseq, "oe"=spbc, "summagg2"=summagg)
+		datalist<- list("agg"=aggseq, "oe"=spbc, "summagg2"=summagg, "tstv"=tstv)
 		return(datalist)
 	}
 }

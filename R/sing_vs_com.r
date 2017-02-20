@@ -268,17 +268,18 @@ dev.off()
 ##############################################################################
 # Plot 1d densities
 ##############################################################################
-kspvals <- r5ma %>%
-	group_by(Category2) %>%
-	summarise(pval=ks.test(rel_prop, common_rel_prop)$p.value) %>%
-	mutate()
-
-kspvals$pv2<-ifelse(kspvals$pval==0, "2.2e-16", signif(kspvals$pval,2))
-
 r5ma<-r5m %>%
 	dplyr::select(Sequence, Category2, rel_prop, common_rel_prop) %>%
 	gather(gp, prop, rel_prop:common_rel_prop) %>%
 	mutate(group=recode(gp, rel_prop = "ERVs", common_rel_prop="MAC10+"))
+
+kspvals <- r5m %>%
+	group_by(Category2) %>%
+	summarise(pval=ks.test(rel_prop, common_rel_prop)$p.value) #%>%
+	# mutate()
+
+kspvals$pv2<-ifelse(kspvals$pval==0, "2.2e-16", signif(kspvals$pval,2))
+
 ggplot()+
 	geom_density(data=r5ma, aes(x=log10(prop), group=group, colour=group))+
 	geom_text(data=kspvals, aes(label=paste0("P<",pv2)),
@@ -320,8 +321,8 @@ ggplot(data=r5ma, aes(x=rel_prop, y=common_rel_prop))+
 		legend.position="bottom",
     strip.text.x=element_text(size=14),
     legend.title=element_text(size=12),
-    axis.title.x=element_text(size=14),
-    axis.title.y=element_text(size=14),
+    # axis.title.x=element_text(size=14),
+    # axis.title.y=element_text(size=14),
 		axis.text.x=element_text(size=12, angle=45, hjust=1, vjust=1),
 		axis.text.y=element_text(size=12))
 ggsave(paste0(parentdir, "/images/sing_com_cor_rates_no_facet_sub.png"),
@@ -360,8 +361,8 @@ ggplot(data=r5ma, aes(x=rel_prop,  y=common_rel_prop))+
     legend.title=element_text(size=12),
     axis.title.x=element_text(size=14),
     axis.title.y=element_text(size=14),
-		axis.text.x=element_text(size=12),
-    axis.text.y=element_text(size=12),
+		# axis.text.x=element_text(size=12),
+    # axis.text.y=element_text(size=12),
 		axis.text.x=element_text(size=12, angle=45, hjust=1, vjust=1),
 		axis.text.y=element_text(size=12))
 ggsave(paste0(parentdir, "/images/sing_com_cor_rates_facet_dens_sub.png"),
@@ -501,6 +502,7 @@ for(j in 1:6){
 	dat$prop_diff4 <- dat$prop_diff
 	dat$prop_diff4[dat$prop_diff< 0.5] <- 0.5
 	dat$prop_diff4[dat$prop_diff>2] <- 2
+	print(nrow(dat[(dat$prop_diff4==2 | dat$prop_diff4==0.5),]))
 	p1a<-rrheat3(dat)
 	 png(paste0(parentdir, "/images/rare_common_diff2", categ, "_com_av.png"),
 	 	height=5, width=5, units="in", res=300)
@@ -524,18 +526,21 @@ dat$Sequence <- substr(dat$Sequence, 0, 7)
 dat$cgs <- ifelse(substr(dat$Sequence, 1,2)%in%c("CC", "CG", "GG", "GC"), 1,0)
 dat$ts <- ifelse(grepl("T", dat$Sequence), 0,1)
 dat$num_GC_flank <- ifelse(str_count(dat$Sequence, "A|T")<=3,">=4","<4")
-dat$maxc <- ifelse(abs(log(dat$prop_diff5))>0.223, "N", "Y")
-dat$maxc <- factor(dat$maxc, levels=c("Y", "N"))
+dat$maxc <- ifelse(log(dat$prop_diff5)>0.69, ">2", "<2")
+dat$maxc <- factor(dat$maxc, levels=c("<2", ">2"))
 
 ggplot(data=dat,
 		aes(x=rel_prop, y=common_rel_prop,
 			group=Category2, colour=maxc, shape=num_GC_flank))+
-  geom_point(alpha=0.3, size=4)+
+  geom_point(alpha=0.7, size=2)+
 	scale_colour_brewer(palette="Set2")+
-  xlab("Relative rate (ERVs)")+
-  ylab("Relative rate (Common)")+
+	scale_x_log10()+
+	scale_y_log10()+
+	scale_shape(solid = FALSE)+
+  xlab("Relative rate (downsampled BRIDGES ERVs)")+
+  ylab("Relative rate (BRIDGES MAC10+ variants)")+
 	guides(shape = guide_legend("#G/C bases in flanking region"),
-		colour = guide_legend("0.8<Rp/Rs<1.25 ?", override.aes = list(alpha=1)))+
+		colour = guide_legend("MAC10+:ERV ratio", override.aes = list(alpha=1)))+
   theme_bw()+
   theme(legend.position = "bottom",
     legend.title=element_text(size=16),

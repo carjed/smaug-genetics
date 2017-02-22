@@ -46,8 +46,8 @@ open(OUT, '>', $outfile) or die "can't write to $outfile: $!\n";
 # open(OUTCPG, '>', $cpgoutfile) or die "can't write to $cpgoutfile: $!\n";
 
 my $seq=&getRef();
-my $altseq=$seq;
-$altseq =~ tr/ACGT/TGCA/;
+# my $altseq=$seq;
+# $altseq =~ tr/ACGT/TGCA/;
 
 my $seqlength=length($seq);
 
@@ -80,7 +80,8 @@ while (<$data>){
 	my $MU=$line[3];
 
 	my $localseq = substr($seq, $POS-1, 2);
-	my $altlocalseq = reverse substr($altseq, $POS-1, 2);
+	my $altlocalseq = reverse $localseq;
+	$altlocalseq =~ tr/ACGT/TGCA/;
 
 		if($BIN==$PREVBIN){
 			if(($localseq eq "CG") | ($altlocalseq eq "CG")){

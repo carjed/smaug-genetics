@@ -321,7 +321,7 @@ for(i in 1:22){
 
   #Subset and update data
   d2<-compare.all %>%
-    filter(CHR==i, res=="full") %>%
+    filter(CHR==i, res=="logit_nm") %>%
     mutate(ratio=exp/obs, diff=exp-obs) %>%
     filter(abs(diff)<1200)
   d2$BIN<-d2$BIN*1000000

@@ -73,6 +73,7 @@ my $SUM=0;
 my $CPGSUM=0;
 seek $data, 0, 0;
 while (<$data>){
+	if (1..20) { 
 	chomp;
 	my @line=split(/\t/, $_);
 	my $POS=$line[1];
@@ -85,9 +86,11 @@ while (<$data>){
 
 		if($BIN==$PREVBIN){
 			if(($localseq eq "CG") || ($altlocalseq eq "CG")){
+				print "$POS\t$localseq\t$altlocalseq\n";
 				$CPGSUM+=$MU;
 			} else {
 				$SUM+=$MU;
+				print "$POS\t$localseq\t$altlocalseq\n";
 			}
 		} else {
 			print OUT "$chr\t$PREVBIN\t$SUM\t$CPGSUM\n";
@@ -95,6 +98,9 @@ while (<$data>){
 			$CPGSUM=0;
 			$PREVBIN = $BIN;
 		}
+
+		}
+	    else {last;}
 }
 
 sub getRef{

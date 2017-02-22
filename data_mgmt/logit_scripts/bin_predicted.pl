@@ -83,7 +83,7 @@ while (<$data>){
 	my $BIN=ceil($line[2]/10); # Bin no. in predicted data is 100kb; coerce to 1Mb
 	my $MU=$line[3];
 
-	my $localseq = substr($seq, $POS-1, 2);
+	my $localseq = substr($seq, $POS-2, 2);
 	my $altlocalseq = reverse $localseq;
 	$altlocalseq =~ tr/ACGT/TGCA/;
 

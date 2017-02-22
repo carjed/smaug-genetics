@@ -72,8 +72,11 @@ my $PREVBIN = ceil($linearr[2]/10);
 my $SUM=0;
 my $CPGSUM=0;
 seek $data, 0, 0;
+
+my $i=1;
 while (<$data>){
-	if (1..20) { 
+	# if (1..20) {
+	if($i>10){last;}
 	chomp;
 	my @line=split(/\t/, $_);
 	my $POS=$line[1];
@@ -99,8 +102,8 @@ while (<$data>){
 			$PREVBIN = $BIN;
 		}
 
-		}
-	    else {last;}
+		# }
+	  #   else {last;}
 }
 
 sub getRef{

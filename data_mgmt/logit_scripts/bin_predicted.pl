@@ -84,7 +84,7 @@ while (<$data>){
 	$altlocalseq =~ tr/ACGT/TGCA/;
 
 		if($BIN==$PREVBIN){
-			if(($localseq eq "CG") | ($altlocalseq eq "CG")){
+			if(($localseq eq "CG") || ($altlocalseq eq "CG")){
 				$CPGSUM+=$MU;
 			} else {
 				$SUM+=$MU;

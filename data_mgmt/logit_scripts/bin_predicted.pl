@@ -76,20 +76,20 @@ seek $data, 0, 0;
 my $i=1;
 while (<$data>){
 	# if (1..20) {
-	if($i>10){last;}
+	# if($i>10){last;}
 	chomp;
 	my @line=split(/\t/, $_);
 	my $POS=$line[1];
 	my $BIN=ceil($line[2]/10); # Bin no. in predicted data is 100kb; coerce to 1Mb
 	my $MU=$line[3];
 
-	my $localseq = substr($seq, $POS-2, 2);
+	my $localseq = substr($seq, $POS-2, 3);
 	my $altlocalseq = reverse $localseq;
 	$altlocalseq =~ tr/ACGT/TGCA/;
 
 		if($BIN==$PREVBIN){
-			if(($localseq eq "CG") || ($altlocalseq eq "CG")){
-				print "$POS\t$localseq\t$altlocalseq\n";
+			if((substr($localseq, 1, 2) eq "CG") || (substr($altlocalseq, 1, 2) eq "CG")){
+				print "$POS\t$localseq\t$altlocalseq\tCpG\n";
 				$CPGSUM+=$MU;
 			} else {
 				$SUM+=$MU;

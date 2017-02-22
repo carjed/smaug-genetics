@@ -101,7 +101,7 @@ while (<$data>){
 			$CPGSUM=0;
 			$PREVBIN = $BIN;
 		}
-
+		$i++;
 		# }
 	  #   else {last;}
 }

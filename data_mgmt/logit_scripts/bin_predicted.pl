@@ -76,7 +76,7 @@ seek $data, 0, 0;
 my $i=1;
 while (<$data>){
 	# if (1..20) {
-	# if($i>10){last;}
+	if($i>10){last;}
 	chomp;
 	my @line=split(/\t/, $_);
 	my $POS=$line[1];

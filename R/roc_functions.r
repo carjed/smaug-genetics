@@ -47,7 +47,7 @@ subByModel <- function(data, mucol, groupname){
 		# dplyr::select(-mutmp) %>%
     # arrange_(mucol, "prop") %>%
     # mutate(mutmp=mucol, ntile=dense_rank(mutmp), group=groupname) %>%
-		mutate(ntile=min_rank(desc(mutmp)), n=n()) %>%
+		mutate(ntile=min_rank(desc(mutmp))) %>%
 		# mutate(ntile=rescale(1-mutmp, c(0, 1)), n=n()) %>%
 		mutate(group=groupname) %>%
     dplyr::select(-mutmp)
@@ -68,7 +68,7 @@ subWrapper <- function(data, sim=T){
   outdat <- bind_rows(list(chrp_gfasc, chrp_erv, chrp_common, chrp_av, chrp_erv5, chrp_erv3))
 
   if(sim){
-    chrp_sim_max <- simMu(data, nsim=100, nobs=50000, chunksize=50000)
+    chrp_sim_max <- simMu(data, nsim=1, nobs=50000, chunksize=50000)
     outdat <- rbind(data.frame(outdat), data.frame(chrp_sim_max))
   }
 
@@ -100,7 +100,7 @@ simMu <- function(data, nsim, nobs, chunksize){
   	while(length(mutated) < nsites){
   		rowind <- sample(nrow(chrptmp), nsample)
   		row <- chrptmp[rowind,]
-  		mu <- row$MU
+  		mu <- row$MU_S
 
   		batch <- sapply(mu, function(x) rbinom(1,1,x))
   		mutated <- c(mutated, row$POS[which(as.logical(batch))])

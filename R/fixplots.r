@@ -198,9 +198,9 @@ bridges.sing$ind <- paste0(bridges.sing$CHR, "_", bridges.sing$POS)
 
 # Read in .ped file with bipolar status
 ped <- read.table("/net/wonderland/home/mattz/BRIDGES/Assoc/BRIDGES_Assoc.20160226.ped", header=F, stringsAsFactors=F)
-ped2 <- ped[,1:6]
-
-names(ped2) <- c("FAM", "ID", "F", "M", "SEX", "BP")
+ped2 <- ped[,c(1:7, 14:23)]
+PCs <- paste0("PC", rep(1:10))
+names(ped2) <- c("FAM", "ID", "F", "M", "SEX", "BP", "STUDY", PCs)
 
 # Merge bipolar status with main file
 bridges.sing <- merge(bridges.sing, ped2, by="ID")
@@ -211,8 +211,11 @@ names(exac.sites) <- c("CHR", "POS")
 exac.sites$ind <- paste0(exac.sites$CHR, "_", exac.sites$POS)
 
 # Read in constrained gene data (Samocha et al., 2014)
-constrained <- read.table("/exports/home/jedidiah/constrained.txt", header=T, stringsAsFactors=F)
-names(constrained)[2]<-"GENE"
+# constrained <- read.table("/exports/home/jedidiah/constrained.txt", header=T, stringsAsFactors=F)
+# names(constrained)[2]<-"GENE"
+
+constrained <- read.table("/exports/home/jedidiah/exac_genes.txt", header=T, stringsAsFactors=F)
+names(constrained)[1]<-"GENE"
 
 # Read in psychiatric genes (Purcell et al., 2013)
 psych.genes <- read.table("~/psych.genes", header=F, stringsAsFactors=F)
@@ -231,13 +234,51 @@ bridges.sing$psych <- bridges.sing$GENE %in% psych.genes$GENE
 bridges.sing$CADD15 <- ifelse(as.numeric(bridges.sing$CADD)>15, TRUE, FALSE)
 bridges.sing$CADD20 <- ifelse(as.numeric(bridges.sing$CADD)>20, TRUE, FALSE)
 
+mod_dat1<-bridges.sing %>%
+  filter(!grepl("frame", ANNO)) %>%
+  mutate(SYN=ifelse(ANNO=="synonymous_variant", "SYN", "NONSYN")) %>%
+  # group_by(exac) %>%
+  # filter(constrained==TRUE & exac==FALSE) %>%
+  # group_by(ID, SYN, exac) %>%
+  group_by(ID, SYN) %>%
+  summarise(nsing=n()) %>%
+  spread(SYN, nsing)
+
+mod_dat<-bridges.sing %>%
+  filter(!grepl("frame", ANNO)) %>%
+  filter(constrained==TRUE & exac==FALSE) %>%
+  mutate(SYN.ex=ifelse(ANNO=="synonymous_variant", "SYN.f", "NONSYN.f")) %>%
+  group_by(ID, SYN.ex) %>%
+  # group_by(ID, SYN, exac) %>%
+  summarise(nsing.f=n()) %>%
+  spread(SYN.ex, nsing.f) %>%
+  # group_by(ID) %>%
+  filter(exac==FALSE)
+mod_dat2 <- merge(mod_dat, ped2, by="ID")
+mod_dat2 <- merge(mod_dat2, mod_dat1, by="ID")
+
+ind_stats<-read.table("/net/bipolar/lockeae/final_freeze/snps/QC/final_freeze.merged.IndividualStats.vcfast_vcfdiff.txt", he
+ader=T, stringsAsFactors=F)
+
+
+ind_stats$ID2<-as.numeric(gsub("[A-Za-z-]", "",gsub("1497", "", ind_stats$HAID)))
+mod_dat2$ID2<-as.numeric(gsub("[A-Za-z-]", "",gsub("1497", "", mod_dat2$ID)))
+
+md3<-merge(mod_dat2, ind_stats, by="ID2")
+
+fmla <- as.formula(paste("BP ~ NONSYN.f+SYN+SEX+", paste(PCs, collapse= "+")))
+fmla2 <- as.formula(paste("BP ~ NONSYN+SYN+SEX+", paste(PCs, collapse= "+")))
+fmla3 <- as.formula(paste("BP ~ Not_Rare+SEX+", paste(PCs, collapse= "+")))
+# mod<-glm(fmla,family=binomial(link='logit'),data=mod_dat2[mod_dat2$STUDY!="PRECHTER",])
+mod<-glm(fmla2,family=binomial(link='logit'),data=md3)
+summary(mod)
+
+
+
 # all singletons (row 1)
 all_gw <- bridges.sing %>%
   group_by(BP) %>%
   mutate(GENE="none") %>%
-  gene_wise()
-
-all <- bridges.sing %>%
   gene_wise()
 
 all_hc_gw <- bridges.sing %>%
@@ -246,29 +287,16 @@ all_hc_gw <- bridges.sing %>%
   mutate(GENE="none") %>%
   gene_wise()
 
-all_hc <- bridges.sing %>%
-  filter(constrained==TRUE) %>%
-  gene_wise()
-
 all_psych_gw <- bridges.sing %>%
   group_by(BP) %>%
   filter(psych==TRUE) %>%
   mutate(GENE="none") %>%
   gene_wise()
 
-all_psych <- bridges.sing %>%
-  filter(psych==TRUE) %>%
-  gene_wise()
-
-# rare singletons (row 2)
 rare_gw <- bridges.sing %>%
   group_by(BP) %>%
   filter(exac==FALSE) %>%
   mutate(GENE="none") %>%
-  gene_wise()
-
-rare_all <- bridges.sing %>%
-  filter(exac==FALSE) %>%
   gene_wise()
 
 rare_hc_gw <- bridges.sing %>%
@@ -277,32 +305,16 @@ rare_hc_gw <- bridges.sing %>%
   mutate(GENE="none") %>%
   gene_wise()
 
-rare_hc <- bridges.sing %>%
-  filter(exac==FALSE & constrained==TRUE) %>%
-  gene_wise()
-
 rare_psych_gw <- bridges.sing %>%
   group_by(BP) %>%
   filter(exac==FALSE & psych==TRUE) %>%
   mutate(GENE="none") %>%
   gene_wise()
 
-rare_psych <- bridges.sing %>%
-  filter(exac==FALSE & psych==TRUE) %>%
-  gene_wise()
-
-# rare high-CADD singletons (row 3)
-
 rare_c_gw <- bridges.sing %>%
   group_by(BP) %>%
   filter(exac==FALSE & CADD15==TRUE) %>%
   mutate(GENE="none") %>%
-  gene_wise()
-
-rare_c_all <- bridges.sing %>%
-  # filter(exac==FALSE & CADD20==TRUE) %>%
-  filter(exac==FALSE & CADD) %>%
-  # filter(CADD15==TRUE) %>%
   gene_wise()
 
 rare_c_hc_gw <- bridges.sing %>%
@@ -311,15 +323,48 @@ rare_c_hc_gw <- bridges.sing %>%
   mutate(GENE="none") %>%
   gene_wise()
 
-rare_c_hc <- bridges.sing %>%
-  # filter(exac==FALSE & CADD15==TRUE & constrained==TRUE) %>%
-  filter(as.numeric(CADD)>20 & constrained==TRUE) %>%
-  gene_wise()
-
 rare_c_psych_gw <- bridges.sing %>%
   group_by(BP) %>%
   filter(exac==FALSE & CADD15==TRUE & psych==TRUE) %>%
   mutate(GENE="none") %>%
+  gene_wise()
+
+bind_rows(all_gw, all_hc_gw, all_psych_gw,
+  rare_gw, rare_hc_gw, rare_psych_gw,
+  rare_c_gw, rare_c_hc_gw, rare_c_psych_gw)
+
+all <- bridges.sing %>%
+  gene_wise()
+
+all_hc <- bridges.sing %>%
+  filter(constrained==TRUE) %>%
+  gene_wise()
+
+all_psych <- bridges.sing %>%
+  filter(psych==TRUE) %>%
+  gene_wise()
+
+rare_all <- bridges.sing %>%
+  filter(exac==FALSE) %>%
+  gene_wise()
+
+rare_hc <- bridges.sing %>%
+  filter(exac==FALSE & constrained==TRUE) %>%
+  gene_wise()
+
+rare_psych <- bridges.sing %>%
+  filter(exac==FALSE & psych==TRUE) %>%
+  gene_wise()
+
+rare_c_all <- bridges.sing %>%
+  # filter(exac==FALSE & CADD20==TRUE) %>%
+  filter(exac==FALSE & CADD15==TRUE) %>%
+  # filter(CADD15==TRUE) %>%
+  gene_wise()
+
+rare_c_hc <- bridges.sing %>%
+  filter(exac==FALSE & CADD15==TRUE & constrained==TRUE) %>%
+  # filter(as.numeric(CADD)>20 & constrained==TRUE) %>%
   gene_wise()
 
 rare_c_psych <- bridges.sing %>%
@@ -327,6 +372,11 @@ rare_c_psych <- bridges.sing %>%
   # filter(as.numeric(CADD)>30 & psych==TRUE) %>%
   filter(CADD15==TRUE & psych==TRUE & exac==FALSE) %>%
   gene_wise()
+
+bind_rows(all[1,], all_hc[1,], all_psych[1,],
+  rare_all[1,], rare_hc[1,], rare_psych[1,],
+  rare_c_all[1,], rare_c_hc[1,], rare_c_psych[1,])
+
 
 
 bridges.sing.rare.cadd.genes <- gene_wise(bridges.sing.rare.cadd)

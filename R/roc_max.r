@@ -29,8 +29,6 @@
 	dnms_full <- rbind(dnms_full, gdnms)
 	dnms_full$CAT <- paste(dnms_full$REF, dnms_full$ALT, sep="")
 
-	# Manually remove bins near chr20 centromere
-	# chr22 <- chr22[ which(chr22$BIN<260 | chr22$BIN>300),]
 	dnms_full$Category[dnms_full$CAT=="AC" | dnms_full$CAT=="TG"] <- "AT_CG"
 	dnms_full$Category[dnms_full$CAT=="AG" | dnms_full$CAT=="TC"] <- "AT_GC"
 	dnms_full$Category[dnms_full$CAT=="AT" | dnms_full$CAT=="TA"] <- "AT_TA"
@@ -67,7 +65,7 @@ chrpfdnm <- chrpf[chrpf$ID!="all",]
 
 # Recombine data
 cat("Creating combined data...\n")
-chrp <- rbind(chrpfdnm, chrpfa) %>%
+chrp <- rbind(chrpfdnm[,1:12], chrpfa) %>%
   group_by(Category.x) %>%
   mutate(prop=cumsum(OBS)/sum(OBS)) %>%
   arrange(MU, prop)
@@ -254,7 +252,7 @@ for(i in 1:length(orderedcats)){
   lrtests <- data.frame(category=categ, mod=mods, pvals)
   lrtestdat <- bind_rows(lrtestdat, lrtests)
 
-  rsq<-unlist(lapply(overall_models, function(x) NagelkerkeR2(x)))[c(2,4,6,8,10,12,14)]
+  rsq<-unlist(lapply(overall_models, function(x) NagelkerkeR2(x)))[seq(2,14,2)]
   aic<-unlist(lapply(overall_models, function(x) AIC(x)))
   mod<-c("3-mers", "5-mers", "7-mers", "7-mers+features", "ERVs", "Common", "AV")
   df<-data.frame(group="FULL", category=categ, mod, rsq, aic)
@@ -281,7 +279,8 @@ for(i in 1:length(orderedcats)){
   # }
 }
 
-fd2<-fulldat %>% filter(mod=="7-mers" | mod=="5-mers" | mod=="3-mers" | mod=="7-mers+features")
+fd2<-fulldat %>%
+	filter(mod=="7-mers" | mod=="5-mers" | mod=="3-mers" | mod=="7-mers+features")
 # %>%
 fd3 <- fd2 %>%
 	dplyr::select(-aic) %>%
@@ -339,7 +338,8 @@ rsqdat<-fulldat %>%
   filter(mod=="7-mers" | mod=="5-mers" | mod=="3-mers" | mod=="7-mers+features") %>%
   filter(group=="FULL") %>%
   mutate(Category =
-      factor(plyr::mapvalues(category, orderedcats2, orderedcats2), levels=orderedcats2))
+      factor(plyr::mapvalues(category, orderedcats2, orderedcats2),
+				levels=orderedcats2))
 Lv7v5v3<-ggplot(rsqdat)+
   geom_bar(aes(x=Category, y=rsq, fill=mod), stat="identity", position="dodge")+
   # scale_fill_manual("Model", values=cbbPalette[c(4,6,7,8)])+

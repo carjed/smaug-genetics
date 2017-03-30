@@ -134,7 +134,7 @@ print "Runtime: ", timestr($difference), "\n";
 # -passed to R script along with bins file(s)
 ##############################################################################
 print "Expanding summary file...\n";
-my $start_time=new Benchmark;
+$start_time=new Benchmark;
 
 my @POS;
 my @NEWSUMM;
@@ -165,8 +165,8 @@ foreach my $row (@NEWSUMM) {
 	}
 }
 
-my $end_time=new Benchmark;
-my $difference = timediff($end_time, $start_time);
+$end_time=new Benchmark;
+$difference = timediff($end_time, $start_time);
 print "Done. ";
 print "Runtime: ", timestr($difference), "\n";
 
@@ -241,7 +241,6 @@ sub countMotifs{
 	# my $numbins=ceil($length/$binwidth);
 	# my $bin;
 
-	print "Processing BIN1 header\n";
 	print BIN "CHR\tMOTIF\tCOUNT\n";
 
 	my @motifs=($seq=~/(?=([ACGT]{$subseq}))/g);
@@ -267,7 +266,7 @@ sub countMotifs{
 			$seqp = "$altmotif\($motif\)";
 		}
 
-		print BIN "$chr\t$seqp\t$tri_count{$_}\n";
+		print BIN "$chr\t$seqp\t$sum\n";
 		# }
 	}
 

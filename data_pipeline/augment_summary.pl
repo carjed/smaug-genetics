@@ -254,12 +254,21 @@ sub countMotifs{
 		my $altmotif = $motif;
 		$altmotif =~ tr/ACGT/TGCA/;
 		$altmotif = reverse $altmotif;
-		my $sum=$tri_count{$motif}+$tri_count{$altmotif};
+		my $sum;
+		if(exists($tri_count{$altmotif})){
+			my $sum=$tri_count{$motif}+$tri_count{$altmotif};
+		} else {
+			my $sum=$tri_count{$motif};
+		}
+
 
 		my $ref1 = substr($motif, $adj, 1);
 		my $ref2 = substr($altmotif, $adj, 1);
 
 		my $seqp;
+
+		my $min = minstr($ref1, $ref2);
+
 		if($ref1 eq "A|C"){
 			$seqp = "$motif\($altmotif\)";
 		} else {

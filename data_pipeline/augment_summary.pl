@@ -155,11 +155,12 @@ while (<$summ>) {
 	my $localseq = substr($seq, $pos-$adj-1, $subseq);
 	my $altlocalseq = reverse $localseq;
 	$altlocalseq  =~ tr/ACGT/TGCA/;
-	my $gcprop = &getGC($pos);
+	# my $gcprop = &getGC($pos);
 
 	# keep only sites in fully parameterized motif
 	if($localseq =~ /^[ACGT]+$/){
-		print OUT "$_\t$localseq\t$altlocalseq\t$gcprop\n";
+		# print OUT "$_\t$localseq\t$altlocalseq\t$gcprop\n";
+		print OUT "$_\t$localseq\t$altlocalseq\n";
 	}
 }
 

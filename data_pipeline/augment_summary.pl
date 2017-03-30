@@ -254,25 +254,27 @@ sub countMotifs{
 		my $altmotif = $motif;
 		$altmotif =~ tr/ACGT/TGCA/;
 		$altmotif = reverse $altmotif;
-		my $sum;
-		if(exists($tri_count{$altmotif})){
-			my $sum=$tri_count{$motif}+$tri_count{$altmotif};
-		} else {
-			my $sum=$tri_count{$motif};
-		}
-
 
 		my $ref1 = substr($motif, $adj, 1);
 		my $ref2 = substr($altmotif, $adj, 1);
 
-		my $seqp;
+		my $seqp = "$motif\($altmotif\)";
 
-		my $min = minstr($ref1, $ref2);
+		# my $min = minstr($ref1, $ref2);
+		#
+		# if($ref1 eq "A|C"){
+		# 	$seqp = "$motif\($altmotif\)";
+		# } else {
+		# 	$seqp = "$altmotif\($motif\)";
+		# }
 
-		if($ref1 eq "A|C"){
-			$seqp = "$motif\($altmotif\)";
-		} else {
-			$seqp = "$altmotif\($motif\)";
+		my $sum;
+		if(exists($tri_count{$motif}) && exists($tri_count{$altmotif})){
+			$sum=$tri_count{$motif}+$tri_count{$altmotif};
+		} elsif(exists($tri_count{$motif}) && !exists($tri_count{$altmotif})) {
+			$sum=$tri_count{$motif};
+		} elsif(!exists($tri_count{$motif}) && exists($tri_count{$altmotif})) {
+			$sum=$tri_count{$altmotif};
 		}
 
 		print BIN "$chr\t$seqp\t$sum\n";

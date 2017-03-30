@@ -152,6 +152,8 @@ while (<$summ>) {
 	# chomp $row;
 	my @line=split(/\t/, $_);
 	my $pos=$line[1];
+	my $REF=$line[2];
+	my $ALT=$line[3];
 	my $localseq = substr($seq, $pos-$adj-1, $subseq);
 	my $altlocalseq = reverse $localseq;
 	$altlocalseq  =~ tr/ACGT/TGCA/;
@@ -163,7 +165,7 @@ while (<$summ>) {
 		my $ref1 = substr($localseq, $adj, 1);
 		my $ref2 = substr($altlocalseq, $adj, 1);
 
-		my $seqp = "$motif\($altmotif\)";
+		my $seqp;
 
 		if($ref1 ~~ [qw( A C )]){
 			$seqp = "$localseq\($altlocalseq\)";

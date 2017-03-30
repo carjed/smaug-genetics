@@ -34,25 +34,25 @@ rrheat2 <- function(dat, f, levels, facetvar, nbp){
 	return(p)
 }
 
-for(i in 1:3){
-  adj <- i
-  nbp <- adj*2+1
+for(i in 1:adj){
+  adjtmp <- i
+  nbp <- adjtmp*2+1
   rates <- read.table(paste0(parentdir, "/output/", nbp, "bp_1000k_rates.txt"),
 		header=T, stringsAsFactors=F)
-  rates$v2 <- substr(rates$Sequence,1,adj)
+  rates$v2 <- substr(rates$Sequence,1,adjtmp)
   rates$v2a <- as.character(lapply(as.vector(rates$v2), reverse_chars))
   rates$v2a <- factor(rates$v2a)
-  rates$v3 <- substr(rates$Sequence, adj+2, adj*2+1)
+  rates$v3 <- substr(rates$Sequence, adjtmp+2, adjtmp*2+1)
   rates$v4 <- rates$rel_prop
   rates$Category <- gsub("cpg_", "", rates$Category2)
   rates$v5 <- gsub("_", ">", rates$Category)
   rates$v5 <- factor(rates$v5)
 
   nbox <- length(unique(rates$v2a))
-  nint <- nbox/(4^(adj-1))
-  xhi <- rep(1:(4^(adj-1)),4^(adj-1))*nint+0.5
+  nint <- nbox/(4^(adjtmp-1))
+  xhi <- rep(1:(4^(adjtmp-1)),4^(adjtmp-1))*nint+0.5
   xlo <- xhi-nint
-  yhi <- rep(1:(4^(adj-1)),each=4^(adj-1))*nint+0.5
+  yhi <- rep(1:(4^(adjtmp-1)),each=4^(adjtmp-1))*nint+0.5
   ylo <- yhi-nint
   f <- data.frame(xlo,xhi,ylo,yhi)
 

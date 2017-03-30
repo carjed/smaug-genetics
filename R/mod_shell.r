@@ -31,10 +31,10 @@ source("./R/get_functions.r")
 
 # Get args from command line; defaults defined below
 args <- getArgs(
-	defaults=list(adj=3,
+	defaults=list(adj=4,
 		binw=1000000,
-		summfile=paste0(parentdir, "/output/7bp_1000k/full_j.summary"),
-		binfile=paste0(parentdir, "/output/7bp_1000k/full_bin.txt"),
+		summfile=paste0(parentdir, "/output/9bp_1000k_singletons_full/full.summary"),
+		binfile=paste0(parentdir, "/output/9bp_1000k_singletons_full/full_bin.txt"),
 		# summfile=paste0(parentdir, "/output/5bp_100k/full.summary"),
 		# binfile=paste0(parentdir, "/output/5bp_100k/full_bin.txt"),
 		# summfile=paste0(parentdir, "/output/7bp_1000k/chrX.expanded.summary"),
@@ -42,7 +42,7 @@ args <- getArgs(
 		run_agg=TRUE,
 		pcs=FALSE,
 		categ="AT_CG",
-		negbin_model=TRUE,
+		negbin_model=FALSE,
 		log_model=FALSE,
 		run_predict=FALSE))
 
@@ -134,7 +134,7 @@ if(!file.exists(summfile)){
 
 	# Change ^SEQ to ^CHR--needed to fix bug in header of common variant data
 	combinecmd <- paste0(
-		"awk 'FNR==1 && NR!=1{while(/^SEQ/) getline; } 1 {print} ' ",
+		"awk 'FNR==1 && NR!=1{while(/^CHR/) getline; } 1 {print} ' ",
 		datadir, "/chr*.expanded.summary > ", datadir, "/full.summary")
 	combinecmd2 <- paste0(
 		"awk 'FNR==1 && NR!=1{while(/^CHR/) getline; } 1 {print} ' ",
@@ -143,57 +143,87 @@ if(!file.exists(summfile)){
 	system(combinecmd2)
 }
 
-cat("Reading summary file:", summfile, "...\n")
+cat("Prepping summary file:", summfile, "...\n")
 
-summ_5bp_100k <- read.table(summfile, header=F, stringsAsFactors=F, skip=1)
-names(summ_5bp_100k)<-c(
-	"CHR", "POS", "REF", "ALT", "DP", "AN", "SEQ", "ALTSEQ", "GC")
+# Data and function for collapsing categories
+categs <- c("AT_CG", "AT_GC", "AT_TA", "GC_AT", "GC_CG", "GC_TA")
+catdf <- data.frame(Category=categs, stringsAsFactors=F) %>%
+	mutate(c1=paste0(substr(Category, 1, 1), substr(Category, 4, 4)),
+		c2=paste0(substr(Category, 2, 2), substr(Category, 5, 5))) %>%
+		gather(class, sub, c1:c2)
 
-# summ_5bp_100k <- read.table(summfile, header=F, stringsAsFactors=F)
-# names(summ_5bp_100k)<-c(
-# 	"CHR", "POS", "REF", "ALT", "DP", "AN", "SEQ", "ALTSEQ", "GC", "SAMPLE")
-summ_5bp_100k$BIN <- ceiling(summ_5bp_100k$POS/binw)
+cd2 <- catdf$Category
+names(cd2) <- catdf$sub
 
+collapseCat <- function(CAT){
+	Category <- cd2[CAT]
+	return(Category)
+}
+
+# Add category and sequence information
+prepSites <- function(summfile){
+	sites <- read.table(summfile, header=F, stringsAsFactors=F, skip=1)
+	names(sites) <- c("CHR", "POS", "REF", "ALT", "DP", "AN", "SEQ", "ALTSEQ")
+
+	sites <- sites %>%
+		mutate(BIN=ceiling(POS/binw),
+			Sequence=ifelse(
+				substr(SEQ,adj+1,adj+1)<substr(ALTSEQ,adj+1,adj+1),
+				paste0(SEQ,"(",ALTSEQ,")"),
+				paste0(ALTSEQ,"(",SEQ,")"),
+			# CAT=paste0(REF, ALT),
+			Category=collapseCat(CAT),
+
+			# SEQMIN=pmin(SEQ, ALTSEQ),
+			Category2=ifelse(
+				substr(Sequence,adj+1,adj+2)=="CG",
+				paste0("cpg_",Category),
+				Category)))
+
+	return(sites)
+}
+
+sites <- prepSites(summfile)
+
+# Read in motif counts per chromosome
 cat("Reading bin file:", binfile, "...\n")
-bins_5bp_100k <- read.table(binfile, header=T, stringsAsFactors=F, check.names=F)
+bins <- read.table(binfile, header=T, stringsAsFactors=F, check.names=F)
+
+# summarize motif counts genome-wide
+mct <- bins %>%
+	dplyr::select(CHR, Sequence=MOTIF, nMotifs=COUNT) %>%
+	group_by(Sequence) %>%
+	summarise(nMotifs=sum(nMotifs))
+
+# Get relative mutation rates per subtype
+cat("Generating motif relative rates...\n")
+aggseq <- sites %>%
+	group_by(Sequence, Category2, BIN) %>%
+	summarise(n=n()) %>%
+	summarise(nERVs=sum(n))
+aggseq <- merge(aggseq, mct, by="Sequence")
+aggseq$rel_prop <- aggseq$nERVs/aggseq$nMotifs
+rates5 <- aggseq
+
+cbp <- adj+1
+aggseq <- aggseq %>%
+	mutate(SEQ1=substr(Sequence, cbp, cbp),
+		SEQ3=substr(Sequence, cbp-1, cbp+1),
+		SEQ5=substr(Sequence, cbp-2, cbp+2),
+		SEQ7=substr(Sequence, cbp-3, cbp+3))
+
+rates7 <- aggseq %>%
+	mutate(Category=gsub("cpg_", "", Category2)) %>%
+	group_by(Category, SEQ7) %>%
+	summarise(nERVs=sum(nERVs),
+		nMotifs=sum(nMotifs),
+		ERV_rel_rate=nERVs/nMotifs)
+
+ratefile <- paste0(parentdir, "/output/", nbp, "bp_", bink, "k_rates.txt")
+write.table(rates5, ratefile, col.names=T, row.names=F, quote=F, sep="\t")
 
 tottime <- (proc.time()-ptm)[3]
 cat("Done (", tottime, "s)\n")
-
-##############################################################################
-# Update data
-##############################################################################
-ptm <- proc.time()
-cat("Updating data...\n")
-source("./R/update_dat.r")
-dat_5bp_100k <- updateData(summ_5bp_100k, bins_5bp_100k, adj)
-rm(summ_5bp_100k)
-rm(bins_5bp_100k)
-tottime<-(proc.time()-ptm)[3]
-cat("Done (", tottime, "s)\n")
-
-##############################################################################
-# Run aggregation script to get:
-# -genome-wide heatmaps of relative rates
-# -negative binomial model to summarize spatial distribution
-# -table of relative rates
-##############################################################################
-if(run_agg){
-	ptm <- proc.time()
-	cat("Aggregating data...\n")
-	source("./R/agg_dat.r")
-	aggV <- aggData(dat_5bp_100k, adj) #<-modify the adj value for 3bp data
-
-	agg_5bp_100k <- aggV$oe
-	rates5 <- aggV$agg
-	summagg2 <- aggV$summagg2
-
-	ratefile <- paste0(parentdir, "/output/", nbp, "bp_", bink, "k_rates.txt")
-	write.table(rates5, ratefile, col.names=T, row.names=F, quote=F, sep="\t")
-
-	tottime <- (proc.time()-ptm)[3]
-	cat("Done (", tottime, "s)\n")
-}
 
 ##############################################################################
 # Build file of covariates and run PCA

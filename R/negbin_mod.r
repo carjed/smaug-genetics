@@ -42,30 +42,17 @@ rates_full <- merge(rates_full, rates5a, by=c("Seq5", "Category2"))
 
 # Identify motifs whose components have most similar relative rates
 cat("Checking for homogeneity of similar motifs...\n")
-count<-0
-results<-data.frame()
+hettests<-rates5 %>%
+  dplyr::select(Sequence, Category2, num, COUNT, rel_prop) %>%
+  filter(num>20) %>%
+  mutate(SEQ7=substr(Sequence, 2, 8)) %>%
+  group_by(Category2, SEQ7) %>%
+  arrange(Category2, Sequence) %>%
+  mutate(exp=sum(num)/sum(COUNT)*COUNT, p=exp/sum(exp), n=n()) %>%
+  filter(n==16) %>%
+  # filter(SEQ7=="TTTCGTT", Category2=="cpg_GC_TA") %>% data.frame()
+  summarise(pval=chisq.test(num, p=p)$p.value)
 
-for(i in unique(rates5$Category2)){
-  aggcat <- rates5[rates5$Category2==i,]
-  # names(aggcat)[1] <- "Sequence"
-  nbpt <- 7
-
-  tmpresults <- data.frame()
-  for(j in unique(substr(aggcat$Sequence,2,nbpt-1))){
-
-    ref <- unique(substr(aggcat$Sequence,adj+1,adj+1))
-    dat <- aggcat[substr(aggcat$Sequence,2,nbpt-1)==j,]
-    dat$exp <- dat$COUNT*(sum(dat$n)/sum(dat$COUNT))
-
-    test <- chisq.test(dat$n, p=dat$exp/sum(dat$exp))
-
-    datrow <- data.frame(Category2=i, Sequence=j, pval=test$p.value)
-    tmpresults <- rbind(tmpresults, datrow)
-  }
-
-  tmpresults$Q <- ntile(tmpresults$pval, 10)
-  results <- rbind(results, tmpresults)
-}
 
 ##############################################################################
 # Run likelihood analysis on full data

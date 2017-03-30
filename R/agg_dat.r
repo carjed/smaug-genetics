@@ -10,47 +10,15 @@ aggData <- function(datfile, adj){
 	mct <- datfile$mct
 	nbp <- adj*2+1
 
-	# Compute Ts/Tv by bin--can use as filter set to exclude windows with Ts/Tv
-	# below a certain threshold
-	cat("Computing Ts/Tv per bin...\n")
-	summfile$TS <- ifelse(
-		((summfile$REF=="A" | summfile$REF=="G") &
-			(summfile$ALT=="A" | summfile$ALT=="G")) |
-		((summfile$REF=="C" | summfile$REF=="T") &
-			(summfile$ALT=="C" | summfile$ALT=="T")),
-		"TS", "TV")
-
-	tstv <- summfile %>%
-		group_by(CHR, BIN, TS) %>%
-		summarise(freq=n())
-	tstv <- dcast(tstv, CHR+BIN~TS, value.var="freq")
-	tstv$TOT <- tstv$TS+tstv$TV
-	tstv$TSTV <- tstv$TS/tstv$TV
-
-	# Cutoff of 1.5 removes 44Mb and ~500,000 variants
-	# 1.2 removes 3Mb and ~60,000 variants (mostly Chr8)
-
-	filter<-0
-	if(filter){
-		cat("Applying Ts/Tv filter...\n")
-		cutoff <- 1.2
-		filterset <- tstv[tstv$TSTV<cutoff,]
-
-		summfile$IND <- paste0(summfile$CHR, "_", summfile$BIN)
-		filterset$IND <- paste0(filterset$CHR, "_", filterset$BIN)
-
-		summfile2 <- summfile[!(summfile$IND %in% filterset$IND),]
-	}
-
 	# Get dataframe of observed and predicted counts
 	{
 		# aggseq <- count(summfile, c("Sequence", "Category2", "COUNT")) #<-plyr
 		cat("Generating motif relative rates...\n")
 		aggseq <- summfile %>%
-			group_by(Sequence, Category2, SEQMIN, BIN) %>%
+			group_by(Sequence, Category2, BIN) %>%
 			summarise(n=n()) %>%
 			summarise(num=sum(n), mean=mean(n), sd=sd(n))
-		aggseq <- merge(aggseq, mct, by="SEQMIN")
+		aggseq <- merge(aggseq, mct, by="Sequence")
 		# aggseq2 <- count(summfile, Sequence, Category2, COUNT) #<-dplyr
 		aggseq$rel_prop <- aggseq$num/aggseq$COUNT
 
@@ -68,7 +36,7 @@ aggData <- function(datfile, adj){
 			group_by(CHR, BIN, Category2) %>%
 			summarise(obs=sum(obs, na.rm=T))
 
-		datalist<- list("agg"=aggseq, "oe"=spbc, "summagg2"=summagg, "tstv"=tstv)
+		datalist<- list("agg"=aggseq, "oe"=spbc, "summagg2"=summagg)
 		return(datalist)
 	}
 }

@@ -91,19 +91,6 @@ my $in_path = "/net/bipolar/jedidiah/testpipe/summaries";
 my $out_path = "$parentdir/output/${subseq}bp_${bw}k_${macl}_${data}";
 make_path("$out_path");
 
-my $f_summ = "$in_path/${macl}_${data}/chr$chr.summary";
-open my $summ, '<', $f_summ or die "can't open $f_summ: $!";
-
-my $outfile = "$out_path/chr$chr.expanded.summary";
-open(OUT, '>', $outfile) or die "can't write to $outfile: $!\n";
-
-if ($mac==1) {
-	print OUT "CHR\tPOS\tREF\tALT\tDP\tAN\tANNO\t";
-	# print OUT "CHR\tPOS\tREF\tALT\t";
-} elsif ($mac==2) {
-	print OUT "CHR\tPOS\tREF\tALT\tANNO\t";
-}
-
 my $seq=&getRef();
 
 my $seqlength=length($seq);
@@ -136,13 +123,26 @@ print "Runtime: ", timestr($difference), "\n";
 print "Expanding summary file...\n";
 $start_time=new Benchmark;
 
+my $f_summ = "$in_path/${macl}_${data}/chr$chr.summary";
+open my $summ, '<', $f_summ or die "can't open $f_summ: $!";
+
+my $outfile = "$out_path/chr$chr.expanded.summary";
+open(OUT, '>', $outfile) or die "can't write to $outfile: $!\n";
+
+if ($mac==1) {
+	print OUT "CHR\tPOS\tREF\tALT\tDP\tAN\tSEQ\tALTSEQ\tSequence\tCategory\n";
+	# print OUT "CHR\tPOS\tREF\tALT\t";
+} elsif ($mac==2) {
+	print OUT "CHR\tPOS\tREF\tALT\tANNO\t";
+}
+
 my @POS;
 my @NEWSUMM;
 my @loci;
 my $a_nu_start=0;
 #readline($summ); #<-throws out summary header if it exists
 
-print OUT "SEQ\tALTSEQ\tGC\n";
+# print OUT "SEQ\tALTSEQ\tGC\n";
 while (<$summ>) {
 	chomp;
 	next unless $_ =~ /^[^,]*$/;
@@ -159,8 +159,35 @@ while (<$summ>) {
 
 	# keep only sites in fully parameterized motif
 	if($localseq =~ /^[ACGT]+$/){
+
+		my $ref1 = substr($localseq, $adj, 1);
+		my $ref2 = substr($altlocalseq, $adj, 1);
+
+		my $seqp = "$motif\($altmotif\)";
+
+		if($ref1 ~~ [qw( A C )]){
+			$seqp = "$localseq\($altlocalseq\)";
+		} else {
+			$seqp = "$altlocalseq\($localseq\)";
+		}
+
+		my $CAT = "${REF}${ALT}";
+		my $Category;
+		if($CAT ~~ [qw( AC TG )]){
+			$Category = "AT_CG";
+		} elsif($CAT ~~ [qw( AG TC )]){
+			$Category = "AT_GC";
+		} elsif($CAT ~~ [qw( AT TA )]){
+			$Category = "AT_TA";
+		} elsif($CAT ~~ [qw( GA CT )]){
+			$Category = "GC_AT";
+		} elsif($CAT ~~ [qw( GC CG )]){
+			$Category = "GC_CG";
+		} elsif($CAT ~~ [qw( GT CA )]){
+			$Category = "GC_TA";
+		}
 		# print OUT "$_\t$localseq\t$altlocalseq\t$gcprop\n";
-		print OUT "$_\t$localseq\t$altlocalseq\n";
+		print OUT "$_\t$localseq\t$altlocalseq\t$seqp\t$Category\n";
 	}
 }
 

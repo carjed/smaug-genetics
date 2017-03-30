@@ -142,17 +142,15 @@ my @loci;
 my $a_nu_start=0;
 #readline($summ); #<-throws out summary header if it exists
 
+print OUT "SEQ\tALTSEQ\tGC\n";
 while (<$summ>) {
+	chomp;
 	next unless $_ =~ /^[^,]*$/;
 	push (@POS, (split(/\t/, $_))[1]);
 	push (@NEWSUMM, $_);
-}
 
-print OUT "SEQ\tALTSEQ\tGC\n";
-
-foreach my $row (@NEWSUMM) {
-	chomp $row;
-	my @line=split(/\t/, $row);
+	# chomp $row;
+	my @line=split(/\t/, $_);
 	my $pos=$line[1];
 	my $localseq = substr($seq, $pos-$adj-1, $subseq);
 	my $altlocalseq = reverse $localseq;
@@ -161,9 +159,15 @@ foreach my $row (@NEWSUMM) {
 
 	# keep only sites in fully parameterized motif
 	if($localseq =~ /^[ACGT]+$/){
-		print OUT "$row\t$localseq\t$altlocalseq\t$gcprop\n";
+		print OUT "$_\t$localseq\t$altlocalseq\t$gcprop\n";
 	}
 }
+
+
+
+# foreach my $row (@NEWSUMM) {
+#
+# }
 
 $end_time=new Benchmark;
 $difference = timediff($end_time, $start_time);

@@ -130,7 +130,7 @@ my $outfile = "$out_path/chr$chr.expanded.summary";
 open(OUT, '>', $outfile) or die "can't write to $outfile: $!\n";
 
 if ($mac==1) {
-	print OUT "CHR\tPOS\tREF\tALT\tDP\tAN\tSEQ\tALTSEQ\tSequence\tCategory\n";
+	print OUT "CHR\tPOS\tREF\tALT\tDP\tAN\tSEQ\tALTSEQ\tSequence\tCategory\tCategory2\n";
 	# print OUT "CHR\tPOS\tREF\tALT\t";
 } elsif ($mac==2) {
 	print OUT "CHR\tPOS\tREF\tALT\tANNO\t";
@@ -188,16 +188,17 @@ while (<$summ>) {
 		} elsif($CAT ~~ [qw( GT CA )]){
 			$Category = "GC_TA";
 		}
+
+		my $Category2;
+		if(substr($seqp, $adj, 2) eq "CG"){
+			$Category2 = "cpg_$Category";
+		} else {
+			$Category2 = $Category;
+		}
 		# print OUT "$_\t$localseq\t$altlocalseq\t$gcprop\n";
-		print OUT "$_\t$localseq\t$altlocalseq\t$seqp\t$Category\n";
+		print OUT "$_\t$localseq\t$altlocalseq\t$seqp\t$Category\t$Category2\n";
 	}
 }
-
-
-
-# foreach my $row (@NEWSUMM) {
-#
-# }
 
 $end_time=new Benchmark;
 $difference = timediff($end_time, $start_time);

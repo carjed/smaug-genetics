@@ -143,47 +143,49 @@ if(!file.exists(summfile)){
 	system(combinecmd2)
 }
 
-cat("Prepping summary file:", summfile, "...\n")
+cat("Reading summary file:", summfile, "...\n")
 
 # Data and function for collapsing categories
-categs <- c("AT_CG", "AT_GC", "AT_TA", "GC_AT", "GC_CG", "GC_TA")
-catdf <- data.frame(Category=categs, stringsAsFactors=F) %>%
-	mutate(c1=paste0(substr(Category, 1, 1), substr(Category, 4, 4)),
-		c2=paste0(substr(Category, 2, 2), substr(Category, 5, 5))) %>%
-		gather(class, sub, c1:c2)
+# categs <- c("AT_CG", "AT_GC", "AT_TA", "GC_AT", "GC_CG", "GC_TA")
+# catdf <- data.frame(Category=categs, stringsAsFactors=F) %>%
+# 	mutate(c1=paste0(substr(Category, 1, 1), substr(Category, 4, 4)),
+# 		c2=paste0(substr(Category, 2, 2), substr(Category, 5, 5))) %>%
+# 		gather(class, sub, c1:c2)
+#
+# cd2 <- catdf$Category
+# names(cd2) <- catdf$sub
+#
+# collapseCat <- function(CAT){
+# 	Category <- cd2[CAT]
+# 	return(Category)
+# }
 
-cd2 <- catdf$Category
-names(cd2) <- catdf$sub
+sites <- read.table(summfile, header=T, stringsAsFactors=F)
 
-collapseCat <- function(CAT){
-	Category <- cd2[CAT]
-	return(Category)
-}
+# # Add category and sequence information
+# prepSites <- function(summfile){
+# 	sites <- read.table(summfile, header=F, stringsAsFactors=F, skip=1)
+# 	names(sites) <- c("CHR", "POS", "REF", "ALT", "DP", "AN", "SEQ", "ALTSEQ")
+#
+# 	sites <- sites %>%
+# 		mutate(BIN=ceiling(POS/binw),
+# 			Sequence=ifelse(
+# 				substr(SEQ,adj+1,adj+1)<substr(ALTSEQ,adj+1,adj+1),
+# 				paste0(SEQ,"(",ALTSEQ,")"),
+# 				paste0(ALTSEQ,"(",SEQ,")"),
+# 			# CAT=paste0(REF, ALT),
+# 			Category=collapseCat(CAT),
+#
+# 			# SEQMIN=pmin(SEQ, ALTSEQ),
+# 			Category2=ifelse(
+# 				substr(Sequence,adj+1,adj+2)=="CG",
+# 				paste0("cpg_",Category),
+# 				Category)))
+# 
+# 	return(sites)
+# }
 
-# Add category and sequence information
-prepSites <- function(summfile){
-	sites <- read.table(summfile, header=F, stringsAsFactors=F, skip=1)
-	names(sites) <- c("CHR", "POS", "REF", "ALT", "DP", "AN", "SEQ", "ALTSEQ")
-
-	sites <- sites %>%
-		mutate(BIN=ceiling(POS/binw),
-			Sequence=ifelse(
-				substr(SEQ,adj+1,adj+1)<substr(ALTSEQ,adj+1,adj+1),
-				paste0(SEQ,"(",ALTSEQ,")"),
-				paste0(ALTSEQ,"(",SEQ,")"),
-			# CAT=paste0(REF, ALT),
-			Category=collapseCat(CAT),
-
-			# SEQMIN=pmin(SEQ, ALTSEQ),
-			Category2=ifelse(
-				substr(Sequence,adj+1,adj+2)=="CG",
-				paste0("cpg_",Category),
-				Category)))
-
-	return(sites)
-}
-
-sites <- prepSites(summfile)
+# sites <- prepSites(summfile)
 
 # Read in motif counts per chromosome
 cat("Reading bin file:", binfile, "...\n")

@@ -4,7 +4,6 @@ source("./R/roc_functions.r")
 suppressMessages(usePackage(ggplot2))
 suppressMessages(usePackage(dplyr))
 suppressMessages(usePackage(tidyr))
-suppressMessages(usePackage(reshape2))
 suppressMessages(usePackage(RColorBrewer))
 suppressMessages(usePackage(MASS))
 suppressMessages(usePackage(speedglm))
@@ -33,7 +32,7 @@ cbbPalette <- c("#000000", "#E69F00", "#56B4E9", "#009E73", "#F0E442",
 iwhPalette <- c("#cd5431", "#a14ad9", "#67b03f", "#604dad", "#c79931",
   "#cc4498", "#4d9f83", "#b54f50", "#5d8cb6", "#7f7d48", "#a67abe", "#965571")
 myPaletteCat <- colorRampPalette(brewer.pal(12, "Paired"))
-# myPaletteCat <- colorRampPalette(rev(brewer.pal(8, "Dark2")), space="Lab")
+myPaletteCatN <- colorRampPalette(rev(brewer.pal(8, "Dark2")), space="Lab")
 myPalette <- colorRampPalette(rev(brewer.pal(11, "Spectral")), space="Lab")
 myPaletteB <- colorRampPalette(rev(brewer.pal(9, "Blues")), space="Lab")
 myPaletteR <- colorRampPalette(rev(brewer.pal(9, "Reds")), space="Lab")
@@ -44,13 +43,6 @@ myPaletteBrBG <- colorRampPalette(rev(brewer.pal(11, "BrBG")), space="Lab")
 rb <- c(myPaletteB(6)[1:3],myPaletteR(6)[1:3])
 g <- myPaletteG(6)[1:3]
 rbg<-c(myPaletteB(6)[1:3],myPaletteR(6)[1:3], myPaletteG(6)[1:3])
-
-darken <- function(color, factor=1.4){
-    col <- col2rgb(color)
-    col <- col/factor
-    col <- rgb(t(col), maxColorValue=255)
-    col
-}
 
 orderedcats <- c("AT_CG", "AT_GC", "AT_TA",
   "GC_AT", "GC_CG", "GC_TA",
@@ -79,7 +71,6 @@ cols <- myPaletteCat(12)[
   c(10,8,12,
     2,4,6,
     1,3,5)] #<- colors if using this ordering
-
 
 ptm <- proc.time()
 cat("Plotting K-mer heatmaps...\n")

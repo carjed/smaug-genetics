@@ -293,6 +293,21 @@ ggsave(paste0(parentdir, "/images/1mb_scatter.png"), height=4, width=5.5)
 ##############################################################################
 # Plot per-chromosome variation
 ##############################################################################
+# Manual toggle for installing ggbio package
+# Uses the install_github() function from devtools to pull latest version,
+# due to issue on some clusters where using
+# "source("https://bioconductor.org/biocLite.R")"
+# does not properly update the installer
+#
+# If this is not an issue, can simply run:
+# source("https://bioconductor.org/biocLite.R")
+# biocLite("ggbio", suppressUpdates=TRUE)
+install_ggbio <- 0
+if(install_ggbio){
+	install_github("Bioconductor/BiocInstaller")
+	biocLite("ggbio", suppressUpdates=TRUE)
+}
+
 cat("Plotting per-chromosome variation...\n")
 require(ggbio)
 data(hg19IdeogramCyto, package = "biovizBase")

@@ -9,12 +9,13 @@
 ##############################################################################
 # Get summary file for category i; merge with covariates
 ##############################################################################
+categ <- "AT_CG"
+
 cat("Extracting", categ, "sites...\n")
-summfile1 <- dat_5bp_100k$summ[dat_5bp_100k$summ$Category==categ,
-	c("CHR", "BIN", "POS", "Sequence")]
-summfile1$mut <- 1
-summfile1$BIN <- ceiling(summfile1$POS/100000)
-# summfile1 <- merge(summfile1, mut_cov, by=c("CHR", "BIN"))
+summfile1 <- sites %>%
+	filter(Category==categ) %>%
+	dplyr::select("CHR", "BIN", "POS", "SEQUENCE") %>%
+	mutate(mut=1, BIN=ceiling(POS/100000))
 
 ##############################################################################
 # Run perl script to build input data for model

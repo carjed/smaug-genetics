@@ -80,12 +80,6 @@ This pipeline can be applied to estimate mutational spectra from any human genom
 -Get summary of K-mer relative mutation rates
 -Estimate effects of genomic features and predict position-specific mutation rates using logistic regression
 
-4. The logistic regression model requires a rather complex series of preprocessing steps. In short, we must generate a set of 24,576 files (1 per each 7-mer subtype), each containing all positions in the genome within a particular sequence context, annotated as either a singleton (1) or non-mutated site (0). Each site is then annotated with the mean depth of coverage across all individuals, using the .glf files generated prior to variant calling. Processing these .glf files involves running several additional scripts  . Code for these
-
-5. The analysis.r script is run
-6.
-
-
 ### Project directory structure
 
 ```

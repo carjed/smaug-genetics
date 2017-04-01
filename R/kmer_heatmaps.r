@@ -129,8 +129,6 @@ rates7out <- rates7out %>% dplyr::select(Type=Category, Motif=Sequence,
 	nERVs=num, nMotifs=COUNT, ERV_rel_rate=rel_prop.x, nERVs_DS=num.x,
 	ERV_DS_rel_rate=rel_prop.y, nMAC10=num.y, MAC10_rel_rate=common_rel_prop)
 
-
-
 rates5 <- read.table(paste0(parentdir, "/output/5bp_1000k_rates.txt"),
 	header=T, stringsAsFactors=F)
 rates5out <- rates5 %>%

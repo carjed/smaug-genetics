@@ -278,6 +278,7 @@ sub countMotifs{
 
 	print BIN "CHR\tMOTIF\tCOUNT\n";
 
+	# Modified counting strategy from https://www.biostars.org/p/5143/
 	my @motifs=($seq=~/(?=([ACGT]{$subseq}))/g);
 	#for(@trinucs){print "$_\n"};
 	my %tri_count=();

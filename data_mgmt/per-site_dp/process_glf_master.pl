@@ -52,8 +52,8 @@ if($subset==0){
   $numind=3765;
   $chrfilesub=$chrfiles;
 } else {
-
-  # Subset file list to 10% of samples
+  # Not used--tested if we can maintain accuracy and reduce workload
+  # by subsampling file list to 10% of samples
   $chrfilesub="$parentdir/output/glf_depth/chr${chr}_glf_filelist.sub.txt";
 
   my $samples="/net/bipolar/lockeae/final_freeze/list.txt";

@@ -1,4 +1,68 @@
 ##############################################################################
+# Function for plotting K-mer heatmaps
+##############################################################################
+rrheat2 <- function(dat, f, levels, facetvar, nbp){
+	p <- ggplot()+
+	# log(v4*10000+1,2)
+	# limits=c(min(dat$v4), max(dat$v4))
+	geom_tile(data=dat, aes(x=v3, y=v2a, fill=v4))+
+	# geom_text(data=dat, aes(x=v2a, y=v3, label=v4a, family="Courier", size=0.1))+
+	geom_rect(data=f, size=0.6, colour="grey70",
+		aes(xmin=xlo, xmax=xhi, ymin=ylo, ymax=yhi), fill=NA)+
+	scale_fill_gradientn("Relative Rate",
+		# colours=myPalette((nbp-1)^4),
+    colours=myPaletteO(11),
+		trans="log10",
+		breaks=10^(seq(-3.65,-.84,0.281)),
+		labels=signif(10^(seq(-3.65,-.84,0.281)), 2),
+		limits=c(0.0002, 0.2))+
+	xlab("3' flank")+
+	ylab("5' flank")+
+  theme_classic()+
+	theme(
+		# legend.position="none",
+		legend.title = element_text(size=18),
+		legend.text = element_text(size=16),
+		legend.key.height = unit(1.5, "cm"),
+		axis.ticks.x = element_blank(),
+		axis.ticks.y = element_blank(),
+		axis.text.y = element_blank(),
+		axis.text.x = element_blank(),
+    axis.title.y = element_blank(),
+		axis.title.x = element_blank())
+
+	return(p)
+}
+
+##############################################################################
+# Plot relative differences between ERVs and AV rates
+##############################################################################
+rrheat3 <- function(dat){
+	p<-ggplot()+
+	geom_tile(data=dat, aes(x=v3, y=v2a, fill=prop_diff4))+
+	geom_rect(data=f, size=0.6, colour="grey70",
+		aes(xmin=xlo, xmax=xhi, ymin=ylo, ymax=yhi), fill=NA)+
+	scale_fill_gradientn("Rp/Rs\n",
+		colours=myPaletteBrBG(nbp),
+		trans="log",
+		breaks=c(0.5, 1, 2),
+		labels=c("<0.5", "1", ">2"),
+		limits=c(0.5, 2.2))+
+		xlab("3' flank")+
+		ylab("5' flank")+
+	theme(
+		legend.position="none",
+		axis.ticks.x = element_blank(),
+		axis.ticks.y = element_blank(),
+		axis.text.y = element_blank(),
+		axis.text.x = element_blank(),
+    axis.title.y = element_blank(),
+		axis.title.x = element_blank())
+
+	return(p)
+}
+
+##############################################################################
 # Function to get reverse complement
 ##############################################################################
 revcomp <- function(DNAstr) {
@@ -301,133 +365,6 @@ imputeStart<-function(ends){
   starts<-c(0, ends[-(length(ends))])
   return(starts)
 }
-
-##############################################################################
-# Function for running logit model--given input motif,
-# writes predicted mutation rates and returns list of coefficient estimates
-##############################################################################
-logitMod <- function(motif, nbp, parentdir, categ){
-
-	escmotif <- substr(motif, 0, nbp)
-
-	# source("./get_functions.r")
-
-	# Merge per-chromosome motif files to single file
-	# Define name of temporary file for motif i
-	# sitefile <- paste0(parentdir, "/output/logmod_data/motifs/", categ, "/",
-	# 	categ, "_", escmotif, ".txt")
-	sitefile <- paste0(parentdir, "/output/logmod_data/motifs/", categ, "/dp/",
-			categ, "_", escmotif, "_dp.txt")
-
-	if(!(file.exists(sitefile))){
-		cat("Merging ", motif, " files...\n")
-
-		perchrtmp <- paste0(parentdir,
-			"/output/logmod_data/chr*/chr*_", categ, "_", motif, ".txt")
-
-		catcmd1 <- paste0("find ", parentdir, "/output/logmod_data/chr* -name '*",
-			escmotif, "*.txt' | sort -V | xargs cat >> ", sitefile)
-		system(catcmd1)
-	}
-
-	incmd <- paste0("cut -f1-5,18,19 ", sitefile)
-	sites <- read.table(pipe(incmd), header=F, stringsAsFactors=F)
-	names(sites) <- c("POS", "CHR", "BIN", "Sequence", "mut", "EXON", "DP")
-
-	# Initialize data for calculating GC content
-	# sites_for_GC <- data.frame(position=sites$POS, chr=paste0("chr", sites$CHR))
-
-	# Add histone marks to site data
-	hists <- c("H3K4me1", "H3K4me3", "H3K9ac", "H3K9me3",
-		"H3K27ac", "H3K27me3", "H3K36me3")
-	dflist <- list()
-	for(i in 1:length(hists)){
-	  mark <- hists[i]
-	  file <- paste0(parentdir, "/reference_data/histone_marks/broad/sort.E062-",
-			mark, ".bed")
-	  hist <- binaryCol(sites, file)
-	  dflist[[i]] <- hist
-	}
-
-	df <- as.data.frame(do.call(cbind, dflist))
-	names(df) <- hists
-	sites <- cbind(sites, df)
-
-	# Add other features
-	sites$CpGI <- binaryCol(sites,
-		paste0(parentdir, "/reference_data/cpg_islands_sorted.bed"))
-	sites$RR <- rcrCol(sites,
-		paste0(parentdir, "/reference_data/recomb_rate.bed"))
-	sites$LAMIN <- binaryCol(sites,
-		paste0(parentdir, "/reference_data/lamin_B1_LADS2.bed"))
-	sites$DHS <- binaryCol(sites,
-		paste0(parentdir, "/reference_data/DHS.bed"))
-	sites$TIME <- repCol(sites,
-		paste0(parentdir, "/reference_data/lymph_rep_time.txt"))
-	sites$GC <- gcCol(sites, paste0(parentdir, "/output/3bp_10k/full_bin.txt"))
-	# sites$GC <- gcContentCalc(sites_for_GC, 10000, organism=Hsapiens)
-
-	# Run logit model for categories with >10 singletons, return coefficients
-	# Otherwise, returns single marginal rate
-	predicted <- sites[,c(2,1,3)]
-	coefs <- data.frame()
-	if(sum(sites$mut)>10){
-		log_mod_formula <- as.formula(paste("mut~",
-			paste(names(sites)[-(1:5)], collapse="+")))
-		log_mod <- speedglm(log_mod_formula, data=sites, family=binomial(), maxit=50)
-
-		predicted$mu <- round(inv.logit(predict(log_mod, newdata=sites)), 6)
-
-		# Get coefficients from model summary, clean up data formats
-		coefs <- data.frame(summary(log_mod)$coefficients, stringsAsFactors=F)
-		coefs <- cbind(Cov = rownames(coefs), coefs)
-		coefs$Cov <- as.character(coefs$Cov)
-		rownames(coefs) <- NULL
-
-		coefs[,-1] <- data.frame(apply(coefs[,-1], 2,
-			function(x) as.numeric(as.character(x))))
-		names(coefs) <- c("Cov", "Estimate", "SE", "Z", "pval")
-		coefs$Sequence <- escmotif
-
-	} else {
-		cat("Not enough data--using marginal rate only\n")
-		predicted$mu <- round(sum(sites$mut)/nrow(sites), 6)
-	}
-
-# New dir for each bin (slower to write, faster to sort)
-	# chr.split<-split(sites, sites$CHR)
-	# for(i in 1:length(chr.split)){
-	# 	bin.split<-split(chr.split[[i]], chr.split[[i]]$BIN)
-	# 	for(j in 1:length(bin.split)){
-	# 		chr<-unique(bin.split[[j]]$CHR)
-	# 		bin<-unique(bin.split[[j]]$BIN)
-	# 		preddir <- paste0(parentdir,
-					# "/output/predicted/", categ, "/chr", chr, "/bin", bin, "/")
-	# 		dir.create(preddir, recursive=T)
-	#
-	# 		predfile<-paste0(preddir, categ, "_", escmotif, ".txt")
-			# write.table(bin.split[[j]], predfile,
-			# 	col.names=F, row.names=F, quote=F, sep="\t")
-	# 	}
-	# }
-
-# New dir for each chromosome (faster to write, slower to sort?)
-	chr.split <- split(predicted, predicted$CHR)
-	for(i in 1:length(chr.split)){
-		chr <- unique(chr.split[[i]]$CHR)
-		preddir <- paste0(parentdir, "/output/predicted/", categ, "/chr", chr, "/")
-		dir.create(preddir, recursive=T)
-
-		predfile <- paste0(preddir, categ, "_", escmotif, ".txt")
-		write.table(chr.split[[i]], predfile,
-			col.names=F, row.names=F, quote=F, sep="\t")
-	}
-
-	# list(coefs, predicted) #<- use to output predicted data as list element (high mem. usage!)
-	# list(coefs)
-	return(coefs)
-}
-
 
 ##############################################################################
 # Multiple plot function

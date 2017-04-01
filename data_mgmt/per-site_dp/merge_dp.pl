@@ -63,13 +63,3 @@ foreach my $chr (@chrs){
     }
   }
 }
-
-
-# my @sortfiles=sort by_number @files;
-# print join("\n", @files);
-
-# sub by_number {
-#     my ( $anum ) = $a =~ /(\d+)/;
-#     my ( $bnum ) = $b =~ /(\d+)/;
-#     ( $anum || 0 ) <=> ( $bnum || 0 );
-# }

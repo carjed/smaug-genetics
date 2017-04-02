@@ -285,7 +285,7 @@ sub countMotifs{
 	my $bin;
 
 	print BIN "CHR\tBIN\tMOTIF\tCOUNT\n";
-
+	my @motifs;
 	if($bybin eq "bin"){
 		for my $i (0 .. $numbins-1) {
 			@motifs=(substr($seq, $i*$binwidth, $binwidth)=~/(?=([ACGT]{$subseq}))/g);

@@ -109,16 +109,18 @@ print "Done\n";
 # -also returns GC content per bin
 ##############################################################################
 if($count_motifs){
-	print "Creating bin file...\n";
 	my $start_time=new Benchmark;
+	print "Counting motifs...\n";
+	# print "seqlength: $length\n";
 
 	my $bin_out = "$out_path/chr$chr.bin_out.txt";
 	open(BIN, '>', $bin_out) or die "can't write to $bin_out: $!\n";
 
+	my $bin_flag;
 	if($by_bin){
-		my $bin_flag = "bybin";
+		$bin_flag = "bybin";
 	} else {
-		my $bin_flag = "bychr";
+		$bin_flag = "bychr";
 	}
 	&countMotifs($bin_flag);
 	# &binCounts();
@@ -135,7 +137,7 @@ if($count_motifs){
 ##############################################################################
 if($expand_summ){
 	print "Expanding summary file...\n";
-	$start_time=new Benchmark;
+	my $start_time=new Benchmark;
 
 	my $f_summ = "$in_path/${macl}_${data}/chr$chr.summary";
 	open my $summ, '<', $f_summ or die "can't open $f_summ: $!";
@@ -205,8 +207,8 @@ if($expand_summ){
 		}
 	}
 
-	$end_time=new Benchmark;
-	$difference = timediff($end_time, $start_time);
+	my $end_time=new Benchmark;
+	my $difference = timediff($end_time, $start_time);
 	print "Done. ";
 	print "Runtime: ", timestr($difference), "\n";
 }
@@ -277,9 +279,7 @@ sub getRef{
 ##############################################################################
 sub countMotifs{
 	my $bybin = shift;
-	print "Counting motifs...\n";
 	my $length=length($seq);
-	print "seqlength: $length\n";
 	my $numbins=ceil($length/$binwidth);
 	my $bin;
 

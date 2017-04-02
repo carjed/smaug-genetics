@@ -122,6 +122,7 @@ if($count_motifs){
 	} else {
 		$bin_flag = "bychr";
 	}
+	our @motifs;
 	&countMotifs($bin_flag);
 	# &binCounts();
 
@@ -284,7 +285,7 @@ sub countMotifs{
 	my $bin;
 
 	print BIN "CHR\tBIN\tMOTIF\tCOUNT\n";
-	our @motifs;
+
 	if($bybin eq "bin"){
 		for my $i (0 .. $numbins-1) {
 			@motifs=(substr($seq, $i*$binwidth, $binwidth)=~/(?=([ACGT]{$subseq}))/g);

@@ -1,5 +1,5 @@
 source("./R/get_functions.r")
-source("./R/roc_functions.r")
+source("./R/validation_functions.r")
 
 suppressMessages(usePackage(ggplot2))
 suppressMessages(usePackage(dplyr))
@@ -86,7 +86,7 @@ cat("Done (", tottime, "s)\n")
 
 ptm <- proc.time()
 cat("Validating models on de novo mutations...\n")
-source("./R/roc_max.r")
+source("./R/validation.r")
 tottime <- (proc.time()-ptm)[3]
 cat("Done (", tottime, "s)\n")
 

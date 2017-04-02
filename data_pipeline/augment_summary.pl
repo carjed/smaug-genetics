@@ -36,6 +36,9 @@ my $binwidth=100000;
 my $adj=0;
 my $data="full";
 my $mask_flag='';
+my $count_motifs='';
+my $by_bin='';
+my $expand_summ='';
 
 GetOptions ('chr=i'=> \$chr,
 'mac=i'=> \$mac,
@@ -43,6 +46,9 @@ GetOptions ('chr=i'=> \$chr,
 'adj=i' => \$adj,
 'data=s' => \$data,
 'mf' => \$mask_flag,
+'motifs' => \$count_motifs,
+'bybin' => \$by_bin,
+'summ' => \$expand_summ,
 'help|?'=> \$help,
 man => \$man) or pod2usage(1);
 
@@ -102,108 +108,108 @@ print "Done\n";
 # and for local sequence analysis if selected
 # -also returns GC content per bin
 ##############################################################################
-print "Creating bin file...\n";
-my $start_time=new Benchmark;
+if($count_motifs){
+	print "Creating bin file...\n";
+	my $start_time=new Benchmark;
 
-my $bin_out = "$out_path/chr$chr.bin_out.txt";
-open(BIN, '>', $bin_out) or die "can't write to $bin_out: $!\n";
+	my $bin_out = "$out_path/chr$chr.bin_out.txt";
+	open(BIN, '>', $bin_out) or die "can't write to $bin_out: $!\n";
 
-# &binCounts();
-&countMotifs();
+	if($by_bin){
+		my $bin_flag = "bybin";
+	} else {
+		my $bin_flag = "bychr";
+	}
+	&countMotifs($bin_flag);
+	# &binCounts();
 
-my $end_time=new Benchmark;
-my $difference = timediff($end_time, $start_time);
-print "Done. ";
-print "Runtime: ", timestr($difference), "\n";
+	my $end_time=new Benchmark;
+	my $difference = timediff($end_time, $start_time);
+	print "Done. ";
+	print "Runtime: ", timestr($difference), "\n";
+}
 
 ##############################################################################
 # Output expanded summary file based on selected options
 # -passed to R script along with bins file(s)
 ##############################################################################
-print "Expanding summary file...\n";
-$start_time=new Benchmark;
+if($expand_summ){
+	print "Expanding summary file...\n";
+	$start_time=new Benchmark;
 
-my $f_summ = "$in_path/${macl}_${data}/chr$chr.summary";
-open my $summ, '<', $f_summ or die "can't open $f_summ: $!";
+	my $f_summ = "$in_path/${macl}_${data}/chr$chr.summary";
+	open my $summ, '<', $f_summ or die "can't open $f_summ: $!";
 
-my $outfile = "$out_path/chr$chr.expanded.summary";
-open(OUT, '>', $outfile) or die "can't write to $outfile: $!\n";
+	my $outfile = "$out_path/chr$chr.expanded.summary";
+	open(OUT, '>', $outfile) or die "can't write to $outfile: $!\n";
 
-if ($mac==1) {
-	print OUT "CHR\tPOS\tREF\tALT\tDP\tAN\tSEQ\tALTSEQ\tSequence\tCategory\tCategory2\n";
-	# print OUT "CHR\tPOS\tREF\tALT\t";
-} elsif ($mac==2) {
-	print OUT "CHR\tPOS\tREF\tALT\tANNO\t";
-}
-
-my @POS;
-my @NEWSUMM;
-my @loci;
-my $a_nu_start=0;
-#readline($summ); #<-throws out summary header if it exists
-
-# print OUT "SEQ\tALTSEQ\tGC\n";
-while (<$summ>) {
-	chomp;
-	next unless $_ =~ /^[^,]*$/;
-	push (@POS, (split(/\t/, $_))[1]);
-	push (@NEWSUMM, $_);
-
-	# chomp $row;
-	my @line=split(/\t/, $_);
-	my $pos=$line[1];
-	my $REF=$line[2];
-	my $ALT=$line[3];
-	my $localseq = substr($seq, $pos-$adj-1, $subseq);
-	my $altlocalseq = reverse $localseq;
-	$altlocalseq  =~ tr/ACGT/TGCA/;
-	# my $gcprop = &getGC($pos);
-
-	# keep only sites in fully parameterized motif
-	if($localseq =~ /^[ACGT]+$/){
-
-		my $ref1 = substr($localseq, $adj, 1);
-		my $ref2 = substr($altlocalseq, $adj, 1);
-
-		my $seqp;
-
-		if($ref1 ~~ [qw( A C )]){
-			$seqp = "$localseq\($altlocalseq\)";
-		} else {
-			$seqp = "$altlocalseq\($localseq\)";
-		}
-
-		my $CAT = "${REF}${ALT}";
-		my $Category;
-		if($CAT ~~ [qw( AC TG )]){
-			$Category = "AT_CG";
-		} elsif($CAT ~~ [qw( AG TC )]){
-			$Category = "AT_GC";
-		} elsif($CAT ~~ [qw( AT TA )]){
-			$Category = "AT_TA";
-		} elsif($CAT ~~ [qw( GA CT )]){
-			$Category = "GC_AT";
-		} elsif($CAT ~~ [qw( GC CG )]){
-			$Category = "GC_CG";
-		} elsif($CAT ~~ [qw( GT CA )]){
-			$Category = "GC_TA";
-		}
-
-		my $Category2;
-		if(substr($seqp, $adj, 2) eq "CG"){
-			$Category2 = "cpg_$Category";
-		} else {
-			$Category2 = $Category;
-		}
-		# print OUT "$_\t$localseq\t$altlocalseq\t$gcprop\n";
-		print OUT "$_\t$localseq\t$altlocalseq\t$seqp\t$Category\t$Category2\n";
+	if ($mac==1) {
+		print OUT "CHR\tPOS\tREF\tALT\tDP\tAN\tSEQ\tALTSEQ\tSequence\tCategory\tCategory2\n";
+	} elsif ($mac==2) {
+		print OUT "CHR\tPOS\tREF\tALT\tANNO\t";
 	}
-}
 
-$end_time=new Benchmark;
-$difference = timediff($end_time, $start_time);
-print "Done. ";
-print "Runtime: ", timestr($difference), "\n";
+	#readline($summ); #<-throws out summary header if it exists
+
+	while (<$summ>) {
+		chomp;
+		next unless $_ =~ /^[^,]*$/;
+
+		# chomp $row;
+		my @line=split(/\t/, $_);
+		my $pos=$line[1];
+		my $REF=$line[2];
+		my $ALT=$line[3];
+		my $localseq = substr($seq, $pos-$adj-1, $subseq);
+		my $altlocalseq = reverse $localseq;
+		$altlocalseq  =~ tr/ACGT/TGCA/;
+
+		# keep only sites in fully parameterized motif
+		if($localseq =~ /^[ACGT]+$/){
+
+			my $ref1 = substr($localseq, $adj, 1);
+			my $ref2 = substr($altlocalseq, $adj, 1);
+
+			my $seqp;
+
+			if($ref1 ~~ [qw( A C )]){
+				$seqp = "$localseq\($altlocalseq\)";
+			} else {
+				$seqp = "$altlocalseq\($localseq\)";
+			}
+
+			my $CAT = "${REF}${ALT}";
+			my $Category;
+			if($CAT ~~ [qw( AC TG )]){
+				$Category = "AT_CG";
+			} elsif($CAT ~~ [qw( AG TC )]){
+				$Category = "AT_GC";
+			} elsif($CAT ~~ [qw( AT TA )]){
+				$Category = "AT_TA";
+			} elsif($CAT ~~ [qw( GA CT )]){
+				$Category = "GC_AT";
+			} elsif($CAT ~~ [qw( GC CG )]){
+				$Category = "GC_CG";
+			} elsif($CAT ~~ [qw( GT CA )]){
+				$Category = "GC_TA";
+			}
+
+			my $Category2;
+			if(substr($seqp, $adj, 2) eq "CG"){
+				$Category2 = "cpg_$Category";
+			} else {
+				$Category2 = $Category;
+			}
+			# print OUT "$_\t$localseq\t$altlocalseq\t$gcprop\n";
+			print OUT "$_\t$localseq\t$altlocalseq\t$seqp\t$Category\t$Category2\n";
+		}
+	}
+
+	$end_time=new Benchmark;
+	$difference = timediff($end_time, $start_time);
+	print "Done. ";
+	print "Runtime: ", timestr($difference), "\n";
+}
 
 ##############################################################################
 # fork-exec-wait subroutine
@@ -270,17 +276,39 @@ sub getRef{
 # Subroutine counts occurrence of motifs per bin
 ##############################################################################
 sub countMotifs{
+	my $bybin = shift;
 	print "Counting motifs...\n";
 	my $length=length($seq);
 	print "seqlength: $length\n";
-	# my $numbins=ceil($length/$binwidth);
-	# my $bin;
+	my $numbins=ceil($length/$binwidth);
+	my $bin;
 
-	print BIN "CHR\tMOTIF\tCOUNT\n";
+	print BIN "CHR\tBIN\tMOTIF\tCOUNT\n";
+
+	if($bybin eq "bin"){
+		for my $i (0 .. $numbins-1) {
+			my @motifs=(substr($seq, $i*$binwidth, $binwidth)=~/(?=([ACGT]{$subseq}))/g);
+			&writeCounts($i, \@motifs);
+		}
+	} else {
+		my @motifs=($seq=~/(?=([ACGT]{$subseq}))/g);
+		$bin = 0;
+		&writeCounts($bin, \@motifs);
+	}
 
 	# Modified counting strategy from https://www.biostars.org/p/5143/
-	my @motifs=($seq=~/(?=([ACGT]{$subseq}))/g);
+	# my @motifs=($seq=~/(?=([ACGT]{$subseq}))/g);
 	#for(@trinucs){print "$_\n"};
+
+	print "Done\n";
+}
+
+##############################################################################
+# Read motif counts from hash table, sum counts symmetric motifs and write out
+##############################################################################
+sub writeCounts{
+	my $bin = shift;
+
 	my %tri_count=();
 	# @tri_count{@a}=@b;
 	$tri_count{$_}++ for @motifs;
@@ -291,18 +319,7 @@ sub countMotifs{
 		$altmotif =~ tr/ACGT/TGCA/;
 		$altmotif = reverse $altmotif;
 
-		my $ref1 = substr($motif, $adj, 1);
-		my $ref2 = substr($altmotif, $adj, 1);
-
 		my $seqp = "$motif\($altmotif\)";
-
-		# my $min = minstr($ref1, $ref2);
-		#
-		# if($ref1 eq "A|C"){
-		# 	$seqp = "$motif\($altmotif\)";
-		# } else {
-		# 	$seqp = "$altmotif\($motif\)";
-		# }
 
 		my $sum;
 		if(exists($tri_count{$motif}) && exists($tri_count{$altmotif})){
@@ -313,17 +330,16 @@ sub countMotifs{
 			$sum=$tri_count{$altmotif};
 		}
 
-		print BIN "$chr\t$seqp\t$sum\n";
+		print BIN "$chr\t$bin\t$seqp\t$sum\n";
 		# }
 	}
-
-	print "Done\n";
 }
 
 ##############################################################################
 # Subroutine counts occurrence of motifs per bin
 ##############################################################################
 sub binCounts{
+
 	print "Getting bin counts...\n";
 	my $length=length($seq);
 	print "seqlength: $length\n";

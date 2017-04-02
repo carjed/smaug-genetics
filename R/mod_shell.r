@@ -27,7 +27,7 @@ parentdir <- dirname(getwd())
 cat("Loading functions and packages...\n")
 scriptdir <- dirname(sys.frame(1)$ofile)
 source("./R/get_functions.r")
-source("./R/roc_functions.r")
+source("./R/validation_functions.r")
 
 # Get args from command line; defaults defined below
 args <- getArgs(

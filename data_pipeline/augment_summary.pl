@@ -284,14 +284,14 @@ sub countMotifs{
 	my $bin;
 
 	print BIN "CHR\tBIN\tMOTIF\tCOUNT\n";
-
+	our @motifs;
 	if($bybin eq "bin"){
 		for my $i (0 .. $numbins-1) {
-			my @motifs=(substr($seq, $i*$binwidth, $binwidth)=~/(?=([ACGT]{$subseq}))/g);
+			@motifs=(substr($seq, $i*$binwidth, $binwidth)=~/(?=([ACGT]{$subseq}))/g);
 			&writeCounts($i, \@motifs);
 		}
 	} else {
-		my @motifs=($seq=~/(?=([ACGT]{$subseq}))/g);
+		@motifs=($seq=~/(?=([ACGT]{$subseq}))/g);
 		$bin = 0;
 		&writeCounts($bin, \@motifs);
 	}

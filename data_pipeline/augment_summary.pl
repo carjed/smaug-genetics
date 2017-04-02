@@ -122,8 +122,8 @@ if($count_motifs){
 	} else {
 		$bin_flag = "bychr";
 	}
-	our @motifs;
-	&countMotifs($bin_flag, \@motifs);
+
+	&countMotifs($bin_flag);
 	# &binCounts();
 
 	my $end_time=new Benchmark;
@@ -309,7 +309,7 @@ sub countMotifs{
 ##############################################################################
 sub writeCounts{
 	my $bin = shift;
-
+	my @motifs = @{$_[1]};
 	my %tri_count=();
 	# @tri_count{@a}=@b;
 	$tri_count{$_}++ for @motifs;

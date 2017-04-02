@@ -123,7 +123,7 @@ if($count_motifs){
 		$bin_flag = "bychr";
 	}
 	our @motifs;
-	&countMotifs($bin_flag);
+	&countMotifs($bin_flag, \@motifs);
 	# &binCounts();
 
 	my $end_time=new Benchmark;

@@ -33,13 +33,13 @@ source("./R/validation_functions.r")
 args <- getArgs(
 	defaults=list(adj=4,
 		binw=1000000,
-		summfile=paste0(parentdir, "/output/9bp_1000k_singletons_full/full.summary"),
-		binfile=paste0(parentdir, "/output/9bp_1000k_singletons_full/full_bin.txt"),
-		run_agg=TRUE,
-		pcs=FALSE,
-		negbin_model=FALSE,
+		summfile=paste0(parentdir,
+			"/output/9bp_1000k_singletons_full/full.summary"),
+		binfile=paste0(parentdir,
+			"/output/9bp_1000k_singletons_full/full_motif_counts.txt"),
+		common=FALSE,
 		log_model=FALSE,
-		run_predict=FALSE))
+		negbin_model=FALSE))
 
 # Parse args--modified from:
 # http://www.r-bloggers.com/extract-objects-from-a-list/
@@ -162,12 +162,19 @@ if(!file.exists(summfile)){
 
 	combinecmd <- paste0(
 		"awk 'FNR==1 && NR!=1{while(/^CHR/) getline; } 1 {print} ' ",
-		datadir, "/chr*.expanded.summary > ", datadir, "/full.summary")
+		datadir, "/chr*.expanded.summary > ", datadir,
+			"/full.summary")
 	combinecmd2 <- paste0(
 		"awk 'FNR==1 && NR!=1{while(/^CHR/) getline; } 1 {print} ' ",
-		datadir, "/chr*.bin_out.txt > ", datadir, "/full_bin.txt")
+		datadir, "/chr*.motif_counts.txt > ", datadir,
+			"/full_motif_counts.txt")
+	combinecmd3 <- paste0(
+		"awk 'FNR==1 && NR!=1{while(/^CHR/) getline; } 1 {print} ' ",
+		datadir, "/chr*.motif_counts_binned.txt > ", datadir,
+			"/full_motif_counts_binned.txt")
 	system(combinecmd)
 	system(combinecmd2)
+	system(combinecmd3)
 }
 
 # Read in per-site summary data
@@ -181,6 +188,7 @@ bins <- read.table(binfile, header=T, stringsAsFactors=F, check.names=F)
 
 # summarize motif counts genome-wide
 mct <- bins %>%
+	# dplyr::select(CHR, BIN, Sequence=MOTIF, nMotifs=COUNT) %>%
 	dplyr::select(CHR, Sequence=MOTIF, nMotifs=COUNT) %>%
 	group_by(Sequence) %>%
 	summarise(nMotifs=sum(nMotifs))
@@ -201,6 +209,7 @@ cbp <- adj+1
 
 ratelist <- list()
 testlist <- list()
+modlist <- list()
 for(j in 1:5){
 	i <- j-1
 
@@ -210,6 +219,7 @@ for(j in 1:5){
 	# proper counting of mutable sites
 	nbptmp <- i*2+1
 	mcfile <- paste0(parentdir, "/output/", nbptmp, "bp_final_rates.txt")
+	mcount <- read.table(mcfile, header=T, stringsAsFactors=F)
 
 	gpdat <- aggseq %>%
 		mutate(Type=gsub("cpg_", "", Category2),
@@ -223,7 +233,7 @@ for(j in 1:5){
 			group_by(Type, Motif) %>%
 			summarise(nERVs=sum(nERVs))
 
-		mcount <- read.table(mcfile, header=T, stringsAsFactors=F) %>%
+		mcount <- mcount %>%
 			mutate(Motif=ifelse(grepl("^A", Type),
 				"A(T)",
 				"C(G)")) %>%
@@ -237,7 +247,7 @@ for(j in 1:5){
 			group_by(Type, Motif) %>%
 			summarise(nERVs=sum(nERVs))
 
-		mcount <- read.table(mcfile, header=T, stringsAsFactors=F) %>%
+		mcount <- mcount %>%
 			dplyr::select(Type, Motif, nMotifs)
 
 		gpdat <- merge(gpdat, mcount, by=c("Type", "Motif")) %>%
@@ -297,18 +307,26 @@ for(j in 1:5){
 
 	# Test for heterogeneity among subtypes sharing same (K-2)-mer parent
 	if(i>0){
-		hettests <- gpdat %>%
+		parentdat <- gpdat %>%
 			# dplyr::select(Type, Motif, nERVs, nMotifs, rel_prop) %>%
 			filter(nERVs > 20) %>%
 			mutate(SEQA=substr(Motif, 2, nbptmp-1),
 				SEQB=substr(Motif, nbptmp+3, nchar(Motif)-2),
-				Motif=paste0(SEQA, "(", SEQB, ")")) %>%
-			group_by(Type, Motif) %>%
-			arrange(Type, Motif) %>%
+				MotifP=paste0(SEQA, "(", SEQB, ")")) %>%
+			group_by(Type, MotifP) %>%
+			arrange(Type, MotifP) %>%
 			mutate(exp=sum(nERVs)/sum(nMotifs)*nMotifs,
 				p=exp/sum(exp),
-				n=n()) %>%
-			filter(n==16) %>%
+				n=n(),
+				b1=substr(Motif,1,1),
+				b2=substr(Motif,nbptmp,nbptmp)) %>%
+			filter(n==16)
+
+		moddat <- parentdat %>%
+			do(tidy(glance(lm(ERV_rel_rate ~ b1+b2, data=.))))
+		modlist[[i]] <- moddat
+
+		hettests <- parentdat %>%
 			summarise(pval=chisq.test(nERVs, p=p)$p.value) %>%
 			ungroup() %>%
 			mutate(fdr=p.adjust(pval, method="fdr"))
@@ -326,7 +344,6 @@ cat("Done (", tottime, "s)\n")
 ##############################################################################
 # Compare rates between ERVs and common variants
 ##############################################################################
-common <- 0
 if(common){
 	cat("Reading common summary file:", summfile, "...\n")
 	common_sites <- read.table(common_summfile, header=T, stringsAsFactors=F)
@@ -336,7 +353,7 @@ if(common){
 		dplyr::select(CHR, POS, Motif=Sequence, Type=Category, BIN) %>%
 		group_by(Type, Motif) %>%
 		# summarise(n=n()) %>%
-		summarise(nCommon=n()) %>% head
+		summarise(nCommon=n())
 	rates7_common <- merge(rates7_common, mct, by="Motif")
 	rates7_common$Common_rel_rate <- rates7_common$nCommon/rates7_common$nMotifs
 
@@ -345,7 +362,7 @@ if(common){
 
 	avrates <- read.table(paste0(parentdir, "/posterior_7bp.txt"),
 		header=T, stringsAsFactors=F, sep="\t")
-	# head(avrates)
+
 	names(avrates)[1] <- "Motif"
 	avrates$CAT <- paste0(substr(avrates$Motif,4,4), substr(avrates$alt, 4,4))
 	avrates$Category[avrates$CAT=="AC" | avrates$CAT=="TG"] <- "AT_CG"
@@ -449,35 +466,16 @@ if(log_model){
 ##############################################################################
 ptm <- proc.time()
 cat("Validating models on de novo mutations...\n")
-source("./R/roc_max.r")
+source("./R/validation.r")
 tottime <- (proc.time()-ptm)[3]
 cat("Done (", tottime, "s)\n")
 
 ##############################################################################
-# Build file of covariates and run PCA
+# Analyze effects of genomic features
 ##############################################################################
 ptm <- proc.time()
-mutcov2file <- paste0(parentdir, "/output/logmod_data/", bink, "kb_mut_cov2.txt")
-if(!file.exists(mutcov2file)){
-	cat("Building covariate data...\n")
-	source("./R/get_covs.r")
-} else {
-	cat("Reading existing covariate datafile:", mutcov2file, "...\n")
-	mut_cov<-read.table(mutcov2file, header=F, stringsAsFactors=F)
-}
-
-if(pcs==1){
-	names(mut_cov) <- c("CHR", "BIN", "PC1", "PC2", "PC3", "PC4", "PC5", "PC6",
-		"PC7", "PC8", "PC9", "PC10", "PC11", "PC12", "PC13")
-} else {
-	names(mut_cov) <- c("CHR", "BIN", "H3K4me1", "H3K4me3", "H3K9ac", "H3K9me3",
-		"H3K27ac", "H3K27me3", "H3K36me3", "CPGI", "EXON", "TIME", "RATE",
-		"prop_GC", "LAMIN")
-}
-
-danames <- names(mut_cov)
-covnames <- danames[-c(1:2, 14)]
-
+cat("Analyzing genomic features...\n")
+source("./R/coef_summary.r")
 tottime <- (proc.time()-ptm)[3]
 cat("Done (", tottime, "s)\n")
 

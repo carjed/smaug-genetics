@@ -306,14 +306,14 @@ Lv7v5v3<-ggplot(rsqdat)+
 	 	sep="")))
 # ggsave(paste0(parentdir, "/images/Lv7v5v3_rsq.png"), width=12, height=6)
 
-Lv7v5v3_full<-ggplotGrob(Lv7v5v3_full)
-Lv7v5v3<-ggplotGrob(Lv7v5v3)
+Lv7v5v3_full <- ggplotGrob(Lv7v5v3_full)
+Lv7v5v3 <- ggplotGrob(Lv7v5v3)
 
-g<-arrangeGrob(Lv7v5v3_full, Lv7v5v3, nrow=1, widths=c(1,2))
+g <- arrangeGrob(Lv7v5v3_full, Lv7v5v3, nrow=1, widths=c(1,2))
 ggsave(paste0(parentdir, "/images/Lv7v5v3_rsq_combined.svg"), width=12, height=6, g)
 
 # Plot pseudo-r^2 for 7-mers vs logit
-rsqdatL<-fulldat %>%
+rsqdatL <- fulldat %>%
   filter(mod=="7-mers" | mod=="7-mers+features") %>%
   filter(group=="FULL") %>%
   mutate(Category =
@@ -335,7 +335,7 @@ ggplot(rsqdatL)+
 ggsave(paste0(parentdir, "/images/7v5v3_rsqL.png"), width=12, height=6)
 
 # Plot pseudo-r^2 for ERVs vs Common
-rsqdatEC<-fulldat %>%
+rsqdatEC <- fulldat %>%
 	filter(mod=="AV" | mod=="Common" | mod=="ERVs") %>%
   filter(group=="FULL") %>%
   mutate(Category =
@@ -370,7 +370,7 @@ newmodnamesord <- c("3-mers", "5-mers", "7-mers",
 	"7-mers (1KG EUR intergenic variants)",
 	"7-mers+features")
 
-rsqdatFULL<-fulldat %>%
+rsqdatFULL <- fulldat %>%
   filter(group=="FULL") %>%
   mutate(Category =
       factor(plyr::mapvalues(category, orderedcats2, orderedcats2),
@@ -380,11 +380,11 @@ rsqdatFULL<-fulldat %>%
 			levels=newmodnamesord))
 
 
-alldat<-combineddat[2:8,] %>%
+alldat <- combineddat[2:8,] %>%
 	mutate(mod=factor(plyr::mapvalues(mod, oldmodnames, newmodnames),
 		levels=newmodnamesord))
 
-all_full<-ggplot(alldat)+
+all_full <- ggplot(alldat)+
   geom_bar(aes(x=category, y=rsq, fill=mod), stat="identity", position="dodge")+
 	scale_fill_manual("Model", values=c(iwhPalette[c(3:9)]))+
   theme_bw()+
@@ -398,7 +398,7 @@ all_full<-ggplot(alldat)+
   ylab(expression(paste("Fraction of variance explained (Nagelkerke ", R^2, ")",
 		sep="")))
 
-all<-ggplot(rsqdatFULL)+
+all <- ggplot(rsqdatFULL)+
   geom_bar(aes(x=Category, y=rsq, fill=mod), stat="identity", position="dodge")+
 	scale_fill_manual("Model", values=c(iwhPalette[c(3:9)]))+
   theme_bw()+
@@ -414,14 +414,14 @@ all<-ggplot(rsqdatFULL)+
   ylab(expression(paste("Fraction of variance explained (Nagelkerke ", R^2, ")",
 		sep="")))
 
-all_full<-ggplotGrob(all_full)
-all<-ggplotGrob(all)
-g<-arrangeGrob(all_full, all, nrow=1, widths=c(1,2))
+all_full <- ggplotGrob(all_full)
+all <- ggplotGrob(all)
+g <- arrangeGrob(all_full, all, nrow=1, widths=c(1,2))
 ggsave(paste0(parentdir, "/images/all_rsq_combined.png"), width=12, height=6, g)
 
-evcdat<- rsqdatFULL %>%
+evcdat <- rsqdatFULL %>%
 	filter(grepl("BRIDGES", mod))
-EvC<-ggplot(evcdat)+
+EvC <- ggplot(evcdat)+
   geom_bar(aes(x=Category, y=rsq, fill=mod), stat="identity", position="dodge")+
   # scale_fill_manual("Model", values=brewer.pal(8, "Set3")[5:6])+
 	scale_fill_manual("Model",
@@ -452,7 +452,7 @@ EvC_full_dat <- combineddat %>%
 		levels=newmodnamesord)) %>%
 	filter(grepl("BRIDGES", mod))
 
-EvC_full<-ggplot(EvC_full_dat)+
+EvC_full <- ggplot(EvC_full_dat)+
   geom_bar(aes(x=category, y=rsq, fill=mod), stat="identity", position="dodge")+
   # scale_fill_manual("Model", values=brewer.pal(8, "Set3")[5:6])+
 	scale_fill_manual("Model", values=c(iwhPalette[c(6,7)]))+
@@ -468,9 +468,9 @@ EvC_full<-ggplot(EvC_full_dat)+
 		sep="")))
 # ggsave(paste0(parentdir, "/images/EvC_rsq_full.png"), width=8, height=6)
 
-EvC_full<-ggplotGrob(EvC_full)
-EvC<-ggplotGrob(EvC)
-g<-arrangeGrob(EvC_full, EvC, nrow=1, widths=c(1,2))
+EvC_full <- ggplotGrob(EvC_full)
+EvC <- ggplotGrob(EvC)
+g <- arrangeGrob(EvC_full, EvC, nrow=1, widths=c(1,2))
 ggsave(paste0(parentdir, "/images/EvC_rsq_combined.png"), width=12, height=8, g)
 
 ##############################################################################
@@ -559,7 +559,7 @@ if(pred_curves){
 ##############################################################################
 # ROC on 7-mers with max contrast between ERVs and polymorphisms
 ##############################################################################
-maxc_roc<-0
+maxc_roc <- 0
 if(maxc_roc){
 	maxc <- read.table(paste0(parentdir, "/maxc_7bp.txt"), header=T, stringsAsFactors=F)
 	maxc$Category <- gsub("cpg_", "", maxc$Category2)
@@ -716,7 +716,6 @@ if(maxc_extra2){
 	#   summarise(AUC=1-sum(prop)/n()) %>%
 	#   spread(Category.x, AUC)
 }
-
 
 ##############################################################################
 # ROC by GoNL individual

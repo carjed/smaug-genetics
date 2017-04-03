@@ -54,29 +54,30 @@ plotcts$Cov <- factor(plotcts$Cov, levels=orderedcovs)
 
 # ggplot()+
 svglite(paste0(parentdir, "/images/coef_violin2.svg"), width=7, height=7)
-plotdat %>% filter(Cov!="CpGI") %>%
-ggplot(aes(x=Category, y=exp(Est), alpha=factor(dir), fill=Category))+
-  geom_hline(yintercept=1, linetype="dashed")+
-  geom_text(data=plotcts[plotcts$Cov!="CpGI",],
-    aes(x=Category, y=Estmax, label=label, colour=Category), vjust=1, size=4, angle=90)+
-  geom_violin(position="identity", scale="area")+
-  scale_fill_manual(values=cols, drop=FALSE)+
-  scale_colour_manual(values=cols, drop=FALSE)+
-  scale_x_discrete(drop=FALSE)+
-  # scale_y_log10(breaks=c(.125, .25, 0.5, 1, 2, 4, 8))+
-  scale_y_log10(breaks=c(0.5, 1, 2, 4))+
-  scale_alpha_discrete(range = c(0.95, 0.96), guide=F)+
-  facet_wrap(~Cov, ncol=4, drop=F)+
-  ylab("odds ratio for mutability")+
-  theme_bw()+
-  guides(fill = guide_legend(nrow = 3))+
-  theme(legend.position="bottom",
-  legend.title=element_blank(),
-  strip.text=element_text(size=12),
-  axis.text.x=element_blank(),
-  axis.title.x=element_blank(),
-  axis.text.y=element_text(size=10),
-  axis.title.y=element_text(size=12))
+plotdat %>%
+  filter(Cov!="CpGI") %>%
+  ggplot(aes(x=Category, y=exp(Est), alpha=factor(dir), fill=Category))+
+    geom_hline(yintercept=1, linetype="dashed")+
+    geom_text(data=plotcts[plotcts$Cov!="CpGI",],
+      aes(x=Category, y=Estmax, label=label, colour=Category), vjust=1, size=4, angle=90)+
+    geom_violin(position="identity", scale="area")+
+    scale_fill_manual(values=cols, drop=FALSE)+
+    scale_colour_manual(values=cols, drop=FALSE)+
+    scale_x_discrete(drop=FALSE)+
+    # scale_y_log10(breaks=c(.125, .25, 0.5, 1, 2, 4, 8))+
+    scale_y_log10(breaks=c(0.5, 1, 2, 4))+
+    scale_alpha_discrete(range = c(0.95, 0.96), guide=F)+
+    facet_wrap(~Cov, ncol=4, drop=F)+
+    ylab("odds ratio for mutability")+
+    theme_bw()+
+    guides(fill = guide_legend(nrow = 3))+
+    theme(legend.position="bottom",
+    legend.title=element_blank(),
+    strip.text=element_text(size=12),
+    axis.text.x=element_blank(),
+    axis.title.x=element_blank(),
+    axis.text.y=element_text(size=10),
+    axis.title.y=element_text(size=12))
 dev.off()
 # ggsave(paste0(parentdir, "/images/coef_violin2.svg"), width=7, height=7)
 
@@ -88,29 +89,29 @@ dev.off()
 
 svglite(paste0(parentdir, "/images/coef_violin2_cpgi2.svg"), width=7, height=7)
 plotdat %>%
-ggplot(aes(x=Category, y=exp(Est), alpha=factor(dir), fill=Category))+
-  geom_hline(yintercept=1, linetype="dashed")+
-  geom_text(data=plotcts[plotcts$Cov=="CpGI",],
-    aes(x=Category, y=Estmax, label=label, colour=Category), vjust=1, angle=90, size=4)+
-  geom_violin(position="identity", scale="area")+
-  scale_fill_manual(values=cols, drop=FALSE)+
-  scale_colour_manual(values=cols, drop=FALSE)+
-  scale_x_discrete(drop=FALSE)+
-  scale_y_log10(breaks=c(.125, .25, 0.5, 1, 2, 4, 8), labels=c(.125, .25, 0.5, 1, 2, 4, 8))+
-  # scale_y_log10(breaks=c(0.5, 1, 2))+
-  scale_alpha_discrete(range = c(0.95, 0.96), guide=F)+
-  facet_wrap(~Cov, ncol=4, drop=F)+
-  # facet_wrap(~Cov, ncol=4, drop=T)+
-  ylab("odds ratio for mutability")+
-  theme_bw()+
-  guides(fill = guide_legend(nrow = 3))+
-  theme(legend.position="bottom",
-  legend.title=element_blank(),
-  strip.text=element_text(size=12),
-  axis.text.x=element_blank(),
-  axis.title.x=element_blank(),
-  axis.text.y=element_text(size=10),
-  axis.title.y=element_text(size=12))
+  ggplot(aes(x=Category, y=exp(Est), alpha=factor(dir), fill=Category))+
+    geom_hline(yintercept=1, linetype="dashed")+
+    geom_text(data=plotcts[plotcts$Cov=="CpGI",],
+      aes(x=Category, y=Estmax, label=label, colour=Category), vjust=1, angle=90, size=4)+
+    geom_violin(position="identity", scale="area")+
+    scale_fill_manual(values=cols, drop=FALSE)+
+    scale_colour_manual(values=cols, drop=FALSE)+
+    scale_x_discrete(drop=FALSE)+
+    scale_y_log10(breaks=c(.125, .25, 0.5, 1, 2, 4, 8), labels=c(.125, .25, 0.5, 1, 2, 4, 8))+
+    # scale_y_log10(breaks=c(0.5, 1, 2))+
+    scale_alpha_discrete(range = c(0.95, 0.96), guide=F)+
+    facet_wrap(~Cov, ncol=4, drop=F)+
+    # facet_wrap(~Cov, ncol=4, drop=T)+
+    ylab("odds ratio for mutability")+
+    theme_bw()+
+    guides(fill = guide_legend(nrow = 3))+
+    theme(legend.position="bottom",
+    legend.title=element_blank(),
+    strip.text=element_text(size=12),
+    axis.text.x=element_blank(),
+    axis.title.x=element_blank(),
+    axis.text.y=element_text(size=10),
+    axis.title.y=element_text(size=12))
 dev.off()
 # ggsave(paste0(parentdir, "/images/coef_violin2_cpgi2.svg"), width=7, height=7)
 
@@ -121,21 +122,21 @@ coefs$Category <- factor(coefs$Category, levels=orderedcats2)
 coefs %>%
   filter(!grepl("Intercept", Cov)) %>%
   filter(exp(Est)<10) %>%
-ggplot(aes(fill=Category))+
-  geom_hline(yintercept=1, linetype="dashed")+
-  geom_violin(aes(x=Category, y=exp(Est), fill=Category))+
-  scale_fill_manual(values=cols, drop=FALSE)+
-  scale_colour_manual(values=cols, drop=FALSE)+
-  facet_wrap(~Cov, ncol=4, scales="free_y")+
-  ylab("odds ratio for mutability")+
-  theme_bw()+
-  guides(fill = guide_legend(nrow = 3))+
-  theme(legend.position="bottom",
-  strip.text=element_text(size=16),
-  axis.text.x=element_blank(),
-  axis.title.x=element_blank(),
-  axis.text.y=element_text(size=14),
-  axis.title.y=element_text(size=16))
+  ggplot(aes(fill=Category))+
+    geom_hline(yintercept=1, linetype="dashed")+
+    geom_violin(aes(x=Category, y=exp(Est), fill=Category))+
+    scale_fill_manual(values=cols, drop=FALSE)+
+    scale_colour_manual(values=cols, drop=FALSE)+
+    facet_wrap(~Cov, ncol=4, scales="free_y")+
+    ylab("odds ratio for mutability")+
+    theme_bw()+
+    guides(fill = guide_legend(nrow = 3))+
+    theme(legend.position="bottom",
+    strip.text=element_text(size=16),
+    axis.text.x=element_blank(),
+    axis.title.x=element_blank(),
+    axis.text.y=element_text(size=14),
+    axis.title.y=element_text(size=16))
 ggsave(paste0(parentdir, "/images/coef_violin_full.png"), width=9, height=8)
 
 ##############################################################################
@@ -255,7 +256,8 @@ for(i in 1:nrow(covdir)){
 testdat[testdat$cov=="TIME",]$dir <- "Up"
 names(testdat)[3:4]<-c("Observed", "Expected")
 
-td2<-testdat %>% gather(group, value, c(Observed:Expected))
+td2 <- testdat %>%
+  gather(group, value, c(Observed:Expected))
 td3 <- data.frame()
 for(i in 1:nrow(td2)){
   row <- td2[i,]

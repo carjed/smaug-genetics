@@ -113,16 +113,16 @@ if($count_motifs){
 	print "Counting motifs...\n";
 	# print "seqlength: $length\n";
 
-	my $bin_out = "$out_path/chr$chr.bin_out.txt";
-	open(BIN, '>', $bin_out) or die "can't write to $bin_out: $!\n";
-
 	my $bin_flag;
 	if($by_bin){
 		$bin_flag = "bybin";
+		my $bin_out = "$out_path/chr$chr.motif_counts_binned.txt";
 	} else {
 		$bin_flag = "bychr";
+		my $bin_out = "$out_path/chr$chr.motif_counts.txt";
 	}
 
+	open(BIN, '>', $bin_out) or die "can't write to $bin_out: $!\n";
 	&countMotifs($bin_flag);
 	# &binCounts();
 
@@ -279,14 +279,14 @@ sub getRef{
 # Subroutine counts occurrence of motifs per bin
 ##############################################################################
 sub countMotifs{
-	my $bybin = shift;
+	my $bin_flag = shift;
 	my $length=length($seq);
 	my $numbins=ceil($length/$binwidth);
 	my $bin;
 
 	print BIN "CHR\tBIN\tMOTIF\tCOUNT\n";
 	my @motifs;
-	if($bybin eq "bin"){
+	if($bin_flag eq "bybin"){
 		for my $i (0 .. $numbins-1) {
 			@motifs=(substr($seq, $i*$binwidth, $binwidth)=~/(?=([ACGT]{$subseq}))/g);
 			&writeCounts($i, \@motifs);
@@ -334,138 +334,6 @@ sub writeCounts{
 		print BIN "$chr\t$bin\t$seqp\t$sum\n";
 		# }
 	}
-}
-
-##############################################################################
-# Subroutine counts occurrence of motifs per bin
-##############################################################################
-sub binCounts{
-
-	print "Getting bin counts...\n";
-	my $length=length($seq);
-	print "seqlength: $length\n";
-	my $numbins=ceil($length/$binwidth);
-	my $bin;
-
-	my @a= glob "{A,C,G,T}"x $subseq;
-	my @b = (0) x (scalar @a);
-
-	# &countSubSeq(@a, @b);
-
-	print "Processing BIN1 header\n";
-	print BIN "CHR\tAT\tCG\tprop_GC\tBIN\t";
-	foreach my $tri (@a) {
-		my $alttri=$tri;
-		$alttri =~ tr/ACGT/TGCA/;
-		# $alttri = reverse $alttri;
-		my $min = minstr($tri, $alttri);
-		my $max = reverse maxstr($tri, $alttri);
-		# if ($tri !~ /^G|^T/) {
-			# print BIN "$min($max)\t";
-			print BIN "$tri\t";
-		# }
-	}
-	print BIN "\n";
-
-	print "Processing subseq counts per bin\n";
-	for my $i (0 .. $numbins-1) {
-
-		my $A = &nucCount($i, "A");
-		my $C = &nucCount($i, "C");
-		my $G = &nucCount($i, "G");
-		my $T = &nucCount($i, "T");
-
-		my @trinucs=(substr($seq, $i*$binwidth, $binwidth)=~/(?=([ACGT]{$subseq}))/g);
-		#for(@trinucs){print "$_\n"};
-		my %tri_count=();
-		@tri_count{@a}=@b;
-		$tri_count{$_}++ for @trinucs;
-
-		my $sum_at=$A+$T;
-		my $sum_cg=$C+$G;
-		my $GC=0;
-		if (($sum_at+$sum_cg)!=0) {
-			$GC=($sum_cg/($sum_at+$sum_cg));
-		}
-
-		$bin=$i+1;
-
-		print BIN "chr$chr\t$sum_at\t$sum_cg\t$GC\t$bin\t";
-		#print BIN "$_:$tri_count{$_}\t" for sort keys(%tri_count);
-		foreach my $count (sort keys %tri_count) {
-			# if ($count !~ /N|^G|^T/) {
-				my $altcount= $count;
-				$altcount =~ tr/ACGT/TGCA/;
-				$altcount = reverse $altcount;
-				my $sum=$tri_count{$count}+$tri_count{$altcount};
-				print BIN "$sum\t";
-			# }
-		}
-		print BIN "\n";
-	}
-
-	print "Done\n";
-}
-
-##############################################################################
-# DEPRECATED
-# Subroutine counts occurrence of motifs per bin
-##############################################################################
-sub countSubSeq{
-	my @seqs=shift;
-	my @vec=shift;
-	print "Counting subseqs in ref\n";
-	my @trinucs=($seq=~/(?=([ACGT]{$subseq}))/g);
-	my %tri_count=();
-	@tri_count{@seqs}=@vec;
-	$tri_count{$_}++ for @trinucs;
-	print "Done\n";
-
-	print "Processing BIN2\n";
-	print BIN2 "SEQ\tCOUNT\n";
-	foreach my $count (sort keys %tri_count) {
-		if ($count !~ /N/) {
-			print BIN2 "$count\t$tri_count{$count}\n";
-		}
-	}
-	print "Done\n";
-}
-
-##############################################################################
-# Subroutine counts nucleotides in bin
-##############################################################################
-sub nucCount{
-	my $binnum=shift;
-	my $nuc=shift;
-
-	my $out = () = substr($seq, $binnum*$binwidth, $binwidth) =~ /$nuc/g;
-	return $out;
-}
-
-##############################################################################
-# GC Content Subroutine
-# Returns proportion of G or C nucleotides in reference genome for given
-# flanking region of site
-##############################################################################
-sub getGC {
-	my $site=shift;
-	my $region_s=$site-($binwidth/2);
-	#my $region_e=$site-$binwidth/2;
-	my $region=substr($seq,$region_s,$binwidth);
-
-	my $abase=($region =~ tr/A//);
-	my $cbase=($region =~ tr/C//);
-	my $gbase=($region =~ tr/G//);
-	my $tbase=($region =~ tr/T//);
-
-	my $gcsum=$cbase+$gbase;
-	my $total=$abase+$cbase+$gbase+$tbase;
-	my $gc_content=0.5;
-
-	if ($total != 0) {
-		$gc_content = $gcsum/$total;
-	}
-	return $gc_content;
 }
 
 __END__

@@ -1,4 +1,33 @@
 ##############################################################################
+# Build file of covariates and run PCA
+# (previously run from mod_shell.r)
+##############################################################################
+ptm <- proc.time()
+mutcov2file <- paste0(parentdir, "/output/logmod_data/", bink, "kb_mut_cov2.txt")
+if(!file.exists(mutcov2file)){
+	cat("Building covariate data...\n")
+	source("./R/get_covs.r")
+} else {
+	cat("Reading existing covariate datafile:", mutcov2file, "...\n")
+	mut_cov<-read.table(mutcov2file, header=F, stringsAsFactors=F)
+}
+
+if(pcs==1){
+	names(mut_cov) <- c("CHR", "BIN", "PC1", "PC2", "PC3", "PC4", "PC5", "PC6",
+		"PC7", "PC8", "PC9", "PC10", "PC11", "PC12", "PC13")
+} else {
+	names(mut_cov) <- c("CHR", "BIN", "H3K4me1", "H3K4me3", "H3K9ac", "H3K9me3",
+		"H3K27ac", "H3K27me3", "H3K36me3", "CPGI", "EXON", "TIME", "RATE",
+		"prop_GC", "LAMIN")
+}
+
+danames <- names(mut_cov)
+covnames <- danames[-c(1:2, 14)]
+
+tottime <- (proc.time()-ptm)[3]
+cat("Done (", tottime, "s)\n")
+
+##############################################################################
 # Read in covariate data
 ##############################################################################
 
@@ -8,7 +37,7 @@ getHistBins <- function(file, mark){
 
 	names(data) <- c("CHR", "Start", "End", "mark")
 	names(data)[4] <- mark
-	
+
 	data$CHR <- as.integer(substring(data$CHR, 4))
 	data$BIN <- ceiling(data$End/binw)
 
@@ -41,7 +70,7 @@ CPGIfile <- paste0(parentdir, "/reference_data/cpg_islands_", bink, "kb.bed")
 CPGI <- getHistBins(CPGIfile, "CPGI")
 CPGI$CPGI <- CPGI$CPGI/binw
 
-# Pct exonic 
+# Pct exonic
 EXONfile <- paste0(parentdir, "/reference_data/coding_exon_", bink, "kb.bed")
 EXON <- getHistBins(EXONfile, "EXON")
 EXON$EXON <- EXON$EXON/binw
@@ -81,9 +110,9 @@ lamagg <- aggregate(VAL~CHR+BIN, lam, mean)
 					  # list(H3K4me1, H3K4me3, H3K9ac, H3K9me3, H3K27ac, H3K27me3, H3K36me3, CPGI, EXON))
 
 # New version--cbind histone marks, cpgi, exon, then merge with rep timing and rc rate
-mut_cov <- cbind(H3K4me1, H3K4me3[,2], H3K9ac[,2], H3K9me3[,2], 
+mut_cov <- cbind(H3K4me1, H3K4me3[,2], H3K9ac[,2], H3K9me3[,2],
 			   H3K27ac[,2], H3K27me3[,2], H3K36me3[,2], CPGI[,2], EXON[,2])
-names(mut_cov) <- c("CHR", "H3K4me1", "BIN", "H3K4me3", "H3K9ac", "H3K9me3", 
+names(mut_cov) <- c("CHR", "H3K4me1", "BIN", "H3K4me3", "H3K9ac", "H3K9me3",
 				  "H3K27ac", "H3K27me3", "H3K36me3", "CPGI", "EXON")
 mut_cov <- merge(mut_cov, rtagg, by=c("CHR", "BIN"))
 mut_cov <- merge(mut_cov, rcagg, by=c("CHR", "BIN"))
@@ -93,8 +122,8 @@ mut_cov <- merge(mut_cov, lamagg, by=c("CHR", "BIN"))
 if(pcs==1){
 	pc.dat <- prcomp(mut_cov[,3:ncol(mut_cov)], center=T, scale=T)
 	scores <- as.data.frame(round(pc.dat$x, 3))
-		
+
 	mut_cov<-cbind(mut_cov[,1:2], scores)
 }
 
-write.table(mut_cov, mutcov2file, sep="\t", col.names=F, row.names=F, quote=F) 
+write.table(mut_cov, mutcov2file, sep="\t", col.names=F, row.names=F, quote=F)

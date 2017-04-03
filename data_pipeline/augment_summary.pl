@@ -338,6 +338,7 @@ sub countMotifs{
 				}
 				###
 			}
+		}
 	}	else {
 		@motifs=($seq=~/(?=([ACGT]{$subseq}))/g);
 		$bin = 0;
@@ -354,17 +355,17 @@ sub countMotifs{
 ##############################################################################
 # Subroutine counts occurrence of motifs per cytoband
 ##############################################################################
-sub countMotifsBand{
-	my $bin_flag = shift;
-	my $length=length($seq);
-	my $numbins=ceil($length/$binwidth);
-	my $bin;
-
-
-	}
-
-	print "Done\n";
-}
+# sub countMotifsBand{
+# 	my $bin_flag = shift;
+# 	my $length=length($seq);
+# 	my $numbins=ceil($length/$binwidth);
+# 	my $bin;
+#
+#
+# 	}
+#
+# 	print "Done\n";
+# }
 
 ##############################################################################
 # Read motif counts from hash table, sum counts symmetric motifs and write out

@@ -309,7 +309,7 @@ sub countMotifs{
 # Read motif counts from hash table, sum counts symmetric motifs and write out
 ##############################################################################
 sub writeCounts{
-	my $bin = $_[0];
+	my $bin = $_[0]+1;
 	my @motifs = @{$_[1]};
 	my %tri_count=();
 	# @tri_count{@a}=@b;

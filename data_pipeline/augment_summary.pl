@@ -37,7 +37,7 @@ my $adj=0;
 my $data="full";
 my $mask_flag='';
 my $count_motifs='';
-my $by_bin='';
+my $bin_scheme="chr";
 my $expand_summ='';
 
 GetOptions ('chr=i'=> \$chr,
@@ -47,7 +47,7 @@ GetOptions ('chr=i'=> \$chr,
 'data=s' => \$data,
 'mf' => \$mask_flag,
 'motifs' => \$count_motifs,
-'bybin' => \$by_bin,
+'binscheme=s' => \$bin_scheme,
 'summ' => \$expand_summ,
 'help|?'=> \$help,
 man => \$man) or pod2usage(1);
@@ -115,17 +115,17 @@ if($count_motifs){
 
 	my $bin_flag;
 	my $bin_out;
-	if($by_bin){
-		$bin_flag = "bybin";
-		$bin_out = "$out_path/chr$chr.motif_counts_binned.txt";
+	if($bin_scheme eq "fixed"){
+		$bin_out = "$out_path/chr$chr.motif_counts_fixed.txt";
+	} elsif($bin_scheme eq "band") {
+		$bin_out = "$out_path/chr$chr.motif_counts_band.txt";
 	} else {
-		$bin_flag = "bychr";
 		$bin_out = "$out_path/chr$chr.motif_counts.txt";
 	}
 
 	open(BIN, '>', $bin_out) or die "can't write to $bin_out: $!\n";
-	# &countMotifs($bin_flag);
-	&countMotifsBand($bin_flag);
+	# &countMotifs($bin_scheme);
+	&countMotifsBand($bin_scheme);
 	# &binCounts();
 
 	my $end_time=new Benchmark;
@@ -288,12 +288,57 @@ sub countMotifs{
 
 	print BIN "CHR\tBIN\tMOTIF\tCOUNT\n";
 	my @motifs;
-	if($bin_flag eq "bybin"){
+	if($bin_flag eq "fixed"){
 		for my $i (0 .. $numbins-1) {
 			@motifs=(substr($seq, $i*$binwidth, $binwidth)=~/(?=([ACGT]{$subseq}))/g);
 			&writeCounts($i, \@motifs);
 		}
-	} else {
+	} elsif($bin_flag eq "band") {
+		my $bandfile = "$parentdir/reference_data/cytoBand.txt";
+		open my $bandFH, '<', $bandfile or die "$bandfile: $!";
+
+		my @motifs;
+		while(<$bandFH>){
+			chomp;
+			my @line=split(/\t/, $_);
+			my $chrind=$line[0];
+			if($chrind eq "chr$chr"){
+				my $start=$line[1];
+				my $end=$line[2];
+				my $length=$end-$start;
+				my $band=$line[3];
+				my $stain=$line[4];
+
+				@motifs=(substr($seq, $start, $length)=~/(?=([ACGT]{$subseq}))/g);
+
+				### code below equivalent to writeCounts() sub
+				my %tri_count=();
+				# @tri_count{@a}=@b;
+				$tri_count{$_}++ for @motifs;
+
+				foreach my $motif (sort keys %tri_count) {
+					# if ($count !~ /N|^G|^T/) {
+					my $altmotif = $motif;
+					$altmotif =~ tr/ACGT/TGCA/;
+					$altmotif = reverse $altmotif;
+
+					my $seqp = "$motif\($altmotif\)";
+
+					my $sum;
+					if(exists($tri_count{$motif}) && exists($tri_count{$altmotif})){
+						$sum=$tri_count{$motif}+$tri_count{$altmotif};
+					} elsif(exists($tri_count{$motif}) && !exists($tri_count{$altmotif})) {
+						$sum=$tri_count{$motif};
+					} elsif(!exists($tri_count{$motif}) && exists($tri_count{$altmotif})) {
+						$sum=$tri_count{$altmotif};
+					}
+
+					print BIN "$_\t$seqp\t$sum\n";
+					# }
+				}
+				###
+			}
+	}	else {
 		@motifs=($seq=~/(?=([ACGT]{$subseq}))/g);
 		$bin = 0;
 		&writeCounts($bin, \@motifs);
@@ -315,47 +360,7 @@ sub countMotifsBand{
 	my $numbins=ceil($length/$binwidth);
 	my $bin;
 
-	my $bandfile = "$parentdir/reference_data/cytoBand.txt";
-	open my $bandFH, '<', $bandfile or die "$bandfile: $!";
 
-	my @motifs;
-	while(<$bandFH>){
-		chomp;
-		my @line=split(/\t/, $_);
-		my $chrind=$line[0];
-		if($chrind eq "chr$chr"){
-			my $start=$line[1];
-			my $end=$line[2];
-			my $length=$end-$start;
-			my $band=$line[3];
-			my $stain=$line[4];
-
-			@motifs=(substr($seq, $start, $length)=~/(?=([ACGT]{$subseq}))/g);
-			my %tri_count=();
-			# @tri_count{@a}=@b;
-			$tri_count{$_}++ for @motifs;
-
-			foreach my $motif (sort keys %tri_count) {
-				# if ($count !~ /N|^G|^T/) {
-				my $altmotif = $motif;
-				$altmotif =~ tr/ACGT/TGCA/;
-				$altmotif = reverse $altmotif;
-
-				my $seqp = "$motif\($altmotif\)";
-
-				my $sum;
-				if(exists($tri_count{$motif}) && exists($tri_count{$altmotif})){
-					$sum=$tri_count{$motif}+$tri_count{$altmotif};
-				} elsif(exists($tri_count{$motif}) && !exists($tri_count{$altmotif})) {
-					$sum=$tri_count{$motif};
-				} elsif(!exists($tri_count{$motif}) && exists($tri_count{$altmotif})) {
-					$sum=$tri_count{$altmotif};
-				}
-
-				print BIN "$_\t$seqp\t$sum\n";
-				# }
-			}
-		}
 	}
 
 	print "Done\n";

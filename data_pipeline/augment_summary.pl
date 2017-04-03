@@ -124,7 +124,8 @@ if($count_motifs){
 	}
 
 	open(BIN, '>', $bin_out) or die "can't write to $bin_out: $!\n";
-	&countMotifs($bin_flag);
+	# &countMotifs($bin_flag);
+	&countMotifsBand($bin_flag);
 	# &binCounts();
 
 	my $end_time=new Benchmark;
@@ -301,6 +302,61 @@ sub countMotifs{
 	# Modified counting strategy from https://www.biostars.org/p/5143/
 	# my @motifs=($seq=~/(?=([ACGT]{$subseq}))/g);
 	#for(@trinucs){print "$_\n"};
+
+	print "Done\n";
+}
+
+##############################################################################
+# Subroutine counts occurrence of motifs per cytoband
+##############################################################################
+sub countMotifsBand{
+	my $bin_flag = shift;
+	my $length=length($seq);
+	my $numbins=ceil($length/$binwidth);
+	my $bin;
+
+	my $bandfile = "$parentdir/reference_data/cytoBand.txt";
+	open my $bandFH, '<', $bandfile or die "$bandfile: $!";
+
+	my @motifs;
+	while(<$bandFH>){
+		chomp;
+		my @line=split(/\t/, $_);
+		my $chrind=$line[0];
+		if($chrind eq "chr$chr"){
+			my $start=$line[1];
+			my $end=$line[2];
+			my $length=$end-$start;
+			my $band=$line[3];
+			my $stain=$line[4];
+
+			@motifs=(substr($seq, $start, $length)=~/(?=([ACGT]{$subseq}))/g);
+			my %tri_count=();
+			# @tri_count{@a}=@b;
+			$tri_count{$_}++ for @motifs;
+
+			foreach my $motif (sort keys %tri_count) {
+				# if ($count !~ /N|^G|^T/) {
+				my $altmotif = $motif;
+				$altmotif =~ tr/ACGT/TGCA/;
+				$altmotif = reverse $altmotif;
+
+				my $seqp = "$motif\($altmotif\)";
+
+				my $sum;
+				if(exists($tri_count{$motif}) && exists($tri_count{$altmotif})){
+					$sum=$tri_count{$motif}+$tri_count{$altmotif};
+				} elsif(exists($tri_count{$motif}) && !exists($tri_count{$altmotif})) {
+					$sum=$tri_count{$motif};
+				} elsif(!exists($tri_count{$motif}) && exists($tri_count{$altmotif})) {
+					$sum=$tri_count{$altmotif};
+				}
+
+				print BIN "$_\t$seqp\t$sum\n";
+				# }
+			}
+		}
+	}
 
 	print "Done\n";
 }

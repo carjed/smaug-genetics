@@ -275,8 +275,8 @@ for(j in 1:5){
 	  levs_a <- as.character(lapply(as.vector(levels(plotdat$v2a)),
 			reverse_chars))
 
-		for(j in 1:6){
-			categ <- orderedcats[j]
+		for(k in 1:6){
+			categ <- orderedcats[k]
 			p1 <- rrheat2(plotdat[plotdat$Category==categ,], f, levs_a, "v5", nbptmp)
 			p1a <- p1+theme(legend.position="none")
 			 png(paste0(parentdir, "/images/", categ, "_", nbptmp, "bp_heatmap.png"),

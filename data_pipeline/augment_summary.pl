@@ -114,12 +114,13 @@ if($count_motifs){
 	# print "seqlength: $length\n";
 
 	my $bin_flag;
+	my $bin_out;
 	if($by_bin){
 		$bin_flag = "bybin";
-		my $bin_out = "$out_path/chr$chr.motif_counts_binned.txt";
+		$bin_out = "$out_path/chr$chr.motif_counts_binned.txt";
 	} else {
 		$bin_flag = "bychr";
-		my $bin_out = "$out_path/chr$chr.motif_counts.txt";
+		$bin_out = "$out_path/chr$chr.motif_counts.txt";
 	}
 
 	open(BIN, '>', $bin_out) or die "can't write to $bin_out: $!\n";

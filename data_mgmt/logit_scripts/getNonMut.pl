@@ -79,36 +79,9 @@ open my $positions, '<', $f_positions or die "can't open $f_positions: $!";
 # Index motif file names
 my $f_mlist = "$parentdir/output/7bp_1000k_rates.txt";
 open my $mlist, '<', $f_mlist or die "can't open $f_mlist: $!";
-#
-# our %fhash=();
-# my @fn;
-# while(<$mlist>){
-#   chomp;
-#   my @line=split(/\t/, $_);
-#   my $seq=$line[1];
-#   my $cat=$line[2];
-#
-#   if(($cat eq $categ) | ($cat eq "cpg_${categ}")){
-#     #my $key=join("\t", @line[0 .. 1]);
-#     #my $pcs=join("\t", @line[2 .. $#line]);
-#
-#     my $filename="$parentdir/output/logmod_data/chr${chr}/chr${chr}_${categ}_$seq.txt";
-#     push(@fn, $filename);
-#     $fhash{$seq}=$filename;
-#     # print "$hash{$_}\n";
-#   }
-# }
-
-# my %handles = get_write_handles(@fn);
-
-# initialize phastCons data
-# my $f_cons = "$parentdir/reference_data/chr$chr.phastCons46way.primates.wigFix";
-# open my $cons, '<', $f_cons or die "can't open $f_cons: $!";
 
 # Get reference sequence
 my $seq=&getRef();
-my $altseq=$seq;
-$altseq =~ tr/ACGT/TGCA/;
 
 my $seqlength=length($seq);
 # print "seqlength of chr$chr: $max\n"; #<-used to validate that getRef() returns correct seq length
@@ -129,9 +102,6 @@ while (<$covs>){
 
 	$hash{$key}=$pcs;
 }
-
-# my $key=join("\t", 20, 100);
-# print "$hash{$key}\n";
 
 # Create hash keyed by singleton positions, with input line as value
 print "Indexing chr${chr}: ${categ} singleton positions...\n";
@@ -159,7 +129,8 @@ for my $strpos (0 .. $seqlength){
 		if(($base =~ /$b1|$b2/) & (!exists $poshash{$pos})){
 			# push (@POS, $pos); # add position to exclusion list
 			my $localseq = substr($seq, $pos-$adj-1, $subseq);
-			my $altlocalseq = reverse substr($altseq, $pos-$adj-1, $subseq);
+			my $altlocalseq = reverse $localseq;
+			$altlocalseq  =~ tr/ACGT/TGCA/;
 
 			# Coerce local sequence info to format used in R
 			my $sequence;
@@ -197,6 +168,9 @@ for my $strpos (0 .. $seqlength){
 
 print "Done\n";
 
+##############################################################################
+# Get reference
+##############################################################################
 sub getRef{
 	my $f_fasta;
 	if($mask_flag==1){

@@ -76,6 +76,7 @@ cat("\n")
 suppressMessages(usePackage(ggplot2))
 suppressMessages(usePackage(dplyr))
 suppressMessages(usePackage(tidyr))
+suppressMessages(usePackage(broom))
 suppressMessages(usePackage(RColorBrewer))
 suppressMessages(usePackage(MASS))
 suppressMessages(usePackage(speedglm))
@@ -218,8 +219,6 @@ for(j in 1:5){
 	# the data_pipeline/augment_summary.pl script with shorter motifs to ensure
 	# proper counting of mutable sites
 	nbptmp <- i*2+1
-	mcfile <- paste0(parentdir, "/output/", nbptmp, "bp_final_rates.txt")
-	mcount <- read.table(mcfile, header=T, stringsAsFactors=F)
 
 	gpdat <- aggseq %>%
 		mutate(Type=gsub("cpg_", "", Category2),
@@ -233,6 +232,8 @@ for(j in 1:5){
 			group_by(Type, Motif) %>%
 			summarise(nERVs=sum(nERVs))
 
+		mcfile <- paste0(parentdir, "/output/", nbptmp, "bp_final_rates.txt")
+		mcount <- read.table(mcfile, header=T, stringsAsFactors=F)
 		mcount <- mcount %>%
 			mutate(Motif=ifelse(grepl("^A", Type),
 				"A(T)",
@@ -247,6 +248,8 @@ for(j in 1:5){
 			group_by(Type, Motif) %>%
 			summarise(nERVs=sum(nERVs))
 
+		mcfile <- paste0(parentdir, "/output/", nbptmp, "bp_final_rates.txt")
+		mcount <- read.table(mcfile, header=T, stringsAsFactors=F)
 		mcount <- mcount %>%
 			dplyr::select(Type, Motif, nMotifs)
 

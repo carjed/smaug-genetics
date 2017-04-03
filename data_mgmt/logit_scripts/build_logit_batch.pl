@@ -28,7 +28,7 @@ $jobids =~ s/\r?\n/,/g;
 $jobids =~ s/,$//; # get rid of last comma
 
 # initialize output
-my $outfile = "$parentdir/smaug-genetics/R/logit_batch_redo.txt";
+my $outfile = "$parentdir/slurm/logit_batch_redo.txt";
 open(OUT, '>', $outfile) or die "can't write to $outfile: $!\n";
 
 print OUT "#!/bin/sh \n";

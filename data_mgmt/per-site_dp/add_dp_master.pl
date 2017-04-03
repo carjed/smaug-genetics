@@ -31,7 +31,7 @@ GetOptions ('categ=s'=> \$categ,
 man => \$man) or pod2usage(1);
 
 my $jobcmd="${categ}_add_dp";
-my $workerbatch = "$parentdir/smaug-genetics/data_mgmt/slurm_$jobcmd.txt";
+my $workerbatch = "$parentdir/slurm/slurm_$jobcmd.txt";
 open my $wFH, '>', $workerbatch or die "can't write to $workerbatch: $!\n";
 print $wFH "#!/bin/sh \n";
 print $wFH "#SBATCH --mail-type=FAIL \n";

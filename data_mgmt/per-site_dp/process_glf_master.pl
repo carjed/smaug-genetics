@@ -78,7 +78,7 @@ print "Number of individuals to be processed: $numind\n";
 
 # initialize and run sbatch file
 my $jobcmd="chr${chr}_process_glfs";
-my $workerbatch = "$parentdir/smaug-genetics/data_mgmt/slurm_process_glfs.$chr.txt";
+my $workerbatch = "$parentdir/slurm/slurm_process_glfs.$chr.txt";
 open my $wFH, '>', $workerbatch or die "can't write to $workerbatch: $!\n";
 print $wFH "#!/bin/sh \n";
 print $wFH "#SBATCH --mail-type=FAIL \n";
@@ -118,7 +118,7 @@ chomp($numdirs);
 # initialize and run sbatch file
 my $x = 1000 + int(rand(9999 - 1000));
 $jobcmd="chr${chr}_glf_meandp_$x";
-my $meandpbatch = "$parentdir/smaug-genetics/data_mgmt/slurm_glf_meandp.$chr.txt";
+my $meandpbatch = "$parentdir/slurm/slurm_glf_meandp.$chr.txt";
 open my $mdFH, '>', $meandpbatch or die "can't write to $meandpbatch: $!\n";
 print $mdFH "#!/bin/sh \n";
 print $mdFH "#SBATCH --mail-type=FAIL \n";

@@ -43,7 +43,7 @@ We leave it to the user to download these programs and ensure they run properly.
 
 ### Reference data
 
-This pipeline requires the use of several external data files, all publicly available. A script for downloading and formatting these files can be found in this repository at `data_mgmt/process_covs/download_ref_data.sh`. These files include:
+This pipeline requires the use of several external data files, all publicly available. A script for downloading and formatting these files can be found in this repository at `download_ref_data.sh`. These files include:
 
 - [hg19/GRCh37 reference genome](ftp://ftp-trace.ncbi.nih.gov/1000genomes/ftp/technical/reference/human_g1k_v37.fasta.gz) (all other files must be mapped to this build)
 - [chromosome sizes for reference genome](https://genome.ucsc.edu/goldenpath/help/hg19.chrom.sizes)

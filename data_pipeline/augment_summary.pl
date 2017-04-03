@@ -125,7 +125,7 @@ if($count_motifs){
 
 	open(BIN, '>', $bin_out) or die "can't write to $bin_out: $!\n";
 	# &countMotifs($bin_scheme);
-	&countMotifsBand($bin_scheme);
+	&countMotifs($bin_scheme);
 	# &binCounts();
 
 	my $end_time=new Benchmark;

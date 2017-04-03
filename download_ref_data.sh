@@ -46,4 +46,7 @@ bigWigToWig SexAveraged.bw SexAveraged.wig
 echo "CHR\tSTART\tEND\tRATE" > recomb_rate.bed
 awk 'NR>1' SexAveraged.wig | cat >> recomb_rate.bed
 
+# GoNL de novo mutations
+wget https://molgenis26.target.rug.nl/downloads/gonl_public/variants/release5.2/GoNL_DNMs.txt > "$refdir/DNMs/GoNL_DNMs.txt"
+
 # RefSeq exons

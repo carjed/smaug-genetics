@@ -13,7 +13,7 @@ chrpf <- chrpf[chrpf$MU>0,]
 
 # Read DNMs
 cat("Reading DNMs...\n")
-source("read_dnms.r")
+source("./R/read_dnms.r")
 
 # Duplicate data, merge with DNMs to get ID
 cat("Annotating with ID...\n")

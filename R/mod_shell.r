@@ -90,7 +90,6 @@ suppressMessages(usePackage(hexbin))
 suppressMessages(usePackage(cowplot))
 suppressMessages(usePackage(grid))
 suppressMessages(usePackage(gridExtra))
-suppressMessages(usePackage(grid))
 suppressMessages(usePackage(gtable))
 
 # Set custom library path for bedr package

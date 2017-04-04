@@ -32,7 +32,7 @@ binw: 1000000
 # Following flags are specific to the augment_summary.pl script
 ##############################################################################
 motifs: TRUE
-summ: TRUE
+expand_summ: TRUE
 
 ##############################################################################
 # Additional parameters to be implemented later

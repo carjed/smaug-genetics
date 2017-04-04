@@ -38,40 +38,48 @@ for (sort keys %{$config}) {
     say "$_: $config->{$_}";
 }
 
-# my $adj = $config->{adj};
+my $adj = $config->{adj};
+my $mac = $config->{mac};
+my $binw = $config->{binw};
+my $data = $config->{data};
+my $bin_scheme = $config->{bin_scheme};
+my $parentdir = $config->{parentdir};
+my $count_motifs = $config->{count_motifs};
+my $expand_summ = $config->{expand_summ};
 
-my $parentdir="/net/bipolar/jedidiah/mutation";
+# my $parentdir="/net/bipolar/jedidiah/mutation";
 
-my $help=0;
-my $man=0;
-my $chr;
-my $mac;
-my $binwidth=100000;
-my $adj=0;
-my $data="full";
-# my $mask_flag='';
-my $count_motifs='';
-my $bin_scheme="chr";
-my $expand_summ='';
-
-GetOptions ('chr=i'=> \$chr,
-'mac=i'=> \$mac,
-'b=i' => \$binwidth,
-'adj=i' => \$adj,
-'data=s' => \$data,
-# 'mf' => \$mask_flag,
-'motifs' => \$count_motifs,
-'binscheme=s' => \$bin_scheme,
-'summ' => \$expand_summ,
-'help|?'=> \$help,
-man => \$man) or pod2usage(1);
-
-pod2usage(0) if $help;
-pod2usage(-verbose => 2) if $man;
-
-if (!$chr | !$mac) {
-	pod2usage("$0: Missing mandatory argument.");
-}
+my $chr=$ARGV[0];
+# my $help=0;
+# my $man=0;
+# my $chr;
+# my $mac;
+# my $binwidth=100000;
+# my $adj=0;
+# my $data="full";
+# # my $mask_flag='';
+# my $count_motifs='';
+# my $bin_scheme="chr";
+# my $expand_summ='';
+#
+# GetOptions ('chr=i'=> \$chr,
+# 'mac=i'=> \$mac,
+# 'b=i' => \$binwidth,
+# 'adj=i' => \$adj,
+# 'data=s' => \$data,
+# # 'mf' => \$mask_flag,
+# 'motifs' => \$count_motifs,
+# 'binscheme=s' => \$bin_scheme,
+# 'summ' => \$expand_summ,
+# 'help|?'=> \$help,
+# man => \$man) or pod2usage(1);
+#
+# pod2usage(0) if $help;
+# pod2usage(-verbose => 2) if $man;
+#
+# if (!$chr | !$mac) {
+# 	pod2usage("$0: Missing mandatory argument.");
+# }
 
 ##############################################################################
 #Process inputs
@@ -92,7 +100,7 @@ if ($adj!=0) {
 	$subseq = $adj*2+1;
 }
 
-my $bw=$binwidth/1000;
+my $bw=$binw/1000;
 
 my $nextchr='';
 if ($chr<22) {
@@ -122,7 +130,7 @@ print "Done\n";
 # and for local sequence analysis if selected
 # -also returns GC content per bin
 ##############################################################################
-if($count_motifs){
+if($count_motifs eq "TRUE"){
 	my $start_time=new Benchmark;
 	print "Counting motifs...\n";
 	# print "seqlength: $length\n";
@@ -152,7 +160,7 @@ if($count_motifs){
 # Output expanded summary file based on selected options
 # -passed to R script along with bins file(s)
 ##############################################################################
-if($expand_summ){
+if($expand_summ eq "TRUE"){
 	print "Expanding summary file...\n";
 	my $start_time=new Benchmark;
 
@@ -297,14 +305,14 @@ sub getRef{
 sub countMotifs{
 	my $bin_flag = shift;
 	my $length=length($seq);
-	my $numbins=ceil($length/$binwidth);
+	my $numbins=ceil($length/$binw);
 	my $bin;
 
 	print BIN "CHR\tBIN\tMOTIF\tCOUNT\n";
 	my @motifs;
 	if($bin_flag eq "fixed"){
 		for my $i (0 .. $numbins-1) {
-			@motifs=(substr($seq, $i*$binwidth, $binwidth)=~/(?=([ACGT]{$subseq}))/g);
+			@motifs=(substr($seq, $i*$binw, $binw)=~/(?=([ACGT]{$subseq}))/g);
 			&writeCounts($i, \@motifs);
 		}
 	} elsif($bin_flag eq "band") {
@@ -413,61 +421,61 @@ sub writeCounts{
 	}
 }
 
-__END__
-=head1 NAME
-
-ref5.pl - SMAUG: Singleton Mutation Analysis Utility with Graphics
-
-=head1 SYNOPSIS
-
-        ref5.pl [OPTIONS]
-        Options:
-		--help			program documentation
-		--chr			chromosome
-		--mac			minor allele count
-		--b			binwidth
-		--adj			number of adjacent nucleotides
-		--data			data subset to use
-
-=head1 OPTIONS
-
-=over 8
-
-=item B<--help>
-
-Display this documentation
-
-=item B<--chr>
-
-MANDATORY: specify chromosome for analysis
-
-=item B<--mac>
-
-MANDATORY: specify minor allele count of sites in existing summary file
-
-=item B<--b>
-
-specify bin width for histograms (default is 100,000)
-
-=item B<--adj>
-
-specify number of adjacent nucleotides in either direction from the variant to include in analysis
-default includes only the adjacent 3' nucleotide for CpG distinction
-
-=item B<--data>
-
-specify whether to use summaries from all singletons (full) or those that pass the strict filters (strict)
-
-=back
-
-=head1 DESCRIPTION
-
-B<ref5.pl> annotates summary files and counts motifs in genome over fixed-width windows
-
-=head1 AUTHOR
-
-=over
-
-Jedidiah Carlson E<10> Department of Bioinformatics E<10> University of Michigan
-
-=cut
+# __END__
+# =head1 NAME
+#
+# ref5.pl - SMAUG: Singleton Mutation Analysis Utility with Graphics
+#
+# =head1 SYNOPSIS
+#
+#         ref5.pl [OPTIONS]
+#         Options:
+# 		--help			program documentation
+# 		--chr			chromosome
+# 		--mac			minor allele count
+# 		--b			binwidth
+# 		--adj			number of adjacent nucleotides
+# 		--data			data subset to use
+#
+# =head1 OPTIONS
+#
+# =over 8
+#
+# =item B<--help>
+#
+# Display this documentation
+#
+# =item B<--chr>
+#
+# MANDATORY: specify chromosome for analysis
+#
+# =item B<--mac>
+#
+# MANDATORY: specify minor allele count of sites in existing summary file
+#
+# =item B<--b>
+#
+# specify bin width for histograms (default is 100,000)
+#
+# =item B<--adj>
+#
+# specify number of adjacent nucleotides in either direction from the variant to include in analysis
+# default includes only the adjacent 3' nucleotide for CpG distinction
+#
+# =item B<--data>
+#
+# specify whether to use summaries from all singletons (full) or those that pass the strict filters (strict)
+#
+# =back
+#
+# =head1 DESCRIPTION
+#
+# B<ref5.pl> annotates summary files and counts motifs in genome over fixed-width windows
+#
+# =head1 AUTHOR
+#
+# =over
+#
+# Jedidiah Carlson E<10> Department of Bioinformatics E<10> University of Michigan
+#
+# =cut

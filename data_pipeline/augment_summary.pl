@@ -35,7 +35,7 @@ my $mac;
 my $binwidth=100000;
 my $adj=0;
 my $data="full";
-my $mask_flag='';
+# my $mask_flag='';
 my $count_motifs='';
 my $bin_scheme="chr";
 my $expand_summ='';
@@ -45,7 +45,7 @@ GetOptions ('chr=i'=> \$chr,
 'b=i' => \$binwidth,
 'adj=i' => \$adj,
 'data=s' => \$data,
-'mf' => \$mask_flag,
+# 'mf' => \$mask_flag,
 'motifs' => \$count_motifs,
 'binscheme=s' => \$bin_scheme,
 'summ' => \$expand_summ,
@@ -142,7 +142,7 @@ if($expand_summ){
 	print "Expanding summary file...\n";
 	my $start_time=new Benchmark;
 
-	my $f_summ = "$in_path/${macl}_${data}/chr$chr.summary";
+	my $f_summ = "$in_path/${macl}_full/chr$chr.summary";
 	open my $summ, '<', $f_summ or die "can't open $f_summ: $!";
 
 	my $outfile = "$out_path/chr$chr.expanded.summary";
@@ -240,7 +240,7 @@ sub forkExecWait {
 ##############################################################################
 sub getRef{
 	my $f_fasta;
-	if($mask_flag){
+	if($data eq "mask"){
 		$f_fasta = "$parentdir/reference_data/human_g1k_v37.mask.fasta";
 	} else {
 		$f_fasta = "$parentdir/reference_data/human_g1k_v37.fasta";

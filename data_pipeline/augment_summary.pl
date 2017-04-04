@@ -40,7 +40,7 @@ for (sort keys %{$config}) {
 
 # my $adj = $config->{adj};
 
-# my $parentdir="/net/bipolar/jedidiah/mutation";
+my $parentdir="/net/bipolar/jedidiah/mutation";
 
 my $help=0;
 my $man=0;

@@ -1,0 +1,42 @@
+##############################################################################
+# Pipeline configuration
+##############################################################################
+parentdir: "/net/bipolar/jedidiah/mutation"
+
+# mac defines the minor allele count of variants to examine
+# can set to either:
+# 1 (singletons)
+# 2 (doubletons) [DEPRECATED]
+# 11 (all variants with MAC>10) [DEPRECATED]
+mac: 1
+
+# adj defines number of bases upstream/downstream per motif
+adj: 4
+
+# data defines which set of ERVs to use, either
+# "full" (all calls across entire genome)
+# "mask" ()
+data: "full"
+
+# bin_scheme variable defines how motifs are counted.
+# Must be set to one of 3 options:
+# "all" (count across entire chromosome)
+# "fixed" (fixed-width windows of size binw)
+# "band" (use geimsa-staned banding)
+bin_scheme: "all"
+
+# binw defines the width of fixed bins in base pairs
+binw: 1000000
+
+##############################################################################
+# Following flags are specific to the augment_summary.pl script
+##############################################################################
+motifs: TRUE
+summ: TRUE
+
+##############################################################################
+# Additional parameters to be implemented later
+##############################################################################
+common: FALSE
+log_model: FALSE
+negbin_model: FALSE

@@ -24,9 +24,23 @@ use File::Path qw(make_path);
 use List::Util qw(first max maxstr min minstr reduce shuffle sum);
 use Cwd;
 use Benchmark;
+use FindBin;
+use YAML::XS 'LoadFile';
+use feature 'say';
 
-my $wdir=getcwd;
-my $parentdir="/net/bipolar/jedidiah/mutation";
+my $relpath = $FindBin::Bin;
+my $configpath = dirname($relpath);
+
+my $config = LoadFile("$configpath/_config.yaml");
+
+print "Script will run with the following parameters:\n";
+for (sort keys %{$config}) {
+    say "$_: $config->{$_}";
+}
+
+# my $adj = $config->{adj};
+
+# my $parentdir="/net/bipolar/jedidiah/mutation";
 
 my $help=0;
 my $man=0;
@@ -120,7 +134,7 @@ if($count_motifs){
 	} elsif($bin_scheme eq "band") {
 		$bin_out = "$out_path/chr$chr.motif_counts_band.txt";
 	} else {
-		$bin_out = "$out_path/chr$chr.motif_counts.txt";
+		$bin_out = "$out_path/chr$chr.motif_counts_all.txt";
 	}
 
 	open(BIN, '>', $bin_out) or die "can't write to $bin_out: $!\n";

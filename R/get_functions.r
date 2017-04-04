@@ -110,7 +110,7 @@ reverse_chars <- function(string){
 ##############################################################################
 usePackage <- function(p) {
 
-	p <- as.character(substitute(p))
+	# p <- as.character(substitute(p))
 
     if (!is.element(p, installed.packages()[,1])){
         install.packages(p, dep = TRUE)
@@ -411,6 +411,24 @@ multiplot <- function(..., plotlist=NULL, file, cols=1, layout=NULL) {
                                       layout.pos.col = matchidx$col))
     }
   }
+}
+
+# argParse function outputs arguments specified in _config.yaml and assigns to
+# the named variables
+# (e.g., instead of using "args$data", we can just use "data")
+# Modified from http://www.r-bloggers.com/extract-objects-from-a-list/
+argParse <- function(args){
+	for(i in 1:length(args)){
+		##first extract the object value
+		tempobj=unname(unlist(args[i]))
+		varname=names(args[i])
+
+		# optional: print args
+		cat(paste0(varname, ": ", tempobj), "\n")
+
+		##now create a new variable with the original name of the list item
+		eval(parse(text=paste(varname,"= tempobj")))
+	}
 }
 
 ##############################################################################

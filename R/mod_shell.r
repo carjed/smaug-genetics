@@ -2,7 +2,7 @@
 
 ##############################################################################
 # Script for running genome-wide models
-# Built under R version 3.2.2
+# Built under R version 3.3.2
 #
 # Usage:
 # ./mod_shell.r --summfile="/path/to/summaryfile"
@@ -18,79 +18,19 @@
 ##############################################################################
 
 ##############################################################################
-# Setup: process args, load function helper script
-##############################################################################
-ptm <- proc.time()
-
-parentdir <- dirname(getwd())
-
-cat("Loading functions and packages...\n")
-scriptdir <- dirname(sys.frame(1)$ofile)
-source("./R/get_functions.r")
-source("./R/validation_functions.r")
-
-# Get args from command line; defaults defined below
-args <- getArgs(
-	defaults=list(adj=4,
-		binw=1000000,
-		summfile=paste0(parentdir,
-			"/output/9bp_1000k_singletons_full/full.summary"),
-		binfile=paste0(parentdir,
-			"/output/9bp_1000k_singletons_full/full_motif_counts.txt"),
-		common=FALSE,
-		log_model=FALSE,
-		negbin_model=FALSE))
-
-# Parse args--modified from:
-# http://www.r-bloggers.com/extract-objects-from-a-list/
-cat("Script will run with the following parameters:\n")
-for(i in 1:length(args)){
-	##first extract the object value
-	tempobj=unlist(args[i])
-	varname=names(args[i])
-
-	# optional: print args
-	cat(varname, ":", tempobj, "\n")
-
-	##now create a new variable with the original name of the list item
-	eval(parse(text=paste(names(args)[i],"= tempobj")))
-}
-
-# Need to manually coerce binwidth and adj args to numeric
-binw <- as.numeric(binw)
-adj <- as.numeric(adj)
-
-# Define additional variables for cleaner strings, etc.
-bink <- binw/1000
-nbp <- adj*2+1
-
-datadir <- dirname(summfile)
-
-cat("\n")
-
-##############################################################################
-# Setup: Load packages
+# Setup: load function helper scripts and packages
 # The usePackage function loads packages if they already exist,
 # otherwise installs from default CRAN repository
 ##############################################################################
-suppressMessages(usePackage(ggplot2))
-suppressMessages(usePackage(dplyr))
-suppressMessages(usePackage(tidyr))
-suppressMessages(usePackage(broom))
-suppressMessages(usePackage(RColorBrewer))
-suppressMessages(usePackage(MASS))
-suppressMessages(usePackage(speedglm))
-suppressMessages(usePackage(boot))
-suppressMessages(usePackage(devtools))
-suppressMessages(usePackage(psych))
-suppressMessages(usePackage(lmtest))
-suppressMessages(usePackage(fmsb))
-suppressMessages(usePackage(stringr))
-suppressMessages(usePackage(hexbin))
-suppressMessages(usePackage(cowplot))
-suppressMessages(usePackage(grid))
-suppressMessages(usePackage(gridExtra))
-suppressMessages(usePackage(gtable))
+cat("Loading functions and packages...\n")
+source("./R/get_functions.r")
+source("./R/validation_functions.r")
+
+packages <- c("ggplot2", "dplyr", "tidyr", "broom", "RColorBrewer", "MASS",
+"speedglm", "boot", "devtools", "psych", "lmtest", "fmsb", "stringr", "hexbin",
+"cowplot", "grid", "gridExtra", "gtable", "yaml")
+
+sapply(packages, function(x) suppressMessages(usePackage(x)))
 
 # Set custom library path for bedr package
 libpath <- "~/R/x86_64-pc-linux-gnu-library/2.13"
@@ -128,7 +68,8 @@ rbg<-c(myPaletteB(6)[1:3],myPaletteR(6)[1:3], myPaletteG(6)[1:3])
 orderedcats <- c("AT_CG", "AT_GC", "AT_TA",
   "GC_AT", "GC_CG", "GC_TA",
   "cpg_GC_AT", "cpg_GC_CG", "cpg_GC_TA")
-# cols <- myPaletteCat(12)[c(8,10,12,2,4,6,1,3,5)] #<- colors if using this ordering
+#Define colors if using this ordering
+# cols <- myPaletteCat(12)[c(8,10,12,2,4,6,1,3,5)]
 
 # reordered to group ts and tv
 orderedcats1 <- c("AT_GC", "GC_AT", "cpg_GC_AT",
@@ -153,8 +94,52 @@ cols <- myPaletteCat(12)[
     2,4,6,
     1,3,5)] #<- colors if using this ordering
 
-tottime <- (proc.time()-ptm)[3]
-cat("Done (", tottime, "s)\n")
+##############################################################################
+# Setup: get arguments from _config.yaml file
+##############################################################################
+cat("Script will run with the following parameters:\n")
+
+args <- yaml.load_file("./_config.yaml")
+argParse(args)
+
+# # Get args from command line; defaults defined below
+# args <- getArgs(
+# 	defaults=list(adj=4,
+# 		binw=1000000,
+# 		data="full",
+# 		bin_scheme="all",
+# 		common=FALSE,
+# 		log_model=FALSE,
+# 		negbin_model=FALSE))
+#
+# # Parse args--modified from:
+# # http://www.r-bloggers.com/extract-objects-from-a-list/
+# cat("Script will run with the following parameters:\n")
+# for(i in 1:length(args)){
+# 	##first extract the object value
+# 	tempobj=unlist(args[i])
+# 	varname=names(args[i])
+#
+# 	# optional: print args
+# 	cat(varname, ":", tempobj, "\n")
+#
+# 	##now create a new variable with the original name of the list item
+# 	eval(parse(text=paste(names(args)[i],"= tempobj")))
+# }
+#
+# # Need to manually coerce binwidth and adj args to numeric
+# binw <- as.numeric(binw)
+# adj <- as.numeric(adj)
+
+# Define additional variables for cleaner strings, etc.
+bink <- binw/1000
+nbp <- adj*2+1
+
+datadir <- paste0(parentdir,
+	"/output/", nbp, "bp_", bink, "k_singletons_", data)
+
+summfile <- paste0(datadir, "/full.summary")
+binfile <- paste0(datadir, "/full_motif_counts_", bin_scheme, ".txt")
 
 ##############################################################################
 # Read and preprocess data
@@ -162,23 +147,19 @@ cat("Done (", tottime, "s)\n")
 ptm <- proc.time()
 
 if(!file.exists(summfile)){
-	cat("Merged summary/bin files do not exist---Merging now...\n")
+	cat("Merged summary file does not exist---Merging now...\n")
+	combine_sites <- paste0(
+		"awk 'FNR==1 && NR!=1{while(/^CHR/) getline; } 1 {print} ' ",
+		datadir, "/chr*.expanded.summary > ", summfile)
+	system(combine_sites)
+}
 
-	combinecmd <- paste0(
+if(!file.exists(binfile)){
+	cat("Merged bin file does not exist---Merging now...\n")
+	combine_motifs <- paste0(
 		"awk 'FNR==1 && NR!=1{while(/^CHR/) getline; } 1 {print} ' ",
-		datadir, "/chr*.expanded.summary > ", datadir,
-			"/full.summary")
-	combinecmd2 <- paste0(
-		"awk 'FNR==1 && NR!=1{while(/^CHR/) getline; } 1 {print} ' ",
-		datadir, "/chr*.motif_counts.txt > ", datadir,
-			"/full_motif_counts.txt")
-	combinecmd3 <- paste0(
-		"awk 'FNR==1 && NR!=1{while(/^CHR/) getline; } 1 {print} ' ",
-		datadir, "/chr*.motif_counts_binned.txt > ", datadir,
-			"/full_motif_counts_binned.txt")
-	system(combinecmd)
-	system(combinecmd2)
-	system(combinecmd3)
+		datadir, "/chr*.motif_counts_", bin_scheme, ".txt > ", binfile)
+	system(combine_motifs)
 }
 
 # Read in per-site summary data
@@ -245,7 +226,8 @@ for(j in 1:5){
 
 		gpdat <- merge(gpdat, mcount, by=c("Type", "Motif")) %>%
 			mutate(ERV_rel_rate=nERVs/nMotifs)
-	} else if(i>0 & i<4){
+	}
+	else if(i>0 & i<4){
  		gpdat<- gpdat %>%
 			dplyr::select(Type, Motif, nERVs) %>%
 			group_by(Type, Motif) %>%
@@ -302,7 +284,8 @@ for(j in 1:5){
 		grid.draw(legend)
 		dev.off()
 
-	} else { # don't draw heatmap for 9-mers; use original motif counts
+	}
+	else { # don't draw heatmap for 9-mers; use original motif counts
 		gpdat <- gpdat %>%
 			dplyr::select(Type, Motif, nERVs, nMotifs) %>%
 			group_by(Type, Motif) %>%
@@ -434,7 +417,8 @@ if(common){
 	system(trimcmd)
 
 	plegend<-ggplot()+
-		geom_tile(data=r5m[r5m$Category==categ,], aes(x=v3, y=v2a, fill=prop_diff4))+
+		geom_tile(data=r5m[r5m$Category==categ,],
+			aes(x=v3, y=v2a, fill=prop_diff4))+
 		scale_fill_gradientn("Rp/Rs\n",
 			colours=myPaletteBrBG(nbp),
 			trans="log",

@@ -9,6 +9,29 @@ use File::Path qw(make_path);
 use List::Util qw(first max maxstr min minstr reduce shuffle sum);
 use Cwd;
 use Benchmark;
+use FindBin;
+use YAML::XS 'LoadFile';
+use feature 'say';
+
+my $relpath = $FindBin::Bin;
+my $configpath = dirname($relpath);
+
+my $config = LoadFile("$configpath/_config.yaml");
+
+print "Script will run with the following parameters:\n";
+for (sort keys %{$config}) {
+    say "$_: $config->{$_}";
+}
+
+my $adj = $config->{adj};
+my $mac = $config->{mac};
+my $binw = $config->{binw};
+my $data = $config->{data};
+my $bin_scheme = $config->{bin_scheme};
+my $parentdir = $config->{parentdir};
+my $count_motifs = $config->{count_motifs};
+my $expand_summ = $config->{expand_summ};
+my $inputdir = $config->{inputdir};
 
 ################################################################################
 # Singleton Analysis Pipeline
@@ -19,11 +42,11 @@ my $man=0;
 
 ### Mandatory inputs
 # Default vcf to load
-my $invcf = "/net/bipolar/jedidiah/testpipe/vcfs/merged.ma.vcf.gz"; # singletons, including multiallelic sites
+my $invcf = "$inputdir/vcfs/merged.ma.vcf.gz"; # singletons, including multiallelic sites
 # my $invcf = "/net/bipolar/jedidiah/testpipe/vcfs/merged.new.vcf.gz"; # common variants
 
 # Default summary directory
-my $outdir="/net/bipolar/jedidiah/testpipe/summaries/singletons_full";
+my $outdir="$inputdir/summaries/${mac}_full";
 
 ### Optional inputs
 # If --common option specified, outputs summary for common variants (MAC>10)
@@ -33,7 +56,7 @@ my $common;
 my $makecopy;
 
 # Specify project folder for VCFs
-my $vcfdir="/net/bipolar/jedidiah/testpipe/vcfs";
+my $vcfdir="$inputdir/vcfs";
 
 GetOptions ('invcf=s'=> \$invcf,
 'outdir=s'=> \$outdir,

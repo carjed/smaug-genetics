@@ -14,8 +14,23 @@ use File::Basename;
 use File::Path qw(make_path);
 use List::Util qw(first max maxstr min minstr reduce shuffle sum);
 use Math::Round;
+use FindBin;
+use YAML::XS 'LoadFile';
+use feature 'say';
 
-my $parentdir="/net/bipolar/jedidiah/mutation";
+my $relpath = $FindBin::Bin;
+my $configpath = dirname(dirname($relpath));
+
+my $config = LoadFile("$configpath/_config.yaml");
+
+my $adj = $config->{adj};
+my $mac = $config->{mac};
+my $binw = $config->{binw};
+my $data = $config->{data};
+my $bin_scheme = $config->{bin_scheme};
+my $parentdir = $config->{parentdir};
+my $count_motifs = $config->{count_motifs};
+my $expand_summ = $config->{expand_summ};
 
 my $chr;
 my $cat='';

@@ -18,22 +18,33 @@ use List::MoreUtils 'pairwise';
 use Cwd;
 use Benchmark;
 use Tie::File;
+use FindBin;
+use YAML::XS 'LoadFile';
+use feature 'say';
 
-# Set options and inputs
-my $wdir=getcwd;
-my $parentdir="/net/bipolar/jedidiah/mutation";
+my $relpath = $FindBin::Bin;
+my $configpath = dirname(dirname($relpath));
+
+my $config = LoadFile("$configpath/_config.yaml");
+
+my $adj = $config->{adj};
+my $mac = $config->{mac};
+my $binw = $config->{binw};
+my $data = $config->{data};
+my $bin_scheme = $config->{bin_scheme};
+my $parentdir = $config->{parentdir};
+my $count_motifs = $config->{count_motifs};
+my $expand_summ = $config->{expand_summ};
 
 my $baseopt;
 my $chr;
 my $categ;
 my $bw = 100;
-my $adj=1;
 
 GetOptions ('b=s'=> \$baseopt,
 'chr=s'=> \$chr,
 'categ=s' => \$categ,
-'bw=i' => \$bw,
-'adj=i' => \$adj) or pod2usage(1);
+'bw=i' => \$bw) or pod2usage(1);
 
 my $f_covs = "$parentdir/output/logmod_data/${bw}kb_mut_cov2.txt";
 

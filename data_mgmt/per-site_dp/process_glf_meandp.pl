@@ -17,6 +17,23 @@ use Math::Round;
 use Cwd;
 use Benchmark;
 use Tie::File;
+use FindBin;
+use YAML::XS 'LoadFile';
+use feature 'say';
+
+my $relpath = $FindBin::Bin;
+my $configpath = dirname(dirname($relpath));
+
+my $config = LoadFile("$configpath/_config.yaml");
+
+my $adj = $config->{adj};
+my $mac = $config->{mac};
+my $binw = $config->{binw};
+my $data = $config->{data};
+my $bin_scheme = $config->{bin_scheme};
+my $parentdir = $config->{parentdir};
+my $count_motifs = $config->{count_motifs};
+my $expand_summ = $config->{expand_summ};
 
 my $chr;
 my $ind;
@@ -32,10 +49,6 @@ man => \$man) or pod2usage(1);
 pod2usage(0) if $help;
 pod2usage(-verbose => 2) if $man;
 # my $chr=1;
-
-my $wdir=getcwd;
-my $parentdir="/net/bipolar/jedidiah/mutation";
-# my $glfdir="$parentdir/output/glf_depth/chr$chr/";
 
 my $f_dirlist = "$parentdir/output/glf_depth/chr${chr}_glf_dirlist.txt";
 open my $dirlist, '<', $f_dirlist or die "can't open $f_dirlist: $!";

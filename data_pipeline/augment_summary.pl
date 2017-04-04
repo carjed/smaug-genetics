@@ -1,14 +1,9 @@
 #!/usr/local/bin/perl
 
 ##############################################################################
-# SMAUG: Singleton Mutation Analysis Utility with Graphics
-##############################################################################
-# SMAUG uses extremely rare variants to visualize changes in mutation rates
-# across the genome. The ref5.pl script takes bcftools summary files and
-#
-# Jedidiah Carlson
-# Department of Bioinformatics
-# The University of Michigan
+# This script annotates tab-delimited vcf summary files with sequence motif
+# and mutation category information, and counts the number of mutable motifs
+# in the reference genome
 ##############################################################################
 
 ##############################################################################
@@ -47,54 +42,11 @@ my $parentdir = $config->{parentdir};
 my $count_motifs = $config->{count_motifs};
 my $expand_summ = $config->{expand_summ};
 
-# my $parentdir="/net/bipolar/jedidiah/mutation";
-
 my $chr=$ARGV[0];
-# my $help=0;
-# my $man=0;
-# my $chr;
-# my $mac;
-# my $binwidth=100000;
-# my $adj=0;
-# my $data="full";
-# # my $mask_flag='';
-# my $count_motifs='';
-# my $bin_scheme="chr";
-# my $expand_summ='';
-#
-# GetOptions ('chr=i'=> \$chr,
-# 'mac=i'=> \$mac,
-# 'b=i' => \$binwidth,
-# 'adj=i' => \$adj,
-# 'data=s' => \$data,
-# # 'mf' => \$mask_flag,
-# 'motifs' => \$count_motifs,
-# 'binscheme=s' => \$bin_scheme,
-# 'summ' => \$expand_summ,
-# 'help|?'=> \$help,
-# man => \$man) or pod2usage(1);
-#
-# pod2usage(0) if $help;
-# pod2usage(-verbose => 2) if $man;
-#
-# if (!$chr | !$mac) {
-# 	pod2usage("$0: Missing mandatory argument.");
-# }
 
 ##############################################################################
 #Process inputs
 ##############################################################################
-my $macl;
-if ($mac==1) {
-	$macl = "singletons";
-}
-if ($mac==2) {
-	$macl = "doubletons";
-}
-if ($mac==11){
-	$macl="common";
-}
-
 my $subseq=2;
 if ($adj!=0) {
 	$subseq = $adj*2+1;
@@ -116,7 +68,7 @@ if ($chr<22) {
 # download hg37 from nih.gov if missing
 ##############################################################################
 my $in_path = "/net/bipolar/jedidiah/testpipe/summaries";
-my $out_path = "$parentdir/output/${subseq}bp_${bw}k_${macl}_${data}";
+my $out_path = "$parentdir/output/${subseq}bp_${bw}k_${mac}_${data}";
 make_path("$out_path");
 
 my $seq=&getRef();
@@ -146,9 +98,8 @@ if($count_motifs eq "TRUE"){
 	}
 
 	open(BIN, '>', $bin_out) or die "can't write to $bin_out: $!\n";
-	# &countMotifs($bin_scheme);
+
 	&countMotifs($bin_scheme);
-	# &binCounts();
 
 	my $end_time=new Benchmark;
 	my $difference = timediff($end_time, $start_time);
@@ -164,15 +115,15 @@ if($expand_summ eq "TRUE"){
 	print "Expanding summary file...\n";
 	my $start_time=new Benchmark;
 
-	my $f_summ = "$in_path/${macl}_full/chr$chr.summary";
+	my $f_summ = "$in_path/${mac}_full/chr$chr.summary";
 	open my $summ, '<', $f_summ or die "can't open $f_summ: $!";
 
 	my $outfile = "$out_path/chr$chr.expanded.summary";
 	open(OUT, '>', $outfile) or die "can't write to $outfile: $!\n";
 
-	if ($mac==1) {
+	if ($mac eq "singletons") {
 		print OUT "CHR\tPOS\tREF\tALT\tDP\tAN\tSEQ\tALTSEQ\tSequence\tCategory\tCategory2\n";
-	} elsif ($mac==2) {
+	} elsif ($mac eq "doubletons") {
 		print OUT "CHR\tPOS\tREF\tALT\tANNO\t";
 	}
 
@@ -375,21 +326,6 @@ sub countMotifs{
 }
 
 ##############################################################################
-# Subroutine counts occurrence of motifs per cytoband
-##############################################################################
-# sub countMotifsBand{
-# 	my $bin_flag = shift;
-# 	my $length=length($seq);
-# 	my $numbins=ceil($length/$binwidth);
-# 	my $bin;
-#
-#
-# 	}
-#
-# 	print "Done\n";
-# }
-
-##############################################################################
 # Read motif counts from hash table, sum counts symmetric motifs and write out
 ##############################################################################
 sub writeCounts{
@@ -420,62 +356,3 @@ sub writeCounts{
 		# }
 	}
 }
-
-# __END__
-# =head1 NAME
-#
-# ref5.pl - SMAUG: Singleton Mutation Analysis Utility with Graphics
-#
-# =head1 SYNOPSIS
-#
-#         ref5.pl [OPTIONS]
-#         Options:
-# 		--help			program documentation
-# 		--chr			chromosome
-# 		--mac			minor allele count
-# 		--b			binwidth
-# 		--adj			number of adjacent nucleotides
-# 		--data			data subset to use
-#
-# =head1 OPTIONS
-#
-# =over 8
-#
-# =item B<--help>
-#
-# Display this documentation
-#
-# =item B<--chr>
-#
-# MANDATORY: specify chromosome for analysis
-#
-# =item B<--mac>
-#
-# MANDATORY: specify minor allele count of sites in existing summary file
-#
-# =item B<--b>
-#
-# specify bin width for histograms (default is 100,000)
-#
-# =item B<--adj>
-#
-# specify number of adjacent nucleotides in either direction from the variant to include in analysis
-# default includes only the adjacent 3' nucleotide for CpG distinction
-#
-# =item B<--data>
-#
-# specify whether to use summaries from all singletons (full) or those that pass the strict filters (strict)
-#
-# =back
-#
-# =head1 DESCRIPTION
-#
-# B<ref5.pl> annotates summary files and counts motifs in genome over fixed-width windows
-#
-# =head1 AUTHOR
-#
-# =over
-#
-# Jedidiah Carlson E<10> Department of Bioinformatics E<10> University of Michigan
-#
-# =cut

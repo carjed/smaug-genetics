@@ -1,14 +1,20 @@
 ##############################################################################
 # Pipeline configuration
 ##############################################################################
+# inputdir defines the directory containing the raw VCF files and .summary files
+inputdir: "/net/bipolar/jedidiah/testpipe"
+
+# parentdir defines the parent directory containing this repository,
+# output directories, reference data, etc.
 parentdir: "/net/bipolar/jedidiah/mutation"
 
-# mac defines the minor allele count of variants to examine
+# mac defines the minor allele count of variants to examine, provided the
+# appropriately named directory exists containing the summarized VCF tables
 # can set to either:
-# 1 (singletons)
-# 2 (doubletons) [DEPRECATED]
-# 11 (all variants with MAC>10) [DEPRECATED]
-mac: 1
+# singletons
+# doubletons [DEPRECATED]
+# common (all variants with MAC>10) [DEPRECATED]
+mac: "singletons"
 
 # adj defines number of bases upstream/downstream per motif
 adj: 4

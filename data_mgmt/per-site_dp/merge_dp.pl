@@ -14,17 +14,24 @@ use File::Path qw(make_path);
 use List::Util qw(first max maxstr min minstr reduce shuffle sum);
 use Math::Round;
 use Cwd;
+use FindBin;
+use YAML::XS 'LoadFile';
+use feature 'say';
 
-# my $chr=21;
-# my $help=0;
-# my $man=0;
-#
-# # Set options and inputs
-# GetOptions ('chr=i'=> \$chr,
-# 'help|?'=> \$help,
-# man => \$man) or pod2usage(1);
+my $relpath = $FindBin::Bin;
+my $configpath = dirname(dirname($relpath));
 
-my $parentdir="/net/bipolar/jedidiah/mutation";
+my $config = LoadFile("$configpath/_config.yaml");
+
+my $adj = $config->{adj};
+my $mac = $config->{mac};
+my $binw = $config->{binw};
+my $data = $config->{data};
+my $bin_scheme = $config->{bin_scheme};
+my $parentdir = $config->{parentdir};
+my $count_motifs = $config->{count_motifs};
+my $expand_summ = $config->{expand_summ};
+
 my $dpdir="$parentdir/output/glf_depth/meandp";
 # my @chrs=(1..3, 5..17, 19, 20);
 my @chrs=(18);

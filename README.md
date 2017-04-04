@@ -70,7 +70,7 @@ This pipeline can be applied to estimate mutational spectra from any human genom
 
 1. Enter your project directory (`/path/to/project/`) and clone this repository (`git clone https://github.com/carjed/smaug-genetics.git`).
 
-1. Edit the `/path/to/project/smaug-genetics/options.yml` file to specify the absolute paths to the input directory, project folder, and other parameters (**this configuration file is not yet implemented**).
+1. Edit the `/path/to/project/smaug-genetics/options.yaml` file to specify the absolute paths to the input directory, project folder, and other parameters.
 
 1. Download the necessary reference data:
   `bash download_ref_data.sh`

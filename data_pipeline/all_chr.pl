@@ -8,7 +8,7 @@
 ##############################################################################
 
 for my $i (1 .. 22) {
-	my $cmd = "perl augment_summary.pl --chr $i --mac 1 --adj 3 --b 1000000 --data mask --motifs --summ &";
+	my $cmd = "perl augment_summary.pl --chr $i &";
 	# my $cmd = "perl augment_summary.pl --chr $i --mac 1 --adj 1 --b 1000000 --data full --motifs --binscheme band &";
 	&forkExecWait($cmd);
 }

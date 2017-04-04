@@ -14,6 +14,23 @@ use File::Path qw(make_path);
 use List::Util qw(first max maxstr min minstr reduce shuffle sum);
 use Math::Round;
 use Cwd;
+use FindBin;
+use YAML::XS 'LoadFile';
+use feature 'say';
+
+my $relpath = $FindBin::Bin;
+my $configpath = dirname(dirname($relpath));
+
+my $config = LoadFile("$configpath/_config.yaml");
+
+my $adj = $config->{adj};
+my $mac = $config->{mac};
+my $binw = $config->{binw};
+my $data = $config->{data};
+my $bin_scheme = $config->{bin_scheme};
+my $parentdir = $config->{parentdir};
+my $count_motifs = $config->{count_motifs};
+my $expand_summ = $config->{expand_summ};
 
 # Specify parameters
 my $chr;
@@ -32,8 +49,8 @@ pod2usage(-verbose => 2) if $man;
 my $subset=0;
 my $numind=3765;
 my $chunksize=40; # No. of records to process in each worker job
-my $parentdir="/net/bipolar/jedidiah/mutation";
-  make_path("$parentdir/output/glf_depth/chr$chr");
+
+make_path("$parentdir/output/glf_depth/chr$chr");
 my $allfiles="$parentdir/output/glf_depth/glf_filelist.txt";
 my $chrfiles="$parentdir/output/glf_depth/chr${chr}_glf_filelist.txt";
 

@@ -100,6 +100,10 @@ suppressMessages(require(bedr, lib.loc=libpath, quietly=T))
 # require(bedr)
 # suppressMessages(usePackage(ggbio))
 
+# Install ggrepel from github for advanced options
+# install_github('slowkow/ggrepel')
+# require(ggrepel)
+
 ##############################################################################
 # Setup: define color palettes
 ##############################################################################

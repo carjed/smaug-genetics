@@ -24,7 +24,7 @@ use YAML::XS 'LoadFile';
 use feature 'say';
 
 my $relpath = $FindBin::Bin;
-my $configpath = dirname($relpath);
+my $configpath = dirname(dirname($relpath));
 
 my $config = LoadFile("$configpath/_config.yaml");
 

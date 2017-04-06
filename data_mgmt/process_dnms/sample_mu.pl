@@ -2,12 +2,7 @@
 
 ##############################################################################
 # Step 0:
-# Merges per-category predicted rates into single chromosome file, sorted by
-# position
-##############################################################################
-
-##############################################################################
-#Initialize inputs, options, and defaults and define errors
+# Sample sites for non-mutated background
 ##############################################################################
 use strict;
 use warnings;
@@ -45,6 +40,20 @@ foreach my $categ (@categs) {
   print "Subsetting $categ sites...\n";
   my $samplecmd = "awk -v categ=\"$categ\" 'BEGIN {srand()} !/^\$/ { if (rand() <= .005) print \$0\"\\t\"0\"\\t\"categ}' $parentdir/output/predicted/chr*.${categ}.txt > $parentdir/output/predicted/${categ}.sub_new.txt";
   &forkExecWait($samplecmd);
+
+  # Testing: get de novo data in same script
+  # for ($i in 1:22){
+  #
+  #   # remove per-category DNM data if it already exists
+  #   my $cleanupcmd = "rm -f $parentdir/reference_data/DNMs/GoNL_${categ}.anno.txt";
+  #   &forkExecWait($cleanupcmd);
+  #
+  #
+  #
+  #   my $dnmannocmd = "grep -Fwf  <(grep \"\\s$i\\s\" $parentdir/reference_data/DNMs/GoNL_${categ}.txt | cut -f 3)  $parentdir/output/predicted/chr$i.${categ}.txt | awk -v categ=\"$categ\" '{print \$0\"\\t\"1\"\\t\"categ}' >> $parentdir/reference_data/DNMs/GoNL_${categ}.anno.txt";
+  #   &forkExecWait($dnmannocmd);
+  # }
+
 }
 
 print "Combining and sorting data...\n";

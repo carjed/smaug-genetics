@@ -1,9 +1,16 @@
+#!/usr/bin/Rscript
+
 ##############################################################################
 # Standalone script for
 ##############################################################################
 # Change to 1 if running as standalone process during
 # generation of validation data
-write <- 0
+write <- FALSE
+
+args <- commandArgs(TRUE)
+write <- as.double(args[1])
+
+cat(write, "\n")
 
 require(dplyr)
 

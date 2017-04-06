@@ -1,13 +1,16 @@
 # Read table of coefficients output from logit models
-coefs <- read.table(paste0(parentdir, "/output/logmod_data/coefs/coefs_full.txt"), header=F, stringsAsFactors=F)
+coefs <- read.table(paste0(parentdir, "/output/logmod_data/coefs/coefs_full.txt"),
+  header=F, stringsAsFactors=F)
 names(coefs) <- c("Cov", "Est", "SE", "Z", "pval", "Sequence", "Category")
-coefs$Category <- ifelse(substr(coefs$Sequence, 4, 5)=="CG", paste0("cpg_", coefs$Category), coefs$Category)
+coefs$Category <- ifelse(substr(coefs$Sequence, 4, 5)=="CG",
+  paste0("cpg_", coefs$Category), coefs$Category)
 
 coefsout <- coefs %>%
   mutate(Category = plyr::mapvalues(Category, orderedcats1, orderedcats2))
 coefsout$Category <- factor(coefsout$Category, levels=orderedcats2)
 
-write.table(coefsout, paste0(parentdir, "/output/logmod_data/coefs/supplementary_table_7.txt"),
+write.table(coefsout, paste0(parentdir,
+  "/output/logmod_data/coefs/supplementary_table_7.txt"),
   quote=F, col.names=T, row.names=F, sep="\t")
 # coefs$Cov <- factor(plotcts$Cov, levels=orderedcovs)
 
@@ -47,7 +50,8 @@ plotcts <- plotdat %>%
   group_by(Cov, Category, dir) %>%
   summarise(n=n()) %>%
   mutate(Estmax=ifelse(dir=="Up", 3, 0.5)) %>%
-  mutate(Estmax=ifelse(Cov=="CpGI", ifelse(dir=="Up", 10, 0.125), Estmax), label=n) %>%
+  mutate(Estmax=ifelse(Cov=="CpGI", ifelse(dir=="Up", 10, 0.125), Estmax),
+    label=n) %>%
   filter(n>4)
 plotcts$Category <- factor(plotcts$Category, levels=orderedcats2)
 plotcts$Cov <- factor(plotcts$Cov, levels=orderedcovs)
@@ -59,7 +63,8 @@ plotdat %>%
   ggplot(aes(x=Category, y=exp(Est), alpha=factor(dir), fill=Category))+
     geom_hline(yintercept=1, linetype="dashed")+
     geom_text(data=plotcts[plotcts$Cov!="CpGI",],
-      aes(x=Category, y=Estmax, label=label, colour=Category), vjust=1, size=4, angle=90)+
+      aes(x=Category, y=Estmax, label=label, colour=Category),
+      vjust=1, size=4, angle=90)+
     geom_violin(position="identity", scale="area")+
     scale_fill_manual(values=cols, drop=FALSE)+
     scale_colour_manual(values=cols, drop=FALSE)+
@@ -92,12 +97,14 @@ plotdat %>%
   ggplot(aes(x=Category, y=exp(Est), alpha=factor(dir), fill=Category))+
     geom_hline(yintercept=1, linetype="dashed")+
     geom_text(data=plotcts[plotcts$Cov=="CpGI",],
-      aes(x=Category, y=Estmax, label=label, colour=Category), vjust=1, angle=90, size=4)+
+      aes(x=Category, y=Estmax, label=label, colour=Category),
+      vjust=1, angle=90, size=4)+
     geom_violin(position="identity", scale="area")+
     scale_fill_manual(values=cols, drop=FALSE)+
     scale_colour_manual(values=cols, drop=FALSE)+
     scale_x_discrete(drop=FALSE)+
-    scale_y_log10(breaks=c(.125, .25, 0.5, 1, 2, 4, 8), labels=c(.125, .25, 0.5, 1, 2, 4, 8))+
+    scale_y_log10(breaks=c(.125, .25, 0.5, 1, 2, 4, 8),
+      labels=c(.125, .25, 0.5, 1, 2, 4, 8))+
     # scale_y_log10(breaks=c(0.5, 1, 2))+
     scale_alpha_discrete(range = c(0.95, 0.96), guide=F)+
     facet_wrap(~Cov, ncol=4, drop=F)+
@@ -192,7 +199,8 @@ runTest <- function(cov, dir){
       covbed <- paste0(covbase, ".bed")
       dnmstmp$inside <- binaryCol(dnmstmp, covbed)
     } else {
-      covbase <- paste0(parentdir, "/reference_data/histone_marks/broad/sort.E062-", cov)
+      covbase <- paste0(parentdir,
+        "/reference_data/histone_marks/broad/sort.E062-", cov)
       covbed <- paste0(covbase, ".bed")
       dnmstmp$inside <- binaryCol(dnmstmp, covbed)
     }
@@ -200,12 +208,25 @@ runTest <- function(cov, dir){
     obs <- sum(dnmstmp$inside)
 
     seqs <- unlist(c(covdir$Sequence, lapply(covdir$Sequence, revcomp)))
-    write.table(seqs, paste0(parentdir, "/seqs.txt"), col.names=F, row.names=F, quote=F, sep="\t")
+    write.table(seqs, paste0(parentdir, "/seqs.txt"),
+      col.names=F, row.names=F, quote=F, sep="\t")
 
-    grepcmd <- paste0("grep -o -Ff ", parentdir, "/seqs.txt ", covbase, ".fa | sort | uniq -c > ", parentdir, "/testcounts.txt")
+    # Create fasta file from feature .bed file
+    if(!file.exists(paste0(covbase, ".fa"))){
+      getfastacmd <- paste0("bedtools getfasta -fi ",
+        parentdir, "/reference_data/human_g1k_v37.fasta -bed <(sed 's/chr//g' ",
+        covbed, " | sed /^X/d | sed /^Y/d) -fo ", covbase, ".fa")
+      system(getfastacmd)
+    }
+
+    # Search feature fasta for motifs in list
+    grepcmd <- paste0("grep -o -Ff ",
+      parentdir, "/seqs.txt ", covbase, ".fa | sort | uniq -c > ",
+      parentdir, "/testcounts.txt")
     system(grepcmd)
 
-    motifcts <- read.table(paste0(parentdir, "/testcounts.txt"), header=F, stringsAsFactors=F)
+    motifcts <- read.table(paste0(parentdir, "/testcounts.txt"),
+      header=F, stringsAsFactors=F)
 
     names(motifcts) <- c("Count", "SEQ")
     motifcts$REVSEQ <- unlist(lapply(motifcts$SEQ, revcomp))

@@ -8,7 +8,7 @@
 write <- FALSE
 
 args <- commandArgs(TRUE)
-write <- as.double(args[1])
+write <- as.logical(args[1])
 
 cat(write, "\n")
 

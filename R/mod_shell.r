@@ -3,20 +3,6 @@
 ##############################################################################
 # Script for running genome-wide models
 # Built under R version 3.3.2
-#
-# Usage:
-# ./mod_shell.r --summfile="/path/to/summaryfile"
-#				--binfile="/path/to/binfile"
-#				--binw=binwidth (integer)
-# 				--adj=number of bases in either direction to look
-# 				--run_agg=TRUE: aggregate data
-# 				--pcs=FALSE: use principal components for modeling
-# 				--negbin_model==TRUE: run negbin regression
-# 				--log_model=FALSE: run logit regression
-# 				--run_predict=FALSE: get predicted values
-# 				--categ="NN_NN" category to use for logit model
-##############################################################################
-
 ##############################################################################
 # Setup: load function helper scripts and packages
 # The usePackage function loads packages if they already exist,
@@ -24,7 +10,6 @@
 ##############################################################################
 cat("Loading functions and packages...\n")
 source("./R/get_functions.r")
-source("./R/validation_functions.r")
 
 packages <- c("ggplot2", "dplyr", "tidyr", "broom", "RColorBrewer", "MASS",
 "speedglm", "boot", "devtools", "psych", "lmtest", "fmsb", "stringr", "hexbin",
@@ -44,55 +29,8 @@ suppressMessages(require(bedr, lib.loc=libpath, quietly=T))
 # install_github('slowkow/ggrepel')
 # require(ggrepel)
 
-##############################################################################
-# Setup: define color palettes
-##############################################################################
-cbbPalette <- c("#000000", "#E69F00", "#56B4E9", "#009E73", "#F0E442",
-  "#0072B2", "#D55E00", "#e7baea")
-
-iwhPalette <- c("#cd5431", "#a14ad9", "#67b03f", "#604dad", "#c79931",
-  "#cc4498", "#4d9f83", "#b54f50", "#5d8cb6", "#7f7d48", "#a67abe", "#965571")
-myPaletteCat <- colorRampPalette(brewer.pal(12, "Paired"))
-myPaletteCatN <- colorRampPalette(rev(brewer.pal(8, "Dark2")), space="Lab")
-myPalette <- colorRampPalette(rev(brewer.pal(11, "Spectral")), space="Lab")
-myPaletteB <- colorRampPalette(rev(brewer.pal(9, "Blues")), space="Lab")
-myPaletteR <- colorRampPalette(rev(brewer.pal(9, "Reds")), space="Lab")
-myPaletteG <- colorRampPalette(rev(brewer.pal(9, "Greens")), space="Lab")
-myPaletteO <- colorRampPalette(rev(brewer.pal(11, "RdBu")), space="Lab")
-myPaletteBrBG <- colorRampPalette(rev(brewer.pal(11, "BrBG")), space="Lab")
-
-rb <- c(myPaletteB(6)[1:3],myPaletteR(6)[1:3])
-g <- myPaletteG(6)[1:3]
-rbg<-c(myPaletteB(6)[1:3],myPaletteR(6)[1:3], myPaletteG(6)[1:3])
-
-orderedcats <- c("AT_CG", "AT_GC", "AT_TA",
-  "GC_AT", "GC_CG", "GC_TA",
-  "cpg_GC_AT", "cpg_GC_CG", "cpg_GC_TA")
-#Define colors if using this ordering
-# cols <- myPaletteCat(12)[c(8,10,12,2,4,6,1,3,5)]
-
-# reordered to group ts and tv
-orderedcats1 <- c("AT_GC", "GC_AT", "cpg_GC_AT",
-  "AT_CG", "GC_CG", "cpg_GC_CG",
-  "AT_TA", "GC_TA", "cpg_GC_TA")
-orderedcats2 <- c("A>G", "C>T", "CpG>TpG",
-  "A>C", "C>G", "CpG>GpG",
-  "A>T", "C>A", "CpG>ApG")
-cols <- myPaletteCat(12)[
-  c(10,2,1,
-    8,4,3,
-    12,6,5)] #<- colors if using this ordering
-
-orderedcats1 <- c("AT_GC", "AT_CG", "AT_TA",
-  "GC_AT", "GC_TA", "GC_CG",
-  "cpg_GC_AT", "cpg_GC_TA", "cpg_GC_CG")
-orderedcats2 <- c("A>G", "A>C", "A>T",
-  "C>T (non-CpG)", "C>A (non-CpG)", "C>G (non-CpG)",
-  "CpG>TpG", "CpG>ApG", "CpG>GpG")
-cols <- myPaletteCat(12)[
-  c(10,8,12,
-    2,4,6,
-    1,3,5)] #<- colors if using this ordering
+# Load predefined color palettes, once RColorBrewer package is loaded
+source("./R/palettes.r")
 
 ##############################################################################
 # Setup: get arguments from _config.yaml file
@@ -101,35 +39,6 @@ cat("Script will run with the following parameters:\n")
 
 args <- yaml.load_file("./_config.yaml")
 argParse(args)
-
-# # Get args from command line; defaults defined below
-# args <- getArgs(
-# 	defaults=list(adj=4,
-# 		binw=1000000,
-# 		data="full",
-# 		bin_scheme="all",
-# 		common=FALSE,
-# 		log_model=FALSE,
-# 		negbin_model=FALSE))
-#
-# # Parse args--modified from:
-# # http://www.r-bloggers.com/extract-objects-from-a-list/
-# cat("Script will run with the following parameters:\n")
-# for(i in 1:length(args)){
-# 	##first extract the object value
-# 	tempobj=unlist(args[i])
-# 	varname=names(args[i])
-#
-# 	# optional: print args
-# 	cat(varname, ":", tempobj, "\n")
-#
-# 	##now create a new variable with the original name of the list item
-# 	eval(parse(text=paste(names(args)[i],"= tempobj")))
-# }
-#
-# # Need to manually coerce binwidth and adj args to numeric
-# binw <- as.numeric(binw)
-# adj <- as.numeric(adj)
 
 # Define additional variables for cleaner strings, etc.
 bink <- binw/1000
@@ -143,52 +52,18 @@ binfile <- paste0(datadir, "/full_motif_counts_", bin_scheme, ".txt")
 
 ##############################################################################
 # Read and preprocess data
+# returns list of 4 elements:
+# - full_data$sites (summarized info for each singleton)
+# - full_data$bins (raw bin file)
+# - full_data$mct (motif counts genome-wide)
+# -full_data$aggseq (initial relative mutation rates per K-mer subtype)
 ##############################################################################
-ptm <- proc.time()
 
-if(!file.exists(summfile)){
-	cat("Merged summary file does not exist---Merging now...\n")
-	combine_sites <- paste0(
-		"awk 'FNR==1 && NR!=1{while(/^CHR/) getline; } 1 {print} ' ",
-		datadir, "/chr*.expanded.summary > ", summfile)
-	system(combine_sites)
-}
-
-if(!file.exists(binfile)){
-	cat("Merged bin file does not exist---Merging now...\n")
-	combine_motifs <- paste0(
-		"awk 'FNR==1 && NR!=1{while(/^CHR/) getline; } 1 {print} ' ",
-		datadir, "/chr*.motif_counts_", bin_scheme, ".txt > ", binfile)
-	system(combine_motifs)
-}
-
-# Read in per-site summary data
-cat("Reading summary file:", summfile, "...\n")
-sites <- read.table(summfile, header=T, stringsAsFactors=F)
-sites$BIN <- ceiling(sites$POS/binw)
-
-# Read in motif counts per chromosome
-cat("Reading bin file:", binfile, "...\n")
-bins <- read.table(binfile, header=T, stringsAsFactors=F, check.names=F)
-
-# summarize motif counts genome-wide
-mct <- bins %>%
-	# dplyr::select(CHR, BIN, Sequence=MOTIF, nMotifs=COUNT) %>%
-	dplyr::select(CHR, Sequence=MOTIF, nMotifs=COUNT) %>%
-	group_by(Sequence) %>%
-	summarise(nMotifs=sum(nMotifs))
+full_data <- getData(datadir, bin_scheme)
 
 ##############################################################################
 # Get relative mutation rates per subtype; plot as heatmap
 ##############################################################################
-cat("Generating motif relative rates...\n")
-aggseq <- sites %>%
-	group_by(Sequence, Category2, BIN) %>%
-	summarise(n=n()) %>%
-	summarise(nERVs=sum(n))
-aggseq <- merge(aggseq, mct, by="Sequence")
-aggseq$rel_prop <- aggseq$nERVs/aggseq$nMotifs
-
 # Summarise aggseq rates for shorter motifs
 cbp <- adj+1
 
@@ -204,7 +79,7 @@ for(j in 1:5){
 	# proper counting of mutable sites
 	nbptmp <- i*2+1
 
-	gpdat <- aggseq %>%
+	gpdat <- full_data$aggseq %>%
 		mutate(Type=gsub("cpg_", "", Category2),
 			SEQA=substr(Sequence, cbp-i, cbp+i),
 			SEQB=substr(Sequence, cbp*3-i, cbp*3+i),
@@ -265,11 +140,12 @@ for(j in 1:5){
 			categ <- orderedcats[k]
 			p1 <- rrheat2(plotdat[plotdat$Category==categ,], f, levs_a, "v5", nbptmp)
 			p1a <- p1+theme(legend.position="none")
-			 png(paste0(parentdir, "/images/", categ, "_", nbptmp, "bp_heatmap.png"),
-				height=5, width=5, units="in", res=300)
-			 pushViewport(viewport(width=unit(5, "in"), height=unit(5, "in")))
-			 grid.draw(ggplotGrob(p1a))
-			 dev.off()
+
+			png(paste0(parentdir, "/images/", categ, "_", nbptmp, "bp_heatmap.png"),
+			height=5, width=5, units="in", res=300)
+			pushViewport(viewport(width=unit(5, "in"), height=unit(5, "in")))
+			grid.draw(ggplotGrob(p1a))
+			dev.off()
 		}
 
 		# trim whitespace on panels with imagemagick mogrify
@@ -292,6 +168,7 @@ for(j in 1:5){
 			summarise(nERVs=sum(nERVs), nMotifs=sum(nMotifs)) %>%
 			mutate(ERV_rel_rate=nERVs/nMotifs)
 	}
+
 	ratelist[[j]] <- gpdat
 
 	# Test for heterogeneity among subtypes sharing same (K-2)-mer parent
@@ -404,11 +281,12 @@ if(common){
 	for(j in 1:6){
 		categ<-orderedcats[j]
 		p1a<-rrheat3(r5m[r5m$Type==categ,])
-		 png(paste0(parentdir, "/images/rare_common_diff2", categ, "_panel.png"),
-		 	height=5, width=5, units="in", res=300)
-		 pushViewport(viewport(width=unit(5, "in"), height=unit(5, "in")))
-		 grid.draw(ggplotGrob(p1a))
-		 dev.off()
+
+		png(paste0(parentdir, "/images/rare_common_diff2", categ, "_panel.png"),
+			height=5, width=5, units="in", res=300)
+		pushViewport(viewport(width=unit(5, "in"), height=unit(5, "in")))
+		grid.draw(ggplotGrob(p1a))
+		dev.off()
 	}
 
 	# trim whitespace on panels with imagemagick mogrify

@@ -1,12 +1,4 @@
 ##############################################################################
-# Function checks if elements in a exist in b
-# Output is binary vector of length same as b
-##############################################################################
-toBin <- function(a,b){
-	as.numeric(is.element(b,a))
-}
-
-##############################################################################
 # Function for plotting ROC curves
 ##############################################################################
 plotROC <- function(data, outfile){

@@ -12,7 +12,7 @@
 categ <- "AT_CG"
 
 cat("Extracting", categ, "sites...\n")
-summfile1 <- sites %>%
+summfile1 <- full_data$sites %>%
 	filter(Category==categ) %>%
 	dplyr::select("CHR", "BIN", "POS", "SEQUENCE") %>%
 	mutate(mut=1, BIN=ceiling(POS/100000))

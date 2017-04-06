@@ -1,3 +1,6 @@
+##############################################################################
+# Standalone script for
+##############################################################################
 # Change to 1 if running as standalone process during
 # generation of validation data
 write <- 0

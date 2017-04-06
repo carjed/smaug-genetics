@@ -1,4 +1,68 @@
 ##############################################################################
+# Function gets basic summary data from input directory
+##############################################################################
+getData <- function(datadir, bin_scheme){
+
+  summfile <- paste0(datadir, "/full.summary")
+  binfile <- paste0(datadir, "/full_motif_counts_", bin_scheme, ".txt")
+
+  if(!file.exists(summfile)){
+  	cat("Merged summary file does not exist---Merging now...\n")
+  	combine_sites <- paste0(
+  		"awk 'FNR==1 && NR!=1{while(/^CHR/) getline; } 1 {print} ' ",
+  		datadir, "/chr*.expanded.summary > ", summfile)
+  	system(combine_sites)
+  }
+
+  if(!file.exists(binfile)){
+  	cat("Merged bin file does not exist---Merging now...\n")
+  	combine_motifs <- paste0(
+  		"awk 'FNR==1 && NR!=1{while(/^CHR/) getline; } 1 {print} ' ",
+  		# datadir, "/chr*.motif_counts_", bin_scheme, ".txt > ", binfile)
+      datadir, "/chr*.motif_counts.txt > ", binfile)
+  	system(combine_motifs)
+  }
+
+  # Read in per-site summary data
+  cat("Reading summary file:", summfile, "...\n")
+  sites <- read.table(summfile, header=T, stringsAsFactors=F)
+  sites$BIN <- ceiling(sites$POS/binw)
+
+  # Read in motif counts per chromosome
+  cat("Reading bin file:", binfile, "...\n")
+  bins <- read.table(binfile, header=T, stringsAsFactors=F, check.names=F)
+
+  # summarize motif counts genome-wide
+  mct <- bins %>%
+  	# dplyr::select(CHR, BIN, Sequence=MOTIF, nMotifs=COUNT) %>%
+  	dplyr::select(CHR, Sequence=MOTIF, nMotifs=COUNT) %>%
+  	group_by(Sequence) %>%
+  	summarise(nMotifs=sum(nMotifs))
+
+  aggseq <- sites %>%
+  	group_by(Sequence, Category2, BIN) %>%
+  	summarise(n=n()) %>%
+  	summarise(nERVs=sum(n))
+  aggseq <- merge(aggseq, mct, by="Sequence")
+  aggseq$rel_prop <- aggseq$nERVs/aggseq$nMotifs
+
+  out <- list()
+  out$sites <- sites
+  out$bins <- bins
+  out$mct <- mct
+  out$aggseq <- aggseq
+  return(out)
+}
+
+##############################################################################
+# Function checks if elements in a exist in b
+# Output is binary vector of length same as b
+##############################################################################
+toBin <- function(a,b){
+	as.numeric(is.element(b,a))
+}
+
+##############################################################################
 # Function for plotting K-mer heatmaps
 ##############################################################################
 rrheat2 <- function(dat, f, levels, facetvar, nbp){
@@ -84,7 +148,7 @@ insetPlot <- function(main, inset, loc) {
  }
 
 ##############################################################################
-# Get standard error estimate
+# Get standard error estimate (DEPRECATED)
 ##############################################################################
 std <- function(x) sqrt(var(x,na.rm=TRUE)/length(na.omit(x)))
 
@@ -121,9 +185,9 @@ usePackage <- function(p) {
 }
 
 ##############################################################################
-# Function to read file from disk
+# Function to read file from disk (DEPRECATED)
 ##############################################################################
-make.data<-function(filename, chunksize, skiprows,...){
+make.data <- function(filename, chunksize, skiprows,...){
 	conn<-NULL
 	function(reset=FALSE){
 		if(reset){
@@ -142,10 +206,9 @@ make.data<-function(filename, chunksize, skiprows,...){
 }
 
 ##############################################################################
-# QQ plot in ggplot2 with qqline
+# QQ plot in ggplot2 with qqline (DEPRECATED)
 ##############################################################################
-ggQQ <- function (vec) # argument: vector of numbers
-{
+ggQQ <- function (vec) {
   # following four lines from base R's qqline()
   y <- quantile(vec[!is.na(vec)], c(0.25, 0.75))
   x <- qnorm(c(0.25, 0.75))
@@ -163,7 +226,6 @@ ggQQ <- function (vec) # argument: vector of numbers
 ##############################################################################
 # Negbin model processing functions
 ##############################################################################
-
 # Run negbin model for each formula specified in formlist
 runMod <- function(formlist, data){
 	out <- lapply(formlist, function(x) glm.nb(x, data))
@@ -199,7 +261,7 @@ buildDF <- function(fitlist, data){
 }
 
 ##############################################################################
-# Append columns to windowed count data for all motif lengths
+# Append columns to windowed count data for all motif lengths (DEPRECATED)
 ##############################################################################
 getSubMotifs <- function(data, nts, b3){
 
@@ -413,10 +475,12 @@ multiplot <- function(..., plotlist=NULL, file, cols=1, layout=NULL) {
   }
 }
 
+##############################################################################
 # argParse function outputs arguments specified in _config.yaml and assigns to
 # the named variables
 # (e.g., instead of using "args$data", we can just use "data")
 # Modified from http://www.r-bloggers.com/extract-objects-from-a-list/
+##############################################################################
 argParse <- function(args){
 	for(i in 1:length(args)){
 		##first extract the object value
@@ -432,7 +496,7 @@ argParse <- function(args){
 }
 
 ##############################################################################
-#' commandArgs parsing
+#' commandArgs parsing (DEPRECATED)
 #' return a named list of command line arguments
 #'
 #' Usage:

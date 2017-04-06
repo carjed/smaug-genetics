@@ -2,7 +2,7 @@
 
 ### Summary
 
-This repository contains the scripts necessary to reproduce the analysis of genome-wide germline mutation patterns described in (citation here). Scripts are written in R, perl, and UNIX shell.
+This repository contains the scripts necessary to reproduce the analysis of genome-wide germline mutation patterns described in [Carlson et al., (2017)](http://biorxiv.org/content/early/2017/02/14/108290). Scripts are written in R, perl, and UNIX shell.
 
 ### Dependencies
 

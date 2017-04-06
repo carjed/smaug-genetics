@@ -43,7 +43,7 @@ foreach my $categ (@categs) {
   # Must modify to include category
   print "Subsetting $categ sites...\n";
   my $samplecmd = "awk -v categ=\"$categ\" 'BEGIN {srand()} !/^\$/ { if (rand() <= .005) print \$0\"\\t\"0\"\\t\"categ}' $parentdir/output/predicted/chr*.${categ}.txt > $parentdir/output/predicted/${categ}.sub_new.txt";
-  &forkExecWait($samplecmd);
+  # &forkExecWait($samplecmd);
 
   # Testing: get de novo data in same script
 for my $i (1 .. 22) {
@@ -52,7 +52,12 @@ for my $i (1 .. 22) {
     my $cleanupcmd = "rm -f $parentdir/reference_data/DNMs/GoNL_${categ}.anno.txt";
     &forkExecWait($cleanupcmd);
 
-    my $dnmannocmd = "grep -Fwf  <(grep \"\\s$i\\s\" $parentdir/reference_data/DNMs/GoNL_${categ}.txt | cut -f 3)  $parentdir/output/predicted/chr$i.${categ}.txt | awk -v categ=\"$categ\" '{print \$0\"\\t\"1\"\\t\"categ}' >> $parentdir/reference_data/DNMs/GoNL_${categ}.anno.txt";
+    my $tmpfile = "$parentdir/reference_data/DNMs/tmp.txt";
+
+    my $buildquerycmd = "grep \"\\s$i\\s\" $parentdir/reference_data/DNMs/GoNL_${categ}.txt | cut -f 3 > $tmpfile";
+    &forkExecWait($buildquerycmd);
+
+    my $dnmannocmd = "grep -Fwf  $tmpfile $parentdir/output/predicted/chr$i.${categ}.txt | awk -v categ=\"$categ\" '{print \$0\"\\t\"1\"\\t\"categ}' >> $parentdir/reference_data/DNMs/GoNL_${categ}.anno.txt";
     &forkExecWait($dnmannocmd);
   }
 }

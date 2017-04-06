@@ -10,14 +10,18 @@ args <- commandArgs(TRUE)
 if (length(args)==0) {
 	write <- FALSE
 } else {
+	# only write out if argument specified
 	write <- as.logical(args[1])
+
+	# also only reloads packages and sets parentdir if running via Rscript
+	suppressMessages(require(dplyr))
+	script.dir <- dirname(sys.frame(1)$ofile)
+	parentdir <- dirname(dirname(script.dir))
+	# args <- yaml.load_file("./_config.yaml")
+	# parentdir <- args$parentdir
 }
 
-cat(write, "\n")
-
-suppressMessages(require(dplyr))
-
-parentdir <- "/net/bipolar/jedidiah/mutation"
+parentdir
 
 # Read DNMs
 gonl_dnms <- read.table(paste0(parentdir,

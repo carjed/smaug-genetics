@@ -34,6 +34,10 @@ my $expand_summ = $config->{expand_summ};
 
 my @categs = qw( AT_CG AT_GC AT_TA GC_AT GC_CG GC_TA );
 
+print "Preparing de novo data...\n";
+my $prepdnmcmd = "Rscript $parentdir/smaug-genetics/R/read_dnms.r TRUE";
+&forkExecWait($prepdnmcmd);
+
 foreach my $categ (@categs) {
   # Get random selection of sites with predicted rates
   # Must modify to include category
@@ -42,18 +46,15 @@ foreach my $categ (@categs) {
   &forkExecWait($samplecmd);
 
   # Testing: get de novo data in same script
-  # for ($i in 1:22){
-  #
-  #   # remove per-category DNM data if it already exists
-  #   my $cleanupcmd = "rm -f $parentdir/reference_data/DNMs/GoNL_${categ}.anno.txt";
-  #   &forkExecWait($cleanupcmd);
-  #
-  #
-  #
-  #   my $dnmannocmd = "grep -Fwf  <(grep \"\\s$i\\s\" $parentdir/reference_data/DNMs/GoNL_${categ}.txt | cut -f 3)  $parentdir/output/predicted/chr$i.${categ}.txt | awk -v categ=\"$categ\" '{print \$0\"\\t\"1\"\\t\"categ}' >> $parentdir/reference_data/DNMs/GoNL_${categ}.anno.txt";
-  #   &forkExecWait($dnmannocmd);
-  # }
+  for ($i in 1:22){
 
+    # remove per-category DNM data if it already exists
+    my $cleanupcmd = "rm -f $parentdir/reference_data/DNMs/GoNL_${categ}.anno.txt";
+    &forkExecWait($cleanupcmd);
+
+    my $dnmannocmd = "grep -Fwf  <(grep \"\\s$i\\s\" $parentdir/reference_data/DNMs/GoNL_${categ}.txt | cut -f 3)  $parentdir/output/predicted/chr$i.${categ}.txt | awk -v categ=\"$categ\" '{print \$0\"\\t\"1\"\\t\"categ}' >> $parentdir/reference_data/DNMs/GoNL_${categ}.anno.txt";
+    &forkExecWait($dnmannocmd);
+  }
 }
 
 print "Combining and sorting data...\n";

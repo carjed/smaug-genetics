@@ -168,24 +168,29 @@ runTest <- function(cov, dir){
   if(nrow(dnmstmp)>=5){
     if(cov=="GC"){
       covbase <- paste0(parentdir, "/reference_data/high_gc")
+      covbed <- paste0(parentdir, "/output/3bp_10k/full_bin.txt")
       dnmstmp$GC <- gcCol(dnmstmp,
         paste0(parentdir, "/output/3bp_10k/full_bin.txt"))
       dnmstmp$inside <- ifelse(dnmstmp$GC>=0.55, 1, 0)
+      awkstr <- "awk -F\"\\t\" '{if($4>=0.55 && NR>1) print $1\"\\t\"$5*10000-10000+1\"\\t\"$5*10000}'"
     } else if(cov=="TIME"){
-      dnmstmp$TIME <- repCol(dnmstmp,
-        paste0(parentdir, "/reference_data/lymph_rep_time.txt"))
+      covbed <- paste0(parentdir, "/reference_data/lymph_rep_time.txt")
+      dnmstmp$TIME <- repCol(dnmstmp, covbed)
       if(dir=="Down"){
         covbase <- paste0(parentdir, "/reference_data/late_rt")
         dnmstmp$inside <- ifelse(dnmstmp$TIME<=-1.25, 1, 0)
+        awkstr <- "awk -F\"\\t\" '{if($3<=-1.25 && NR>1) print $1\"\\t\"$2-500+1\"\\t\"$2+500}'"
       } else if(dir=="Up"){
         covbase <- paste0(parentdir, "/reference_data/early_rt")
-        dnmstmp$inside <- ifelse(dnmstmp$TIME>=1.25, 1, 0)
+        dnmstmp$inside <- ifelse(dnmstmp$TIME>1.25, 1, 0)
+        awkstr <- "awk -F\"\\t\" '{if($3>1.25 && NR>1) print $1\"\\t\"$2-500+1\"\\t\"$2+500}'"
       }
     } else if(cov=="RR"){
       covbase <- paste0(parentdir, "/reference_data/high_rr")
-      dnmstmp$RR <- rcrCol(dnmstmp,
-        paste0(parentdir, "/reference_data/recomb_rate.bed"))
+      covbed <- paste0(parentdir, "/reference_data/recomb_rate.bed")
+      dnmstmp$RR <- rcrCol(dnmstmp, covbed)
       dnmstmp$inside <- ifelse(dnmstmp$RR>=2, 1, 0)
+      awkstr <- "awk -F\"\\t\" '{if($4>=2 && NR>1) print $1\"\\t\"$2\"\\t\"$3}'"
     } else if(cov=="DHS"){
       covbase <- paste0(parentdir, "/reference_data/DHS")
       covbed <- paste0(covbase, ".bed")
@@ -211,11 +216,31 @@ runTest <- function(cov, dir){
     write.table(seqs, paste0(parentdir, "/seqs.txt"),
       col.names=F, row.names=F, quote=F, sep="\t")
 
-    # Create fasta file from feature .bed file
+    # Create fasta file from feature file
     if(!file.exists(paste0(covbase, ".fa"))){
-      getfastacmd <- paste0("bedtools getfasta -fi ",
-        parentdir, "/reference_data/human_g1k_v37.fasta -bed <(sed 's/chr//g' ",
-        covbed, " | sed /^X/d | sed /^Y/d) -fo ", covbase, ".fa")
+
+      if(cov=="RR"){
+        getfastacmd <- paste0("bedtools getfasta -fi ", parentdir,
+          "/reference_data/human_g1k_v37.fasta -bed <(cut -f1-4", covbed,
+          " | sed 's/chr//g' | ", awkstr,
+          " | sed /^X/d | sed /^Y/d) -fo ", covbase, ".fa")
+
+      } else if (cov=="TIME"){
+        getfastacmd <- paste0("bedtools getfasta -fi ", parentdir,
+          "/reference_data/human_g1k_v37.fasta -bed <(cut -f1-3", covbed,
+          " | sed 's/chr//g' | ", awkstr,
+          " | sed /^X/d | sed /^Y/d) -fo ", covbase, ".fa")
+      } else if (cov=="GC"){
+        getfastacmd <- paste0("bedtools getfasta -fi ", parentdir,
+          "/reference_data/human_g1k_v37.fasta -bed <(cut -f1-5", covbed,
+          " | sed 's/chr//g' | ", awkstr,
+          " | sed /^X/d | sed /^Y/d) -fo ", covbase, ".fa")
+      } else {
+        getfastacmd <- paste0("bedtools getfasta -fi ", parentdir,
+          "/reference_data/human_g1k_v37.fasta -bed <(sed 's/chr//g' ", covbed,
+          " | sed /^X/d | sed /^Y/d) -fo ", covbase, ".fa")
+      }
+
       system(getfastacmd)
     }
 

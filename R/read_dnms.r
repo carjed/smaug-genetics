@@ -5,14 +5,17 @@
 ##############################################################################
 # Change to 1 if running as standalone process during
 # generation of validation data
-write <- FALSE
 
 args <- commandArgs(TRUE)
-write <- as.logical(args[1])
+if (length(args)==0) {
+	write <- FALSE
+} else {
+	write <- as.logical(args[1])
+}
 
 cat(write, "\n")
 
-require(dplyr)
+suppressMessages(require(dplyr))
 
 parentdir <- "/net/bipolar/jedidiah/mutation"
 
@@ -55,8 +58,8 @@ if(write){
     outfile <- paste0(parentdir, "/reference_data/DNMs/GoNL_", cat, ".txt")
     write.table(outdat, outfile, col.names=F, row.names=F, sep="\t", quote=F)
 
-    annocmd <- paste0("bash ", parentdir,
-      "/smaug-genetics/data_mgmt/process_dnms/annotate_dnms.sh ", cat)
-    system(annocmd)
+    # annocmd <- paste0("bash ", parentdir,
+    #   "/smaug-genetics/data_mgmt/process_dnms/annotate_dnms.sh ", cat)
+    # system(annocmd)
   }
 }

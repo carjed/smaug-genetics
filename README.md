@@ -95,7 +95,6 @@ PROJDIR/
     |---data_mgmt/
         |---logit_scripts/
         |---per-site_dp/
-        |---process_dnms/
         |---toWig/
     |---data_pipeline/
     |---R/

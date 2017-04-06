@@ -43,15 +43,14 @@ foreach my $categ (@categs) {
   # Must modify to include category
   print "Subsetting $categ sites...\n";
   my $samplecmd = "awk -v categ=\"$categ\" 'BEGIN {srand()} !/^\$/ { if (rand() <= .005) print \$0\"\\t\"0\"\\t\"categ}' $parentdir/output/predicted/chr*.${categ}.txt > $parentdir/output/predicted/${categ}.sub_new.txt";
-  # &forkExecWait($samplecmd);
+  &forkExecWait($samplecmd);
+
+  # remove per-category DNM data if it already exists
+  my $cleanupcmd = "rm -f $parentdir/reference_data/DNMs/GoNL_${categ}.anno.txt";
+  &forkExecWait($cleanupcmd);
 
   # Testing: get de novo data in same script
-for my $i (1 .. 22) {
-
-    # remove per-category DNM data if it already exists
-    my $cleanupcmd = "rm -f $parentdir/reference_data/DNMs/GoNL_${categ}.anno.txt";
-    &forkExecWait($cleanupcmd);
-
+  for my $i (1 .. 22) {
     my $tmpfile = "$parentdir/reference_data/DNMs/tmp.txt";
 
     my $buildquerycmd = "grep \"\\s$i\\s\" $parentdir/reference_data/DNMs/GoNL_${categ}.txt | cut -f 3 > $tmpfile";

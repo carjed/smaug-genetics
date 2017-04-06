@@ -12,13 +12,10 @@ if (length(args)==0) {
 } else {
 	# only write out if argument specified
 	write <- as.logical(args[1])
+	parentdir <- as.character(args[2])
 
 	# also only reloads packages and sets parentdir if running via Rscript
 	suppressMessages(require(dplyr))
-	script.dir <- dirname(sys.frame(1)$ofile)
-	parentdir <- dirname(dirname(script.dir))
-	# args <- yaml.load_file("./_config.yaml")
-	# parentdir <- args$parentdir
 }
 
 parentdir

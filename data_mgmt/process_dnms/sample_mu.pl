@@ -35,7 +35,7 @@ my $expand_summ = $config->{expand_summ};
 my @categs = qw( AT_CG AT_GC AT_TA GC_AT GC_CG GC_TA );
 
 print "Preparing de novo data...\n";
-my $prepdnmcmd = "Rscript $parentdir/smaug-genetics/R/read_dnms.r TRUE";
+my $prepdnmcmd = "Rscript $parentdir/smaug-genetics/R/read_dnms.r TRUE $parentdir";
 &forkExecWait($prepdnmcmd);
 
 foreach my $categ (@categs) {

@@ -46,7 +46,7 @@ foreach my $categ (@categs) {
   &forkExecWait($samplecmd);
 
   # Testing: get de novo data in same script
-  for ($i in 1:22){
+for my $i (1 .. 22) {
 
     # remove per-category DNM data if it already exists
     my $cleanupcmd = "rm -f $parentdir/reference_data/DNMs/GoNL_${categ}.anno.txt";

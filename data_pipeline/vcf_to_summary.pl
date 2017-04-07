@@ -55,7 +55,7 @@ if ($makecopy eq "copy") {
 	foreach my $rawvcf (@rawvcfs) {
 		my $filename=fileparse($rawvcf);
 
-    if(!($filename !~ /chrX/)){
+    if($filename !~ /chrX/){
       my @parts = split(/\.vcf.gz/, $filename);
       my $basename = $parts[0];
       my $newvcf = "$vcfdir/$basename.ma.vcf.gz";
@@ -69,15 +69,12 @@ if ($makecopy eq "copy") {
       forkExecWait($maparse);
       print "Done\n";
     }
-
-    print "Operation complete\n";
 	}
 
 	# my $concatcmd="perl $vcftoolsdir/perl/vcf-concat $vcfdir/*$rawvcfext | gzip -c > $vcfdir/merged.vcf.gz";
 	# forkExecWait($concatcmd);
 
-
-	print "Done\n";
+  print "Operation complete\n";
 }
 
 ################################################################################

@@ -23,17 +23,12 @@ use feature 'say';
 
 my $relpath = $FindBin::Bin;
 my $configpath = dirname(dirname($relpath));
-
 my $config = LoadFile("$configpath/_config.yaml");
 
-my $adj = $config->{adj};
-my $mac = $config->{mac};
-my $binw = $config->{binw};
-my $data = $config->{data};
-my $bin_scheme = $config->{bin_scheme};
 my $parentdir = $config->{parentdir};
-my $count_motifs = $config->{count_motifs};
-my $expand_summ = $config->{expand_summ};
+
+use lib "$FindBin::Bin/../lib";
+use SmaugFunctions qw(forkExecWait getRef);
 
 # Set options and inputs
 my $help=0;
@@ -58,15 +53,6 @@ open my $files, '<', $filelist or die "$filelist: $!";
 my $NUMFILES=2217585;
 
 print "Worker ID: $index\n";
-
-# my $indfile;
-# while( <$files> ) {
-#   chomp;
-#   if($. == $index) {
-#       $indfile = $_;
-#       last;
-#   }
-# }
 
 my $start=($index-1)*$chunksize+1;
 my $end=$index*$chunksize;
@@ -93,7 +79,7 @@ foreach my $sample (@filerange){
   } else {
     my $glfcmd="samtools-hybrid glfview $sample | cut -f1-4 | awk '\$2%10==0 && \$3 ~ /[ACGT]/' > $parentdir/output/glf_depth/$fname";
     # print "$glfcmd\n";
-    &forkExecWait($glfcmd);
+    forkExecWait($glfcmd);
   }
 
   my $okfile="$parentdir/output/glf_depth/$froot/samples.ok";
@@ -101,23 +87,4 @@ foreach my $sample (@filerange){
   print OUT "$fname: OK\n";
   close(OUT) or die "Unable to close file: $okfile $!";
   # print "$sample\n";
-}
-
-##############################################################################
-# fork-exec-wait subroutine
-##############################################################################
-sub forkExecWait {
-    my $cmd = shift;
-    #print "forkExecWait(): $cmd\n";
-    my $kidpid;
-    if ( !defined($kidpid = fork()) ) {
-		    die "Cannot fork: $!";
-    }
-    elsif ( $kidpid == 0 ) {
-		    exec($cmd);
-		    die "Cannot exec $cmd: $!";
-    }
-    else {
-		    waitpid($kidpid,0);
-    }
 }

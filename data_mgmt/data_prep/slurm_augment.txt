@@ -10,4 +10,4 @@
 #SBATCH --array=1
 #SBATCH --output="/net/bipolar/jedidiah/mutation/output/slurm/slurmJob-%J.out" --error="/net/bipolar/jedidiah/mutation/output/slurm/slurmJob-%J.err"
 
-srun perl /net/bipolar/jedidiah/mutation/smaug-genetics/augment_summary.pl --chr $SLURM_ARRAY_TASK_ID --mac 1 --adj 3 --b 1000000 --data full
+srun perl /net/bipolar/jedidiah/mutation/smaug-genetics/data_mgmt/data_prep/augment_summary.pl $SLURM_ARRAY_TASK_ID

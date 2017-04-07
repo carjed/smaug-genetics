@@ -19,17 +19,13 @@ use feature 'say';
 
 my $relpath = $FindBin::Bin;
 my $configpath = dirname(dirname($relpath));
-
 my $config = LoadFile("$configpath/_config.yaml");
 
-my $adj = $config->{adj};
-my $mac = $config->{mac};
-my $binw = $config->{binw};
-my $data = $config->{data};
-my $bin_scheme = $config->{bin_scheme};
+my $email = $config->{email};
 my $parentdir = $config->{parentdir};
-my $count_motifs = $config->{count_motifs};
-my $expand_summ = $config->{expand_summ};
+
+use lib "$FindBin::Bin/../lib";
+use SmaugFunctions qw(forkExecWait getRef);
 
 my $today = POSIX::strftime('%Y%m%d', localtime);
 my $slurmdir = "$parentdir/output/slurm/$today";
@@ -51,7 +47,7 @@ my $workerbatch = "$parentdir/slurm/slurm_$jobcmd.txt";
 open my $wFH, '>', $workerbatch or die "can't write to $workerbatch: $!\n";
 print $wFH "#!/bin/sh \n";
 print $wFH "#SBATCH --mail-type=FAIL \n";
-print $wFH "#SBATCH --mail-user=jedidiah\@umich.edu \n";
+print $wFH "#SBATCH --mail-user=$email \n";
 print $wFH "#SBATCH --ntasks=1 \n";
 print $wFH "#SBATCH --mem=6000 \n";
 print $wFH "#SBATCH --time 20:00:00 \n";
@@ -62,24 +58,7 @@ print $wFH "#SBATCH --requeue \n";
 print $wFH "#SBATCH --exclude=inpsyght \n";
 # print $wFH "#SBATCH --exclude=psoriasis-mc01,psoriasis-mc02 \n";
 print $wFH "#SBATCH --output=\"$slurmdir/slurmJob-%J.out\" --error=\"$slurmdir/slurmJob-%J.err\" \n";
-print $wFH "srun perl $parentdir/smaug-genetics/data_mgmt/add_dp_worker.pl --in \${SLURM_ARRAY_TASK_ID} --categ $categ \n";
+print $wFH "srun perl $parentdir/smaug-genetics/data_mgmt/per-site_dp/add_dp_worker.pl --in \${SLURM_ARRAY_TASK_ID} --categ $categ \n";
 close($wFH) or die "Unable to close file: $workerbatch $!";
 my $slurmcmd="sbatch $workerbatch";
-&forkExecWait($slurmcmd);
-
-##############################################################################
-# fork-exec-wait subroutine
-##############################################################################
-sub forkExecWait {
-  my $cmd = shift;
-  #print "forkExecWait(): $cmd\n";
-  my $kidpid;
-  if ( !defined($kidpid = fork()) ) {
-	  die "Cannot fork: $!";
-  } elsif ($kidpid==0) {
-	  exec($cmd);
-	  die "Cannot exec $cmd: $!";
-  } else {
-	  waitpid($kidpid,0);
-  }
-}
+forkExecWait($slurmcmd);

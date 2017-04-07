@@ -32,27 +32,13 @@ my $parentdir = $config->{parentdir};
 my $count_motifs = $config->{count_motifs};
 my $expand_summ = $config->{expand_summ};
 
+use lib "$FindBin::Bin/../lib";
+use SmaugFunctions qw(forkExecWait getRef);
+
 my @chrs=(17..18, 4);
 foreach my $i (@chrs){
   print "Processing chr$i...\n";
-  my $pgmcmd="perl $parentdir/smaug-genetics/data_mgmt/process_glf_master.pl --chr $i";
-  &forkExecWait($pgmcmd);
+  my $pgmcmd="perl $parentdir/smaug-genetics/data_mgmt/per-site_dp/process_glf_master.pl --chr $i";
+  forkExecWait($pgmcmd);
   print "==========================\n";
-}
-
-##############################################################################
-# fork-exec-wait subroutine
-##############################################################################
-sub forkExecWait {
-  my $cmd = shift;
-  #print "forkExecWait(): $cmd\n";
-  my $kidpid;
-  if ( !defined($kidpid = fork()) ) {
-	  die "Cannot fork: $!";
-  } elsif ($kidpid==0) {
-	  exec($cmd);
-	  die "Cannot exec $cmd: $!";
-  } else {
-	  waitpid($kidpid,0);
-  }
 }

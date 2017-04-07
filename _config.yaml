@@ -1,7 +1,10 @@
 ##############################################################################
-# Pipeline configuration
+# Global configuration--parameters used in multiple scripts
 ##############################################################################
-# inputdir defines the directory containing the raw VCF files and .summary files
+# Set your email to get notifications for slurm jobs
+email: "jedidiah@umich.edu"
+
+# inputdir defines the directory containing the prepared VCF and .summary files
 inputdir: "/net/bipolar/jedidiah/testpipe"
 
 # parentdir defines the parent directory containing this repository,
@@ -10,10 +13,10 @@ parentdir: "/net/bipolar/jedidiah/mutation"
 
 # mac defines the minor allele count of variants to examine, provided the
 # appropriately named directory exists containing the summarized VCF tables
-# can set to either:
-# singletons
-# doubletons [DEPRECATED]
-# common (all variants with MAC>10) [DEPRECATED]
+# valid assignments depend on which summary files have been created by
+# vcf_to_summary.pl script:
+# -singletons
+# -common (all variants with MAC>10)
 mac: "singletons"
 
 # adj defines number of bases upstream/downstream per motif
@@ -34,26 +37,43 @@ bin_scheme: "all"
 # binw defines the width of fixed bins in base pairs
 binw: 1000000
 
+# Define path to custom user library--used in log_mod.r
+# when distributing across jobs nodes that might not have
+# all of the same packages installed in shared libraries
 libpath: "~/R/x86_64-pc-linux-gnu-library/2.13"
 
-# Define location and naming convention of raw input vcfs,
-# if we are using the 'makecopy' option in vcf_to_summary.pl
+##############################################################################
+# Define location and naming convention of raw input vcfs, if we are using the
+# 'makecopy' option in vcf_to_summary.pl
+# rawvcfext defines the suffix of the raw vcfs we want to copy into inputdir
+##############################################################################
 rawvcfdir: "/net/bipolar/lockeae/final_freeze/snps/vcfs"
-
-# pattern to match vcfs we want to copy
-rawvcfext: "filtered.sites.modified.vcf.gz"
-
-vcftoolsdir: "/net/bipolar/jedidiah/vcftools_0.1.10"
+rawvcfext: "filtered.sites.vcf.gz"
 
 ##############################################################################
-# Following flags are specific to the augment_summary.pl script
+# set flags for which files to output when running augment_summary.pl script
 ##############################################################################
 count_motifs: TRUE
 expand_summ: TRUE
 
 ##############################################################################
-# Additional parameters to be implemented later
+# Flags for mod_shell.r
+# build_logit sets up data for the motifs+features model;
+# you should only need to run this once
+#
+# negbin_model runs another arm of analysis currently
+# under development--no need to set to TRUE at this time
 ##############################################################################
-common: FALSE
-log_model: FALSE
+build_logit: FALSE
 negbin_model: FALSE
+
+##############################################################################
+# List of samples, one per line.
+# Used in glf processing
+##############################################################################
+samples: "/net/bipolar/lockeae/final_freeze/list.txt"
+
+##############################################################################
+# DEPRECATED
+##############################################################################
+vcftoolsdir: "/net/bipolar/jedidiah/vcftools_0.1.10"

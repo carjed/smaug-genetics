@@ -3,8 +3,13 @@
 ##############################################################################
 # Logistic regression model
 ##############################################################################
+args <- commandArgs(trailingOnly=TRUE)
 
-libpath <- "~/R/x86_64-pc-linux-gnu-library/2.13"
+categ <- args[1]
+parentdir <- args[2]
+libpath <- args[3]
+jobid <- args[4]
+jobid <- as.numeric(jobid)
 
 options(useHTTPS=FALSE)
 suppressMessages(require(speedglm, lib.loc=libpath, quietly=T))
@@ -13,47 +18,14 @@ suppressMessages(require(dplyr, lib.loc=libpath, quietly=T))
 suppressMessages(require(BSgenome.Hsapiens.UCSC.hg19, lib.loc=libpath, quietly=T))
 suppressMessages(require(Repitools, lib.loc=libpath, quietly=T))
 suppressMessages(require(boot, lib.loc=libpath, quietly=T))
+suppressMessages(require(yaml, lib.loc=libpath, quietly=T))
 
-source("./get_functions.r")
+source(paste0(parentdir, "/smaug-genetics/R/get_functions.r"))
 
-args <- getArgs(
-	defaults=list(
-		jobid=25,
-		categ="AT_CG",
-		nmotifs=4096,
-		nodes=10))
+yaml_args <- yaml.load_file(paste0(parentdir, "/smaug-genetics/_config.yaml"))
+argParse(yaml_args)
 
 nbp <- 7
-# parentdir <- "/net/bipolar/jedidiah/mutation"
-
-cat("Script will run with the following parameters:\n")
-for(i in 1:length(args)){
-	##first extract the object value
-	tempobj=unlist(args[i])
-	varname=names(args[i])
-
-	# optional: print args
-	cat(varname, ":", tempobj, "\n")
-
-	##now create a new variable with the original name of the list item
-	eval(parse(text=paste(names(args)[i],"= tempobj")))
-}
-cat("\n")
-
-jobid <- as.numeric(jobid)
-
-# cluster <- makeCluster(nodes, type = "SOCK", outfile="paste0(parentdir, "/snow.log"))
-# registerDoSNOW(cluster)
-
-# Target mutation rate
-mu <- 1e-8
-nbases <- 5.8e9
-nind <- 3612
-indmuts <- mu*nbases
-nsing <- 10000
-numgens <- ceiling(nsing/indmuts)
-meangens <- mean(1:numgens)
-denom <- nind*meangens
 
 # Fast list of 6 basic categories from agg_5bp_100k data
 mut_cats <- c("AT_CG", "AT_GC", "AT_TA", "GC_AT", "GC_CG", "GC_TA")
@@ -72,9 +44,6 @@ motifs <- motifdat %>%
 
 runmotif <- motifs[jobid]
 escmotif <- substr(runmotif, 0, nbp)
-# comb <- function(x, ...) {
-#       mapply(rbind,x,...,SIMPLIFY=FALSE)
-# }
 
 ##############################################################################
 # Run models
@@ -109,9 +78,9 @@ logitMod <- function(motif, nbp, parentdir, categ){
 		system(catcmd1)
 	}
 
-	incmd <- paste0("cut -f1-5,18,19 ", sitefile)
+	incmd <- paste0("cut -f1-6 ", sitefile)
 	sites <- read.table(pipe(incmd), header=F, stringsAsFactors=F)
-	names(sites) <- c("POS", "CHR", "BIN", "Sequence", "mut", "EXON", "DP")
+	names(sites) <- c("POS", "CHR", "BIN", "Sequence", "mut", "DP")
 
 	# Initialize data for calculating GC content
 	# sites_for_GC <- data.frame(position=sites$POS, chr=paste0("chr", sites$CHR))
@@ -133,6 +102,8 @@ logitMod <- function(motif, nbp, parentdir, categ){
 	sites <- cbind(sites, df)
 
 	# Add other features
+	sites$EXON <- binaryCol(sites,
+		paste0(parentdir, "/reference_data/GRCh37_RefSeq_sorted.bed"))
 	sites$CpGI <- binaryCol(sites,
 		paste0(parentdir, "/reference_data/cpg_islands_sorted.bed"))
 	sites$RR <- rcrCol(sites,
@@ -202,15 +173,10 @@ logitMod <- function(motif, nbp, parentdir, categ){
 			col.names=F, row.names=F, quote=F, sep="\t")
 	}
 
-	# list(coefs, predicted) #<- use to output predicted data as list element (high mem. usage!)
-	# list(coefs)
 	return(coefs)
 }
 
 coefs <- logitMod(motif=runmotif, nbp=nbp, parentdir=parentdir, categ=categ)
-
-# covlist <- clusterApply(cluster, motifs[1:nmotifs], logitMod, nbp=nbp, parentdir=parentdir, categ=categ)
-# fullcoef <- rbind_all(covlist)
 
 coefdir <- paste0(parentdir, "/output/logmod_data/coefs/", categ, "/")
 dir.create(coefdir, recursive=T)

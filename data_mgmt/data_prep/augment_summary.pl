@@ -12,7 +12,6 @@
 use strict;
 use warnings;
 use POSIX;
-use Getopt::Long;
 use Pod::Usage;
 use File::Basename;
 use File::Path qw(make_path);
@@ -24,7 +23,7 @@ use YAML::XS 'LoadFile';
 use feature 'say';
 
 my $relpath = $FindBin::Bin;
-my $configpath = dirname($relpath);
+my $configpath = dirname(dirname($relpath));
 my $config = LoadFile("$configpath/_config.yaml");
 
 print "Script will run with the following parameters:\n";
@@ -124,8 +123,6 @@ if($expand_summ eq "TRUE"){
 
 	if ($mac eq "singletons") {
 		print OUT "CHR\tPOS\tREF\tALT\tAN\tSEQ\tALTSEQ\tSequence\tCategory\tCategory2\n";
-	} elsif ($mac eq "doubletons") {
-		print OUT "CHR\tPOS\tREF\tALT\tANNO\t";
 	}
 
 	#readline($summ); #<-throws out summary header if it exists

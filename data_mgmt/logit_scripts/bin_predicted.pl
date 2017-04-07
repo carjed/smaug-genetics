@@ -32,6 +32,9 @@ my $parentdir = $config->{parentdir};
 my $count_motifs = $config->{count_motifs};
 my $expand_summ = $config->{expand_summ};
 
+use lib "$FindBin::Bin/../lib";
+use SmaugFunctions qw(forkExecWait getRef);
+
 my $chr;
 my $cat='';
 my $bink='';
@@ -59,8 +62,14 @@ open my $data, '<', $f_data or die "can't open $f_data: $!";
 # initialize output
 open(OUT, '>', $outfile) or die "can't write to $outfile: $!\n";
 # open(OUTCPG, '>', $cpgoutfile) or die "can't write to $cpgoutfile: $!\n";
+my $f_fasta;
+if($data eq "mask"){
+  $f_fasta = "$parentdir/reference_data/human_g1k_v37.mask.fasta";
+} else {
+  $f_fasta = "$parentdir/reference_data/human_g1k_v37.fasta";
+}
 
-my $seq=&getRef();
+my $seq=getRef($f_fasta, $chr);
 # my $altseq=$seq;
 # $altseq =~ tr/ACGT/TGCA/;
 
@@ -116,54 +125,4 @@ while (<$data>){
 			$PREVBIN = $BIN;
 		}
 		$i++;
-}
-
-sub getRef{
-	my $f_fasta="$parentdir/reference_data/human_g1k_v37.fasta";
-	my $mask_flag=0;
-	if (-e $f_fasta) {
-		print "Using reference genome: $f_fasta\n";
-	} else {
-		print "Reference genome not found in parent directory. Would you like to download one? (y/n): ";
-		my $choice = <>;
-		chomp $choice;
-		if ($choice eq "y") {
-			my $dlcmd="wget -P $parentdir/ ftp://ftp-trace.ncbi.nih.gov/1000genomes/ftp/technical/reference/human_g1k_v37.fasta.gz";
-			&forkExecWait($dlcmd);
-			my $unzipcmd="gunzip $parentdir/human_g1k_v37.fasta";
-			&forkExecWait($unzipcmd);
-		} else {
-			die "Please upload an appropriate reference genome to the parent directory\n";
-		}
-	}
-
-	open my $fasta, '<', $f_fasta or die "can't open $f_fasta: $!";
-
-	##############################################################################
-	# Retrieve reference sequence for selected chromosome
-	# -also returns symmetric sequence to be used in local sequence analysis
-	##############################################################################
-
-	print "Getting reference sequence for chromosome $chr...\n";
-
-	my $seq;
-	if($mask_flag==1){
-		while (<$fasta>) {
-			chomp;
-			if (/^>$chr$/../^>$nextchr$/) {
-				next if /^>$chr$/ || /^>$nextchr$/;
-				$seq .=$_;
-			}
-		}
-	} else {
-		while (<$fasta>) {
-			chomp;
-			if (/>$chr /../>$nextchr /) {
-				next if />$chr / || />$nextchr /;
-				$seq .=$_;
-			}
-		}
-	}
-
-	return $seq;
 }

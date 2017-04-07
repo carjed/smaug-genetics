@@ -1,8 +1,10 @@
 #!/usr/local/bin/perl
 
 ################################################################################
-# Singleton Analysis Pipeline
-# 	-create initial summary files to be passed to ref5.pl
+# Get initial summary information from input vcfs
+#
+# To avoid the possibility of modifying raw vcf data, includes option to copy
+# raw vcfs to a working project directory
 ################################################################################
 
 use strict;
@@ -19,7 +21,7 @@ use YAML::XS 'LoadFile';
 use feature 'say';
 
 my $relpath = $FindBin::Bin;
-my $configpath = dirname($relpath);
+my $configpath = dirname(dirname($relpath));
 my $config = LoadFile("$configpath/_config.yaml");
 
 my $mac = $config->{mac};
@@ -35,12 +37,12 @@ use SmaugFunctions qw(forkExecWait getRef);
 # Default summary directory
 my $outdir="$inputdir/summaries/${mac}";
 
-# Copies per-chromosome VCFs from another directory to avoid overwriting
+# Running script with argument 'copy'
+# copies VCFs from another directory to avoid overwriting raw data
 my $makecopy='';
 if(defined($ARGV[0])){
   $makecopy = $ARGV[0];
 }
-
 
 # Specify project folder for VCFs
 my $vcfdir="$inputdir/vcfs";
@@ -63,12 +65,8 @@ if ($makecopy eq "copy") {
       my @parts = split(/\.vcf.gz/, $filename);
       my $basename = $parts[0];
       my $newvcf = "$vcfdir/$basename.ma.vcf.gz";
-      # my $cpvcfcmd="cp $file $vcfdir/$filename";
-      # print "Copying: $cpvcfcmd";
-      # forkExecWait($cpvcfcmd);
-      # print "Done\n";
 
-      my $maparse="perl $parentdir/smaug-genetics/data_pipeline/ma_parse.pl --i $rawvcf --o $newvcf";
+      my $maparse="perl ./ma_parse.pl --i $rawvcf --o $newvcf";
       print "Input file: $rawvcf\n";
       print "Writing to: $newvcf...";
       forkExecWait($maparse);
@@ -76,15 +74,13 @@ if ($makecopy eq "copy") {
     }
 	}
 
-	# my $concatcmd="perl $vcftoolsdir/perl/vcf-concat $vcfdir/*$rawvcfext | gzip -c > $vcfdir/merged.vcf.gz";
-	# forkExecWait($concatcmd);
-
   print "Operation complete\n";
 }
 
 ################################################################################
-# Scans input directory for vcfs and outputs summary file to
-# Get per-chromosome summary files from bcftools
+# Scans input directory for vcfs and outputs summary file to get per-chromosome
+# summary files from bcftools. If running without the 'copy' argument, assumes
+# vcfs in the input directory have already been parsed for multiallelic sites
 ################################################################################
 my $script = 1;
 
@@ -97,7 +93,7 @@ if ($script==1){
 	foreach my $file (@vcfs) {
     print "Getting summary for $file...\n";
     unless(-e "$file.tbi"){
-      print "$file not indexed--indexing now...\n";
+      print "$file not indexed--indexing now...";
       my $tabixcmd = "tabix -p vcf $file";
       forkExecWait($tabixcmd);
       print "Done\n";
@@ -113,9 +109,8 @@ if ($script==1){
 		} elsif ($mac eq "singletons"){
 			$bcfquery = "bcftools query -i 'AC=1 && FILTER=\"PASS\"' -r $chr";
 		}
-    my $cmd = "$bcfquery  -f '%CHROM\t%POS\t%REF\t%ALT\t%INFO/AN\n' $file > $outdir/chr$chr.test.summary";
+    my $cmd = "$bcfquery  -f '%CHROM\t%POS\t%REF\t%ALT\t%INFO/AN\n' $file > $outdir/chr$chr.summary";
 		forkExecWait($cmd);
-    print "Done.\n";
 	}
   print "Operation complete\n";
 }

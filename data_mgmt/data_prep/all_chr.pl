@@ -1,7 +1,7 @@
 #!/usr/local/bin/perl
 
 ##############################################################################
-# Run ref5.pl on all chromosomes--
+# Run augment_summary.pl on all chromosomes--
 # update local nucleotide (adj) and binwidth (b) parameters as necesary
 #
 # Can be modified to a slurm array job

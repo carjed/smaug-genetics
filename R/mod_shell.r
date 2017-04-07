@@ -316,7 +316,7 @@ if(common){
 ##############################################################################
 # Write out table of sites genome-wide
 ##############################################################################
-if(log_model){
+if(build_logit){
 	ptm <- proc.time()
 	cat("Prepping data for logistic regression model...\n")
 	source("./R/build_logit_data.r")

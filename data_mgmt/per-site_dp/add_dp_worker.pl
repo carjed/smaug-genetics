@@ -20,17 +20,9 @@ use feature 'say';
 
 my $relpath = $FindBin::Bin;
 my $configpath = dirname(dirname($relpath));
-
 my $config = LoadFile("$configpath/_config.yaml");
 
-my $adj = $config->{adj};
-my $mac = $config->{mac};
-my $binw = $config->{binw};
-my $data = $config->{data};
-my $bin_scheme = $config->{bin_scheme};
 my $parentdir = $config->{parentdir};
-my $count_motifs = $config->{count_motifs};
-my $expand_summ = $config->{expand_summ};
 
 # Specify parameters
 my $i;
@@ -107,16 +99,14 @@ while(<$inFH>){
 ##############################################################################
 # Rounding subroutines
 ##############################################################################
-sub roundup
-{
+sub roundup {
   my $num = shift;
   my $roundto = shift || 1;
 
   return int(ceil($num/$roundto))*$roundto;
 }
 
-sub rounddown
-{
+sub rounddown {
   my $num = shift;
   my $roundto = shift || 1;
 

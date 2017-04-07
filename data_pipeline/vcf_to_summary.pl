@@ -86,7 +86,7 @@ if ($makecopy eq "copy") {
 # Scans input directory for vcfs and outputs summary file to
 # Get per-chromosome summary files from bcftools
 ################################################################################
-my $script = 0;
+my $script = 1;
 
 if ($script==1){
   my @vcfs = File::Find::Rule->file()

@@ -32,6 +32,14 @@ sub getRef{
 	my $f_fasta=shift;
   my $chr=shift;
 
+  if ($chr<22) {
+  	$nextchr=$chr+1;
+  } elsif ($chr==22) {
+  	$nextchr="X";
+  } else {
+  	$nextchr="Y";
+  }
+
 	open my $fasta, '<', $f_fasta or die "can't open $f_fasta: $!";
 
 	my $seq;

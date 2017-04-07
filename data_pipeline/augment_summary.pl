@@ -57,15 +57,6 @@ if ($adj!=0) {
 
 my $bw=$binw/1000;
 
-my $nextchr='';
-if ($chr<22) {
-	$nextchr=$chr+1;
-} elsif ($chr==22) {
-	$nextchr="X";
-} else {
-	$nextchr="Y";
-}
-
 ##############################################################################
 # Read in files and initialize outputs
 # download hg37 from nih.gov if missing

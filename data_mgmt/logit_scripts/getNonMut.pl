@@ -127,7 +127,7 @@ for my $strpos (0 .. $seqlength){
 	my $bin = ceil($pos/$binwidth);
 	my $key2=join("\t", $chr, $bin);
 
-	if(defined $hash{$key2}){
+	# if(defined $hash{$key2}){
 		if(($base =~ /$b1|$b2/) & (!exists $poshash{$pos})){
 			# push (@POS, $pos); # add position to exclusion list
 			my $localseq = substr($seq, $pos-$adj-1, $subseq);
@@ -149,7 +149,7 @@ for my $strpos (0 .. $seqlength){
 		} elsif(exists $poshash{$pos}){
 			print $OUT "$poshash{$pos}\n";
 		}
-	}
+	# }
 }
 
 print "Done\n";

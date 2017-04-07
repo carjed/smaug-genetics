@@ -95,8 +95,8 @@ if ($script==1){
                             ->in($inputdir);
 
 	foreach my $file (@vcfs) {
-
-    if(!(-e "$file.tbi")){
+    print "Getting summary for $file...";
+    unless(-e "$file.tbi"){
       print "$file not indexed--indexing now...\n";
       my $tabixcmd = "tabix -p vcf $file";
       forkExecWait($tabixcmd);
@@ -115,5 +115,7 @@ if ($script==1){
 		}
     my $cmd = "$bcfquery  -f '%CHROM\t%POS\t%REF\t%ALT\t%INFO/AN\n' $file > $outdir/chr$chr.test.summary";
 		forkExecWait($cmd);
+    print "Done.\n";
 	}
+  print "Operation complete\n";
 }

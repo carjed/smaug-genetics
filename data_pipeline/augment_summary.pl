@@ -42,7 +42,7 @@ my $parentdir = $config->{parentdir};
 my $count_motifs = $config->{count_motifs};
 my $expand_summ = $config->{expand_summ};
 
-use lib $parentdir . '/lib';
+use lib "$FindBin::Bin/..";
 use SmaugFunctions;
 
 my $chr=$ARGV[0];

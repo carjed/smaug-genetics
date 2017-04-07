@@ -43,7 +43,7 @@ my $count_motifs = $config->{count_motifs};
 my $expand_summ = $config->{expand_summ};
 
 use lib "$FindBin::Bin/../lib";
-use SmaugFunctions;
+use SmaugFunctions qw(forkExecWait getRef);
 
 my $chr=$ARGV[0];
 

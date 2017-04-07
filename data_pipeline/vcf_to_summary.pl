@@ -1,9 +1,13 @@
 #!/usr/local/bin/perl
+
+################################################################################
+# Singleton Analysis Pipeline
+# 	-create initial summary files to be passed to ref5.pl
+################################################################################
+
 use strict;
 use warnings;
 use POSIX;
-use Getopt::Long;
-use Pod::Usage;
 use File::Basename;
 use File::Path qw(make_path);
 use File::Find::Rule;
@@ -28,53 +32,45 @@ my $rawvcfext = $config->{rawvcfext};
 use lib "$FindBin::Bin/../lib";
 use SmaugFunctions qw(forkExecWait getRef);
 
-################################################################################
-# Singleton Analysis Pipeline
-# 	-create initial summary files to be passed to ref5.pl
-################################################################################
-my $help=0;
-my $man=0;
-
 # Default summary directory
 my $outdir="$inputdir/summaries/${mac}";
 
 # Copies per-chromosome VCFs from another directory to avoid overwriting
-my $makecopy;
+my $makecopy = $ARGV[0];
 
 # Specify project folder for VCFs
 my $vcfdir="$inputdir/vcfs";
 make_path($vcfdir);
 
-GetOptions ('invcf=s'=> \$invcf,
-'outdir=s'=> \$outdir,
-'makecopy' => \$makecopy,
-'help|?'=> \$help,
-man => \$man) or pod2usage(1);
-
 ################################################################################
 # Copies original vcfs to project directory
 ################################################################################
-if ($makecopy) {
+if ($makecopy eq "copy") {
 	my @rawvcfs = File::Find::Rule->file()
                             ->name("*.$rawvcfext")
                             ->maxdepth(3)
                             ->in($rawvcfdir);
 
-	print "Copying VCFs to project directory...\n";
-	foreach my $file (@rawvcfs) {
-		my $filename=fileparse($file);
+	print "Processing VCFs with extension '$rawvcfext' from $rawvcfdir...\n";
+	foreach my $rawvcf (@rawvcfs) {
+		my $filename=fileparse($rawvcf);
 
     if(!($filename !~ /chrX/)){
       my @parts = split(/\.vcf.gz/, $filename);
       my $basename = $parts[0];
+      my $newvcf = "$vcfdir/$basename.ma.vcf.gz";
+      # my $cpvcfcmd="cp $file $vcfdir/$filename";
+      # print "Copying: $cpvcfcmd";
+      # forkExecWait($cpvcfcmd);
+      # print "Done\n";
 
-      my $cpvcf="cp $file $vcfdir/$filename";
-      print "sh: $cpvcf\n";
-      forkExecWait($cpvcf);
-
-      my $maparse="perl ./ma_parse.pl --i $vcfdir/$filename --o $vcfdir/$basename.ma.vcf.gz";
+      my $maparse="perl $parentdir/smaug-genetics/ma_parse.pl --i $rawvcf --o $newvcf";
+      print "Copying $rawvcf and parsing multiallelic sites into $newvcf...";
       forkExecWait($maparse);
+      print "Done\n";
     }
+
+    print "Operation complete\n";
 	}
 
 	# my $concatcmd="perl $vcftoolsdir/perl/vcf-concat $vcfdir/*$rawvcfext | gzip -c > $vcfdir/merged.vcf.gz";
@@ -88,7 +84,7 @@ if ($makecopy) {
 # Scans input directory for vcfs and outputs summary file to
 # Get per-chromosome summary files from bcftools
 ################################################################################
-my $script = 1;
+my $script = 0;
 
 if ($script==1){
   my @vcfs = File::Find::Rule->file()
@@ -97,6 +93,14 @@ if ($script==1){
                             ->in($inputdir);
 
 	foreach my $file (@vcfs) {
+
+    if(!(-e "$file.tbi")){
+      print "$file not indexed--indexing now...\n";
+      my $tabixcmd = "tabix -p vcf $file";
+      forkExecWait($tabixcmd);
+      print "Done\n";
+    }
+
     my $filename=fileparse($file);
     my @parts = split(/\./, $filename);
     my $chr = $parts[0];
@@ -107,7 +111,7 @@ if ($script==1){
 		} elsif ($mac eq "singletons"){
 			$bcfquery = "bcftools query -i 'AC=1 && FILTER=\"PASS\"' -r $chr";
 		}
-    my $cmd = "$bcfquery  -f '%CHROM\t%POS\t%REF\t%ALT\t%INFO/AN\n' $file > $outdir/chr$chr.summary";
+    my $cmd = "$bcfquery  -f '%CHROM\t%POS\t%REF\t%ALT\t%INFO/AN\n' $file > $outdir/chr$chr.test.summary";
 		forkExecWait($cmd);
 	}
 }

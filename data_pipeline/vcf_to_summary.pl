@@ -36,7 +36,11 @@ use SmaugFunctions qw(forkExecWait getRef);
 my $outdir="$inputdir/summaries/${mac}";
 
 # Copies per-chromosome VCFs from another directory to avoid overwriting
-my $makecopy = $ARGV[0];
+my $makecopy;
+if(defined($ARGV[0])){
+  $makecopy = $ARGV[0];
+}
+
 
 # Specify project folder for VCFs
 my $vcfdir="$inputdir/vcfs";
@@ -65,7 +69,8 @@ if ($makecopy eq "copy") {
       # print "Done\n";
 
       my $maparse="perl $parentdir/smaug-genetics/data_pipeline/ma_parse.pl --i $rawvcf --o $newvcf";
-      print "Copying $rawvcf and parsing multiallelic sites into $newvcf...";
+      print "Input file: $rawvcf\n"
+      print "Writing to: $newvcf...";
       forkExecWait($maparse);
       print "Done\n";
     }

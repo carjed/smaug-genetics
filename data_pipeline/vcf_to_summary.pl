@@ -36,7 +36,7 @@ use SmaugFunctions qw(forkExecWait getRef);
 my $outdir="$inputdir/summaries/${mac}";
 
 # Copies per-chromosome VCFs from another directory to avoid overwriting
-my $makecopy;
+my $makecopy='';
 if(defined($ARGV[0])){
   $makecopy = $ARGV[0];
 }

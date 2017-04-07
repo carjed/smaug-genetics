@@ -26,7 +26,7 @@ my $relpath = $FindBin::Bin;
 my $configpath = dirname(dirname($relpath));
 my $config = LoadFile("$configpath/_config.yaml");
 
-my $adj = $config->{adj};
+my $adj = 3;
 my $mac = $config->{mac};
 my $binw = $config->{binw};
 my $data = $config->{data};

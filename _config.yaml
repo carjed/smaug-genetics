@@ -34,6 +34,11 @@ bin_scheme: "all"
 # binw defines the width of fixed bins in base pairs
 binw: 1000000
 
+libpath: "~/R/x86_64-pc-linux-gnu-library/2.13"
+
+rawvcfdir: "/net/bipolar/lockeae/final_freeze/snps/vcfs"
+vcftoolsdir: "/net/bipolar/jedidiah/vcftools_0.1.10"
+
 ##############################################################################
 # Following flags are specific to the augment_summary.pl script
 ##############################################################################

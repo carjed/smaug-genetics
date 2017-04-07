@@ -32,6 +32,8 @@ my $parentdir = $config->{parentdir};
 my $count_motifs = $config->{count_motifs};
 my $expand_summ = $config->{expand_summ};
 my $inputdir = $config->{inputdir};
+my $vcftoolsdir = $config->{vcftoolsdir};
+my $rawvcfdir = $config->{rawvcfdir};
 
 ################################################################################
 # Singleton Analysis Pipeline
@@ -68,14 +70,13 @@ man => \$man) or pod2usage(1);
 
 ################################################################################
 # Copies original vcfs to project directory
-# Must modify hard-coded paths for original vcfs
 ################################################################################
 if ($makecopy) {
 	my @vcfs;
 	my @chrindex=(1..22);
 	foreach my $chr (@chrindex){
 		push(@vcfs,
-			"/net/bipolar/lockeae/final_freeze/snps/vcfs/chr$chr/chr$chr.filtered.sites.vcf.gz");
+			"$rawvcfdir/chr$chr/chr$chr.filtered.sites.vcf.gz");
 	}
 
 	print "Copying VCFs to project directory...\n";
@@ -95,7 +96,7 @@ if ($makecopy) {
 		&forkExecWait($cpvcf);
 	}
 
-	my $concatcmd="perl /net/bipolar/jedidiah/vcftools_0.1.10/perl/vcf-concat $vcfdir/chr*.vcf.gz | gzip -c > $vcfdir/merged.vcf.gz";
+	my $concatcmd="perl $vcftoolsdir/perl/vcf-concat $vcfdir/chr*.vcf.gz | gzip -c > $vcfdir/merged.vcf.gz";
 	&forkExecWait($concatcmd);
 
 	my $maparse="perl ";

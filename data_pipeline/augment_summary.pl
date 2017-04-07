@@ -42,6 +42,9 @@ my $parentdir = $config->{parentdir};
 my $count_motifs = $config->{count_motifs};
 my $expand_summ = $config->{expand_summ};
 
+use lib "$parentdir/lib";
+use SmaugFunctions;
+
 my $chr=$ARGV[0];
 
 ##############################################################################
@@ -71,7 +74,13 @@ my $in_path = "/net/bipolar/jedidiah/testpipe/summaries";
 my $out_path = "$parentdir/output/${subseq}bp_${bw}k_${mac}_${data}";
 make_path("$out_path");
 
-my $seq=&getRef();
+if($data eq "mask"){
+  $f_fasta = "$parentdir/reference_data/human_g1k_v37.mask.fasta";
+} else {
+  $f_fasta = "$parentdir/reference_data/human_g1k_v37.fasta";
+}
+
+my $seq=getRef($f_fasta, $chr);
 
 my $seqlength=length($seq);
 print "seqlength: $seqlength\n";
@@ -189,66 +198,66 @@ if($expand_summ eq "TRUE"){
 	print "Runtime: ", timestr($difference), "\n";
 }
 
-##############################################################################
-# fork-exec-wait subroutine
-##############################################################################
-sub forkExecWait {
-    my $cmd = shift;
-    #print "forkExecWait(): $cmd\n";
-    my $kidpid;
-    if ( !defined($kidpid = fork()) ) {
-		die "Cannot fork: $!";
-    }
-    elsif ( $kidpid == 0 ) {
-		exec($cmd);
-		die "Cannot exec $cmd: $!";
-    }
-    else {
-		waitpid($kidpid,0);
-    }
-}
-
-##############################################################################
-# Get reference
-##############################################################################
-sub getRef{
-	my $f_fasta;
-	if($data eq "mask"){
-		$f_fasta = "$parentdir/reference_data/human_g1k_v37.mask.fasta";
-	} else {
-		$f_fasta = "$parentdir/reference_data/human_g1k_v37.fasta";
-	}
-
-	if (-e $f_fasta) {
-		print "Using reference genome: $f_fasta\n";
-	} else {
-		print "Reference genome not found in directory. Would you like to download one? (y/n): ";
-		my $choice = <>;
-		chomp $choice;
-		if ($choice eq "y") {
-			my $dlcmd="wget -P $parentdir/ ftp://ftp-trace.ncbi.nih.gov/1000genomes/ftp/technical/reference/human_g1k_v37.fasta.gz";
-			&forkExecWait($dlcmd);
-			my $unzipcmd="gunzip $parentdir/human_g1k_v37.fasta";
-			&forkExecWait($unzipcmd);
-		} else {
-			die "Please upload an appropriate reference genome to $parentdir/reference_data/ \n";
-		}
-	}
-
-	open my $fasta, '<', $f_fasta or die "can't open $f_fasta: $!";
-	print "Getting reference sequence for chromosome $chr...\n";
-
-	my $seq;
-	while (<$fasta>) {
-		chomp;
-		if (/>$chr /../>$nextchr /) {
-			next if />$chr / || />$nextchr /;
-			$seq .=$_;
-		}
-	}
-
-	return $seq;
-}
+# ##############################################################################
+# # fork-exec-wait subroutine
+# ##############################################################################
+# sub forkExecWait {
+#     my $cmd = shift;
+#     #print "forkExecWait(): $cmd\n";
+#     my $kidpid;
+#     if ( !defined($kidpid = fork()) ) {
+# 		die "Cannot fork: $!";
+#     }
+#     elsif ( $kidpid == 0 ) {
+# 		exec($cmd);
+# 		die "Cannot exec $cmd: $!";
+#     }
+#     else {
+# 		waitpid($kidpid,0);
+#     }
+# }
+#
+# ##############################################################################
+# # Get reference
+# ##############################################################################
+# sub getRef{
+# 	my $f_fasta;
+# 	if($data eq "mask"){
+# 		$f_fasta = "$parentdir/reference_data/human_g1k_v37.mask.fasta";
+# 	} else {
+# 		$f_fasta = "$parentdir/reference_data/human_g1k_v37.fasta";
+# 	}
+#
+# 	if (-e $f_fasta) {
+# 		print "Using reference genome: $f_fasta\n";
+# 	} else {
+# 		print "Reference genome not found in directory. Would you like to download one? (y/n): ";
+# 		my $choice = <>;
+# 		chomp $choice;
+# 		if ($choice eq "y") {
+# 			my $dlcmd="wget -P $parentdir/ ftp://ftp-trace.ncbi.nih.gov/1000genomes/ftp/technical/reference/human_g1k_v37.fasta.gz";
+# 			&forkExecWait($dlcmd);
+# 			my $unzipcmd="gunzip $parentdir/human_g1k_v37.fasta";
+# 			&forkExecWait($unzipcmd);
+# 		} else {
+# 			die "Please upload an appropriate reference genome to $parentdir/reference_data/ \n";
+# 		}
+# 	}
+#
+# 	open my $fasta, '<', $f_fasta or die "can't open $f_fasta: $!";
+# 	print "Getting reference sequence for chromosome $chr...\n";
+#
+# 	my $seq;
+# 	while (<$fasta>) {
+# 		chomp;
+# 		if (/>$chr /../>$nextchr /) {
+# 			next if />$chr / || />$nextchr /;
+# 			$seq .=$_;
+# 		}
+# 	}
+#
+# 	return $seq;
+# }
 
 ##############################################################################
 # Subroutine counts occurrence of motifs per bin

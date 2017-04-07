@@ -17,18 +17,6 @@ packages <- c("ggplot2", "dplyr", "tidyr", "broom", "RColorBrewer", "MASS",
 
 sapply(packages, function(x) suppressMessages(usePackage(x)))
 
-# Set custom library path for bedr package
-libpath <- "~/R/x86_64-pc-linux-gnu-library/2.13"
-suppressMessages(require(bedr, lib.loc=libpath, quietly=T))
-# Install the bedr package from github, if needed
-# install_github('carjed/bedr')
-# require(bedr)
-# suppressMessages(usePackage(ggbio))
-
-# Install ggrepel from github for advanced options
-# install_github('slowkow/ggrepel')
-# require(ggrepel)
-
 # Load predefined color palettes, once RColorBrewer package is loaded
 source("./R/palettes.r")
 
@@ -39,6 +27,18 @@ cat("Script will run with the following parameters:\n")
 
 args <- yaml.load_file("./_config.yaml")
 argParse(args)
+
+# Install the bedr package from github, if needed
+# install_github('carjed/bedr')
+
+# Load forked bedr package from custom library path specified in config file
+suppressMessages(require(bedr, lib.loc=libpath, quietly=T))
+
+# suppressMessages(usePackage(ggbio))
+
+# Install ggrepel from github for advanced options
+# install_github('slowkow/ggrepel')
+# suppressMessages(require(ggrepel))
 
 # Define additional variables for cleaner strings, etc.
 bink <- binw/1000

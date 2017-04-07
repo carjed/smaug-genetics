@@ -64,7 +64,7 @@ if ($makecopy eq "copy") {
       # forkExecWait($cpvcfcmd);
       # print "Done\n";
 
-      my $maparse="perl $parentdir/smaug-genetics/ma_parse.pl --i $rawvcf --o $newvcf";
+      my $maparse="perl $parentdir/smaug-genetics/data_pipeline/ma_parse.pl --i $rawvcf --o $newvcf";
       print "Copying $rawvcf and parsing multiallelic sites into $newvcf...";
       forkExecWait($maparse);
       print "Done\n";

@@ -31,6 +31,7 @@ sub forkExecWait {
 sub getRef{
 	my $f_fasta=shift;
   my $chr=shift;
+  my $nextchr;
 
   if ($chr<22) {
   	$nextchr=$chr+1;

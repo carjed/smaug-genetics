@@ -16,7 +16,6 @@ use Getopt::Long;
 use Pod::Usage;
 use File::Basename;
 use File::Path qw(make_path);
-use File::FindLib 'lib/';
 use List::Util qw(first max maxstr min minstr reduce shuffle sum);
 use Cwd;
 use Benchmark;
@@ -43,8 +42,8 @@ my $parentdir = $config->{parentdir};
 my $count_motifs = $config->{count_motifs};
 my $expand_summ = $config->{expand_summ};
 
-# push 
-# use SmaugFunctions;
+use lib "$FindBin::Bin/../lib";
+use SmaugFunctions;
 
 my $chr=$ARGV[0];
 

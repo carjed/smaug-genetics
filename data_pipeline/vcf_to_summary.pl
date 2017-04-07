@@ -69,7 +69,7 @@ if ($makecopy eq "copy") {
       # print "Done\n";
 
       my $maparse="perl $parentdir/smaug-genetics/data_pipeline/ma_parse.pl --i $rawvcf --o $newvcf";
-      print "Input file: $rawvcf\n"
+      print "Input file: $rawvcf\n";
       print "Writing to: $newvcf...";
       forkExecWait($maparse);
       print "Done\n";

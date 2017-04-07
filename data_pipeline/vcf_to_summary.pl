@@ -6,6 +6,7 @@ use Getopt::Long;
 use Pod::Usage;
 use File::Basename;
 use File::Path qw(make_path);
+use File::Find::Rule;
 use List::Util qw(first max maxstr min minstr reduce shuffle sum);
 use Cwd;
 use Benchmark;
@@ -15,25 +16,17 @@ use feature 'say';
 
 my $relpath = $FindBin::Bin;
 my $configpath = dirname($relpath);
-
 my $config = LoadFile("$configpath/_config.yaml");
 
-print "Script will run with the following parameters:\n";
-for (sort keys %{$config}) {
-    say "$_: $config->{$_}";
-}
-
-my $adj = $config->{adj};
 my $mac = $config->{mac};
-my $binw = $config->{binw};
-my $data = $config->{data};
-my $bin_scheme = $config->{bin_scheme};
 my $parentdir = $config->{parentdir};
-my $count_motifs = $config->{count_motifs};
-my $expand_summ = $config->{expand_summ};
 my $inputdir = $config->{inputdir};
 my $vcftoolsdir = $config->{vcftoolsdir};
 my $rawvcfdir = $config->{rawvcfdir};
+my $rawvcfext = $config->{rawvcfext};
+
+use lib "$FindBin::Bin/../lib";
+use SmaugFunctions qw(forkExecWait getRef);
 
 ################################################################################
 # Singleton Analysis Pipeline
@@ -42,29 +35,19 @@ my $rawvcfdir = $config->{rawvcfdir};
 my $help=0;
 my $man=0;
 
-### Mandatory inputs
-# Default vcf to load
-my $invcf = "$inputdir/vcfs/merged.ma.vcf.gz"; # singletons, including multiallelic sites
-# my $invcf = "/net/bipolar/jedidiah/testpipe/vcfs/merged.new.vcf.gz"; # common variants
-
 # Default summary directory
-my $outdir="$inputdir/summaries/${mac}_full";
-
-### Optional inputs
-# If --common option specified, outputs summary for common variants (MAC>10)
-my $common;
+my $outdir="$inputdir/summaries/${mac}";
 
 # Copies per-chromosome VCFs from another directory to avoid overwriting
 my $makecopy;
 
 # Specify project folder for VCFs
 my $vcfdir="$inputdir/vcfs";
+make_path($vcfdir);
 
 GetOptions ('invcf=s'=> \$invcf,
 'outdir=s'=> \$outdir,
-'common' => \$common,
 'makecopy' => \$makecopy,
-'vcfdir=s' => \$vcfdir,
 'help|?'=> \$help,
 man => \$man) or pod2usage(1);
 
@@ -72,74 +55,59 @@ man => \$man) or pod2usage(1);
 # Copies original vcfs to project directory
 ################################################################################
 if ($makecopy) {
-	my @vcfs;
-	my @chrindex=(1..22);
-	foreach my $chr (@chrindex){
-		push(@vcfs,
-			"$rawvcfdir/chr$chr/chr$chr.filtered.sites.vcf.gz");
-	}
+	my @rawvcfs = File::Find::Rule->file()
+                            ->name("*.$rawvcfext")
+                            ->maxdepth(3)
+                            ->in($rawvcfdir);
 
 	print "Copying VCFs to project directory...\n";
-	foreach my $file (@vcfs) {
+	foreach my $file (@rawvcfs) {
 		my $filename=fileparse($file);
-		# my $subfile = substr($filename, index($filename, 'chr'), index($filename, 'anno'));
-		my $subfile = substr($filename,
-			index($filename, 'chr'),
-			index($filename, 'modified'));
-		my $chr = substr($subfile, 0, index($subfile, '.'));
-		#print "$chr\n";
-		# my $tabix ="tabix -r newheader.txt $file > $vcfdir/$chr.anno.vcf.gz";
-		# &forkExecWait($tabix);
 
-		# my $tabix="tabix -p vcf $file"
-		my $cpvcf="cp $file $vcfdir/$chr.vcf.gz";
-		&forkExecWait($cpvcf);
+    if(!($filename !~ /chrX/)){
+      my @parts = split(/\.vcf.gz/, $filename);
+      my $basename = $parts[0];
+
+      my $cpvcf="cp $file $vcfdir/$filename";
+      print "sh: $cpvcf\n";
+      forkExecWait($cpvcf);
+
+      my $maparse="perl ./ma_parse.pl --i $vcfdir/$filename --o $vcfdir/$basename.ma.vcf.gz";
+      forkExecWait($maparse);
+    }
 	}
 
-	my $concatcmd="perl $vcftoolsdir/perl/vcf-concat $vcfdir/chr*.vcf.gz | gzip -c > $vcfdir/merged.vcf.gz";
-	&forkExecWait($concatcmd);
+	# my $concatcmd="perl $vcftoolsdir/perl/vcf-concat $vcfdir/*$rawvcfext | gzip -c > $vcfdir/merged.vcf.gz";
+	# forkExecWait($concatcmd);
 
-	my $maparse="perl ";
 
 	print "Done\n";
 }
 
 ################################################################################
+# Scans input directory for vcfs and outputs summary file to
 # Get per-chromosome summary files from bcftools
 ################################################################################
 my $script = 1;
 
 if ($script==1){
-	foreach my $chr (1..22) {
-        # my $filename=fileparse($file);
-        # my $path=dirname($file);
-		# my $chr = substr($filename, 0, index($filename, '.'));
-		my $cmd;
-		if(common){
-			$cmd="bcftools query -i 'AC>10 && FILTER=\"PASS\"' -r $chr -f '%CHROM\t%POS\t%REF\t%ALT\t%INFO/AB\t%INFO/AN\n' $invcf > $outdir/chr$chr.common.summary";
-		} else {
-			$cmd="bcftools query -i 'FILTER=\"PASS\"' -r $chr -f '%CHROM\t%POS\t%REF\t%ALT\t%INFO/AB\t%INFO/AN\n' $invcf > $outdir/chr$chr.summary";
+  my @vcfs = File::Find::Rule->file()
+                            ->name("*.vcf.gz")
+                            ->maxdepth(1)
+                            ->in($inputdir);
+
+	foreach my $file (@vcfs) {
+    my $filename=fileparse($file);
+    my @parts = split(/\./, $filename);
+    my $chr = $parts[0];
+    $chr =~ s/chr//;
+    my $bcfquery;
+		if($mac eq "common"){
+			$bcfquery = "bcftools query -i 'AC>10 && FILTER=\"PASS\"' -r $chr";
+		} elsif ($mac eq "singletons"){
+			$bcfquery = "bcftools query -i 'AC=1 && FILTER=\"PASS\"' -r $chr";
 		}
-
-		&forkExecWait($cmd);
+    my $cmd = "$bcfquery  -f '%CHROM\t%POS\t%REF\t%ALT\t%INFO/AN\n' $file > $outdir/chr$chr.summary";
+		forkExecWait($cmd);
 	}
-}
-
-################################################################################
-# Fork-exec-wait
-################################################################################
-sub forkExecWait {
-    my $cmd = shift;
-    #print "forkExecWait(): $cmd\n";
-    my $kidpid;
-    if ( !defined($kidpid = fork()) ) {
-	die "Cannot fork: $!";
-    }
-    elsif ( $kidpid == 0 ) {
-	exec($cmd);
-	die "Cannot exec $cmd: $!";
-    }
-    else {
-	waitpid($kidpid,0);
-    }
 }

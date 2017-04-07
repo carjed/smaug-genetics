@@ -35,7 +35,7 @@ my $vcf = gzopen($invcf, "rb") or
   die "can't open $invcf: $gzerrno";
 
 # Initialize gzipped output
-open(my $OUT, "| gzip -c > $outvcf") or
+open(my $OUT, "| bgzip -c > $outvcf") or
   die "Could not write to $outvcf: $!";
 
 while($vcf->gzreadline($_) > 0){

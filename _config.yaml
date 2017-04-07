@@ -36,7 +36,13 @@ binw: 1000000
 
 libpath: "~/R/x86_64-pc-linux-gnu-library/2.13"
 
+# Define location and naming convention of raw input vcfs,
+# if we are using the 'makecopy' option in vcf_to_summary.pl
 rawvcfdir: "/net/bipolar/lockeae/final_freeze/snps/vcfs"
+
+# pattern to match vcfs we want to copy
+rawvcfext: "filtered.sites.modified.vcf.gz"
+
 vcftoolsdir: "/net/bipolar/jedidiah/vcftools_0.1.10"
 
 ##############################################################################

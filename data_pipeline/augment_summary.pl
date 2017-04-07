@@ -25,7 +25,6 @@ use feature 'say';
 
 my $relpath = $FindBin::Bin;
 my $configpath = dirname($relpath);
-
 my $config = LoadFile("$configpath/_config.yaml");
 
 print "Script will run with the following parameters:\n";
@@ -65,6 +64,7 @@ my $in_path = "/net/bipolar/jedidiah/testpipe/summaries";
 my $out_path = "$parentdir/output/${subseq}bp_${bw}k_${mac}_${data}";
 make_path("$out_path");
 
+print "Getting reference for chr$chr...\n";
 my $f_fasta;
 if($data eq "mask"){
   $f_fasta = "$parentdir/reference_data/human_g1k_v37.mask.fasta";
@@ -75,7 +75,7 @@ if($data eq "mask"){
 my $seq=getRef($f_fasta, $chr);
 
 my $seqlength=length($seq);
-print "seqlength: $seqlength\n";
+print "chr$chr seqlength: $seqlength\n";
 print "Done\n";
 
 ##############################################################################
@@ -116,14 +116,14 @@ if($expand_summ eq "TRUE"){
 	print "Expanding summary file...\n";
 	my $start_time=new Benchmark;
 
-	my $f_summ = "$in_path/${mac}_full/chr$chr.summary";
+	my $f_summ = "$in_path/$mac/chr$chr.summary";
 	open my $summ, '<', $f_summ or die "can't open $f_summ: $!";
 
 	my $outfile = "$out_path/chr$chr.expanded.summary";
 	open(OUT, '>', $outfile) or die "can't write to $outfile: $!\n";
 
 	if ($mac eq "singletons") {
-		print OUT "CHR\tPOS\tREF\tALT\tDP\tAN\tSEQ\tALTSEQ\tSequence\tCategory\tCategory2\n";
+		print OUT "CHR\tPOS\tREF\tALT\tAN\tSEQ\tALTSEQ\tSequence\tCategory\tCategory2\n";
 	} elsif ($mac eq "doubletons") {
 		print OUT "CHR\tPOS\tREF\tALT\tANNO\t";
 	}
@@ -190,67 +190,6 @@ if($expand_summ eq "TRUE"){
 	print "Runtime: ", timestr($difference), "\n";
 }
 
-# ##############################################################################
-# # fork-exec-wait subroutine
-# ##############################################################################
-# sub forkExecWait {
-#     my $cmd = shift;
-#     #print "forkExecWait(): $cmd\n";
-#     my $kidpid;
-#     if ( !defined($kidpid = fork()) ) {
-# 		die "Cannot fork: $!";
-#     }
-#     elsif ( $kidpid == 0 ) {
-# 		exec($cmd);
-# 		die "Cannot exec $cmd: $!";
-#     }
-#     else {
-# 		waitpid($kidpid,0);
-#     }
-# }
-#
-# ##############################################################################
-# # Get reference
-# ##############################################################################
-# sub getRef{
-# 	my $f_fasta;
-# 	if($data eq "mask"){
-# 		$f_fasta = "$parentdir/reference_data/human_g1k_v37.mask.fasta";
-# 	} else {
-# 		$f_fasta = "$parentdir/reference_data/human_g1k_v37.fasta";
-# 	}
-#
-# 	if (-e $f_fasta) {
-# 		print "Using reference genome: $f_fasta\n";
-# 	} else {
-# 		print "Reference genome not found in directory. Would you like to download one? (y/n): ";
-# 		my $choice = <>;
-# 		chomp $choice;
-# 		if ($choice eq "y") {
-# 			my $dlcmd="wget -P $parentdir/ ftp://ftp-trace.ncbi.nih.gov/1000genomes/ftp/technical/reference/human_g1k_v37.fasta.gz";
-# 			&forkExecWait($dlcmd);
-# 			my $unzipcmd="gunzip $parentdir/human_g1k_v37.fasta";
-# 			&forkExecWait($unzipcmd);
-# 		} else {
-# 			die "Please upload an appropriate reference genome to $parentdir/reference_data/ \n";
-# 		}
-# 	}
-#
-# 	open my $fasta, '<', $f_fasta or die "can't open $f_fasta: $!";
-# 	print "Getting reference sequence for chromosome $chr...\n";
-#
-# 	my $seq;
-# 	while (<$fasta>) {
-# 		chomp;
-# 		if (/>$chr /../>$nextchr /) {
-# 			next if />$chr / || />$nextchr /;
-# 			$seq .=$_;
-# 		}
-# 	}
-#
-# 	return $seq;
-# }
-
 ##############################################################################
 # Subroutine counts occurrence of motifs per bin
 ##############################################################################
@@ -287,11 +226,9 @@ sub countMotifs{
 
 				### code below equivalent to writeCounts() sub
 				my %tri_count=();
-				# @tri_count{@a}=@b;
 				$tri_count{$_}++ for @motifs;
 
 				foreach my $motif (sort keys %tri_count) {
-					# if ($count !~ /N|^G|^T/) {
 					my $altmotif = $motif;
 					$altmotif =~ tr/ACGT/TGCA/;
 					$altmotif = reverse $altmotif;
@@ -308,9 +245,7 @@ sub countMotifs{
 					}
 
 					print BIN "$_\t$seqp\t$sum\n";
-					# }
 				}
-				###
 			}
 		}
 	}	else {
@@ -318,16 +253,11 @@ sub countMotifs{
 		$bin = 0;
 		&writeCounts($bin, \@motifs);
 	}
-
-	# Modified counting strategy from https://www.biostars.org/p/5143/
-	# my @motifs=($seq=~/(?=([ACGT]{$subseq}))/g);
-	#for(@trinucs){print "$_\n"};
-
-	print "Done\n";
 }
 
 ##############################################################################
 # Read motif counts from hash table, sum counts symmetric motifs and write out
+# counting strategy modified from https://www.biostars.org/p/5143/
 ##############################################################################
 sub writeCounts{
 	my $bin = $_[0]+1;
@@ -354,6 +284,5 @@ sub writeCounts{
 		}
 
 		print BIN "$chr\t$bin\t$seqp\t$sum\n";
-		# }
 	}
 }

@@ -65,6 +65,7 @@ my $in_path = "/net/bipolar/jedidiah/testpipe/summaries";
 my $out_path = "$parentdir/output/${subseq}bp_${bw}k_${mac}_${data}";
 make_path("$out_path");
 
+my $f_fasta;
 if($data eq "mask"){
   $f_fasta = "$parentdir/reference_data/human_g1k_v37.mask.fasta";
 } else {

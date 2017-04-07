@@ -92,10 +92,10 @@ if ($script==1){
   my @vcfs = File::Find::Rule->file()
                             ->name("*.vcf.gz")
                             ->maxdepth(1)
-                            ->in($inputdir);
+                            ->in($vcfdir);
 
 	foreach my $file (@vcfs) {
-    print "Getting summary for $file...";
+    print "Getting summary for $file...\n";
     unless(-e "$file.tbi"){
       print "$file not indexed--indexing now...\n";
       my $tabixcmd = "tabix -p vcf $file";

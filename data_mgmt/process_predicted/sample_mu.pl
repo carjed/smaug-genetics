@@ -84,12 +84,13 @@ foreach my $categ (@categs){
 
       my $localseq = substr($seq, $dnmpos-$adj-1, $subseq);
       my $seqp = getMotif($localseq, $adj);
-      print "DNM line: $_\n";
+      print "DNM pos: $dnmpos\n";
       my $rateline = `grep -w $dnmpos $predfile`;
       chomp $rateline;
       # print "grep result: $rateline\n";
       my @ratelinearr = split(/\t/, $rateline);
       if($rateline=~/$dnmpos/){
+        print "$rateline contains DNM site: $dnmpos\n";
         print $outFH "$rateline\t1\t$categ\t$seqp\n";
       }
     }

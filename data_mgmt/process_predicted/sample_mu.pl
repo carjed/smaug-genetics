@@ -61,7 +61,6 @@ foreach my $categ (@categs){
     my $predfile = "$parentdir/output/predicted/chr$chr.$categ.txt";
   	open my $inFH, '<', $predfile or die "can't open $predfile: $!";
 
-    print ""
     while(<$inFH>){
       if(0.05>rand){
         chomp;

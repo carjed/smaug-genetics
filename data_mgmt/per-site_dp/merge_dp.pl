@@ -7,13 +7,8 @@
 use strict;
 use warnings;
 use POSIX;
-use Getopt::Long;
-use Pod::Usage;
 use File::Basename;
 use File::Path qw(make_path);
-use List::Util qw(first max maxstr min minstr reduce shuffle sum);
-use Math::Round;
-use Cwd;
 use FindBin;
 use YAML::XS 'LoadFile';
 use feature 'say';

@@ -1,11 +1,8 @@
 #!/bin/bash
 
-##############################################################################
+#############################################################################
 # Script downloads and formats reference data
-##############################################################################
-
-#url=$1
-#wget $url
+#############################################################################
 
 # Function from https://gist.github.com/pkuczynski/8665367
 parse_yaml() {
@@ -28,19 +25,54 @@ parse_yaml() {
 eval $(parse_yaml _config.yaml "config_")
 
 refdir="$config_parentdir/reference_data"
+mkdir $refdir
 
-# Reference genome
-#wget -P $parentdir/ ftp://ftp-trace.ncbi.nih.gov/1000genomes/ftp/technical/reference/human_g1k_v37.fasta.gz
-wget -qO- ftp://ftp-trace.ncbi.nih.gov/1000genomes/ftp/technical/reference/human_g1k_v37.fasta.gz | gunzip > "$refdir/human_g1k_v37.fasta"
+curdir=${PWD}
+# echo $curdir
+
+cd $refdir
 
 # hg19 chromosome lengths
-wget -qO- https://genome.ucsc.edu/goldenpath/help/hg19.chrom.sizes > "$refdir/hg19.genome"
+curl -s "https://genome.ucsc.edu/goldenpath/help/hg19.chrom.sizes" > "$refdir/hg19.genome"
+
+# 1000G strict mask
+curl -s  "ftp://ftp.1000genomes.ebi.ac.uk/vol1/ftp/release/20130502/supporting/accessible_genome_masks/20140520.strict_mask.autosomes.bed" | bedtools complement -i - -g "$refdir/hg19.genome" | bedtools sort | awk 'match($1, /chr[0-9]+$/) {print $0}' > "$refdir/testmask2.bed"
+
+# Reference genome fasta
+curl -s "ftp://ftp-trace.ncbi.nih.gov/1000genomes/ftp/technical/reference/human_g1k_v37.fasta.gz" | gunzip > "$refdir/human_g1k_v37.fasta"
+
+# mask fasta
+bedtools maskfasta -fi "$refdir/human_g1k_v37.fasta" -bed "$refdir/testmask2.bed" -fo "$refdir/human_g1k_v37.premask.fasta"
+
+perl -ane 'if(/\>/){$a++;print ">$a dna:chromosome\n"}else{print;}' "$refdir/human_g1k_v37.mask.fasta" > "$refdir/human_g1k_v37.mask.fasta"
+
+rm -f "$refdir/human_g1k_v37.premask.fasta"
 
 # CpG islands
-wget -qO- http://web.stanford.edu/class/bios221/data/model-based-cpg-islands-hg19.txt | awk 'NR>1' | sort -k1,1 -k2,2n > "$refdir/cpg_islands_sorted.txt"
+curl -s  "http://web.stanford.edu/class/bios221/data/model-based-cpg-islands-hg19.txt" | awk 'NR>1' | sort -k1,1 -k2,2n > "$refdir/cpg_islands_sorted.bed"
 
 # Lamin-associated domains
-wget -qO- http://hgdownload.cse.ucsc.edu/goldenPath/hg19/database/laminB1Lads.txt.gz | gunzip | awk 'NR>1 {print $2"\t"$3"\t"$4}' | bedtools sort -i - > "$refdir/lamin_B1_LADS2.bed"
+curl -s  "http://hgdownload.cse.ucsc.edu/goldenPath/hg19/database/laminB1Lads.txt.gz" | gunzip | awk 'NR>1 {print $2"\t"$3"\t"$4}' | bedtools sort -i - > "$refdir/lamin_B1_LADS2.bed"
+
+# DNase hypersensitive sites
+curl -s "http://hgdownload.cse.ucsc.edu/goldenpath/hg19/encodeDCC/wgEncodeRegDnaseClustered/wgEncodeRegDnaseClusteredV3.bed.gz" | gunzip | cut -f1-3 | bedtools sort -i - > "$refdir/DHS.bed"
+
+# Replication timing
+curl -s "http://mccarrolllab.com/wp-content/uploads/2015/03/Koren-et-al-Table-S2.zip" | gunzip > "$refdir/lymph_rep_time.txt"
+
+# Recombination rate
+curl -s "http://hgdownload.cse.ucsc.edu/gbdb/hg19/decode/SexAveraged.bw" | "$refdir/SexAvaraged.bw"
+bigWigToWig "$refdir/SexAveraged.bw" "$refdir/SexAveraged.wig"
+echo "CHR\tSTART\tEND\tRATE" > "$refdir/recomb_rate.bed"
+awk 'NR>1' "$refdir/SexAveraged.wig" | cat >> "$refdir/recomb_rate.bed"
+
+# GoNL de novo mutations
+curl -s "https://molgenis26.target.rug.nl/downloads/gonl_public/variants/release5.2/GoNL_DNMs.txt" > "$refdir/DNMs/GoNL_DNMs.txt"
+
+# RefSeq v69 exons
+# originally downloaded via UCSC genome browser;
+# this command directly downloads the file used in analyses
+curl -s "http://mutation.sph.umich.edu/hg19/GRCh37_RefSeq_sorted.bed" >  "$refdir/GRCh37_RefSeq_sorted.bed"
 
 # Histone marks
 wget -r -nd -P . --accept-regex 'E062' http://egg2.wustl.edu/roadmap/data/byFileType/peaks/consolidated/broadPeak/
@@ -54,19 +86,17 @@ for i in E062*.bed; do
 	bedtools sort -i $i > sort.$i
 done
 
-# DNase hypersensitive sites
-wget -qO- http://hgdownload.cse.ucsc.edu/goldenpath/hg19/encodeDCC/wgEncodeRegDnaseClustered/wgEncodeRegDnaseClusteredV3.bed.gz | gunzip | cut -f1-3 | bedtools sort -i - > "$refdir/DHS.bed"
+# cytobands
+curl -s "http://hgdownload.cse.ucsc.edu/goldenPath/hg19/database/cytoBand.txt.gz" | gunzip > "$refdir/cytoBand.txt"
 
-# Replication timing
-wget -qO- http://mccarrolllab.com/wp-content/uploads/2015/03/Koren-et-al-Table-S2.zip | gunzip > "$refdir/lymph_rep_time.txt"
+# get mask pct per band; used in downstream analysis
+bedtools coverage -a "$refdir/testmask2.bed" -b "$refdir/cytoBand.txt" > "$refdir/testcov.bed"
 
-# Recombination rate
-wget http://hgdownload.cse.ucsc.edu/gbdb/hg19/decode/SexAveraged.bw
-bigWigToWig SexAveraged.bw SexAveraged.wig
-echo "CHR\tSTART\tEND\tRATE" > recomb_rate.bed
-awk 'NR>1' SexAveraged.wig | cat >> recomb_rate.bed
+# Human Accelerated Regions
+curl -s "http://www.broadinstitute.org/ftp/pub/assemblies/mammals/29mammals/2xHARs.bed" > "$refdir/2xHARs.bed"
 
-# GoNL de novo mutations
-wget https://molgenis26.target.rug.nl/downloads/gonl_public/variants/release5.2/GoNL_DNMs.txt > "$refdir/DNMs/GoNL_DNMs.txt"
+"$refdir/liftOver" "$refdir/2xHARs.bed" "$refdir/hg18ToHg19.over.chain.gz" "$refdir/2xHARs.hg19.bed" "$refdir/unlifted.bed"
 
-# RefSeq exons
+bedtools sort -i "$refdir/2xHARs.hg19.bed" > "$refdir/2xHARs.hg19.sort.bed"
+
+cd $curdir

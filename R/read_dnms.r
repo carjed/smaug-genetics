@@ -58,9 +58,5 @@ if(write){
 
     outfile <- paste0(parentdir, "/reference_data/DNMs/GoNL_", cat, ".txt")
     write.table(outdat, outfile, col.names=F, row.names=F, sep="\t", quote=F)
-
-    # annocmd <- paste0("bash ", parentdir,
-    #   "/smaug-genetics/data_mgmt/process_dnms/annotate_dnms.sh ", cat)
-    # system(annocmd)
   }
 }

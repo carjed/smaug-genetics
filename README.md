@@ -91,25 +91,38 @@ INPUTDIR/
 |---summaries/
 
 PROJDIR/
+|---slurm/
+|---images/ [contains all figures output by R scripts]
+|---reference_data/
 |---smaug-genetics/ [scripts from this repository]
     |---data_mgmt/
+        |---data_prep/
+        |---lib/
         |---logit_scripts/
         |---per-site_dp/
-        |---toWig/
-    |---data_pipeline/
     |---R/
-|---images/ [contains all figures output by R scripts]
-|---reference_data/ [contains all reference data downloaded by download_ref_data.sh script]
-    |---histone_marks/
-        |---broad/
+    |---sandbox/ [old files]
 |---output/
-    |---{K}bp_{N}k/ [contains augmented summary info for specified motif/bin lengths]
+    |---{K}bp_{N}k/ [augmented summary info for specified motif/bin lengths]
     |---glf_depth/
+        |---meandp/
     |---logmod_data/
-        |---chr*/ [temporary files]
         |---coefs/
+            |---AT_CG/
+            |---AT_GC/
+            |---AT_TA/
+            |---GC_AT/
+            |---GC_CG/
+            |---GC_TA/
         |---motifs/
+            |---AT_CG/
+            |---AT_GC/
+            |---AT_TA/
+            |---GC_AT/
+            |---GC_CG/
+            |---GC_TA/
     |---predicted/
         |---chr*.{type}.txt [predicted single-base mutation rates]
         |---tracks/ [predicted rates converted to BigWig format]
+    |---slurm/
 ```

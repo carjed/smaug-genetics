@@ -12,11 +12,8 @@
 use strict;
 use warnings;
 use POSIX;
-use Pod::Usage;
 use File::Basename;
 use File::Path qw(make_path);
-use List::Util qw(first max maxstr min minstr reduce shuffle sum);
-use Cwd;
 use Benchmark;
 use FindBin;
 use YAML::XS 'LoadFile';
@@ -57,7 +54,6 @@ my $bw=$binw/1000;
 
 ##############################################################################
 # Read in files and initialize outputs
-# download hg37 from nih.gov if missing
 ##############################################################################
 my $in_path = "/net/bipolar/jedidiah/testpipe/summaries";
 my $out_path = "$parentdir/output/${subseq}bp_${bw}k_${mac}_${data}";
@@ -80,7 +76,6 @@ print "Done\n";
 ##############################################################################
 # Counts possible mutable sites per bin for 6 main categories
 # and for local sequence analysis if selected
-# -also returns GC content per bin
 ##############################################################################
 if($count_motifs eq "TRUE"){
 	my $start_time=new Benchmark;
@@ -109,7 +104,6 @@ if($count_motifs eq "TRUE"){
 
 ##############################################################################
 # Output expanded summary file based on selected options
-# -passed to R script along with bins file(s)
 ##############################################################################
 if($expand_summ eq "TRUE"){
 	print "Expanding summary file...\n";

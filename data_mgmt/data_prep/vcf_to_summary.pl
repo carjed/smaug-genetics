@@ -6,16 +6,12 @@
 # To avoid the possibility of modifying raw vcf data, includes option to copy
 # raw vcfs to a working project directory
 ################################################################################
-
 use strict;
 use warnings;
 use POSIX;
 use File::Basename;
 use File::Path qw(make_path);
 use File::Find::Rule;
-use List::Util qw(first max maxstr min minstr reduce shuffle sum);
-use Cwd;
-use Benchmark;
 use FindBin;
 use YAML::XS 'LoadFile';
 use feature 'say';

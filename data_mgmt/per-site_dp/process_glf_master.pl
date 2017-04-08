@@ -3,17 +3,11 @@
 ##############################################################################
 # Master script for glf processing
 ##############################################################################
-
 use strict;
 use warnings;
 use POSIX;
-use Getopt::Long;
-use Pod::Usage;
 use File::Basename;
 use File::Path qw(make_path);
-use List::Util qw(first max maxstr min minstr reduce shuffle sum);
-use Math::Round;
-use Cwd;
 use FindBin;
 use YAML::XS 'LoadFile';
 use feature 'say';
@@ -29,18 +23,8 @@ my $samples = $config->{samples};
 use lib "$FindBin::Bin/../lib";
 use SmaugFunctions qw(forkExecWait getRef);
 
-# Specify parameters
-my $chr;
-my $help=0;
-my $man=0;
-
-# Set options and inputs
-GetOptions ('chr=i'=> \$chr,
-'help|?'=> \$help,
-man => \$man) or pod2usage(1);
-
-pod2usage(0) if $help;
-pod2usage(-verbose => 2) if $man;
+# Get chromosome from args
+my $chr=$ARGV[0];
 
 # my $numind=40;
 my $subset=0;

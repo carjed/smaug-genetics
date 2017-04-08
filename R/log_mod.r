@@ -90,7 +90,7 @@ logitMod <- function(motif, nbp, parentdir, categ){
 	dflist <- list()
 	for(i in 1:length(hists)){
 	  mark <- hists[i]
-	  file <- paste0(parentdir, "/reference_data/histone_marks/broad/sort.E062-",
+	  file <- paste0(parentdir, "/reference_data/sort.E062-",
 			mark, ".bed")
 	  hist <- binaryCol(sites, file)
 	  dflist[[i]] <- hist
@@ -118,7 +118,8 @@ logitMod <- function(motif, nbp, parentdir, categ){
 
 	# Run logit model for categories with >10 singletons, return coefficients
 	# Otherwise, returns single marginal rate
-	predicted <- sites[,c(2,1,3)]
+	predicted <- sites[,1:2]
+
 	coefs <- data.frame()
 	if(sum(sites$mut)>10){
 		log_mod_formula <- as.formula(paste("mut~",

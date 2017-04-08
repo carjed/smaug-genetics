@@ -205,7 +205,7 @@ runTest <- function(cov, dir){
       dnmstmp$inside <- binaryCol(dnmstmp, covbed)
     } else {
       covbase <- paste0(parentdir,
-        "/reference_data/histone_marks/broad/sort.E062-", cov)
+        "/reference_data/sort.E062-", cov)
       covbed <- paste0(covbase, ".bed")
       dnmstmp$inside <- binaryCol(dnmstmp, covbed)
     }

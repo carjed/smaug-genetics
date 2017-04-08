@@ -314,14 +314,37 @@ if(common){
 }
 
 ##############################################################################
-# Write out table of sites genome-wide
+# Prepare singleton input for logit model
 ##############################################################################
 if(build_logit){
 	ptm <- proc.time()
-	cat("Prepping data for logistic regression model...\n")
-	source("./R/build_logit_data.r")
-	tottime <- (proc.time()-ptm)[3]
-	cat("Done (", tottime, "s)\n")
+	cat("Preparing data for logistic regression model...\n")
+
+	mut_cats <- c("AT_CG", "AT_GC", "AT_TA", "GC_AT", "GC_CG", "GC_TA")
+
+	i<-3
+	for(categ in mut_cats){
+		cat("Extracting", categ, "sites...\n")
+		# summfile1 <- full_data$sites %>%
+		summfile1 <- sites %>%
+			filter(Category==categ) %>%
+			mutate(Type=gsub("cpg_", "", Category2),
+				SEQA=substr(Sequence, cbp-i, cbp+i),
+				SEQB=substr(Sequence, cbp*3-i, cbp*3+i),
+				Motif=paste0(SEQA, "(", SEQB, ")")) %>%
+			dplyr::select(CHR, POS, Sequence=Motif) %>%
+			mutate(mut=1)
+
+		for(chr in 1:22){
+			posfile <- paste0(parentdir,
+					"/output/logmod_data/chr", chr, "_", categ,"_sites.txt")
+			dat <- summfile1 %>%
+				filter(CHR==chr) %>%
+				arrange(POS)
+
+			write.table(dat, posfile, col.names=F, row.names=F, quote=F, sep="\t")
+		}
+	}
 }
 
 ##############################################################################

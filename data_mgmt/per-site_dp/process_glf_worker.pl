@@ -4,19 +4,12 @@
 # Script scans glf file and extracts only the relevant info (chr, pos, ref, dp)
 # for every 10th base
 ##############################################################################
-
 use strict;
 use warnings;
 use POSIX;
 use Getopt::Long;
-use Pod::Usage;
 use File::Basename;
 use File::Path qw(make_path);
-use List::Util qw(first max maxstr min minstr reduce shuffle sum);
-use Math::Round;
-use Cwd;
-use Benchmark;
-use Tie::File;
 use FindBin;
 use YAML::XS 'LoadFile';
 use feature 'say';
@@ -31,8 +24,6 @@ use lib "$FindBin::Bin/../lib";
 use SmaugFunctions qw(forkExecWait getRef);
 
 # Set options and inputs
-my $help=0;
-my $man=0;
 my $index;
 my $chr;
 my $chunksize=400;
@@ -41,12 +32,7 @@ my $filelist;
 GetOptions ('ind=i'=> \$index,
 'chr=i' => \$chr,
 'chunk=i' => \$chunksize,
-'filelist=s' => \$filelist,
-'help|?'=> \$help,
-man => \$man) or pod2usage(1);
-
-pod2usage(0) if $help;
-pod2usage(-verbose => 2) if $man;
+'filelist=s' => \$filelist);
 
 # my $filelist="$parentdir/output/glf_depth/chr${chr}_glf_filelist.txt";
 open my $files, '<', $filelist or die "$filelist: $!";

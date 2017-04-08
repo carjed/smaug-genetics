@@ -5,20 +5,12 @@
 # loops through reference genome and outputs 1 line per base, as long as
 # valid covariate data exists
 ##############################################################################
-
 use strict;
 use warnings;
 use POSIX;
 use Getopt::Long;
-use Pod::Usage;
 use File::Basename;
 use File::Path qw(make_path);
-use List::Util qw(first max maxstr min minstr reduce shuffle sum);
-use List::MoreUtils 'pairwise';
-use Math::Round;
-use Cwd;
-use Benchmark;
-use Tie::File;
 use FindBin;
 use YAML::XS 'LoadFile';
 use feature 'say';
@@ -38,7 +30,7 @@ my $chr;
 my $categ;
 
 GetOptions ('chr=s'=> \$chr,
-'categ=s' => \$categ) or pod2usage(1);
+'categ=s' => \$categ);
 
 make_path("$parentdir/output/logmod_data/chr${chr}/");
 

@@ -99,7 +99,7 @@ This pipeline requires the use of several external data files, almost all of whi
 - [Replication timing profile of lymphoblastoid cell lines](http://mccarrolllab.com/wp-content/uploads/2015/03/Koren-et-al-Table-S2.zip)
 - *de novo* mutations from two studies:
   - [Genomes of the Netherlands](https://molgenis26.target.rug.nl/downloads/gonl_public/variants/release5.2/GoNL_DNMs.txt)
-  - [Inova Translational Medicine Institute Molecular Study of Preterm Birth](http://www.nature.com/ng/journal/v48/n8/extref/ng.3597-S3.xlsx) (not open access; must manually download to `reference_data/DNMs/goldmann_2016_dnms.txt`)
+  - [Inova Translational Medicine Institute Molecular Study of Preterm Birth](http://www.nature.com/ng/journal/v48/n8/extref/ng.3597-S3.xlsx)
 
 ### Project directory structure
 

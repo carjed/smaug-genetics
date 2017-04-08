@@ -69,6 +69,9 @@ awk 'NR>1' "$refdir/SexAveraged.wig" | cat >> "$refdir/recomb_rate.bed"
 # GoNL de novo mutations
 curl -s "https://molgenis26.target.rug.nl/downloads/gonl_public/variants/release5.2/GoNL_DNMs.txt" > "$refdir/DNMs/GoNL_DNMs.txt"
 
+# ITMI de novo mutations
+curl -s "http://www.nature.com/ng/journal/v48/n8/extref/ng.3597-S3.xlsx" > "$refdir/DNMs/goldmann_2016_dnms.xlsx"
+
 # RefSeq v69 exons
 # originally downloaded via UCSC genome browser;
 # this command directly downloads the file used in analyses

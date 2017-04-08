@@ -116,7 +116,7 @@ if($expand_summ eq "TRUE"){
 	open(OUT, '>', $outfile) or die "can't write to $outfile: $!\n";
 
 	if ($mac eq "singletons") {
-		print OUT "CHR\tPOS\tREF\tALT\tAN\tSEQ\tALTSEQ\tSequence\tCategory\tCategory2\n";
+		print OUT "CHR\tPOS\tREF\tALT\tAN\tSequence\tCategory\tCategory2\n";
 	}
 
 	#readline($summ); #<-throws out summary header if it exists

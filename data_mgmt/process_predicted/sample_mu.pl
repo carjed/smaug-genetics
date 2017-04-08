@@ -42,7 +42,7 @@ forkExecWait($prepdnmcmd);
 # print if 0.025 > rand while <$input>;
 srand(36087318);
 
-my $outfile = "$parentdir/output/predicted/${categ}.sub_new3.txt";
+my $outfile = "$parentdir/output/predicted/full.sub_new3.txt";
 open my $outFH, '>>', $outfile or die "can't write to $outfile: $!\n";
 
 # foreach my $chr (1..22){

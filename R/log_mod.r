@@ -23,7 +23,7 @@ suppressMessages(require(yaml, lib.loc=libpath, quietly=T))
 source(paste0(parentdir, "/smaug-genetics/R/get_functions.r"))
 
 yaml_args <- yaml.load_file(paste0(parentdir, "/smaug-genetics/_config.yaml"))
-argParse(yaml_args)
+attach(yaml_args)
 
 nbp <- 7
 

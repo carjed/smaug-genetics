@@ -476,26 +476,6 @@ multiplot <- function(..., plotlist=NULL, file, cols=1, layout=NULL) {
 }
 
 ##############################################################################
-# argParse function outputs arguments specified in _config.yaml and assigns to
-# the named variables
-# (e.g., instead of using "args$data", we can just use "data")
-# Modified from http://www.r-bloggers.com/extract-objects-from-a-list/
-##############################################################################
-argParse <- function(args){
-	for(i in 1:length(args)){
-		##first extract the object value
-		tempobj=unlist(args[i])
-		varname=names(args[i])
-
-		# optional: print args
-		cat(paste0(varname, ": ", tempobj), "\n")
-
-		##now create a new variable with the original name of the list item
-		eval(parse(text=paste(varname,"= tempobj")))
-	}
-}
-
-##############################################################################
 #' commandArgs parsing (DEPRECATED)
 #' return a named list of command line arguments
 #'

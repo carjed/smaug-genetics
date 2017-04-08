@@ -23,22 +23,11 @@ source("./R/palettes.r")
 ##############################################################################
 # Setup: get arguments from _config.yaml file
 ##############################################################################
-cat("Script will run with the following parameters:\n")
-
 args <- yaml.load_file("./_config.yaml")
-argParse(args)
+attach(args)
 
-# for(i in 1:length(args)){
-#  	##first extract the object value
-#  	tempobj=unlist(args[i])
-#  	varname=names(args[i])
-#
-# 	# optional: print args
-# 	cat(varname, ":", tempobj, "\n")
-#
-# 	##now create a new variable with the original name of the list item
-# 	eval(parse(text=paste(names(args)[i],"= tempobj")))
-# }
+cat("Script will run with the following parameters:\n")
+print(data.frame(n=paste0(names(args), ": ", unlist(args))), right=F)
 
 # Install the bedr package from github, if needed
 # install_github('carjed/bedr')

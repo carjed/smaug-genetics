@@ -33,7 +33,7 @@ use lib "$FindBin::Bin/../lib";
 use SmaugFunctions qw(forkExecWait getRef getMotif);
 
 # my @categs = qw( AT_CG AT_GC AT_TA GC_AT GC_CG GC_TA );
-my @categs = qw(AT_CG);
+my @categs = qw(AT_CG AT_GC);
 
 print "Preparing de novo data...\n";
 my $prepdnmcmd = "Rscript $parentdir/smaug-genetics/R/read_dnms.r TRUE $parentdir";
@@ -42,25 +42,26 @@ forkExecWait($prepdnmcmd);
 # print if 0.025 > rand while <$input>;
 srand(36087318);
 
-foreach my $categ (@categs){
-  my $outfile = "$parentdir/output/predicted/${categ}.sub_new2.txt";
-  open my $outFH, '>>', $outfile or die "can't write to $outfile: $!\n";
+my $outfile = "$parentdir/output/predicted/${categ}.sub_new3.txt";
+open my $outFH, '>>', $outfile or die "can't write to $outfile: $!\n";
 
-  # foreach my $chr (1..22){
-  foreach my $chr (21..22){
+# foreach my $chr (1..22){
+foreach my $chr (21..22){
 
-    print "Getting reference for chr$chr...\n";
-    my $f_fasta;
-    if($data eq "mask"){
-      $f_fasta = "$parentdir/reference_data/human_g1k_v37.mask.fasta";
-    } else {
-      $f_fasta = "$parentdir/reference_data/human_g1k_v37.fasta";
-    }
+  print "Getting reference for chr$chr...\n";
+  my $f_fasta;
+  if($data eq "mask"){
+    $f_fasta = "$parentdir/reference_data/human_g1k_v37.mask.fasta";
+  } else {
+    $f_fasta = "$parentdir/reference_data/human_g1k_v37.fasta";
+  }
 
-    my $seq=getRef($f_fasta, $chr);
+  my $seq=getRef($f_fasta, $chr);
+  foreach my $categ (@categs){
     my $predfile = "$parentdir/output/predicted/chr$chr.$categ.txt";
-  	open my $inFH, '<', $predfile or die "can't open $predfile: $!";
+    open my $inFH, '<', $predfile or die "can't open $predfile: $!";
 
+    print "Sampling chr$chr $categ sites...\n";
     while(<$inFH>){
       if(0.05>rand){
         chomp;
@@ -68,16 +69,18 @@ foreach my $categ (@categs){
         my $pos = $line[1];
     		my $localseq = substr($seq, $pos-$adj-1, $subseq);
         my $seqp = getMotif($localseq, $adj);
-        print $outFH "$_\t0\t$categ\t$seqp\n";
+        print $outFH "$_\t0\t$categ\t$seqp\tall\n";
       }
     }
 
     my $dnmfile = "$parentdir/reference_data/DNMs/GoNL_$categ.txt";
     open my $dnmFH, '<', $dnmfile or die "can't open $dnmfile: $!";
 
+    print "Appending chr$chr $categ de novos...\n";
     while(<$dnmFH>){
       chomp;
       my @line=split(/\t/, $_);
+      my $dnmid = $line[0];
       my $dnmchr = $line[1];
       my $dnmpos = $line[2];
       # print "$dnmchr:$dnmpos\n";
@@ -92,20 +95,10 @@ foreach my $categ (@categs){
       my @ratelinearr = split(/\t/, $rateline);
       if($rateline=~/$dnmpos/){
         # print "$rateline contains DNM site: $dnmpos\n";
-        print $outFH "$rateline\t1\t$categ\t$dnmseqp\n";
+        print $outFH "$rateline\t1\t$categ\t$dnmseqp\t$dnmid\n";
       }
     }
-
-    # my $tmpfile = "$parentdir/reference_data/DNMs/tmp.txt";
-    #
-    # my $buildquerycmd = "grep \"\\s$i\\s\" $dnmfile | cut -f 3 > $tmpfile";
-    # forkExecWait($buildquerycmd);
-    #
-    # my $dnmannocmd = "grep -Fwf  $tmpfile $parentdir/output/predicted/chr$i.${categ}.txt | awk -v categ=\"$categ\" '{print \$0\"\\t\"1\"\\t\"categ}' >> $parentdir/reference_data/DNMs/GoNL_${categ}.anno.txt";
-    # forkExecWait($dnmannocmd);
-
   }
-
 }
 
 

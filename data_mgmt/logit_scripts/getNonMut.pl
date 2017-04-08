@@ -128,7 +128,7 @@ while(my $dp=<$chrFH>){
 
 # Write data files
 print "Writing chr${chr}: ${categ} data file...\n";
-for my $strpos (0 .. $seqlength){
+for my $strpos ($adj .. $seqlength){
 	my $base = substr($seq, $strpos, 1);
 	my $pos = $strpos+1;
 	my $poslim=rounddown($pos,10);
@@ -141,15 +141,16 @@ for my $strpos (0 .. $seqlength){
 		$altlocalseq  =~ tr/ACGT/TGCA/;
 
 		# Coerce local sequence info to format used in R
-		my $sequence;
-		if(substr($localseq,$adj,1) lt substr($altlocalseq,$adj,1)){
-			$sequence = $localseq . '(' . $altlocalseq . ')';
-		} else {
-			$sequence = $altlocalseq . '(' . $localseq . ')';
-		}
+		if ($localseq =~ /\A[acgt\(\)]+\z/i) {
+			my $sequence;
+			if(substr($localseq,$adj,1) lt substr($altlocalseq,$adj,1)){
+				$sequence = $localseq . '(' . $altlocalseq . ')';
+			} else {
+				$sequence = $altlocalseq . '(' . $localseq . ')';
+			}
 
 		# write line if site has non-N context
-		if ($sequence =~ /\A[acgt\(\)]+\z/i) {
+
 			$outline = "$chr\t$pos\t$sequence\t0\t";
 		}
 	} elsif(exists $poshash{$pos}){

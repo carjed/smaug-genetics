@@ -15,6 +15,7 @@ use File::Basename;
 use File::Path qw(make_path);
 use List::Util qw(first max maxstr min minstr reduce shuffle sum);
 use List::MoreUtils 'pairwise';
+use Math::Round;
 use Cwd;
 use Benchmark;
 use Tie::File;
@@ -108,12 +109,29 @@ while (<$positions>) {
 	$poshash{$key}=$_;
 }
 
+# hash depth file
+my $dpdir="$parentdir/output/glf_depth/meandp";
+%dphash=();
+my $chrfile="$dpdir/chr$chr.dp";
+my $chrFH;
+open($chrFH, '<', $chrfile) or
+	die "Unable to open file $chrfile : $!";
+
+while(my $dp=<$chrFH>){
+	chomp($dp);
+	my @dpline=split(/\t/, $dp);
+	my $dp_pos=$dpline[0];
+	my $depth=$dpline[1];
+
+	$dphash{$dp_pos}=$depth;
+}
+
 # Write data files
 print "Writing chr${chr}: ${categ} data file...\n";
 for my $strpos (0 .. $seqlength){
 	my $base = substr($seq, $strpos, 1);
 	my $pos = $strpos+1;
-
+	my $outline;
 	if(($base =~ /$b1|$b2/) & (!exists $poshash{$pos})){
 		# push (@POS, $pos); # add position to exclusion list
 		my $localseq = substr($seq, $pos-$adj-1, $subseq);
@@ -128,14 +146,39 @@ for my $strpos (0 .. $seqlength){
 			$sequence = $altlocalseq . '(' . $localseq . ')';
 		}
 
+		my $poslim;
 		# write line if site has non-N context
 		if ($sequence =~ /\A[acgt\(\)]+\z/i) {
-			print $OUT "$chr\t$pos\t$sequence\t0\n";
+			$outline = "$chr\t$pos\t$sequence\t0\t";
 		}
 	} elsif(exists $poshash{$pos}){
-		print $OUT "$poshash{$pos}\n";
+		$outline = "$poshash{$pos}\t";
 	}
-	# }
+
+	# query depth hash and write if value exists
+	my $poslim=rounddown($pos,10);
+
+  if(exists($dphash{$poslim})){
+    my $dpout=$dphash{$poslim};
+    print $OUT "$outline\t$dpout\n";
+  }
 }
 
 print "Done\n";
+
+##############################################################################
+# Rounding subroutines
+##############################################################################
+sub roundup {
+  my $num = shift;
+  my $roundto = shift || 1;
+
+  return int(ceil($num/$roundto))*$roundto;
+}
+
+sub rounddown {
+  my $num = shift;
+  my $roundto = shift || 1;
+
+  return int(floor($num/$roundto))*$roundto;
+}

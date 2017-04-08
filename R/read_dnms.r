@@ -29,7 +29,7 @@ gonl_dnms <- gonl_dnms[,1:5]
 names(gonl_dnms) <- c("ID", "CHR", "POS", "REF", "ALT")
 
 itmi_dnms <- read.xlsx(paste0(parentdir,
-	"/reference_data/goldmann_2016_dnms.xlsx"), sheet=1)
+	"/reference_data/DNMs/goldmann_2016_dnms.xlsx"), sheet=1)
 itmi_dnms$ID <- "goldmann"
 itmi_dnms <- itmi_dnms[,c(7,1,2,4,5)]
 names(itmi_dnms) <- c("ID", "CHR", "POS", "REF", "ALT")

@@ -88,9 +88,8 @@ foreach my $chr (1..22){
       # print "DNM pos: $dnmpos\n";
       my $rateline = `grep -w $dnmpos $predfile`;
       chomp $rateline;
-      # print "grep result: $rateline\n";
-      my @ratelinearr = split(/\t/, $rateline);
-      if($rateline=~/$dnmpos/){
+      # if($rateline=~/$dnmpos/){
+      if(length($rateline)>2){
         # print "$rateline contains DNM site: $dnmpos\n";
         print $outFH "$rateline\t1\t$categ\t$dnmseqp\t$dnmid\n";
       }

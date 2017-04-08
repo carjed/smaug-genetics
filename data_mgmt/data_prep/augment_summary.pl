@@ -130,7 +130,7 @@ if($expand_summ eq "TRUE"){
 		my $pos=$line[1];
 		my $REF=$line[2];
 		my $ALT=$line[3];
-		# my $localseq = substr($seq, $pos-$adj-1, $subseq);
+		my $localseq = substr($seq, $pos-$adj-1, $subseq);
 		# my $altlocalseq = reverse $localseq;
 		# $altlocalseq  =~ tr/ACGT/TGCA/;
     #
@@ -144,10 +144,10 @@ if($expand_summ eq "TRUE"){
     # } else {
     #   $seqp = "$altlocalseq\($localseq\)";
     # }
-    my $seqp = getMotif($seq, $pos, $adj);
+    my $seqp = getMotif($localseq, $adj);
 		# keep only sites in fully parameterized motif
-		# if($localseq =~ /^[ACGT]+$/){
-    if($seqp !~ /N/){
+		if($localseq =~ /^[ACGT]+$/){
+    # if($seqp !~ /N/){
 
 
 			my $CAT = "${REF}${ALT}";

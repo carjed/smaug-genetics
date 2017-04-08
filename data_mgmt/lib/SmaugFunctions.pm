@@ -59,12 +59,10 @@ sub getRef {
 # Get K-mer motif
 ##############################################################################
 sub getMotif {
-  my $seq=shift;
-  my $pos=shift;
+  my $localseq=shift;
   my $adj=shift;
   my $subseq=$adj*2+1;
 
-  my $localseq = substr($seq, $pos-$adj-1, $subseq);
   my $altlocalseq = reverse $localseq;
   $altlocalseq  =~ tr/ACGT/TGCA/;
 

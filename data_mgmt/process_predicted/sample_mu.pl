@@ -32,7 +32,8 @@ my $subseq=$adj*2+1;
 use lib "$FindBin::Bin/../lib";
 use SmaugFunctions qw(forkExecWait getRef getMotif);
 
-my @categs = qw( AT_CG AT_GC AT_TA GC_AT GC_CG GC_TA );
+# my @categs = qw( AT_CG AT_GC AT_TA GC_AT GC_CG GC_TA );
+my @categs = qw(AT_CG);
 
 print "Preparing de novo data...\n";
 my $prepdnmcmd = "Rscript $parentdir/smaug-genetics/R/read_dnms.r TRUE $parentdir";
@@ -88,7 +89,7 @@ foreach my $categ (@categs){
       chomp $rateline;
       print "grep result: $rateline\n";
       my @ratelinearr = split(/\t/, $rateline);
-      if(defined($rateline)){
+      if($dnmpos~~$rateline){
         print $outFH "$rateline\t1\t$categ\t$seqp\n";
       }
     }

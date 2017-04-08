@@ -111,7 +111,7 @@ while (<$positions>) {
 
 # hash depth file
 my $dpdir="$parentdir/output/glf_depth/meandp";
-%dphash=();
+my %dphash=();
 my $chrfile="$dpdir/chr$chr.dp";
 my $chrFH;
 open($chrFH, '<', $chrfile) or

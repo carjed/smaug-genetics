@@ -173,7 +173,7 @@ if($expand_summ eq "TRUE"){
 				$Category2 = $Category;
 			}
 			# print OUT "$_\t$localseq\t$altlocalseq\t$gcprop\n";
-			print OUT "$_\t$localseq\t$altlocalseq\t$seqp\t$Category\t$Category2\n";
+			print OUT "$_\t$seqp\t$Category\t$Category2\n";
 		}
 	}
 

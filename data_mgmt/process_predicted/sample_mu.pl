@@ -86,7 +86,7 @@ foreach my $chr (1..22){
       my $dnmlocalseq = substr($seq, $dnmpos-$adj-1, $subseq);
       my $dnmseqp = getMotif($dnmlocalseq, $adj);
       # print "DNM pos: $dnmpos\n";
-      my $rateline = `grep -w $dnmpos $predfile`;
+      my $rateline = `grep -m 1 -Fw $dnmpos $predfile`;
       chomp $rateline;
       # if($rateline=~/$dnmpos/){
       if(length($rateline)>2){

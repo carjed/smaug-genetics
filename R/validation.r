@@ -3,7 +3,7 @@
 ##############################################################################
 cat("Reading data...\n")
 
-validation_file <- paste0(parentdir, "/output/validation_sites.txt")
+validation_file <- paste0(parentdir, "/output/predicted/validation_sites.txt")
 
 chrp <- read.table(site_file, header=F, stringsAsFactors=F)
 names(chrp) <- c("CHR", "POS", "BIN", "MU", "OBS", "Category", "SEQ", "ID")

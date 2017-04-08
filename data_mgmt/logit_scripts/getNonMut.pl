@@ -157,7 +157,7 @@ for my $strpos (0 .. $seqlength){
 	}
 
 	# query depth hash and write if value exists
-	if(exists($dphash{$poslim})){
+	if(exists($dphash{$poslim}) && defined($outline)){
 		my $dpout=$dphash{$poslim};
 		print $OUT "$outline\t$dpout\n";
 	}

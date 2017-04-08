@@ -50,8 +50,8 @@ foreach my $categ (@categs){
   print $mdFH "#SBATCH --mail-type=FAIL \n";
   print $mdFH "#SBATCH --mail-user=$email \n";
   print $mdFH "#SBATCH --ntasks=1 \n";
-  print $mdFH "#SBATCH --mem=2000 \n";
-  print $mdFH "#SBATCH --time 20:00:00 \n";
+  print $mdFH "#SBATCH --mem=6000 \n";
+  print $mdFH "#SBATCH --time 6:00:00 \n";
   print $mdFH "#SBATCH --job-name=$jobcmd \n";
   print $mdFH "#SBATCH --partition=nomosix \n";
   print $mdFH "#SBATCH --array=1-22 \n";

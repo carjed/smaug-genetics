@@ -144,7 +144,7 @@ if($expand_summ eq "TRUE"){
     # } else {
     #   $seqp = "$altlocalseq\($localseq\)";
     # }
-    my $seqp = getMotif($seq, $pos, $subseq);
+    my $seqp = getMotif($seq, $pos, $adj);
 		# keep only sites in fully parameterized motif
 		# if($localseq =~ /^[ACGT]+$/){
     if($seqp !~ /N/){

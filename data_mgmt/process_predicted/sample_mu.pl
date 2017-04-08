@@ -79,7 +79,7 @@ foreach my $categ (@categs){
       my @line=split(/\t/, $_);
       my $dnmchr = $line[1];
       my $dnmpos = $line[2];
-      next unless $dnmchr==$chr;
+      next unless $dnmchr =~ $chr;
 
       my $localseq = substr($seq, $dnmpos-$adj-1, $subseq);
       my $seqp = getMotif($localseq, $adj);

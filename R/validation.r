@@ -3,33 +3,27 @@
 ##############################################################################
 cat("Reading data...\n")
 
-validation_file <- paste0(parentdir, "/output/rocdat.7bp.2.txt")
+validation_file <- paste0(parentdir, "/output/validation_sites.txt")
 
-chrpf <- read.table(site_file, header=F, stringsAsFactors=F)
-names(chrpf) <- c("CHR", "POS", "BIN", "MU", "OBS", "Category", "SEQ",
-	"MU_C", "MU_S", "MU_A")
+chrp <- read.table(site_file, header=F, stringsAsFactors=F)
+names(chrp) <- c("CHR", "POS", "BIN", "MU", "OBS", "Category", "SEQ", "ID")
 
 # Remove sites with mu=0
-chrpf <- chrpf[chrpf$MU>0,]
-
-# Read DNMs
-cat("Reading DNMs...\n")
-source("./R/read_dnms.r")
-
-# Duplicate data, merge with DNMs to get ID
-cat("Annotating with ID...\n")
-chrpf <- merge(chrpf, dnms_full, by=c("CHR", "POS"), all.x=T)
-chrpf$ID[is.na(chrpf$ID)] <- "all"
+chrp <- chrp[chrp$MU>0,]
 
 # Subset to non-DNMs and DNMs
 cat("Splitting by DNM status...\n")
-chrpfa <- chrpf[chrpf$ID=="all",]
-chrpfa <- chrpfa[sample(nrow(chrpfa), 1000000),]
-chrpfdnm <- chrpf[chrpf$ID!="all",]
+chrpdnm <- chrp[chrp$ID!="all",]
+chrp <- chrp[chrp$ID=="all",]
+chrp <- chrp[sample(nrow(chrp), 1000000),]
+
+# Duplicate data, merge with DNMs to get ID
+# cat("Annotating with ID...\n")
+# chrpf <- merge(chrpf, dnms_full, by=c("CHR", "POS"), all.x=T)
 
 # Recombine data
 cat("Creating combined data...\n")
-chrp <- rbind(chrpfdnm[,1:12], chrpfa) %>%
+chrp <- rbind(chrp, chrpdnm) %>%
   group_by(Category.x) %>%
   mutate(prop=cumsum(OBS)/sum(OBS)) %>%
   arrange(MU, prop)
@@ -37,7 +31,7 @@ chrp <- rbind(chrpfdnm[,1:12], chrpfa) %>%
 # Output 3-mer rates calculated on DNMs
 dnm_rates<-0
 if(dnm_rates){
-	dnm_agg <- chrpfdnm %>%
+	dnm_agg <- chrpdnm %>%
 		group_by(Category.x=as.character(Category.x), SEQ=substr(SEQ, 3, 5)) %>%
 		summarise(ndnm=n())
 

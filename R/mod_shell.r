@@ -355,7 +355,7 @@ if(common){
 ##############################################################################
 # Scripts below assume 7-mers+features model is already complete
 ##############################################################################
-sitefile <- paste0(parentdir, "/output/rocdat.sort_new.txt")
+sitefile <- paste0(parentdir, "/output/validation-sites.txt")
 if(file.exists(sitefile)){
 
 	# Validation model

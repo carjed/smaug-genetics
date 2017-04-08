@@ -28,17 +28,22 @@ my $config = LoadFile("$configpath/_config.yaml");
 
 my $adj = 3;
 my $data = $config->{data};
+my $email = $config->{email};
 my $parentdir = $config->{parentdir};
 
 use lib "$FindBin::Bin/../lib";
 use SmaugFunctions qw(forkExecWait getRef);
 
+my $today = POSIX::strftime('%Y%m%d', localtime);
+my $slurmdir = "$parentdir/output/slurm/$today";
+  make_path("$slurmdir");
+
 my @categs = qw( AT_CG AT_GC AT_TA GC_AT GC_CG GC_TA );
 
 foreach my $categ (@categs){
-  my $builddatcmd = "perl $relpath/getNonMut.pl --categ $categ --chr $chr ";
-  forkExecWait($builddatcmd);
-
+  # my $builddatcmd = "perl $relpath/getNonMut.pl --categ $categ --chr $chr ";
+  # forkExecWait($builddatcmd);
+  my $jobcmd="${categ}_process_glfs";
   my $builddatbatch = "$parentdir/slurm/builddat_$categ.txt";
   open my $mdFH, '>', $builddatbatch or die "can't write to $builddatbatch: $!\n";
   print $mdFH "#!/bin/sh \n";
@@ -56,7 +61,7 @@ foreach my $categ (@categs){
   print $mdFH "srun perl $relpath/getNonMut.pl --categ $categ --chr \${SLURM_ARRAY_TASK_ID}";
   close($mdFH) or die "Unable to close file: $builddatbatch $!";
 
-  $slurmcmd="sbatch $meandpbatch";
+  my $slurmcmd="sbatch $builddatbatch";
   forkExecWait($slurmcmd);
 }
 

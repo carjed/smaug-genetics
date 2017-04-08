@@ -61,6 +61,7 @@ foreach my $categ (@categs){
     my $predfile = "$parentdir/output/predicted/chr$chr.$categ.txt";
   	open my $inFH, '<', $predfile or die "can't open $predfile: $!";
 
+    print ""
     while(<$inFH>){
       if(0.05>rand){
         chomp;
@@ -87,9 +88,9 @@ foreach my $categ (@categs){
       print "DNM line: $_\n";
       my $rateline = `grep -w $dnmpos $predfile`;
       chomp $rateline;
-      print "grep result: $rateline\n";
+      # print "grep result: $rateline\n";
       my @ratelinearr = split(/\t/, $rateline);
-      if($dnmpos~~$rateline){
+      if($rateline=~/$dnmpos/){
         print $outFH "$rateline\t1\t$categ\t$seqp\n";
       }
     }

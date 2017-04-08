@@ -60,7 +60,7 @@ foreach my $chr (1..22){
 
     print "Sampling chr$chr $categ sites...\n";
     while(<$inFH>){
-      if(0.05>rand){
+      if(0.005>rand){
         chomp;
     		my @line=split(/\t/, $_);
         my $pos = $line[1];

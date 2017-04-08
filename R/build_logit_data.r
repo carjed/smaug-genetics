@@ -13,12 +13,18 @@ categ <- "AT_CG"
 
 mut_cats <- c("AT_CG", "AT_GC", "AT_TA", "GC_AT", "GC_CG", "GC_TA")
 
+i<-3
 for(categ in mut_cats){
 	cat("Extracting", categ, "sites...\n")
-	summfile1 <- full_data$sites %>%
+	# summfile1 <- full_data$sites %>%
+	summfile1 <- sites %>%
 		filter(Category==categ) %>%
-		dplyr::select("CHR", "BIN", "POS", "SEQUENCE") %>%
-		mutate(mut=1, BIN=ceiling(POS/100000))
+		mutate(Type=gsub("cpg_", "", Category2),
+			SEQA=substr(Sequence, cbp-i, cbp+i),
+			SEQB=substr(Sequence, cbp*3-i, cbp*3+i),
+			Motif=paste0(SEQA, "(", SEQB, ")")) %>%
+		dplyr::select(CHR, POS, Sequence=Motif) %>%
+		mutate(mut=1)
 
 	for(chr in 1:22){
 		posfile <- paste0(parentdir,
@@ -67,17 +73,21 @@ if(builddatouter){
 		}
 
 		fullfile <- paste0(parentdir, "/output/logmod_data/chr",
-			chr, "_", categ, "_sites.txt")
+			chr, "_", categ, "_sites.txt.gz")
 
-		gzipcmd <- paste0("gzip ", fullfile)
-		system(gzipcmd)
+		# gzipcmd <- paste0("gzip ", fullfile)
+		# system(gzipcmd)
 
 		# Subset chromosome file by motif
-		subcmd <- paste0("zcat ", fullfile, ".gz | awk '{ print >> \"", parentdir,
-				"/output/logmod_data/chr", chr, "/chr", chr, "_", categ, "_\" ",
+		# subcmd <- paste0("zcat ", fullfile, ".gz | head -20000 | awk '{ print >> \"", parentdir,
+		# 		"/output/logmod_data/chr", chr, "/chr", chr, "_", categ, "_\" ",
+		# 		"$4 \".txt\" }' ")
+
+		subcmd2 <- paste0("zcat ", fullfile, " | awk '{ print >> \"", parentdir,
+				"/output/logmod_data/motifs/test/", categ, "_\" ",
 				"$4 \".txt\" }' ")
 
-		system(subcmd)
+		system(subcmd2)
 	}
 
 	tottime <- (proc.time()-modtime)[3]

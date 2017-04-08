@@ -55,4 +55,17 @@ sub getRef{
 	return $seq;
 }
 
+##############################################################################
+# read array of filenames and returns file handles
+##############################################################################
+sub get_write_handles {
+  my @file_names = @_;
+  my %file_handles;
+  foreach (@file_names) {
+    open my $fh, '>', $_ or next;
+    $file_handles{$_} = $fh;
+  }
+  return %file_handles;
+}
+
 1;

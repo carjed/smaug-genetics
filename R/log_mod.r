@@ -78,9 +78,8 @@ logitMod <- function(motif, nbp, parentdir, categ){
 		system(catcmd1)
 	}
 
-	incmd <- paste0("cut -f1-6 ", sitefile)
-	sites <- read.table(pipe(incmd), header=F, stringsAsFactors=F)
-	names(sites) <- c("POS", "CHR", "BIN", "Sequence", "mut", "DP")
+	sites <- read.table(sitefile, header=F, stringsAsFactors=F)
+	names(sites) <- c("CHR", "POS", "Sequence", "mut", "DP")
 
 	# Initialize data for calculating GC content
 	# sites_for_GC <- data.frame(position=sites$POS, chr=paste0("chr", sites$CHR))

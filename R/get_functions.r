@@ -484,7 +484,7 @@ multiplot <- function(..., plotlist=NULL, file, cols=1, layout=NULL) {
 argParse <- function(args){
 	for(i in 1:length(args)){
 		##first extract the object value
-		tempobj=unname(unlist(args[i]))
+		tempobj=unlist(args[i])
 		varname=names(args[i])
 
 		# optional: print args

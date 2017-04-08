@@ -12,5 +12,7 @@ Processing of an individual .glf file is performed by the `process_glf_worker.pl
 
 To more easily manage these thousands of jobs, the `process_glf_master.pl` script generates and submits slurm batch files to distribute the two worker processes across multiple nodes. Due to server limitations, the number of jobs requested in a batch file cannot exceed ~1000. To handle this, we have set `process_glf_master.pl` to run the worker processes on a single chromosome at a time, and have wrapped this in a shell process, `process_glf_shell.pl` to loop through all chromosomes.
 
+Confirm that the mean depth file for each chunk has been successfully generated (there should be exactly 589 files in `output/glf_depth/meandp`, assuming 5Mb chunks), then run `merge_dp.pl` to create per-chromosome files named `output/glf_depth/meandp/chr*.dp`
+
 ### Annotating
-Once the mean depth files have been created in `output/glf_depth/meandp/chrN.dp`, the `data_mgmt/logit_scripts/build_logit_data.pl` script will add the depth at each site when generating the input data for the logistic regression models.
+Once the per-chromosome mean depth files have been created, the `data_mgmt/logit_scripts/build_logit_batch.pl` script will add the depth at each site when generating the input data for the logistic regression models.

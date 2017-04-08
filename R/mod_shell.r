@@ -28,6 +28,18 @@ cat("Script will run with the following parameters:\n")
 args <- yaml.load_file("./_config.yaml")
 argParse(args)
 
+# for(i in 1:length(args)){
+#  	##first extract the object value
+#  	tempobj=unlist(args[i])
+#  	varname=names(args[i])
+#
+# 	# optional: print args
+# 	cat(varname, ":", tempobj, "\n")
+#
+# 	##now create a new variable with the original name of the list item
+# 	eval(parse(text=paste(names(args)[i],"= tempobj")))
+# }
+
 # Install the bedr package from github, if needed
 # install_github('carjed/bedr')
 
@@ -58,8 +70,41 @@ binfile <- paste0(datadir, "/full_motif_counts_", bin_scheme, ".txt")
 # - full_data$mct (motif counts genome-wide)
 # -full_data$aggseq (initial relative mutation rates per K-mer subtype)
 ##############################################################################
-
 full_data <- getData(datadir, bin_scheme)
+
+##############################################################################
+# Prepare singleton input for logit model
+##############################################################################
+if(build_logit){
+	ptm <- proc.time()
+	cat("Preparing data for logistic regression model...\n")
+
+	mut_cats <- c("AT_CG", "AT_GC", "AT_TA", "GC_AT", "GC_CG", "GC_TA")
+
+	i<-3
+	for(categ in mut_cats){
+		cat("Extracting", categ, "sites...\n")
+		summfile1 <- full_data$sites %>%
+		# summfile1 <- sites %>%
+			filter(Category==categ) %>%
+			mutate(Type=gsub("cpg_", "", Category2),
+				SEQA=substr(Sequence, cbp-i, cbp+i),
+				SEQB=substr(Sequence, cbp*3-i, cbp*3+i),
+				Motif=paste0(SEQA, "(", SEQB, ")")) %>%
+			dplyr::select(CHR, POS, Sequence=Motif) %>%
+			mutate(mut=1)
+
+		for(chr in 1:22){
+			posfile <- paste0(parentdir,
+					"/output/logmod_data/chr", chr, "_", categ,"_sites.txt")
+			dat <- summfile1 %>%
+				filter(CHR==chr) %>%
+				arrange(POS)
+
+			write.table(dat, posfile, col.names=F, row.names=F, quote=F, sep="\t")
+		}
+	}
+}
 
 ##############################################################################
 # Get relative mutation rates per subtype; plot as heatmap
@@ -211,6 +256,11 @@ cat("Done (", tottime, "s)\n")
 # Compare rates between ERVs and common variants
 ##############################################################################
 if(common){
+	commondatadir <- paste0(parentdir,
+		"/output/", nbp, "bp_", bink, "k_common_", data)
+	common_data <- getData(commondatadir, bin_scheme)
+
+	rates7_common <- common_data$aggseq
 	cat("Reading common summary file:", summfile, "...\n")
 	common_sites <- read.table(common_summfile, header=T, stringsAsFactors=F)
 	common_sites$BIN <- ceiling(sites$POS/binw)
@@ -314,69 +364,45 @@ if(common){
 }
 
 ##############################################################################
-# Prepare singleton input for logit model
+# Scripts below assume 7-mers+features model is already complete
 ##############################################################################
-if(build_logit){
+sitefile <- paste0(parentdir, "/output/rocdat.sort_new.txt")
+if(file.exists(sitefile)){
+
+	# Validation model
+	# -must have parentdir/output/rocdat.7bp.2.txt containing list of sites output
+	# from this model and pre-annotated with 7-mer rates from
+	# 	-MAC10+ (MU_C)
+	# 	-ERVs (MU_S)
+	# 	-AV (MU_A)
 	ptm <- proc.time()
-	cat("Preparing data for logistic regression model...\n")
-
-	mut_cats <- c("AT_CG", "AT_GC", "AT_TA", "GC_AT", "GC_CG", "GC_TA")
-
-	i<-3
-	for(categ in mut_cats){
-		cat("Extracting", categ, "sites...\n")
-		# summfile1 <- full_data$sites %>%
-		summfile1 <- sites %>%
-			filter(Category==categ) %>%
-			mutate(Type=gsub("cpg_", "", Category2),
-				SEQA=substr(Sequence, cbp-i, cbp+i),
-				SEQB=substr(Sequence, cbp*3-i, cbp*3+i),
-				Motif=paste0(SEQA, "(", SEQB, ")")) %>%
-			dplyr::select(CHR, POS, Sequence=Motif) %>%
-			mutate(mut=1)
-
-		for(chr in 1:22){
-			posfile <- paste0(parentdir,
-					"/output/logmod_data/chr", chr, "_", categ,"_sites.txt")
-			dat <- summfile1 %>%
-				filter(CHR==chr) %>%
-				arrange(POS)
-
-			write.table(dat, posfile, col.names=F, row.names=F, quote=F, sep="\t")
-		}
-	}
-}
-
-##############################################################################
-# Validation model (assumes 7-mers+features model is already complete)
-# -must have parentdir/output/rocdat.7bp.2.txt containing list of sites output
-# from this model and pre-annotated with 7-mer rates from
-# 	-MAC10+ (MU_C)
-# 	-ERVs (MU_S)
-# 	-AV (MU_A)
-##############################################################################
-ptm <- proc.time()
-cat("Validating models on de novo mutations...\n")
-source("./R/validation.r")
-tottime <- (proc.time()-ptm)[3]
-cat("Done (", tottime, "s)\n")
-
-##############################################################################
-# Analyze effects of genomic features
-##############################################################################
-ptm <- proc.time()
-cat("Analyzing genomic features...\n")
-source("./R/coef_summary.r")
-tottime <- (proc.time()-ptm)[3]
-cat("Done (", tottime, "s)\n")
-
-##############################################################################
-# Run negative binomial regression models and plot
-##############################################################################
-if(negbin_model){
-	cat("Initializing negbin regression model...\n")
-	ptm <- proc.time()
-	source("./R/negbin_mod.r")
+	cat("Validating models on de novo mutations...\n")
+	source("./R/validation.r")
 	tottime <- (proc.time()-ptm)[3]
-	cat("Done. Finished in", tottime, "seconds \n")
+	cat("Done (", tottime, "s)\n")
+
+
+	# Analyze effects of genomic features
+	ptm <- proc.time()
+	cat("Analyzing genomic features...\n")
+	source("./R/coef_summary.r")
+	tottime <- (proc.time()-ptm)[3]
+	cat("Done (", tottime, "s)\n")
+
+
+	# Run negative binomial regression models and plot
+	if(negbin_model){
+		cat("Initializing negbin regression model...\n")
+		ptm <- proc.time()
+		source("./R/negbin_mod.r")
+		tottime <- (proc.time()-ptm)[3]
+		cat("Done. Finished in", tottime, "seconds \n")
+	}
+} else {
+	cat("Looks like you haven't run the logit models yet.
+	Refer to the following README files for instructions:
+
+	-data_mgmt/per-site_dp/README.md
+	-data_mgmt/logit_scripts/README.md
+	-data_mgmt/process_predicted/README.md \n")
 }

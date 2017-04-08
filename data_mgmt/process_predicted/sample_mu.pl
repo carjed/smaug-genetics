@@ -73,14 +73,14 @@ foreach my $categ (@categs){
     }
 
     my $dnmfile = "$parentdir/reference_data/DNMs/GoNL_$categ.txt";
-    open my $dnmFH, '<', $predfile or die "can't open $predfile: $!";
+    open my $dnmFH, '<', $dnmfile or die "can't open $dnmfile: $!";
 
     while(<$dnmFH>){
       chomp;
       my @line=split(/\t/, $_);
       my $dnmchr = $line[1];
       my $dnmpos = $line[2];
-      print "$dnmchr:$dnmpos\n";
+      # print "$dnmchr:$dnmpos\n";
       next unless $dnmchr =~ $chr;
 
       my $dnmlocalseq = substr($seq, $dnmpos-$adj-1, $subseq);

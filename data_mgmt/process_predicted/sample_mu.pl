@@ -81,7 +81,7 @@ foreach my $chr (1..22){
       my $dnmchr = $line[1];
       my $dnmpos = $line[2];
       # print "$dnmchr:$dnmpos\n";
-      next unless $dnmchr =~ $chr;
+      next unless $dnmchr == $chr;
 
       my $dnmlocalseq = substr($seq, $dnmpos-$adj-1, $subseq);
       my $dnmseqp = getMotif($dnmlocalseq, $adj);

@@ -13,7 +13,7 @@ source("./R/get_functions.r")
 
 packages <- c("ggplot2", "dplyr", "tidyr", "broom", "RColorBrewer", "MASS",
 "speedglm", "boot", "devtools", "psych", "lmtest", "fmsb", "stringr", "hexbin",
-"cowplot", "grid", "gridExtra", "gtable", "yaml")
+"cowplot", "grid", "gridExtra", "gtable", "yaml", "openxlsx")
 
 sapply(packages, function(x) suppressMessages(usePackage(x)))
 
@@ -65,7 +65,6 @@ full_data <- getData(datadir, bin_scheme)
 # Prepare singleton input for logit model
 ##############################################################################
 if(build_logit){
-	ptm <- proc.time()
 	cat("Preparing data for logistic regression model...\n")
 
 	mut_cats <- c("AT_CG", "AT_GC", "AT_TA", "GC_AT", "GC_CG", "GC_TA")
@@ -99,6 +98,8 @@ if(build_logit){
 # Get relative mutation rates per subtype; plot as heatmap
 ##############################################################################
 # Summarise aggseq rates for shorter motifs
+ptm <- proc.time()
+
 cbp <- adj+1
 
 ratelist <- list()
@@ -265,10 +266,9 @@ if(common){
 	rates7 <- ratelist[[4]]
 	r5m <- merge(rates7, rates7_common, by=c("Type", "Motif"))
 
-	avrates <- read.table(paste0(parentdir, "/posterior_7bp.txt"),
-		header=T, stringsAsFactors=F, sep="\t")
+	avrates <- read.xlsx(paste0(parentdir, "/reference_data/AV_rates.xlsx", sheet=10)
+	names(avrates) <- c("Motif", "alt", "afr", "asn", "eur", "refrev", "altrev")
 
-	names(avrates)[1] <- "Motif"
 	avrates$CAT <- paste0(substr(avrates$Motif,4,4), substr(avrates$alt, 4,4))
 	avrates$Category[avrates$CAT=="AC" | avrates$CAT=="TG"] <- "AT_CG"
 	avrates$Category[avrates$CAT=="AG" | avrates$CAT=="TC"] <- "AT_GC"

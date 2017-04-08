@@ -38,7 +38,7 @@ my $count_motifs = $config->{count_motifs};
 my $expand_summ = $config->{expand_summ};
 
 use lib "$FindBin::Bin/../lib";
-use SmaugFunctions qw(forkExecWait getRef);
+use SmaugFunctions qw(forkExecWait getRef getMotif);
 
 my $chr=$ARGV[0];
 
@@ -130,23 +130,25 @@ if($expand_summ eq "TRUE"){
 		my $pos=$line[1];
 		my $REF=$line[2];
 		my $ALT=$line[3];
-		my $localseq = substr($seq, $pos-$adj-1, $subseq);
-		my $altlocalseq = reverse $localseq;
-		$altlocalseq  =~ tr/ACGT/TGCA/;
-
+		# my $localseq = substr($seq, $pos-$adj-1, $subseq);
+		# my $altlocalseq = reverse $localseq;
+		# $altlocalseq  =~ tr/ACGT/TGCA/;
+    #
+    # my $ref1 = substr($localseq, $adj, 1);
+    # my $ref2 = substr($altlocalseq, $adj, 1);
+    #
+    # my $seqp;
+    #
+    # if($ref1 ~~ [qw( A C )]){
+    #   $seqp = "$localseq\($altlocalseq\)";
+    # } else {
+    #   $seqp = "$altlocalseq\($localseq\)";
+    # }
+    my $seqp = getMotif($seq, $pos, $subseq);
 		# keep only sites in fully parameterized motif
-		if($localseq =~ /^[ACGT]+$/){
+		# if($localseq =~ /^[ACGT]+$/){
+    if($seqp !~ /N/){
 
-			my $ref1 = substr($localseq, $adj, 1);
-			my $ref2 = substr($altlocalseq, $adj, 1);
-
-			my $seqp;
-
-			if($ref1 ~~ [qw( A C )]){
-				$seqp = "$localseq\($altlocalseq\)";
-			} else {
-				$seqp = "$altlocalseq\($localseq\)";
-			}
 
 			my $CAT = "${REF}${ALT}";
 			my $Category;

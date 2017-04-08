@@ -5,7 +5,7 @@ cat("Reading data...\n")
 
 validation_file <- paste0(parentdir, "/output/rocdat.7bp.2.txt")
 
-chrpf <- read.table(validation_file, header=F, stringsAsFactors=F)
+chrpf <- read.table(site_file, header=F, stringsAsFactors=F)
 names(chrpf) <- c("CHR", "POS", "BIN", "MU", "OBS", "Category", "SEQ",
 	"MU_C", "MU_S", "MU_A")
 

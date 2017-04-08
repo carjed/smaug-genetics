@@ -4,7 +4,7 @@ use strict;
 use warnings;
 use Exporter qw(import);
 
-our @EXPORT_OK = qw(forkExecWait getRef);
+our @EXPORT_OK = qw(forkExecWait getRef getMotif getWriteHandles);
 
 ##############################################################################
 # fork-exec-wait subroutine
@@ -28,7 +28,7 @@ sub forkExecWait {
 ##############################################################################
 # Get reference
 ##############################################################################
-sub getRef{
+sub getRef {
 	my $f_fasta=shift;
   my $chr=shift;
   my $nextchr;
@@ -56,9 +56,35 @@ sub getRef{
 }
 
 ##############################################################################
+# Get K-mer motif
+##############################################################################
+sub getMotif {
+  my $seq=shift;
+  my $pos=shift;
+  my $subseq=shift;
+
+  my $localseq = substr($seq, $pos-$adj-1, $subseq);
+  my $altlocalseq = reverse $localseq;
+  $altlocalseq  =~ tr/ACGT/TGCA/;
+
+  my $ref1 = substr($localseq, $adj, 1);
+  my $ref2 = substr($altlocalseq, $adj, 1);
+
+  my $seqp;
+  if($ref1 ~~ [qw( A C )]){
+    $seqp = "$localseq\($altlocalseq\)";
+  } else {
+    $seqp = "$altlocalseq\($localseq\)";
+  }
+
+  return $seqp;
+}
+
+
+##############################################################################
 # read array of filenames and returns file handles
 ##############################################################################
-sub get_write_handles {
+sub getWriteHandles {
   my @file_names = @_;
   my %file_handles;
   foreach (@file_names) {

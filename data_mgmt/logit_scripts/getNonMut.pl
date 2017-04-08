@@ -148,27 +148,19 @@ for my $strpos (0 .. $seqlength){
 			$sequence = $altlocalseq . '(' . $localseq . ')';
 		}
 
-		my $poslim;
 		# write line if site has non-N context
 		if ($sequence =~ /\A[acgt\(\)]+\z/i) {
 			$outline = "$chr\t$pos\t$sequence\t0\t";
-
-			if(exists($dphash{$poslim})){
-				my $dpout=$dphash{$poslim};
-				print $OUT "$outline\t$dpout\n";
-			}
 		}
 	} elsif(exists $poshash{$pos}){
 		$outline = "$poshash{$pos}\t";
-
-		if(exists($dphash{$poslim})){
-			my $dpout=$dphash{$poslim};
-			print $OUT "$outline\t$dpout\n";
-		}
 	}
 
 	# query depth hash and write if value exists
-
+	if(exists($dphash{$poslim})){
+		my $dpout=$dphash{$poslim};
+		print $OUT "$outline\t$dpout\n";
+	}
 
 
 }

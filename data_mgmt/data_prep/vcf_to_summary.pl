@@ -65,7 +65,7 @@ if ($makecopy eq "copy") {
       $i =~ s/"chr"//g;
       my $newvcf = "$vcfdir/$basename.ma.aa.vcf.gz";
 
-      my $maparse="perl ./ma_parse.pl --i $rawvcf | perl $vcftoolsdir/perl/fill-aa -a $parentdir/reference_data/human_ancestor_GRCh37_e59/human_ancestor_$i.fa.gz | bgzip -c > $newvcf";
+      my $maparse="perl $relpath/ma_parse.pl --i $rawvcf | perl $vcftoolsdir/perl/fill-aa -a $parentdir/reference_data/human_ancestor_GRCh37_e59/human_ancestor_$i.fa.gz | bgzip -c > $newvcf";
       print "Input file: $rawvcf\n";
       print "Writing to: $newvcf...";
       forkExecWait($maparse);

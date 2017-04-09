@@ -20,7 +20,7 @@ use IO::Compress::Gzip;
 my $help=0;
 my $man=0;
 my $invcf='';
-my $outvcf='';
+my $outvcf;
 
 GetOptions ('i=s'=> \$invcf,
 'o=s' => \$outvcf,
@@ -37,6 +37,8 @@ my $vcf = gzopen($invcf, "rb") or
 # Initialize gzipped output
 open(my $OUT, "| bgzip -c > $outvcf") or
   die "Could not write to $outvcf: $!";
+
+$OUT = *STDOUT unless $outvcf;
 
 while($vcf->gzreadline($_) > 0){
   chomp;
@@ -91,7 +93,7 @@ while($vcf->gzreadline($_) > 0){
 }
 
 $vcf -> gzclose();
-close $OUT;
+close $OUT if $outvcf;
 
 __END__
 =head1 NAME

@@ -19,14 +19,9 @@ my $configpath = dirname(dirname($relpath));
 my $config = LoadFile("$configpath/_config.yaml");
 
 my $adj = $config->{adj};
-my $mac = $config->{mac};
-my $binw = $config->{binw};
 my $data = $config->{data};
-my $bin_scheme = $config->{bin_scheme};
 my $parentdir = $config->{parentdir};
-my $count_motifs = $config->{count_motifs};
-my $expand_summ = $config->{expand_summ};
-
+my $seed = $config->{seed};
 my $subseq=$adj*2+1;
 
 use lib "$FindBin::Bin/../lib";
@@ -38,7 +33,7 @@ print "Preparing de novo data...\n";
 my $prepdnmcmd = "Rscript $parentdir/smaug-genetics/R/read_dnms.r TRUE $parentdir";
 forkExecWait($prepdnmcmd);
 
-srand(36087318);
+srand($seed);
 
 my $outfile = "$parentdir/output/predicted/validation_sites.txt";
 open my $outFH, '>', $outfile or die "can't write to $outfile: $!\n";
@@ -93,28 +88,15 @@ foreach my $chr (1..22){
       my $dnmid = $line[0];
       my $dnmchr = $line[1];
       my $dnmpos = $line[2];
-      # print "$dnmchr:$dnmpos\n";
       next unless $dnmchr == $chr;
-
-      # speed up grep cmd by starting search in neighborhood
-      # position in file should be proportional to position in chr
-      # my $startind=ceil(($dnmpos/$seqlength)*$nsites)-5000000;
-      # my $startpos;
-      # if($startind > 0){
-      #   $startpos=$startind;
-      # } else {
-      #   $startpos=1;
-      # }
 
       my $dnmlocalseq = substr($seq, $dnmpos-$adj-1, $subseq);
       my $dnmseqp = getMotif($dnmlocalseq, $adj);
-      # print "DNM pos: $dnmpos\n";
-      # my $rateline = `tail -n +$startpos $predfile | grep -m 1 -Fw $dnmpos`;
+
       my $rateline = `grep -m 1 -Fw $dnmpos $tmpfile_o`;
       chomp $rateline;
-      # if($rateline=~/$dnmpos/){
+
       if(length($rateline)>2){
-        # print "$rateline contains DNM site: $dnmpos\n";
         print $outFH "$rateline\t1\t$categ\t$dnmseqp\t$dnmid\n";
       }
     }

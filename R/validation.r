@@ -1,11 +1,49 @@
 ##############################################################################
 # Read and process data
 ##############################################################################
+
+##############################################################################
+# Add columns for 5-mer, 3-mer, and 1-mer rates
+##############################################################################
+
+rates9 <- ratelist[[5]] %>%
+  dplyr::select(Category=Type, SEQ=Motif, MU_9=ERV_rel_rate)
+
+rates_mask <- maskgpdat %>%
+  mutate(SEQ7=substr(Motif, 1, 7)) %>%
+  dplyr::select(Category=Type, SEQ7, MU_7M=ERV_rel_rate_mask)
+
+rates7 <- ratelist[[4]] %>%
+	mutate(SEQ7=substr(Motif, 1, 7)) %>%
+	dplyr::select(Category=Type, SEQ7, MU_7=ERV_rel_rate)
+
+rates5 <- ratelist[[3]] %>%
+	mutate(SEQ5=substr(Motif, 1, 5)) %>%
+	dplyr::select(Category=Type, SEQ5, MU_5=ERV_rel_rate)
+
+rates3 <- ratelist[[2]] %>%
+	mutate(SEQ3=substr(Motif, 1, 3)) %>%
+	dplyr::select(Category=Type, SEQ3, MU_3=ERV_rel_rate)
+
+rates1 <- ratelist[[1]] %>%
+	dplyr::select(Category=Type, MU_1=ERV_rel_rate)
+
+rates7A <- avrates %>%
+  mutate(SEQ7=substr(Motif, 1, 7)) %>%
+  dplyr::select(Category=Type, SEQ7, MU_7A=eur)
+
+# r7s <- r5m %>%
+# 	dplyr::select(Category.x=Category,
+# 		SEQ=Sequence,
+# 		MU_7S=rel_prop,
+# 		MU_7P=common_rel_prop)
+# chrp <- merge(chrp, r7s, by=c("Category.x", "SEQ"))
+
 cat("Reading data...\n")
 
 validation_file <- paste0(parentdir, "/output/predicted/validation_sites.txt")
 
-chrp <- read.table(site_file, header=F, stringsAsFactors=F)
+chrp <- read.table(validation_file, header=F, stringsAsFactors=F)
 names(chrp) <- c("CHR", "POS", "BIN", "MU", "OBS", "Category", "SEQ", "ID")
 
 # Remove sites with mu=0
@@ -13,77 +51,85 @@ chrp <- chrp[chrp$MU>0,]
 
 # Subset to non-DNMs and DNMs
 cat("Splitting by DNM status...\n")
-chrpdnm <- chrp[chrp$ID!="all",]
-chrp <- chrp[chrp$ID=="all",]
-chrp <- chrp[sample(nrow(chrp), 1000000),]
 
-# Duplicate data, merge with DNMs to get ID
-# cat("Annotating with ID...\n")
-# chrpf <- merge(chrpf, dnms_full, by=c("CHR", "POS"), all.x=T)
+# Filter DNMs; set flag to exclude these sites from simulation analysis
+chrpdnm <- chrp[chrp$ID!="all",] %>%
+  mutate(SIM="a", SIMOBS=0)
+chrp <- chrp[chrp$ID=="all",]
+
+set.seed(seed)
+chrp <- chrp[sample(nrow(chrp), 2000000),] %>%
+  mutate(SIM="ab", SIMOBS=0) # include in simulation analysis
 
 # Recombine data
 cat("Creating combined data...\n")
-chrp <- rbind(chrp, chrpdnm) %>%
-  group_by(Category.x) %>%
+chrp_c <- bind_rows(list(chrp, chrpdnm)) %>%
+  group_by(Category) %>%
   mutate(prop=cumsum(OBS)/sum(OBS)) %>%
-  arrange(MU, prop)
+  arrange(MU, prop) %>%
+  mutate(SEQ7 = substr(SEQ, 2, 8),
+    SEQ5 = substr(SEQ, 3, 7),
+    SEQ3 = substr(SEQ, 4, 6))
 
-# Output 3-mer rates calculated on DNMs
-dnm_rates<-0
-if(dnm_rates){
-	dnm_agg <- chrpdnm %>%
-		group_by(Category.x=as.character(Category.x), SEQ=substr(SEQ, 3, 5)) %>%
-		summarise(ndnm=n())
+chrp_c <- merge(chrp_c, rates9, by=c("Category", "SEQ"), all.x=T)
+chrp_c <- merge(chrp_c, rates7A, by=c("Category", "SEQ7"), all.x=T)
+chrp_c <- merge(chrp_c, rates_mask, by=c("Category", "SEQ7"), all.x=T)
+chrp_c <- merge(chrp_c, rates7, by=c("Category", "SEQ7"), all.x=T)
+chrp_c <- merge(chrp_c, rates5, by=c("Category", "SEQ5"), all.x=T)
+chrp_c <- merge(chrp_c, rates3, by=c("Category", "SEQ3"))
+chrp_c <- merge(chrp_c, rates1, by=c("Category"))
 
-	rates3 <- read.table(paste0(parentdir, "/output/3bp_1000k_rates.txt"),
-		header=T, stringsAsFactors=F)
-	rates3$Category.x <- gsub("cpg_", "", rates3$Category2)
-	rates3$SEQ <- substr(rates3$Sequence, 1, 3)
-	r3m <- merge(dnm_agg, rates3, by=c("Category.x", "SEQ"))
+chrp_c <- chrp_c %>%
+  mutate(Category=ifelse(substr(SEQ,adj+1,adj+2)=="CG",
+                paste0("cpg_",Category), Category)) %>%
+  # mutate(Category =
+  #     plyr::mapvalues(Category, orderedcats1, orderedcats2)) %>%
+  mutate(resid3=MU_3-MU_1,
+    resid5=MU_5-MU_3,
+    resid7=MU_7-MU_5,
+    residL=MU-MU_7,
+    resid5a=MU_5-MU_1,
+    resid7a=MU_7-MU_1,
+    residLa=MU-MU_1)
 
-	rates_3 <- r3m %>%
-		mutate(rel_prop3=ndnm/COUNT) %>%
-	  dplyr::select(Sequence, Category.x, rel_prop3) %>%
-	  spread(Category.x, rel_prop3)
+simMu <- function(data, nobs, chunksize=50000, seed){
+  success <- FALSE
+  mutated <- data.frame()
+  seedit <- 1
+	while(!success){
+    set.seed(seed+seedit)
+		rowind <- sample(nrow(data), chunksize)
+		batch <- data[rowind,]
+		mu <- batch$MU
 
-	rates_3[is.na(rates_3)] <- 0
+		batch$SIMOBS <- sapply(mu, function(x) rbinom(1,1,x))
+    mutated <- rbind(mutated, batch[batch$SIMOBS==1,])
 
-	write.table(rates_3, paste0(parentdir, "/dnm_3bp_rates.txt"),
-		col.names=T, row.names=F, quote=F, sep="\t")
+    success <- nrow(mutated) > nobs
+    seedit <- seedit+1
+	}
+
+  # last batch will go over; sample to desired # of simulated sites
+  set.seed(seed)
+  mutated <- mutated[sample(nrow(mutated), nobs),] %>%
+    mutate(OBS=0, SIM="b")
+  return(mutated)
 }
 
-##############################################################################
-# Add columns for 5-mer, 3-mer, and 1-mer rates
-##############################################################################
-rates5 <- ratelist[[3]] %>%
-	mutate(SEQ5=substr(Motif, 1, 5)) %>%
-	dplyr::select(Category.x=Type, SEQ5, MU_5=ERV_rel_rate)
+chrpdnmsim <- simMu(data=chrp_c, nobs=nrow(chrpdnm), seed=seed)
 
-chrp$SEQ5 <- substr(chrp$SEQ, 2, 6)
-chrp <- merge(chrp, rates5, by=c("Category.x", "SEQ5"), all.x=T)
+chrp_s <- bind_rows(list(chrp_c[chrp_c$OBS==0,], chrpdnmsim)) %>%
+  group_by(Category) %>%
+  mutate(prop=cumsum(OBS)/sum(OBS)) %>%
+  arrange(MU, prop) %>%
+  mutate(OBS=SIMOBS)
 
-rates3 <- ratelist[[2]] %>%
-	mutate(SEQ3=substr(Motif, 1, 3)) %>%
-	dplyr::select(Category.x=Type, SEQ3, MU_3=ERV_rel_rate)
+gc()
 
-chrp$SEQ3 <- substr(chrp$SEQ, 3, 5)
-chrp <- merge(chrp, rates3, by=c("Category.x", "SEQ3"))
-
-rates1 <- ratelist[[1]] %>%
-	dplyr::select(Category.x=Type, MU_1=ERV_rel_rate)
-
-chrp <- merge(chrp, rates1, by=c("Category.x"))
-#!!!
 ##############################################################################
 # Add columns for downsampled ERV 7-mers and Common 7-mers
 # Must have run sing_vs_com.r
 ##############################################################################
-# r7s <- r5m %>%
-# 	dplyr::select(Category.x=Category,
-# 		SEQ=Sequence,
-# 		MU_7S=rel_prop,
-# 		MU_7P=common_rel_prop)
-# chrp <- merge(chrp, r7s, by=c("Category.x", "SEQ"))
 
 runDNMLogit<-function(data, group){
 	outdat <- list()
@@ -95,25 +141,16 @@ runDNMLogit<-function(data, group){
 			# data=data, family=binomial())
 		# outdat$logmodL<-glm(OBS~MU_1+resid3+resid5+resid7+residL,
 			# data=data, family=binomial())
-
-		# mod <- c("1-mers", "3-mers", "5-mers", "7-mers", "7-mers+features",
-		#  "ERVs", "Common", "AV", "1-mers*", "3-mers*", "5-mers*", "7-mers*",
-		#  "7-mers+features*", "ERVs*", "Common*", "AV*")
 		# outdat$logmodSa<-glm(OBS~MU_7S, data=data, family=binomial())
 		# outdat$logmodPa<-glm(OBS~MU_7P, data=data, family=binomial())
 		outdat$mod_1mers <- glm(OBS~MU_1, data=data, family=binomial())
 		outdat$mod_3mers <- glm(OBS~MU_3, data=data, family=binomial())
 		outdat$mod_5mers <- glm(OBS~MU_5, data=data, family=binomial())
-		outdat$mod_7mers <- glm(OBS~MU_S, data=data, family=binomial())
-		outdat$mod_7mers_masked <- glm(OBS~MU_7M, data=data, family=binomial())
+		outdat$mod_7mers <- glm(OBS~MU_7, data=data, family=binomial())
 		outdat$mod_7mers_features <- glm(OBS~MU, data=data, family=binomial())
-		outdat$mod_7mers_AV <- glm(OBS~MU_A, data=data, family=binomial())
-
-		# outdat<-list(logmod1, logmod3, logmod5, logmod7, logmodL,
-		# 	logmodS, logmodP, logmodA,
-		# outdat <- list(logmod1a, logmod3a, logmod5a, logmod7a,
-		# 	logmod7Ma, logmodLa, logmodAa)
-			# logmodSa, logmodPa, )
+    outdat$mod_7mers_masked <- glm(OBS~MU_7M, data=data, family=binomial())
+		outdat$mod_7mers_AV <- glm(OBS~MU_7A, data=data, family=binomial())
+    outdat$mod_9mers <- glm(OBS~MU_9, data=data, family=binomial())
 	} else {
 		outdat$logmod3<-glm(OBS~MU_3, data=data, family=binomial())
 		outdat$logmod5<-glm(OBS~MU_3+resid5, data=data, family=binomial())
@@ -130,30 +167,19 @@ runDNMLogit<-function(data, group){
 		outdat$logmod7a<-glm(OBS~MU_S, data=data, family=binomial())
 		outdat$logmodLa<-glm(OBS~MU, data=data, family=binomial())
 		outdat$logmodAa<-glm(OBS~MU_A, data=data, family=binomial())
-
-		# outdat <- list(logmod3a, logmod5a, logmod7a, logmodLa, logmodAa)
-
-		# outdat<-list(logmod3, logmod5, logmod7, logmodL,
-		# 	logmodS, logmodP, logmodA)
-			# logmod3a, logmod5a, logmod7a, logmodLa)
 	}
 
   return(outdat)
 }
 
-overall_dat <- chrp %>%
-	mutate(Category=ifelse(substr(SEQ,adj+1,adj+2)=="CG",
-									paste0("cpg_",Category.x), Category.x)) %>%
-  # mutate(Category =
-  #     plyr::mapvalues(Category, orderedcats1, orderedcats2)) %>%
-  mutate(resid3=MU_3-MU_1,
-		resid5=MU_5-MU_3,
-		resid7=MU_S-MU_5,
-		residL=MU-MU_S,
-		resid5a=MU_5-MU_1,
-		resid7a=MU_S-MU_1,
-		residLa=MU-MU_1)
-overall_models <- runDNMLogit(overall_dat, "FULL")
+overall_models <- runDNMLogit(chrp_c, "FULL")
+overall_models_sim <- runDNMLogit(chrp_s, "FULL")
+
+rsq <- unname(unlist(lapply(overall_models, function(x)
+	NagelkerkeR2(x)))[seq(2, 2*length(overall_models), by=2)])
+
+rsqsim <- unname(unlist(lapply(overall_models_sim, function(x)
+	NagelkerkeR2(x)))[seq(2, 2*length(overall_models_sim), by=2)])
 
 test13 <- lrtest(overall_models[[1]], overall_models[[2]])
 test35 <- lrtest(overall_models[[2]], overall_models[[3]])
@@ -163,14 +189,12 @@ fulllist<-list(test13, test35, test57, test7L)
 
 pvals <- lapply(fulllist, function(x) x[[5]][2])
 
-rsq <- unname(unlist(lapply(overall_models, function(x)
-	NagelkerkeR2(x)))[seq(2, 2*length(overall_models), by=2)])
 
 aic <- unlist(lapply(overall_models, function(x)
 	AIC(x)))[1:length(overall_models)]
-mod <- c("1-mers", "3-mers", "5-mers", "7-mers", "7-mers+features",
- "ERVs", "Common", "AV", "1-mers*", "3-mers*", "5-mers*", "7-mers*",
- "7-mers+features*", "ERVs*", "Common*", "AV*")
+# mod <- c("1-mers", "3-mers", "5-mers", "7-mers", "7-mers+features",
+#  "ERVs", "Common", "AV", "1-mers*", "3-mers*", "5-mers*", "7-mers*",
+#  "7-mers+features*", "ERVs*", "Common*", "AV*")
 combineddat<-data.frame(group="FULL",
 	category=categ,
 	mod=as.character(names(overall_models)),
@@ -212,7 +236,7 @@ for(i in 1:length(orderedcats)){
 
   overall_dat <- chrp %>%
 		mutate(Category=ifelse(substr(SEQ,adj+1,adj+2)=="CG",
-										paste0("cpg_",Category.x), Category.x)) %>%
+										paste0("cpg_",Category), Category)) %>%
 		mutate(Category =
 				plyr::mapvalues(Category, orderedcats1, orderedcats2)) %>%
     filter(Category==categ) %>%

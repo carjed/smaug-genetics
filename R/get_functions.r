@@ -27,24 +27,19 @@ getData <- function(datadir, bin_scheme){
   cat("Reading summary file:", summfile, "...\n")
   sites <- read.table(summfile, header=T, stringsAsFactors=F)
   sites$BIN <- ceiling(sites$POS/binw)
+  sites$MASK <- binaryCol(sites,
+    paste0(parentdir, "/reference_data/testmask2.bed"))
 
   # Read in motif counts per chromosome
   cat("Reading bin file:", binfile, "...\n")
   bins <- read.table(binfile, header=T, stringsAsFactors=F, check.names=F)
 
   # summarize motif counts genome-wide
-  mct <- bins %>%
-  	# dplyr::select(CHR, BIN, Sequence=MOTIF, nMotifs=COUNT) %>%
-  	dplyr::select(CHR, Sequence=MOTIF, nMotifs=COUNT) %>%
-  	group_by(Sequence) %>%
-  	summarise(nMotifs=sum(nMotifs))
+  cat("Counting motifs...\n")
+  mct <- get_mct(bins)
 
-  aggseq <- sites %>%
-  	group_by(Sequence, Category2, BIN) %>%
-  	summarise(n=n()) %>%
-  	summarise(nERVs=sum(n))
-  aggseq <- merge(aggseq, mct, by="Sequence")
-  aggseq$rel_prop <- aggseq$nERVs/aggseq$nMotifs
+  cat("Calculating K-mer rates...\n")
+  aggseq <- get_aggseq(sites, mct)
 
   out <- list()
   out$sites <- sites
@@ -55,11 +50,33 @@ getData <- function(datadir, bin_scheme){
 }
 
 ##############################################################################
+# Helper functions for getData()
+##############################################################################
+get_mct <- function(bins){
+  out <- bins %>%
+  	# dplyr::select(CHR, BIN, Sequence=MOTIF, nMotifs=COUNT) %>%
+  	dplyr::select(CHR, Sequence=MOTIF, nMotifs=COUNT) %>%
+  	group_by(Sequence) %>%
+  	summarise(nMotifs=sum(nMotifs))
+  return(out)
+}
+
+get_aggseq <- function(data, mct){
+  out <- data %>%
+  	group_by(Sequence, Category2, BIN) %>%
+  	summarise(n=n()) %>%
+  	summarise(nERVs=sum(n))
+  out <- merge(out, mct, by="Sequence")
+  out$rel_prop <- out$nERVs/out$nMotifs
+  return(out)
+}
+
+##############################################################################
 # Function checks if elements in a exist in b
 # Output is binary vector of length same as b
 ##############################################################################
 toBin <- function(a,b){
-	as.numeric(is.element(b,a))
+	is.element(b,a)
 }
 
 ##############################################################################

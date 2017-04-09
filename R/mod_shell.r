@@ -266,7 +266,8 @@ if(common){
 	rates7 <- ratelist[[4]]
 	r5m <- merge(rates7, rates7_common, by=c("Type", "Motif"))
 
-	avrates <- read.xlsx(paste0(parentdir, "/reference_data/AV_rates.xlsx", sheet=10)
+	avrates <- read.xlsx(paste0(parentdir, "/reference_data/AV_rates.xlsx"),
+		sheet=10)
 	names(avrates) <- c("Motif", "alt", "afr", "asn", "eur", "refrev", "altrev")
 
 	avrates$CAT <- paste0(substr(avrates$Motif,4,4), substr(avrates$alt, 4,4))

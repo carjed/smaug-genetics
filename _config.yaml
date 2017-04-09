@@ -42,6 +42,9 @@ binw: 1000000
 # all of the same packages installed in shared libraries
 libpath: "~/R/x86_64-pc-linux-gnu-library/2.13"
 
+# Random seed
+seed: 36087318
+
 ##############################################################################
 # Define location and naming convention of raw input vcfs, if we are using the
 # 'makecopy' option in vcf_to_summary.pl

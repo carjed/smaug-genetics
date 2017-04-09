@@ -131,25 +131,10 @@ if($expand_summ eq "TRUE"){
 		my $REF=$line[2];
 		my $ALT=$line[3];
 		my $localseq = substr($seq, $pos-$adj-1, $subseq);
-		# my $altlocalseq = reverse $localseq;
-		# $altlocalseq  =~ tr/ACGT/TGCA/;
-    #
-    # my $ref1 = substr($localseq, $adj, 1);
-    # my $ref2 = substr($altlocalseq, $adj, 1);
-    #
-    # my $seqp;
-    #
-    # if($ref1 ~~ [qw( A C )]){
-    #   $seqp = "$localseq\($altlocalseq\)";
-    # } else {
-    #   $seqp = "$altlocalseq\($localseq\)";
-    # }
+
     my $seqp = getMotif($localseq, $adj);
 		# keep only sites in fully parameterized motif
 		if($localseq =~ /^[ACGT]+$/){
-    # if($seqp !~ /N/){
-
-
 			my $CAT = "${REF}${ALT}";
 			my $Category;
 			if($CAT ~~ [qw( AC TG )]){
@@ -256,11 +241,9 @@ sub writeCounts{
 	my $bin = $_[0]+1;
 	my @motifs = @{$_[1]};
 	my %tri_count=();
-	# @tri_count{@a}=@b;
 	$tri_count{$_}++ for @motifs;
 
 	foreach my $motif (sort keys %tri_count) {
-		# if ($count !~ /N|^G|^T/) {
 		my $altmotif = $motif;
 		$altmotif =~ tr/ACGT/TGCA/;
 		$altmotif = reverse $altmotif;

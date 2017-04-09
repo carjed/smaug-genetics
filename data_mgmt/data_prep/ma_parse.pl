@@ -35,10 +35,12 @@ my $vcf = gzopen($invcf, "rb") or
   die "can't open $invcf: $gzerrno";
 
 # Initialize gzipped output
-open(my $OUT, "| bgzip -c > $outvcf") or
-  die "Could not write to $outvcf: $!";
+# my $OUT = open "| bgzip -c > $outvcf") or
+#   die "Could not write to $outvcf: $!";
 
-$OUT = *STDOUT unless $outvcf;
+my $succ = open(my $OUT, '>', $outvcf);
+
+$OUT = *STDOUT unless $succ;
 
 while($vcf->gzreadline($_) > 0){
   chomp;
@@ -93,7 +95,7 @@ while($vcf->gzreadline($_) > 0){
 }
 
 $vcf -> gzclose();
-close $OUT if $outvcf;
+close $OUT if $succ;
 
 __END__
 =head1 NAME

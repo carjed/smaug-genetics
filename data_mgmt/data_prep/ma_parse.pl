@@ -20,7 +20,7 @@ use IO::Compress::Gzip;
 my $help=0;
 my $man=0;
 my $invcf='';
-my $outvcf;
+my $outvcf='';
 
 GetOptions ('i=s'=> \$invcf,
 'o=s' => \$outvcf,

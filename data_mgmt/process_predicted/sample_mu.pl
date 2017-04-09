@@ -78,6 +78,14 @@ foreach my $chr (1..22){
     my $dnmfile = "$parentdir/reference_data/DNMs/GoNL_$categ.txt";
     open my $dnmFH, '<', $dnmfile or die "can't open $dnmfile: $!";
 
+    my $tmpfile_s = "$parentdir/reference_data/DNMs/tmp_s.txt";
+    my $buildquerycmd = "grep \"\\s$chr\\s\" $dnmfile | cut -f 3 > $tmpfile_s";
+    forkExecWait($buildquerycmd);
+
+    my $tmpfile_o = "$parentdir/reference_data/DNMs/tmp_o.txt";
+    my $dnmannocmd = "grep -Fwf  $tmpfile_s $predfile > $tmpfile_o";
+    forkExecWait($dnmannocmd);
+
     print "Appending chr$chr $categ de novos...\n";
     while(<$dnmFH>){
       chomp;
@@ -89,18 +97,20 @@ foreach my $chr (1..22){
       next unless $dnmchr == $chr;
 
       # speed up grep cmd by starting search in neighborhood
-      my $startind=ceil(($dnmpos/$seqlength)*$nsites)-5000000;
-      my $startpos;
-      if($startind > 0){
-        $startpos=$startind;
-      } else {
-        $startpos=1;
-      }
+      # position in file should be proportional to position in chr
+      # my $startind=ceil(($dnmpos/$seqlength)*$nsites)-5000000;
+      # my $startpos;
+      # if($startind > 0){
+      #   $startpos=$startind;
+      # } else {
+      #   $startpos=1;
+      # }
 
       my $dnmlocalseq = substr($seq, $dnmpos-$adj-1, $subseq);
       my $dnmseqp = getMotif($dnmlocalseq, $adj);
       # print "DNM pos: $dnmpos\n";
-      my $rateline = `tail -n +$startpos $predfile | grep -m 1 -Fw $dnmpos`;
+      # my $rateline = `tail -n +$startpos $predfile | grep -m 1 -Fw $dnmpos`;
+      my $rateline = `grep -m 1 Fw $dnmpos $tmpfile_o`;
       chomp $rateline;
       # if($rateline=~/$dnmpos/){
       if(length($rateline)>2){

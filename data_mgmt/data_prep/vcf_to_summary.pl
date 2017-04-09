@@ -60,9 +60,9 @@ if ($makecopy eq "copy") {
     if($filename !~ /chrX/){
       my @parts = split(/\.vcf.gz/, $filename);
       my $basename = $parts[0];
-      my $newvcf = "$vcfdir/$basename.ma.vcf.gz";
+      my $newvcf = "$vcfdir/$basename.ma.aa.vcf.gz";
 
-      my $maparse="perl ./ma_parse.pl --i $rawvcf --o $newvcf";
+      my $maparse="perl ./ma_parse.pl --i $rawvcf | perl $vcftoolsdir/perl/fill-aa -a $parentdir/reference_data/human_ancestor_GRCh37_e59/human_ancestor_$i.fa.gz | bgzip -c > $newvcf";
       print "Input file: $rawvcf\n";
       print "Writing to: $newvcf...";
       forkExecWait($maparse);
@@ -105,7 +105,7 @@ if ($script==1){
 		} elsif ($mac eq "singletons"){
 			$bcfquery = "bcftools query -i 'AC=1 && FILTER=\"PASS\"' -r $chr";
 		}
-    my $cmd = "$bcfquery  -f '%CHROM\t%POS\t%REF\t%ALT\t%INFO/AN\n' $file > $outdir/chr$chr.summary";
+    my $cmd = "$bcfquery  -f '%CHROM\t%POS\t%REF\t%ALT\t%INFO/AA\t%INFO/AN\n' $file > $outdir/chr$chr.summary";
 		forkExecWait($cmd);
 	}
   print "Operation complete\n";

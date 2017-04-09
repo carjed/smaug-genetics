@@ -80,4 +80,4 @@ glfdir: "/net/bipolar/bridges/sequencedata/umake/glfs/samples"
 ##############################################################################
 # DEPRECATED
 ##############################################################################
-vcftoolsdir: "/net/bipolar/jedidiah/vcftools_0.1.10"
+vcftoolsdir: "/net/bipolar/jedidiah/vcftools"

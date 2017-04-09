@@ -54,9 +54,14 @@ foreach my $chr (1..22){
   }
 
   my $seq=getRef($f_fasta, $chr);
+  my $seqlength=length($seq);
+
   foreach my $categ (@categs){
     my $predfile = "$parentdir/output/predicted/chr$chr.$categ.txt";
     open my $inFH, '<', $predfile or die "can't open $predfile: $!";
+
+    my $nsites=`wc -l $predfile | cut -f1 -d' '`;
+    chomp $nsites;
 
     print "Sampling chr$chr $categ sites...\n";
     while(<$inFH>){
@@ -83,10 +88,19 @@ foreach my $chr (1..22){
       # print "$dnmchr:$dnmpos\n";
       next unless $dnmchr == $chr;
 
+      # speed up grep cmd by starting search in neighborhood
+      my $startind=ceil(($dnmpos/$seqlength)*$nsites)-5000000;
+      my $startpos;
+      if($startind > 0){
+        $startpos=$startind;
+      } else {
+        $startpos=1;
+      }
+
       my $dnmlocalseq = substr($seq, $dnmpos-$adj-1, $subseq);
       my $dnmseqp = getMotif($dnmlocalseq, $adj);
       # print "DNM pos: $dnmpos\n";
-      my $rateline = `grep -m 1 -Fw $dnmpos $predfile`;
+      my $rateline = `tail -n +$startpos $predfile | grep -m 1 -Fw $dnmpos`;
       chomp $rateline;
       # if($rateline=~/$dnmpos/){
       if(length($rateline)>2){

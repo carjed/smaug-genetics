@@ -60,6 +60,9 @@ if ($makecopy eq "copy") {
     if($filename !~ /chrX/){
       my @parts = split(/\.vcf.gz/, $filename);
       my $basename = $parts[0];
+      my @nameparts = split(/\./, $basename);
+      my $i = $nameparts[0];
+      $i =~ s/"chr"//g;
       my $newvcf = "$vcfdir/$basename.ma.aa.vcf.gz";
 
       my $maparse="perl ./ma_parse.pl --i $rawvcf | perl $vcftoolsdir/perl/fill-aa -a $parentdir/reference_data/human_ancestor_GRCh37_e59/human_ancestor_$i.fa.gz | bgzip -c > $newvcf";

@@ -62,7 +62,8 @@ if ($makecopy eq "copy") {
       my $basename = $parts[0];
       my @nameparts = split(/\./, $basename);
       my $i = $nameparts[0];
-      $i =~ s/"chr"//g;
+      $i =~ s/chr//g;
+      print "$i\n";
       my $newvcf = "$vcfdir/$basename.ma.aa.vcf.gz";
 
       my $maparse="perl $relpath/ma_parse.pl --i $rawvcf | perl $vcftoolsdir/perl/fill-aa -a $parentdir/reference_data/human_ancestor_GRCh37_e59/human_ancestor_$i.fa.gz | bgzip -c > $newvcf";

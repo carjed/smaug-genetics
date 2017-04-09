@@ -87,7 +87,7 @@ my $script = 1;
 if ($script==1){
   my @vcfs = File::Find::Rule->file()
                             ->name("*.vcf.gz")
-                            ->maxdepth(0)
+                            ->maxdepth(1)
                             ->in($vcfdir);
 
 	foreach my $file (@vcfs) {

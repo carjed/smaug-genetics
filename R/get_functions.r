@@ -26,6 +26,8 @@ getData <- function(datadir, bin_scheme){
   # Read in per-site summary data
   cat("Reading summary file:", summfile, "...\n")
   sites <- read.table(summfile, header=T, stringsAsFactors=F)
+  sites$Category2 <- sites$Category
+  sites$Category <- gsub("cpg", "", sites$Category)
   sites$BIN <- ceiling(sites$POS/binw)
   sites$MASK <- binaryCol(sites,
     paste0(parentdir, "/reference_data/testmask2.bed"))

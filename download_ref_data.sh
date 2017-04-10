@@ -39,12 +39,34 @@ curl -s "https://genome.ucsc.edu/goldenpath/help/hg19.chrom.sizes" > "$refdir/hg
 curl -s  "ftp://ftp.1000genomes.ebi.ac.uk/vol1/ftp/release/20130502/supporting/accessible_genome_masks/20140520.strict_mask.autosomes.bed" | bedtools complement -i - -g "$refdir/hg19.genome" | bedtools sort | awk 'match($1, /chr[0-9]+$/) {print $0}' > "$refdir/testmask2.bed"
 
 # Reference genome fasta
-curl -s "ftp://ftp-trace.ncbi.nih.gov/1000genomes/ftp/technical/reference/human_g1k_v37.fasta.gz" | gunzip > "$refdir/human_g1k_v37/human_g1k_v37.fasta"
+curl -s "ftp://ftp-trace.ncbi.nih.gov/1000genomes/ftp/technical/reference/human_g1k_v37.fasta.gz" > "$refdir/human_g1k_v37/human_g1k_v37.fasta.gz"
 
 for i in `seq 1 22`; do
-  samtools faidx "$refdir/human_g1k_v37/human_g1k_v37.fasta" $i | bgzip -c > "$refdir/human_g1k_v37/chr$i.fasta.gz"
+  samtools faidx "$refdir/human_g1k_v37/human_g1k_v37.fasta.gz" $i | bgzip -c > "$refdir/human_g1k_v37/chr$i.fasta.gz"
   samtools faidx "$refdir/human_g1k_v37/chr$i.fasta.gz"
 done
+
+# Ancestral genome fasta
+curl -s "http://ftp.1000genomes.ebi.ac.uk/vol1/ftp/phase1/analysis_results/supporting/ancestral_alignments/human_ancestor_GRCh37_e59.tar.bz2" > "$refdir/human_ancestor_GRCh37_e59.tar.bz2"
+
+tar -vjxf "$refdir/human_ancestor_GRCh37_e59.tar.bz2"
+
+# ancdir="$refdir/human_ancestor_GRCh37_e59"
+# mkdir $ancdir
+# cd $ancdir
+# tar -xvjf
+# cd $refdir
+
+# for i in `seq 1 22`; do
+#   curl -s "ftp://ftp.1000genomes.ebi.ac.uk/vol1/ftp/pilot_data/technical/reference/ancestral_alignments/human_ancestor_$i.fa.bz2" | bzcat | sed "s,^>.*,>$CHR," | gzip -c > $OUT $ancdir/human_ancestor_$i.fa.gz
+# done
+#
+# ls human_ancestor_*.fa.bz2 | while read IN; do
+#     OUT=`echo $IN | sed 's,bz2$,gz,'`
+#     CHR=`echo $IN | sed 's,human_ancestor_,, ; s,.fa.bz2,,'`
+#     bzcat $IN | sed "s,^>.*,>$CHR," | gzip -c > $OUT
+#     samtools faidx $OUT
+# done
 
 # mask fasta
 bedtools maskfasta -fi "$refdir/human_g1k_v37.fasta" -bed "$refdir/testmask2.bed" -fo "$refdir/human_g1k_v37.premask.fasta"

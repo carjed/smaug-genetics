@@ -66,11 +66,20 @@ if ($makecopy eq "copy") {
       print "$i\n";
       my $newvcf = "$vcfdir/$basename.ma.aa.vcf.gz";
       my $ancestral = "$parentdir/reference_data/human_ancestor_GRCh37_e59/human_ancestor_$i.fa.gz";
-      my $maparse="perl $relpath/ma_parse.pl --i $rawvcf";
+      my $fasta = "$parentdir/reference_data//human_g1k_v37/chr$i.fasta.gz";
 
+      # first command extracts singletons with filter PASS, including any that
+      # occur in multiallelic sites
+      my $maparse = "perl $relpath/ma_parse.pl --i $rawvcf";
+
+      # second command fills ancestral allele to AA field
       my $aaparse = "perl $vcftoolsdir/perl/fill-aa -a $ancestral";
 
-      my $pipe = "$maparse | $aaparse | bgzip -c > $newvcf";
+      # last command adds Motif and Category info fields
+      my $infoparse = "perl $relpath/fill_motif.pl -a $fasta";
+
+      # pipe commands and execute
+      my $pipe = "$maparse | $aaparse | $infoparse | bgzip -c > $newvcf";
       print "Input file: $rawvcf\n";
       print "Writing to: $newvcf...";
       forkExecWait($pipe);
@@ -94,6 +103,10 @@ if ($script==1){
                             ->maxdepth(1)
                             ->in($vcfdir);
 
+  my $header = "\"CHR\\tPOS\\tREF\\tALT\\tAA\\tAN\\tMotif\\tCategory\"";
+  my $headercmd = "echo $header > $outdir/testsum.summary";
+  forkExecWait($headercmd);
+
 	foreach my $file (@vcfs) {
     print "Getting summary for $file...\n";
     unless(-e "$file.tbi"){
@@ -113,8 +126,9 @@ if ($script==1){
 		} elsif ($mac eq "singletons"){
 			$bcfquery = "bcftools query -i 'AC=1 && FILTER=\"PASS\"' -r $chr";
 		}
-    my $bcfheader = "'%CHROM\t%POS\t%REF\t%ALT\t%INFO/AA\t%INFO/AN\n'";
-    my $cmd = "$bcfquery -f $bcfheader $file > $outdir/chr$chr.summary";
+    my $outputcols = "'%CHROM\t%POS\t%REF\t%ALT\t%INFO/AA\t%INFO/AN\t%INFO/Motif\t%INFO/Category\n'";
+    # my $cmd = "$bcfquery -f $outputcols $file > $outdir/chr$chr.summary";
+    my $cmd = "$bcfquery -f $outputcols $file >> $outdir/testsum.summary";
 		forkExecWait($cmd);
 	}
   print "Operation complete\n";

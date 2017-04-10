@@ -1,10 +1,4 @@
 #!/usr/bin/env perl
-#
-# Notes:
-#   * The AA files can be downloaded from ftp://ftp.1000genomes.ebi.ac.uk/vol1/ftp/pilot_data/technical/reference/ancestral_alignments
-#   * The program runs samtools, therefore the AA files must be gzipped (not b2zipped).
-#
-# support: pd3@sanger
 
 use strict;
 use warnings;
@@ -39,56 +33,21 @@ use lib "$FindBin::Bin/../lib";
 use SmaugFunctions qw(getMotif getType);
 
 my $opts = parse_params();
-fill_aa($opts,$$opts{aa_file});
+fill_info($opts,$$opts{aa_file});
 
 exit;
 
 #--------------------------------
 
-sub error
-{
+sub error {
     my (@msg) = @_;
     if ( scalar @msg ) { confess @msg; }
     die
-        "About: This script fills ancestral alleles into INFO column of VCF files. It depends on samtools,\n",
-        "   therefore the fasta sequence must be gzipped (not bgzipped!) and indexed by samtools faidx.\n",
-        "   The AA files can be downloaded from\n",
-        "       ftp://ftp.1000genomes.ebi.ac.uk/vol1/ftp/pilot_data/technical/reference/ancestral_alignments\n",
-        "   and processed as shown in the example below. This is because the sequences in the original files\n",
-        "   are named as 'ANCESTOR_for_chromosome:NCBI36:1:1:247249719', but the underlying FaSplice.pm\n",
-        "   requires names as 'chr1' or '1'.\n",
-        "Usage: fill-aa [OPTIONS] < in.vcf >out.vcf\n",
-        "Options:\n",
-        "   -a, --ancestral-allele <prefix>     Prefix to ancestral allele chromosome files.\n",
-        "   -t, --type <list>                   Variant types to process: all,indel,ref,snp. [all]\n",
-        "   -h, -?, --help                      This help message.\n",
-        "Example:\n",
-        "   # Get the files ready: compress by gzip and index by samtools faidx. Either repeat the\n",
-        "   # following command for each file manually\n",
-        "   bzcat human_ancestor_1.fa.bz2 | sed 's,^>.*,>1,' | gzip -c > human_ancestor_1.fa.gz\n",
-        "   samtools faidx human_ancestor_1.fa.gz\n",
-        "   \n",
-        "   # .. or use this loop (tested in bash shell)\n",
-        "   ls human_ancestor_*.fa.bz2 | while read IN; do\n",
-        "       OUT=`echo \$IN | sed 's,bz2\$,gz,'`\n",
-        "       CHR=`echo \$IN | sed 's,human_ancestor_,, ; s,.fa.bz2,,'`\n",
-        "       bzcat \$IN | sed \"s,^>.*,>\$CHR,\" | gzip -c > \$OUT\n",
-        "       samtools faidx \$OUT\n",
-        "   done\n",
-        "   \n",
-        "   # After this has been done, the following command should return 'TACGTGGcTGCTCTCACACAT'\n",
-        "   samtools faidx human_ancestor_1.fa.gz 1:1000000-1000020\n",
-        "   \n",
-        "   # Now the files are ready to use with fill-aa. Note that the VCF file\n",
-        "   # should be sorted (see vcf-sort), otherwise the performance would be seriously\n",
-        "   # affected.\n",
-        "   cat file.vcf | fill-aa -a human_ancestor_ 2>test.err | gzip -c >out.vcf.gz \n",
-        "\n";
+      "About: This script fills sequence motif and mutation type into the INFO column of VCF files \n";
 }
 
 
-sub parse_params
-{
+sub parse_params {
     my $opts = {};
     while (my $arg=shift(@ARGV))
     {
@@ -118,9 +77,8 @@ sub parse_params
 }
 
 
-sub fill_aa
-{
-    my ($opts,$aa_fname) = @_;
+sub fill_info {
+    my ($opts,$fa_fname) = @_;
 
     my $n_unknown = 0;
     my $n_filled_sites = 0;
@@ -144,7 +102,7 @@ sub fill_aa
 
         if ( !exists($chr2fa{$chr}) )
         {
-            my $fname = $aa_fname;
+            my $fname = $fa_fname;
             if ( ! -e $fname )
             {
                 if ( -e "$fname$chr.fasta.gz" ) { $fname = "$fname$chr.fasta.gz"; }
@@ -170,11 +128,11 @@ sub fill_aa
                 next;
             }
         }
-        my $aa = $fa->get_slice($chr, $pos-$adj, $pos+$adj);
-        $aa = getMotif($aa, $adj);
-        if ( $aa )
+        my $motif = $fa->get_slice($chr, $pos-$adj, $pos+$adj);
+        $motif = getMotif($motif, $adj);
+        if ( $motif )
         {
-            $$rec[7] = $vcf->add_info_field($$rec[7],'Motif'=>$aa);
+            $$rec[7] = $vcf->add_info_field($$rec[7],'Motif'=>$motif);
             $n_filled_sites++;
             $n_filled_bases+=$ref_len;
         }
@@ -184,7 +142,7 @@ sub fill_aa
             $n_unknown++;
         }
 
-        my $type = getType($ref, $alt, $adj, $aa);
+        my $type = getType($ref, $alt, $adj, $motif);
         # $aa = getMotif($aa, $adj);
         if ( $type )
         {

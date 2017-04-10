@@ -31,7 +31,8 @@ use lib "$FindBin::Bin/../lib";
 use SmaugFunctions qw(forkExecWait getRef);
 
 # Default summary directory
-my $outdir="$inputdir/summaries/${mac}";
+my $outdir="$parentdir/summaries";
+make_path($outdir);
 
 # Running script with argument 'copy'
 # copies VCFs from another directory to avoid overwriting raw data
@@ -45,7 +46,7 @@ my $vcfdir="$inputdir/vcfs";
 make_path($vcfdir);
 
 ################################################################################
-# Copies original vcfs to project directory
+# Copies raw vcfs from original location to input directory
 ################################################################################
 if ($makecopy eq "copy") {
 	my @rawvcfs = File::Find::Rule->file()
@@ -53,7 +54,7 @@ if ($makecopy eq "copy") {
                             ->maxdepth(3)
                             ->in($rawvcfdir);
 
-	print STDERR "Processing VCFs with extension '$rawvcfext'\n from $rawvcfdir...\n";
+	# print STDERR "Processing VCFs with extension '$rawvcfext'\n from $rawvcfdir...\n";
 	foreach my $rawvcf (@rawvcfs) {
 		my $filename=fileparse($rawvcf);
 
@@ -104,7 +105,7 @@ if ($script==1){
                             ->in($vcfdir);
 
   my $header = "\"CHR\\tPOS\\tREF\\tALT\\tAA\\tAN\\tMotif\\tCategory\"";
-  my $headercmd = "echo $header > $outdir/testsum.summary";
+  my $headercmd = "echo $header > $outdir/full.summary";
   forkExecWait($headercmd);
 
 	foreach my $file (@vcfs) {
@@ -128,7 +129,7 @@ if ($script==1){
 		}
     my $outputcols = "'%CHROM\t%POS\t%REF\t%ALT\t%INFO/AA\t%INFO/AN\t%INFO/Motif\t%INFO/Category\n'";
     # my $cmd = "$bcfquery -f $outputcols $file > $outdir/chr$chr.summary";
-    my $cmd = "$bcfquery -f $outputcols $file >> $outdir/testsum.summary";
+    my $cmd = "$bcfquery -f $outputcols $file >> $outdir/full.summary";
 		forkExecWait($cmd);
 	}
   print STDERR "Operation complete\n";

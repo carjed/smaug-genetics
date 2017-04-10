@@ -36,7 +36,7 @@ my $mac = $config->{mac};
 my $binw = $config->{binw};
 my $data = $config->{data};
 # my $bin_scheme = $config->{bin_scheme};
-my $bin_scheme = "band";
+my $bin_scheme = "fixed";
 my $parentdir = $config->{parentdir};
 my $count_motifs = $config->{count_motifs};
 my $expand_summ = $config->{expand_summ};
@@ -108,7 +108,8 @@ if($count_motifs eq "TRUE"){
 	my @motifs;
 
 	if($bin_scheme eq "fixed"){
-    my $numbins=ceil(length($fa)/$binw);
+    # my $numbins=ceil(length($fa)/$binw);
+    my $numbins=10;
 		for my $i (0 .. $numbins-1) {
       $startpos = $i*$binw+1;
       $endpos = $startpos+$binw-1;
@@ -137,7 +138,7 @@ if($count_motifs eq "TRUE"){
           my $length=length($binseq);
           print "$bandno length: $length\n";
           @motifs = ($binseq =~ /(?=([ACGT]{$subseq}))/g);
-          print join(", ", @motifs);
+          # print join(", ", @motifs);
           my $countstr = writeCounts($bandno, \@motifs);
           print BIN "$_\t$countstr\n";
           $bandno = $bandno+1;

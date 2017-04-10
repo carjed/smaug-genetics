@@ -78,6 +78,6 @@ samples: "/net/bipolar/lockeae/final_freeze/list.txt"
 glfdir: "/net/bipolar/bridges/sequencedata/umake/glfs/samples"
 
 ##############################################################################
-# DEPRECATED
+# vcftools fill-aa perl script is needed to add ancestral allele to summaries
 ##############################################################################
 vcftoolsdir: "/net/bipolar/jedidiah/vcftools"

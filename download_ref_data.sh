@@ -39,7 +39,12 @@ curl -s "https://genome.ucsc.edu/goldenpath/help/hg19.chrom.sizes" > "$refdir/hg
 curl -s  "ftp://ftp.1000genomes.ebi.ac.uk/vol1/ftp/release/20130502/supporting/accessible_genome_masks/20140520.strict_mask.autosomes.bed" | bedtools complement -i - -g "$refdir/hg19.genome" | bedtools sort | awk 'match($1, /chr[0-9]+$/) {print $0}' > "$refdir/testmask2.bed"
 
 # Reference genome fasta
-curl -s "ftp://ftp-trace.ncbi.nih.gov/1000genomes/ftp/technical/reference/human_g1k_v37.fasta.gz" | gunzip > "$refdir/human_g1k_v37.fasta"
+curl -s "ftp://ftp-trace.ncbi.nih.gov/1000genomes/ftp/technical/reference/human_g1k_v37.fasta.gz" | gunzip > "$refdir/human_g1k_v37/human_g1k_v37.fasta"
+
+for i in `seq 1 22`; do
+  samtools faidx "$refdir/human_g1k_v37/human_g1k_v37.fasta" $i | bgzip -c > "$refdir/human_g1k_v37/chr$i.fasta.gz"
+  samtools faidx "$refdir/human_g1k_v37/chr$i.fasta.gz"
+done
 
 # mask fasta
 bedtools maskfasta -fi "$refdir/human_g1k_v37.fasta" -bed "$refdir/testmask2.bed" -fo "$refdir/human_g1k_v37.premask.fasta"

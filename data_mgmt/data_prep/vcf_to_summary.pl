@@ -65,11 +65,15 @@ if ($makecopy eq "copy") {
       $i =~ s/chr//g;
       print "$i\n";
       my $newvcf = "$vcfdir/$basename.ma.aa.vcf.gz";
+      my $ancestral = "$parentdir/reference_data/human_ancestor_GRCh37_e59/human_ancestor_$i.fa.gz";
+      my $maparse="perl $relpath/ma_parse.pl --i $rawvcf";
 
-      my $maparse="perl $relpath/ma_parse.pl --i $rawvcf | perl $vcftoolsdir/perl/fill-aa -a $parentdir/reference_data/human_ancestor_GRCh37_e59/human_ancestor_$i.fa.gz | bgzip -c > $newvcf";
+      my $aaparse = "perl $vcftoolsdir/perl/fill-aa -a $ancestral";
+
+      my $pipe = "$maparse | $aaparse | bgzip -c > $newvcf";
       print "Input file: $rawvcf\n";
       print "Writing to: $newvcf...";
-      forkExecWait($maparse);
+      forkExecWait($pipe);
       print "Done\n";
     }
 	}
@@ -109,7 +113,8 @@ if ($script==1){
 		} elsif ($mac eq "singletons"){
 			$bcfquery = "bcftools query -i 'AC=1 && FILTER=\"PASS\"' -r $chr";
 		}
-    my $cmd = "$bcfquery  -f '%CHROM\t%POS\t%REF\t%ALT\t%INFO/AA\t%INFO/AN\n' $file > $outdir/chr$chr.summary";
+    my $bcfheader = "'%CHROM\t%POS\t%REF\t%ALT\t%INFO/AA\t%INFO/AN\n'";
+    my $cmd = "$bcfquery -f $bcfheader $file > $outdir/chr$chr.summary";
 		forkExecWait($cmd);
 	}
   print "Operation complete\n";

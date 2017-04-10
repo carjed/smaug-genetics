@@ -39,7 +39,6 @@ my $vcf = gzopen($invcf, "rb") or
 #   die "Could not write to $outvcf: $!";
 
 my $succ = open(my $OUT, '>', $outvcf);
-
 $OUT = *STDOUT unless $succ;
 
 while($vcf->gzreadline($_) > 0){

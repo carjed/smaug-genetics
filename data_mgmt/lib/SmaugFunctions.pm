@@ -103,7 +103,7 @@ sub getType {
 
   if(substr($seqp, $adj, 2) eq "CG"){
     $Category = "cpg_$Category";
-
+  }
   return $Category;
 
 }

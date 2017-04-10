@@ -84,6 +84,8 @@ sub fill_info {
     $vcf->parse_header();
     $vcf->add_header_line({key=>'INFO',ID=>'Motif',Number=>1,Type=>'String',
         Description=>'K-mer sequence motif centered at site'});
+    $vcf->add_header_line({key=>'INFO',ID=>'Category',Number=>1,Type=>'String',
+        Description=>'Mutation type'});
     print $vcf->format_header();
 
     my %chr2fa = ();

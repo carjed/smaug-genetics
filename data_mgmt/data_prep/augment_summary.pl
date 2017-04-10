@@ -153,7 +153,7 @@ if($count_motifs eq "TRUE"){
       #   }
       # }
     }	else {
-      my $genome = "$parentdir/reference_data/hg19.genome";
+      my $genome = "$parentdir/reference_data/genome.full.sorted.bed";
       open my $gFH, '<', $genome or die "can't open $genome: $!";
       readWindows($gFH, $outFH, $fname);
       # my $length;

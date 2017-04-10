@@ -106,13 +106,13 @@ if($count_motifs eq "TRUE"){
 		$bin_out = "$out_path/chr$chr.motif_counts_all.txt";
 	}
 
-	open(my $binFH, '>', $bin_out) or die "can't write to $bin_out: $!\n";
+	open(my $outFH, '>', $bin_out) or die "can't write to $bin_out: $!\n";
 
   my $fname = "$parentdir/reference_data/human_g1k_v37/chr$chr.fasta.gz";
   if ( -e "$fname$chr.fasta.gz" ) { $fname = "$fname$chr.fasta.gz"; }
   my $fa = FaSlice->new(file=>$fname, size=>5_000_000);
 
-  print $binFH "CHR\tBIN\tMOTIF\tCOUNT\n";
+  # print $binFH "CHR\tBIN\tMOTIF\tCOUNT\n";
   my $startpos;
   my $endpos;
 	my @motifs;
@@ -120,7 +120,7 @@ if($count_motifs eq "TRUE"){
 	if($bin_scheme eq "fixed"){
     my $fixedfile = "$parentdir/reference_data/genome.${bw}kb.sorted.bed";
     open my $fixedFH, '<', $fixedfile or die "$fixedfile: $!";
-    readWindows($fixedFH);
+    readWindows($fixedFH, $outFH, $fname);
     # my $bandno = 1;
     # while(<$fixedFH>){
     #   chomp;
@@ -142,7 +142,7 @@ if($count_motifs eq "TRUE"){
   } elsif($bin_scheme eq "band") {
       my $bandfile = "$parentdir/reference_data/cytoBand.txt";
       open my $bandFH, '<', $bandfile or die "$bandfile: $!";
-      readWindows($bandFH);
+      readWindows($bandFH, $outFH, $fname);
       # my $bandno=1;
       # while(<$bandFH>){
       #   chomp;
@@ -168,7 +168,7 @@ if($count_motifs eq "TRUE"){
       my $binseq = $fa->get_slice($chr, $startpos, $endpos);
   		@motifs = ($binseq =~ /(?=([ACGT]{$subseq}))/g);
   		my $bin = 0;
-      writeCounts($chr, $bin, \@motifs, $binFH);
+      writeCounts($chr, $bin, \@motifs, $outFH);
       # print BIN "$chr\t$countstr\n";
 	}
 
@@ -179,9 +179,19 @@ if($count_motifs eq "TRUE"){
 }
 
 sub readWindows {
-  my $FH = shift;
+  my $windowFH = shift;
+  my $outFH = shift;
+  my $fname = shift;
+
+  # my $fname = "$parentdir/reference_data/human_g1k_v37/chr$chr.fasta.gz";
+  # if ( -e "$fname$chr.fasta.gz" ) { $fname = "$fname$chr.fasta.gz"; }
+  my $fa = FaSlice->new(file=>$fname, size=>5_000_000);
+
+  my $startpos;
+  my $endpos;
+  my @motifs;
   my $bandno = 1;
-  while(<$FH>){
+  while(<$windowFH>){
     chomp;
     my @line=split(/\t/, $_);
     my $chrind=$line[0];
@@ -194,7 +204,7 @@ sub readWindows {
 
       @motifs = ($binseq =~ /(?=([ACGT]{$subseq}))/g);
 
-      writeCounts($_, $bandno, \@motifs, $binFH);
+      writeCounts($_, $bandno, \@motifs, $outFH);
       $bandno = $bandno+1;
     }
   }

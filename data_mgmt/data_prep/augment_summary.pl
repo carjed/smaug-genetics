@@ -104,10 +104,12 @@ if($count_motifs eq "TRUE"){
   my $startpos;
   my $endpos;
 	my @motifs;
+
 	if($bin_flag eq "fixed"){
+    my $numbins=ceil(length($fa)/$binw);
 		for my $i (0 .. $numbins-1) {
       $startpos = $i*$binw+1;
-      $endpos = $start+$binw-1;
+      $endpos = $startpos+$binw-1;
       my $binseq = $fa->get_slice($chr, $startpos, $endpos);
 
 			# @motifs=(substr($seq, $i*$binw, $binw)=~/(?=([ACGT]{$subseq}))/g);
@@ -138,7 +140,7 @@ if($count_motifs eq "TRUE"){
       }
     }	else {
   		@motifs = ($fa =~ /(?=([ACGT]{$subseq}))/g);
-  		$bin = 0;
+  		my $bin = 0;
   		my $countstr = writeCounts($bin, \@motifs);
       print BIN "$chr\t$countstr\n";
 	}

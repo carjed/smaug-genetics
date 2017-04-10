@@ -4,7 +4,7 @@ use strict;
 use warnings;
 use Exporter qw(import);
 
-our @EXPORT_OK = qw(forkExecWait getRef getMotif getWriteHandles);
+our @EXPORT_OK = qw(forkExecWait getRef getMotif getType getWriteHandles);
 
 ##############################################################################
 # fork-exec-wait subroutine
@@ -78,6 +78,38 @@ sub getMotif {
 
   return $seqp;
 }
+
+sub getType {
+  my $ref=shift;
+  my$alt=shift;
+
+  my $CAT = "${ref}${alt}";
+  my $Category;
+  if($CAT ~~ [qw( AC TG )]){
+    $Category = "AT_CG";
+  } elsif($CAT ~~ [qw( AG TC )]){
+    $Category = "AT_GC";
+  } elsif($CAT ~~ [qw( AT TA )]){
+    $Category = "AT_TA";
+  } elsif($CAT ~~ [qw( GA CT )]){
+    $Category = "GC_AT";
+  } elsif($CAT ~~ [qw( GC CG )]){
+    $Category = "GC_CG";
+  } elsif($CAT ~~ [qw( GT CA )]){
+    $Category = "GC_TA";
+  }
+
+  my $Category2;
+  if(substr($seqp, $adj, 2) eq "CG"){
+    $Category2 = "cpg_$Category";
+  } else {
+    $Category2 = $Category;
+  }
+
+  return $Category2;
+
+}
+
 
 
 ##############################################################################

@@ -31,7 +31,7 @@ for (sort keys %{$config}) {
 }
 
 # my $adj = $config->{adj};
-my $adj=3;
+my $adj=1;
 my $mac = $config->{mac};
 my $binw = $config->{binw};
 my $data = $config->{data};

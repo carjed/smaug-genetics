@@ -3,7 +3,7 @@ package SmaugFunctions;
 use strict;
 use warnings;
 use Exporter qw(import);
-
+no warnings 'experimental::smartmatch';
 our @EXPORT_OK = qw(forkExecWait getRef getMotif getType getWriteHandles);
 
 ##############################################################################

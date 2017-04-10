@@ -96,13 +96,13 @@ if($count_motifs eq "TRUE"){
 		$bin_out = "$out_path/chr$chr.motif_counts_all.txt";
 	}
 
-	open(BIN, '>', $bin_out) or die "can't write to $bin_out: $!\n";
+	open(my $binFH, '>', $bin_out) or die "can't write to $bin_out: $!\n";
 
   my $fname = "$parentdir/reference_data/human_g1k_v37/chr$chr.fasta.gz";
   if ( -e "$fname$chr.fasta.gz" ) { $fname = "$fname$chr.fasta.gz"; }
   my $fa = FaSlice->new(file=>$fname, size=>5_000_000);
 
-  print BIN "CHR\tBIN\tMOTIF\tCOUNT\n";
+  print $binFH "CHR\tBIN\tMOTIF\tCOUNT\n";
   my $startpos;
   my $endpos;
 	my @motifs;
@@ -118,7 +118,7 @@ if($count_motifs eq "TRUE"){
       print "$test\n";
 			# @motifs=(substr($seq, $i*$binw, $binw)=~/(?=([ACGT]{$subseq}))/g);
       @motifs = ($binseq =~ /(?=([ACGT]{$subseq}))/g);
-			my $countstr = writeCounts($i, \@motifs);
+			my $countstr = writeCounts($chr, $i, \@motifs, $binFH);
       print BIN "$chr\t$countstr\n";
 		}
   } elsif($bin_scheme eq "band") {
@@ -139,16 +139,19 @@ if($count_motifs eq "TRUE"){
           print "$bandno length: $length\n";
           @motifs = ($binseq =~ /(?=([ACGT]{$subseq}))/g);
           # print join(", ", @motifs);
-          my $countstr = writeCounts($bandno, \@motifs);
-          print BIN "$_\t$countstr\n";
+          writeCounts($_, $bandno, \@motifs, $binFH);
+          # print BIN "$_\t$countstr\n";
           $bandno = $bandno+1;
         }
       }
     }	else {
-  		@motifs = ($fa =~ /(?=([ACGT]{$subseq}))/g);
+      $startpos=1;
+      $endpos=300_000_000;
+      my $binseq = $fa->get_slice($chr, $startpos, $endpos);
+  		@motifs = ($binseq =~ /(?=([ACGT]{$subseq}))/g);
   		my $bin = 0;
-  		my $countstr = writeCounts($bin, \@motifs);
-      print BIN "$chr\t$countstr\n";
+      writeCounts($chr, $bin, \@motifs, $binFH);
+      # print BIN "$chr\t$countstr\n";
 	}
 
 	my $end_time=new Benchmark;
@@ -162,8 +165,10 @@ if($count_motifs eq "TRUE"){
 # counting strategy modified from https://www.biostars.org/p/5143/
 ##############################################################################
 sub writeCounts{
-	my $bin = $_[0]+1;
-	my @motifs = @{$_[1]};
+  my $first = $_[0];
+	my $bin = $_[1]+1;
+	my @motifs = @{$_[2]};
+  my $outFH = $_[3];
 	my %tri_count=();
 	$tri_count{$_}++ for @motifs;
 
@@ -183,7 +188,6 @@ sub writeCounts{
 			$sum=$tri_count{$altmotif};
 		}
 
-		my $outstr = "$bin\t$seqp\t$sum";
-    return($outstr);
+    print $outFH "$first\t$bin\t$seqp\t$sum\n";
 	}
 }

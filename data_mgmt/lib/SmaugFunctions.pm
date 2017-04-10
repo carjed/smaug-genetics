@@ -81,7 +81,9 @@ sub getMotif {
 
 sub getType {
   my $ref=shift;
-  my$alt=shift;
+  my $alt=shift;
+  my $adj=shift;
+  my $seqp=shift;
 
   my $CAT = "${ref}${alt}";
   my $Category;
@@ -99,12 +101,8 @@ sub getType {
     $Category = "GC_TA";
   }
 
-  # my $Category2;
-  # if(substr($seqp, $adj, 2) eq "CG"){
-  #   $Category2 = "cpg_$Category";
-  # } else {
-  #   $Category2 = $Category;
-  # }
+  if(substr($seqp, $adj, 2) eq "CG"){
+    $Category = "cpg_$Category";
 
   return $Category;
 

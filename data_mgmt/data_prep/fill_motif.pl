@@ -140,6 +140,7 @@ sub fill_aa
         my $chr = $$rec[0];
         my $pos = $$rec[1];
         my $ref = $$rec[3];
+        my $alt = $$rec[4];
 
         if ( !exists($chr2fa{$chr}) )
         {
@@ -182,6 +183,18 @@ sub fill_aa
             $$rec[7] = $vcf->add_info_field($$rec[7],'Motif'=>'.');
             $n_unknown++;
         }
+
+        my $type = getType($ref, $alt, $adj, $aa);
+        # $aa = getMotif($aa, $adj);
+        if ( $type )
+        {
+            $$rec[7] = $vcf->add_info_field($$rec[7],'Category'=>$type);
+        }
+        else
+        {
+            $$rec[7] = $vcf->add_info_field($$rec[7],'Category'=>'.');
+        }
+
         print join("\t",@$rec),"\n";
     }
 

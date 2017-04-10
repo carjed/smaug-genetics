@@ -36,7 +36,7 @@ my $mac = $config->{mac};
 my $binw = $config->{binw};
 my $data = $config->{data};
 # my $bin_scheme = $config->{bin_scheme};
-my $bin_scheme = "fixed";
+my $bin_scheme = "all";
 my $parentdir = $config->{parentdir};
 my $count_motifs = $config->{count_motifs};
 my $expand_summ = $config->{expand_summ};
@@ -52,16 +52,6 @@ my $chr=$ARGV[0];
 my $subseq=2;
 if ($adj!=0) {
 	$subseq = $adj*2+1;
-}
-
-my $genome = "$parentdir/reference_data/hg19.genome";
-open my $gFH, '<', $genome or die "can't open $genome: $!";
-
-my $length;
-while(<$gFH>){
-  chomp;
-  my @line=split(/\t/, $_);
-  if ($line[0] eq "chr$chr") { $length = $line[1]; last;}
 }
 
 my $bw=$binw/1000;
@@ -163,12 +153,23 @@ if($count_motifs eq "TRUE"){
       #   }
       # }
     }	else {
-      $startpos=1;
-      $endpos=$length;
-      my $binseq = $fa->get_slice($chr, $startpos, $endpos);
-  		@motifs = ($binseq =~ /(?=([ACGT]{$subseq}))/g);
-  		my $bin = 0;
-      writeCounts($chr, $bin, \@motifs, $outFH);
+      my $genome = "$parentdir/reference_data/hg19.genome";
+      open my $gFH, '<', $genome or die "can't open $genome: $!";
+      readWindows($gFH, $outFH, $fname);
+      # my $length;
+      # while(<$gFH>){
+      #   chomp;
+      #   my @line=split(/\t/, $_);
+      #   if ($line[0] eq "chr$chr") { $length = $line[1]; last;}
+      # }
+      #
+      #
+      # $startpos=1;
+      # $endpos=$length;
+      # my $binseq = $fa->get_slice($chr, $startpos, $endpos);
+  		# @motifs = ($binseq =~ /(?=([ACGT]{$subseq}))/g);
+  		# my $bin = 0;
+      # writeCounts($chr, $bin, \@motifs, $outFH);
       # print BIN "$chr\t$countstr\n";
 	}
 
@@ -182,9 +183,6 @@ sub readWindows {
   my $windowFH = shift;
   my $outFH = shift;
   my $fname = shift;
-
-  # my $fname = "$parentdir/reference_data/human_g1k_v37/chr$chr.fasta.gz";
-  # if ( -e "$fname$chr.fasta.gz" ) { $fname = "$fname$chr.fasta.gz"; }
   my $fa = FaSlice->new(file=>$fname, size=>5_000_000);
 
   my $startpos;
@@ -216,7 +214,7 @@ sub readWindows {
 ##############################################################################
 sub writeCounts {
   my $first = $_[0];
-	my $bin = $_[1]+1;
+	my $bin = $_[1];
 	my @motifs = @{$_[2]};
   my $outFH = $_[3];
 	my %tri_count=();

@@ -13,10 +13,31 @@ use Vcf;
 use FindBin;
 use lib "$FindBin::Bin";
 use FaSlice;
+use YAML::XS 'LoadFile';
+use feature 'say';
+
+my $relpath = $FindBin::Bin;
+my $configpath = dirname(dirname($relpath));
+my $config = LoadFile("$configpath/_config.yaml");
+
+# print "Script will run with the following parameters:\n";
+# for (sort keys %{$config}) {
+#     say "$_: $config->{$_}";
+# }
+
+my $adj = $config->{adj};
+my $mac = $config->{mac};
+my $binw = $config->{binw};
+my $data = $config->{data};
+my $bin_scheme = $config->{bin_scheme};
+my $parentdir = $config->{parentdir};
+my $count_motifs = $config->{count_motifs};
+my $expand_summ = $config->{expand_summ};
+
+use lib "$FindBin::Bin/../lib";
+use SmaugFunctions qw(forkExecWait getRef getMotif);
 
 my $opts = parse_params();
-my $adj=4;
-my $subseq=$adj*2+1;
 fill_aa($opts,$$opts{aa_file});
 
 exit;
@@ -147,8 +168,8 @@ sub fill_aa
                 next;
             }
         }
-        my $aa = $fa->get_slice($chr, $pos, $pos+$subseq);
-
+        my $aa = $fa->get_slice($chr, $pos-$adj, $pos+$adj);
+        my $aa = getMotif($aa, $adj);
         if ( $aa )
         {
             $$rec[7] = $vcf->add_info_field($$rec[7],'Motif'=>$aa);

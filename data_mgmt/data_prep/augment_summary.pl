@@ -146,7 +146,7 @@ if($count_motifs eq "TRUE"){
       }
     }	else {
       $startpos=1;
-      $endpos=300_000_000;
+      $endpos=51304566;
       my $binseq = $fa->get_slice($chr, $startpos, $endpos);
   		@motifs = ($binseq =~ /(?=([ACGT]{$subseq}))/g);
   		my $bin = 0;

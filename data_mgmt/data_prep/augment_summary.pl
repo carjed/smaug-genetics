@@ -87,8 +87,8 @@ if($count_motifs eq "TRUE"){
 	# print "seqlength: $length\n";
 
   my $fname = "$parentdir/reference_data/human_g1k_v37/chr$chr.fasta.gz";
-  if ( -e "$fname$chr.fasta.gz" ) { $fname = "$fname$chr.fasta.gz"; }
-  my $fa = FaSlice->new(file=>$fname, size=>5_000_000);
+  # if ( -e "$fname$chr.fasta.gz" ) { $fname = "$fname$chr.fasta.gz"; }
+  # my $fa = FaSlice->new(file=>$fname, size=>5_000_000);
 
   # print $binFH "CHR\tBIN\tMOTIF\tCOUNT\n";
   my $startpos;
@@ -118,7 +118,7 @@ if($count_motifs eq "TRUE"){
 
     $header = "CHR\tSTART\tEND\tBAND\tgieStain\tBIN\tMotif\tCOUNT\n";
 
-    readWindows($bandFH, $outFH, $fname);
+    readWindows($bandFH, $outFH, $header, $fname);
 
   }	else {
     my $genome = "$parentdir/reference_data/genome.full.sorted.bed";

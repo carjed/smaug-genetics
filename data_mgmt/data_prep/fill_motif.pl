@@ -10,6 +10,7 @@ use strict;
 use warnings;
 use Carp;
 use Vcf;
+use File::Basename;
 use FindBin;
 use lib "$FindBin::Bin";
 use FaSlice;
@@ -169,7 +170,7 @@ sub fill_aa
             }
         }
         my $aa = $fa->get_slice($chr, $pos-$adj, $pos+$adj);
-        my $aa = getMotif($aa, $adj);
+        $aa = getMotif($aa, $adj);
         if ( $aa )
         {
             $$rec[7] = $vcf->add_info_field($$rec[7],'Motif'=>$aa);

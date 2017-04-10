@@ -112,7 +112,8 @@ if($count_motifs eq "TRUE"){
       $startpos = $i*$binw+1;
       $endpos = $startpos+$binw-1;
       my $binseq = $fa->get_slice($chr, $startpos, $endpos);
-
+      my $test= substr($binseq, 0, 10);
+      print "$test\n";
 			# @motifs=(substr($seq, $i*$binw, $binw)=~/(?=([ACGT]{$subseq}))/g);
       @motifs = ($binseq =~ /(?=([ACGT]{$subseq}))/g);
 			my $countstr = writeCounts($i, \@motifs);

@@ -134,7 +134,8 @@ if($count_motifs eq "TRUE"){
           $endpos = $line[2];
 
           my $binseq = $fa->get_slice($chr, $startpos, $endpos);
-
+          my $length=length($binseq);
+          print "$bandno length: $length\n";
           @motifs = ($binseq =~ /(?=([ACGT]{$subseq}))/g);
           my $countstr = writeCounts($bandno, \@motifs);
           print BIN "$_\t$countstr\n";

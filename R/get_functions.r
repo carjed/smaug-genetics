@@ -57,7 +57,7 @@ getData <- function(datadir, bin_scheme){
 get_mct <- function(bins){
   out <- bins %>%
   	# dplyr::select(CHR, BIN, Sequence=MOTIF, nMotifs=COUNT) %>%
-  	dplyr::select(CHR, Sequence=MOTIF, nMotifs=COUNT) %>%
+  	dplyr::select(CHR, Motif=MOTIF, nMotifs=COUNT) %>%
   	group_by(Sequence) %>%
   	summarise(nMotifs=sum(nMotifs))
   return(out)
@@ -65,10 +65,10 @@ get_mct <- function(bins){
 
 get_aggseq <- function(data, mct){
   out <- data %>%
-  	group_by(Sequence, Category2, BIN) %>%
+  	group_by(Motif, Category2, BIN) %>%
   	summarise(n=n()) %>%
   	summarise(nERVs=sum(n))
-  out <- merge(out, mct, by="Sequence")
+  out <- merge(out, mct, by="Motif")
   out$rel_prop <- out$nERVs/out$nMotifs
   return(out)
 }

@@ -76,10 +76,10 @@ if(build_logit){
 		# summfile1 <- sites %>%
 			filter(Category==categ) %>%
 			mutate(Type=gsub("cpg_", "", Category2),
-				SEQA=substr(Sequence, cbp-i, cbp+i),
-				SEQB=substr(Sequence, cbp*3-i, cbp*3+i),
-				Motif=paste0(SEQA, "(", SEQB, ")")) %>%
-			dplyr::select(CHR, POS, Sequence=Motif) %>%
+				SEQA=substr(Motif, cbp-i, cbp+i),
+				SEQB=substr(Motif, cbp*3-i, cbp*3+i),
+				Sequence=paste0(SEQA, "(", SEQB, ")")) %>%
+			dplyr::select(CHR, POS, Sequence) %>%
 			mutate(mut=1)
 
 		for(chr in 1:22){
@@ -116,8 +116,8 @@ for(j in 1:5){
 
 	gpdat <- full_data$aggseq %>%
 		mutate(Type=gsub("cpg_", "", Category2),
-			SEQA=substr(Sequence, cbp-i, cbp+i),
-			SEQB=substr(Sequence, cbp*3-i, cbp*3+i),
+			SEQA=substr(Motif, cbp-i, cbp+i),
+			SEQB=substr(Motif, cbp*3-i, cbp*3+i),
 			Motif=paste0(SEQA, "(", SEQB, ")"))
 
 	if(i==0){

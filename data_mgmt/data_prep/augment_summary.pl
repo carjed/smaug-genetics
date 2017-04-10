@@ -16,6 +16,8 @@ use File::Basename;
 use File::Path qw(make_path);
 use Benchmark;
 use FindBin;
+# use lib "$FindBin::Bin";
+use FaSlice;
 use YAML::XS 'LoadFile';
 use feature 'say';
 
@@ -56,22 +58,22 @@ my $bw=$binw/1000;
 # Read in files and initialize outputs
 ##############################################################################
 my $in_path = "/net/bipolar/jedidiah/testpipe/summaries";
-my $out_path = "$parentdir/output/${subseq}bp_${bw}k_${mac}_${data}";
+my $out_path = "$parentdir/output/${subseq}bp_${bw}k_${mac}_${data}2";
 make_path("$out_path");
 
-print "Getting reference for chr$chr...\n";
-my $f_fasta;
-if($data eq "mask"){
-  $f_fasta = "$parentdir/reference_data/human_g1k_v37.mask.fasta";
-} else {
-  $f_fasta = "$parentdir/reference_data/human_g1k_v37.fasta";
-}
-
-my $seq=getRef($f_fasta, $chr);
-
-my $seqlength=length($seq);
-print "chr$chr seqlength: $seqlength\n";
-print "Done\n";
+# print "Getting reference for chr$chr...\n";
+# my $f_fasta;
+# if($data eq "mask"){
+#   $f_fasta = "$parentdir/reference_data/human_g1k_v37.mask.fasta";
+# } else {
+#   $f_fasta = "$parentdir/reference_data/human_g1k_v37.fasta";
+# }
+#
+# my $seq=getRef($f_fasta, $chr);
+#
+# my $seqlength=length($seq);
+# print "chr$chr seqlength: $seqlength\n";
+# print "Done\n";
 
 ##############################################################################
 # Counts possible mutable sites per bin for 6 main categories
@@ -94,143 +96,57 @@ if($count_motifs eq "TRUE"){
 
 	open(BIN, '>', $bin_out) or die "can't write to $bin_out: $!\n";
 
-	&countMotifs($bin_scheme);
+  my $fname = "$parentdir/reference_data/human_g1k_v37/chr$chr.fasta.gz";
+  if ( -e "$fname$chr.fasta.gz" ) { $fname = "$fname$chr.fasta.gz"; }
+  my $fa = FaSlice->new(file=>$fname, size=>100_000);
 
-	my $end_time=new Benchmark;
-	my $difference = timediff($end_time, $start_time);
-	print "Done. ";
-	print "Runtime: ", timestr($difference), "\n";
-}
-
-##############################################################################
-# Output expanded summary file based on selected options
-##############################################################################
-if($expand_summ eq "TRUE"){
-	print "Expanding summary file...\n";
-	my $start_time=new Benchmark;
-
-	my $f_summ = "$in_path/$mac/chr$chr.summary";
-	open my $summ, '<', $f_summ or die "can't open $f_summ: $!";
-
-	my $outfile = "$out_path/chr$chr.expanded.summary";
-	open(OUT, '>', $outfile) or die "can't write to $outfile: $!\n";
-
-	if ($mac eq "singletons") {
-		print OUT "CHR\tPOS\tREF\tALT\tAA\tAN\tSequence\tCategory\tCategory2\n";
-	}
-
-	#readline($summ); #<-throws out summary header if it exists
-
-	while (<$summ>) {
-		chomp;
-		next unless $_ =~ /^[^,]*$/;
-
-		# chomp $row;
-		my @line=split(/\t/, $_);
-		my $pos=$line[1];
-		my $REF=$line[2];
-		my $ALT=$line[3];
-		my $localseq = substr($seq, $pos-$adj-1, $subseq);
-
-    my $seqp = getMotif($localseq, $adj);
-		# keep only sites in fully parameterized motif
-		if($localseq =~ /^[ACGT]+$/){
-			my $CAT = "${REF}${ALT}";
-			my $Category;
-			if($CAT ~~ [qw( AC TG )]){
-				$Category = "AT_CG";
-			} elsif($CAT ~~ [qw( AG TC )]){
-				$Category = "AT_GC";
-			} elsif($CAT ~~ [qw( AT TA )]){
-				$Category = "AT_TA";
-			} elsif($CAT ~~ [qw( GA CT )]){
-				$Category = "GC_AT";
-			} elsif($CAT ~~ [qw( GC CG )]){
-				$Category = "GC_CG";
-			} elsif($CAT ~~ [qw( GT CA )]){
-				$Category = "GC_TA";
-			}
-
-			my $Category2;
-			if(substr($seqp, $adj, 2) eq "CG"){
-				$Category2 = "cpg_$Category";
-			} else {
-				$Category2 = $Category;
-			}
-			# print OUT "$_\t$localseq\t$altlocalseq\t$gcprop\n";
-			print OUT "$_\t$seqp\t$Category\t$Category2\n";
-		}
-	}
-
-	my $end_time=new Benchmark;
-	my $difference = timediff($end_time, $start_time);
-	print "Done. ";
-	print "Runtime: ", timestr($difference), "\n";
-}
-
-##############################################################################
-# Subroutine counts occurrence of motifs per bin
-##############################################################################
-sub countMotifs{
-	my $bin_flag = shift;
-	my $length=length($seq);
-	my $numbins=ceil($length/$binw);
-	my $bin;
-
-	print BIN "CHR\tBIN\tMOTIF\tCOUNT\n";
+  print BIN "CHR\tBIN\tMOTIF\tCOUNT\n";
+  my $startpos;
+  my $endpos;
 	my @motifs;
 	if($bin_flag eq "fixed"){
 		for my $i (0 .. $numbins-1) {
-			@motifs=(substr($seq, $i*$binw, $binw)=~/(?=([ACGT]{$subseq}))/g);
-			&writeCounts($i, \@motifs);
+      $startpos = $i*$binw+1;
+      $endpos = $start+$binw-1;
+      my $binseq = $fa->get_slice($chr, $startpos, $endpos);
+
+			# @motifs=(substr($seq, $i*$binw, $binw)=~/(?=([ACGT]{$subseq}))/g);
+      @motifs = ($binseq =~ /(?=([ACGT]{$subseq}))/g);
+			my $countstr = writeCounts($i, \@motifs);
+      print BIN "$chr\t$countstr\n";
 		}
-	} elsif($bin_flag eq "band") {
-		my $bandfile = "$parentdir/reference_data/cytoBand.txt";
-		open my $bandFH, '<', $bandfile or die "$bandfile: $!";
+  } elsif($bin_flag eq "band") {
+      my $bandfile = "$parentdir/reference_data/cytoBand.txt";
+      open my $bandFH, '<', $bandfile or die "$bandfile: $!";
 
-		my @motifs;
-		while(<$bandFH>){
-			chomp;
-			my @line=split(/\t/, $_);
-			my $chrind=$line[0];
-			if($chrind eq "chr$chr"){
-				my $start=$line[1];
-				my $end=$line[2];
-				my $length=$end-$start;
-				my $band=$line[3];
-				my $stain=$line[4];
+      my $bandno=1;
+      while(<$bandFH>){
+        chomp;
+        my @line=split(/\t/, $_);
+        my $chrind=$line[0];
+        if($chrind eq "chr$chr"){
+          $startpos = $line[1]+1;
+          $endpos = $line[2];
 
-				@motifs=(substr($seq, $start, $length)=~/(?=([ACGT]{$subseq}))/g);
+          my $binseq = $fa->get_slice($chr, $startpos, $endpos);
 
-				### code below equivalent to writeCounts() sub
-				my %tri_count=();
-				$tri_count{$_}++ for @motifs;
-
-				foreach my $motif (sort keys %tri_count) {
-					my $altmotif = $motif;
-					$altmotif =~ tr/ACGT/TGCA/;
-					$altmotif = reverse $altmotif;
-
-					my $seqp = "$motif\($altmotif\)";
-
-					my $sum;
-					if(exists($tri_count{$motif}) && exists($tri_count{$altmotif})){
-						$sum=$tri_count{$motif}+$tri_count{$altmotif};
-					} elsif(exists($tri_count{$motif}) && !exists($tri_count{$altmotif})) {
-						$sum=$tri_count{$motif};
-					} elsif(!exists($tri_count{$motif}) && exists($tri_count{$altmotif})) {
-						$sum=$tri_count{$altmotif};
-					}
-
-					print BIN "$_\t$seqp\t$sum\n";
-				}
-			}
-		}
-	}	else {
-		@motifs=($seq=~/(?=([ACGT]{$subseq}))/g);
-		$bin = 0;
-		&writeCounts($bin, \@motifs);
+          @motifs = ($binseq =~ /(?=([ACGT]{$subseq}))/g);
+          my $countstr = writeCounts($bandno, \@motifs);
+          print BIN "$_\t$countstr\n";
+          $bandno = $bandno+1;
+        }
+      }
+    }	else {
+  		@motifs = ($fa =~ /(?=([ACGT]{$subseq}))/g);
+  		$bin = 0;
+  		my $countstr = writeCounts($bin, \@motifs);
+      print BIN "$chr\t$countstr\n";
 	}
+
+	my $end_time=new Benchmark;
+	my $difference = timediff($end_time, $start_time);
+	print "Done. ";
+	print "Runtime: ", timestr($difference), "\n";
 }
 
 ##############################################################################
@@ -259,6 +175,7 @@ sub writeCounts{
 			$sum=$tri_count{$altmotif};
 		}
 
-		print BIN "$chr\t$bin\t$seqp\t$sum\n";
+		my $outstr = "$bin\t$seqp\t$sum";
+    return($outstr);
 	}
 }

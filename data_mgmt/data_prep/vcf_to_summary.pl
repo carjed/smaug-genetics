@@ -53,7 +53,7 @@ if ($makecopy eq "copy") {
                             ->maxdepth(3)
                             ->in($rawvcfdir);
 
-	print "Processing VCFs with extension '$rawvcfext' from $rawvcfdir...\n";
+	print STDERR "Processing VCFs with extension '$rawvcfext'\n from $rawvcfdir...\n";
 	foreach my $rawvcf (@rawvcfs) {
 		my $filename=fileparse($rawvcf);
 
@@ -63,7 +63,7 @@ if ($makecopy eq "copy") {
       my @nameparts = split(/\./, $basename);
       my $i = $nameparts[0];
       $i =~ s/chr//g;
-      print "$i\n";
+
       my $newvcf = "$vcfdir/$basename.ma.aa.vcf.gz";
       my $ancestral = "$parentdir/reference_data/human_ancestor_GRCh37_e59/human_ancestor_$i.fa.gz";
       my $fasta = "$parentdir/reference_data//human_g1k_v37/chr$i.fasta.gz";
@@ -80,14 +80,14 @@ if ($makecopy eq "copy") {
 
       # pipe commands and execute
       my $pipe = "$maparse | $aaparse | $infoparse | bgzip -c > $newvcf";
-      print "Input file: $rawvcf\n";
-      print "Writing to: $newvcf...";
+      print STDERR "Input file: $rawvcf\n";
+      print STDERR "Writing to: $newvcf...\n";
       forkExecWait($pipe);
-      print "Done\n";
+      print STDERR "Done\n";
     }
 	}
 
-  print "Operation complete\n";
+  print STDERR "Operation complete\n";
 }
 
 ################################################################################
@@ -108,12 +108,12 @@ if ($script==1){
   forkExecWait($headercmd);
 
 	foreach my $file (@vcfs) {
-    print "Getting summary for $file...\n";
+    print STDERR "Getting summary for $file...\n";
     unless(-e "$file.tbi"){
-      print "$file not indexed--indexing now...";
+      print STDERR "$file not indexed--indexing now...";
       my $tabixcmd = "tabix -p vcf $file";
       forkExecWait($tabixcmd);
-      print "Done\n";
+      print STDERR "Done\n";
     }
 
     my $filename=fileparse($file);
@@ -131,5 +131,5 @@ if ($script==1){
     my $cmd = "$bcfquery -f $outputcols $file >> $outdir/testsum.summary";
 		forkExecWait($cmd);
 	}
-  print "Operation complete\n";
+  print STDERR "Operation complete\n";
 }

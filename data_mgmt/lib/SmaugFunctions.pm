@@ -87,28 +87,16 @@ sub getType {
 
   my $CAT = "${ref}${alt}";
   my $Category;
-  if($CAT ~~ [qw( AC TG )]){
-    $Category = "AT_CG";
-  } elsif($CAT ~~ [qw( AG TC )]){
-    $Category = "AT_GC";
-  } elsif($CAT ~~ [qw( AT TA )]){
-    $Category = "AT_TA";
-  } elsif($CAT ~~ [qw( GA CT )]){
-    $Category = "GC_AT";
-  } elsif($CAT ~~ [qw( GC CG )]){
-    $Category = "GC_CG";
-  } elsif($CAT ~~ [qw( GT CA )]){
-    $Category = "GC_TA";
-  }
+  if($CAT ~~ [qw( AC TG )]){ $Category = "AT_CG";}
+  elsif($CAT ~~ [qw( AG TC )]){ $Category = "AT_GC";}
+  elsif($CAT ~~ [qw( AT TA )]){ $Category = "AT_TA";}
+  elsif($CAT ~~ [qw( GA CT )]){ $Category = "GC_AT";}
+  elsif($CAT ~~ [qw( GC CG )]){ $Category = "GC_CG";}
+  elsif($CAT ~~ [qw( GT CA )]){ $Category = "GC_TA";}
 
-  if(substr($seqp, $adj, 2) eq "CG"){
-    $Category = "cpg_$Category";
-  }
+  if(substr($seqp, $adj, 2) eq "CG"){ $Category = "cpg_$Category";}
   return $Category;
-
 }
-
-
 
 ##############################################################################
 # read array of filenames and returns file handles

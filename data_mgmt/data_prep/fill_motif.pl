@@ -49,20 +49,16 @@ sub error {
 
 sub parse_params {
     my $opts = {};
-    while (my $arg=shift(@ARGV))
-    {
+    while (my $arg=shift(@ARGV)) {
         if ( $arg eq '-a' || $arg eq '--ancestral-allele' ) { $$opts{aa_file} = shift(@ARGV); next }
-        if ( $arg eq '-t' || $arg eq '--type' )
-        {
+        if ( $arg eq '-t' || $arg eq '--type' ) {
             my %known = ( snp=>'s', indel=>'i', all=>'a', ref=>'r' );
             my $types = shift(@ARGV);
-            for my $t (split(/,/,$types))
-            {
+            for my $t (split(/,/,$types)) {
                 if ( !(exists($known{$t})) ) { error("Unknown type [$t] with -t [$types]\n"); }
                 $$opts{types}{$known{$t}} = 1;
             }
-            if ( exists($$opts{types}{a}) )
-            {
+            if ( exists($$opts{types}{a}) ) {
                 $$opts{types}{s} = 1;
                 $$opts{types}{i} = 1;
                 $$opts{types}{r} = 1;
@@ -100,11 +96,9 @@ sub fill_info {
         my $ref = $$rec[3];
         my $alt = $$rec[4];
 
-        if ( !exists($chr2fa{$chr}) )
-        {
+        if (!exists($chr2fa{$chr})) {
             my $fname = $fa_fname;
-            if ( ! -e $fname )
-            {
+            if ( ! -e $fname ) {
                 if ( -e "$fname$chr.fasta.gz" ) { $fname = "$fname$chr.fasta.gz"; }
                 else { error(qq[Neither "$fname" nor "$fname$chr.fasta.gz" exists.\n]); }
             }
@@ -113,43 +107,35 @@ sub fill_info {
 
         my $fa = $chr2fa{$chr};
         my $ref_len = length($ref);
-        if ( exists($$opts{types}) && !exists($$opts{types}{a}) )
-        {
+        if ( exists($$opts{types}) && !exists($$opts{types}{a}) ) {
             my $ok = 0;
-            for my $alt (split(/,/,$$rec[4]))
-            {
+            for my $alt (split(/,/,$$rec[4])) {
                 my ($type,$len,$ht) = $vcf->event_type($ref,$alt);
                 if ( exists($$opts{types}{$type}) ) { $ok=1; last; }
             }
-            if ( !$ok )
-            {
+            if ( !$ok ) {
                 print $line;
                 $nskipped++;
                 next;
             }
         }
+
         my $motif = $fa->get_slice($chr, $pos-$adj, $pos+$adj);
         $motif = getMotif($motif, $adj);
-        if ( $motif )
-        {
+        if ( $motif ) {
             $$rec[7] = $vcf->add_info_field($$rec[7],'Motif'=>$motif);
             $n_filled_sites++;
             $n_filled_bases+=$ref_len;
-        }
-        else
-        {
+        } else {
             $$rec[7] = $vcf->add_info_field($$rec[7],'Motif'=>'.');
             $n_unknown++;
         }
 
         my $type = getType($ref, $alt, $adj, $motif);
         # $aa = getMotif($aa, $adj);
-        if ( $type )
-        {
+        if ( $type ){
             $$rec[7] = $vcf->add_info_field($$rec[7],'Category'=>$type);
-        }
-        else
-        {
+        } else {
             $$rec[7] = $vcf->add_info_field($$rec[7],'Category'=>'.');
         }
 

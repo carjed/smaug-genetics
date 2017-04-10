@@ -30,7 +30,8 @@ for (sort keys %{$config}) {
     say "$_: $config->{$_}";
 }
 
-my $adj = $config->{adj};
+# my $adj = $config->{adj};
+my $adj=3;
 my $mac = $config->{mac};
 my $binw = $config->{binw};
 my $data = $config->{data};

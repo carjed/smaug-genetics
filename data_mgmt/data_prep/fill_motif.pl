@@ -147,7 +147,7 @@ sub fill_aa
                 next;
             }
         }
-        my $aa = $fa->get_slice($chr, $pos-$adj-1, $subseq);
+        my $aa = $fa->get_slice($chr, $pos, $pos+$subseq);
 
         if ( $aa )
         {

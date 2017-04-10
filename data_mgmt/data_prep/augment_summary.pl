@@ -118,8 +118,8 @@ if($count_motifs eq "TRUE"){
       print "$test\n";
 			# @motifs=(substr($seq, $i*$binw, $binw)=~/(?=([ACGT]{$subseq}))/g);
       @motifs = ($binseq =~ /(?=([ACGT]{$subseq}))/g);
-			my $countstr = writeCounts($chr, $i, \@motifs, $binFH);
-      print BIN "$chr\t$countstr\n";
+      writeCounts($chr, $i, \@motifs, $binFH);
+      # print BIN "$chr\t$countstr\n";
 		}
   } elsif($bin_scheme eq "band") {
       my $bandfile = "$parentdir/reference_data/cytoBand.txt";

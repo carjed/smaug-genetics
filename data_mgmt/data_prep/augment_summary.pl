@@ -95,6 +95,7 @@ if($count_motifs eq "TRUE"){
   my $endpos;
 	my @motifs;
   my $header;
+  my $bin_out;
 	if($bin_scheme eq "fixed"){
 
     my $fixedfile = "$parentdir/reference_data/genome.${bw}kb.sorted.bed";

@@ -35,6 +35,12 @@ cd $refdir
 # hg19 chromosome lengths
 curl -s "https://genome.ucsc.edu/goldenpath/help/hg19.chrom.sizes" > "$refdir/hg19.genome"
 
+bedtools makewindows -g "$refdir/hg19.genome" -w 1000000 | sort -k 1,1 -k2,2n > "$refdir/genome.1000kb.sorted.bed"
+
+bedtools makewindows -g "$refdir/hg19.genome" -w 100000 | sort -k 1,1 -k2,2n > "$refdir/genome.100kb.sorted.bed"
+
+bedtools makewindows -g "$refdir/hg19.genome" -w 10000 | sort -k 1,1 -k2,2n > "$refdir/genome.10kb.sorted.bed"
+
 # 1000G strict mask
 curl -s  "ftp://ftp.1000genomes.ebi.ac.uk/vol1/ftp/release/20130502/supporting/accessible_genome_masks/20140520.strict_mask.autosomes.bed" | bedtools complement -i - -g "$refdir/hg19.genome" | bedtools sort | awk 'match($1, /chr[0-9]+$/) {print $0}' > "$refdir/testmask2.bed"
 

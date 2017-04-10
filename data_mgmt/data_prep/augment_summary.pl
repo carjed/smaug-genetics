@@ -36,7 +36,7 @@ my $mac = $config->{mac};
 my $binw = $config->{binw};
 my $data = $config->{data};
 # my $bin_scheme = $config->{bin_scheme};
-my $bin_scheme = "all";
+my $bin_scheme = "fixed";
 my $parentdir = $config->{parentdir};
 my $count_motifs = $config->{count_motifs};
 my $expand_summ = $config->{expand_summ};
@@ -52,6 +52,16 @@ my $chr=$ARGV[0];
 my $subseq=2;
 if ($adj!=0) {
 	$subseq = $adj*2+1;
+}
+
+my $genome = "$parentdir/reference_data/hg19.genome";
+open my $gFH, '<', $genome or die "can't open $genome: $!";
+
+my $length;
+while(<$gFH>){
+  chomp;
+  my @line=split(/\t/, $_);
+  if ($line[0] eq "chr$chr") { $length = $line[1]; last;}
 }
 
 my $bw=$binw/1000;
@@ -108,45 +118,53 @@ if($count_motifs eq "TRUE"){
 	my @motifs;
 
 	if($bin_scheme eq "fixed"){
-    # my $numbins=ceil(length($fa)/$binw);
-    my $numbins=10;
-		for my $i (0 .. $numbins-1) {
-      $startpos = $i*$binw+1;
-      $endpos = $startpos+$binw-1;
-      my $binseq = $fa->get_slice($chr, $startpos, $endpos);
-      my $test= substr($binseq, 0, 10);
-      print "$test\n";
-			# @motifs=(substr($seq, $i*$binw, $binw)=~/(?=([ACGT]{$subseq}))/g);
-      @motifs = ($binseq =~ /(?=([ACGT]{$subseq}))/g);
-      writeCounts($chr, $i, \@motifs, $binFH);
-      # print BIN "$chr\t$countstr\n";
-		}
+    my $fixedfile = "$parentdir/reference_data/genome.${bw}kb.sorted.bed";
+    open my $fixedFH, '<', $fixedfile or die "$fixedfile: $!";
+    readWindows($fixedFH);
+    # my $bandno = 1;
+    # while(<$fixedFH>){
+    #   chomp;
+    #   my @line=split(/\t/, $_);
+    #   my $chrind=$line[0];
+    #
+    #   if($chrind eq "chr$chr"){
+    #     $startpos = $line[1]+1;
+    #     $endpos = $line[2];
+    #
+    #     my $binseq = $fa->get_slice($chr, $startpos, $endpos);
+    #
+    #     @motifs = ($binseq =~ /(?=([ACGT]{$subseq}))/g);
+    #
+    #     writeCounts($_, $bandno, \@motifs, $binFH);
+    #     $bandno = $bandno+1;
+    #   }
+    # }
   } elsif($bin_scheme eq "band") {
       my $bandfile = "$parentdir/reference_data/cytoBand.txt";
       open my $bandFH, '<', $bandfile or die "$bandfile: $!";
-
-      my $bandno=1;
-      while(<$bandFH>){
-        chomp;
-        my @line=split(/\t/, $_);
-        my $chrind=$line[0];
-        if($chrind eq "chr$chr"){
-          $startpos = $line[1]+1;
-          $endpos = $line[2];
-
-          my $binseq = $fa->get_slice($chr, $startpos, $endpos);
-          my $length=length($binseq);
-          print "$bandno length: $length\n";
-          @motifs = ($binseq =~ /(?=([ACGT]{$subseq}))/g);
-          # print join(", ", @motifs);
-          writeCounts($_, $bandno, \@motifs, $binFH);
-          # print BIN "$_\t$countstr\n";
-          $bandno = $bandno+1;
-        }
-      }
+      readWindows($bandFH);
+      # my $bandno=1;
+      # while(<$bandFH>){
+      #   chomp;
+      #   my @line=split(/\t/, $_);
+      #   my $chrind=$line[0];
+      #   if($chrind eq "chr$chr"){
+      #     $startpos = $line[1]+1;
+      #     $endpos = $line[2];
+      #
+      #     my $binseq = $fa->get_slice($chr, $startpos, $endpos);
+      #     my $length=length($binseq);
+      #     print "$bandno length: $length\n";
+      #     @motifs = ($binseq =~ /(?=([ACGT]{$subseq}))/g);
+      #     # print join(", ", @motifs);
+      #     writeCounts($_, $bandno, \@motifs, $binFH);
+      #     # print BIN "$_\t$countstr\n";
+      #     $bandno = $bandno+1;
+      #   }
+      # }
     }	else {
       $startpos=1;
-      $endpos=51304566;
+      $endpos=$length;
       my $binseq = $fa->get_slice($chr, $startpos, $endpos);
   		@motifs = ($binseq =~ /(?=([ACGT]{$subseq}))/g);
   		my $bin = 0;
@@ -160,11 +178,33 @@ if($count_motifs eq "TRUE"){
 	print "Runtime: ", timestr($difference), "\n";
 }
 
+sub readWindows {
+  my $FH = shift;
+  my $bandno = 1;
+  while(<$FH>){
+    chomp;
+    my @line=split(/\t/, $_);
+    my $chrind=$line[0];
+
+    if($chrind eq "chr$chr"){
+      $startpos = $line[1]+1;
+      $endpos = $line[2];
+
+      my $binseq = $fa->get_slice($chr, $startpos, $endpos);
+
+      @motifs = ($binseq =~ /(?=([ACGT]{$subseq}))/g);
+
+      writeCounts($_, $bandno, \@motifs, $binFH);
+      $bandno = $bandno+1;
+    }
+  }
+}
+
 ##############################################################################
 # Read motif counts from hash table, sum counts symmetric motifs and write out
 # counting strategy modified from https://www.biostars.org/p/5143/
 ##############################################################################
-sub writeCounts{
+sub writeCounts {
   my $first = $_[0];
 	my $bin = $_[1]+1;
 	my @motifs = @{$_[2]};

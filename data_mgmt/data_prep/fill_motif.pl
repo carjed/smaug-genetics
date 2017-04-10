@@ -36,7 +36,7 @@ my $count_motifs = $config->{count_motifs};
 my $expand_summ = $config->{expand_summ};
 
 use lib "$FindBin::Bin/../lib";
-use SmaugFunctions qw(forkExecWait getRef getMotif);
+use SmaugFunctions qw(getMotif getType);
 
 my $opts = parse_params();
 fill_aa($opts,$$opts{aa_file});

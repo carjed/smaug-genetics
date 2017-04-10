@@ -84,7 +84,7 @@ if($count_motifs eq "TRUE"){
 	print "Counting motifs...\n";
 	# print "seqlength: $length\n";
 
-	my $bin_flag;
+	# my $bin_flag;
 	my $bin_out;
 	if($bin_scheme eq "fixed"){
 		$bin_out = "$out_path/chr$chr.motif_counts_fixed.txt";
@@ -105,7 +105,7 @@ if($count_motifs eq "TRUE"){
   my $endpos;
 	my @motifs;
 
-	if($bin_flag eq "fixed"){
+	if($bin_scheme eq "fixed"){
     my $numbins=ceil(length($fa)/$binw);
 		for my $i (0 .. $numbins-1) {
       $startpos = $i*$binw+1;
@@ -117,7 +117,7 @@ if($count_motifs eq "TRUE"){
 			my $countstr = writeCounts($i, \@motifs);
       print BIN "$chr\t$countstr\n";
 		}
-  } elsif($bin_flag eq "band") {
+  } elsif($bin_scheme eq "band") {
       my $bandfile = "$parentdir/reference_data/cytoBand.txt";
       open my $bandFH, '<', $bandfile or die "$bandfile: $!";
 

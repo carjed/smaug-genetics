@@ -137,6 +137,7 @@ if($count_motifs eq "TRUE"){
           my $length=length($binseq);
           print "$bandno length: $length\n";
           @motifs = ($binseq =~ /(?=([ACGT]{$subseq}))/g);
+          print join(", ", @motifs);
           my $countstr = writeCounts($bandno, \@motifs);
           print BIN "$_\t$countstr\n";
           $bandno = $bandno+1;

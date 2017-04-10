@@ -99,14 +99,14 @@ sub getType {
     $Category = "GC_TA";
   }
 
-  my $Category2;
-  if(substr($seqp, $adj, 2) eq "CG"){
-    $Category2 = "cpg_$Category";
-  } else {
-    $Category2 = $Category;
-  }
+  # my $Category2;
+  # if(substr($seqp, $adj, 2) eq "CG"){
+  #   $Category2 = "cpg_$Category";
+  # } else {
+  #   $Category2 = $Category;
+  # }
 
-  return $Category2;
+  return $Category;
 
 }
 

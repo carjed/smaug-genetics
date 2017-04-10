@@ -96,7 +96,7 @@ sub fill_type
 
     my $vcf = Vcf->new(fh=>\*STDIN, assume_uppercase=>1);
     $vcf->parse_header();
-    $vcf->add_header_line({key=>'INFO',ID=>'Category2',Number=>1,Type=>'String',
+    $vcf->add_header_line({key=>'INFO',ID=>'Category',Number=>1,Type=>'String',
         Description=>'Mutation type'});
     print $vcf->format_header();
 
@@ -113,12 +113,12 @@ sub fill_type
         # $aa = getMotif($aa, $adj);
         if ( $type )
         {
-            $$rec[7] = $vcf->add_info_field($$rec[7],'Category2'=>$type);
+            $$rec[7] = $vcf->add_info_field($$rec[7],'Category'=>$type);
             $n_filled_sites++;
         }
         else
         {
-            $$rec[7] = $vcf->add_info_field($$rec[7],'Category2'=>'.');
+            $$rec[7] = $vcf->add_info_field($$rec[7],'Category'=>'.');
             $n_unknown++;
         }
         print join("\t",@$rec),"\n";

@@ -36,7 +36,7 @@ my $mac = $config->{mac};
 my $binw = $config->{binw};
 my $data = $config->{data};
 # my $bin_scheme = $config->{bin_scheme};
-my $bin_scheme = "band";
+# my $bin_scheme = "band";
 my $parentdir = $config->{parentdir};
 my $count_motifs = $config->{count_motifs};
 my $expand_summ = $config->{expand_summ};
@@ -59,23 +59,10 @@ my $bw=$binw/1000;
 ##############################################################################
 # Read in files and initialize outputs
 ##############################################################################
-my $in_path = "/net/bipolar/jedidiah/testpipe/summaries";
-my $out_path = "$parentdir/output/${subseq}bp_${bw}k_${mac}_${data}2";
+# my $in_path = "/net/bipolar/jedidiah/testpipe/summaries";
+# my $out_path = "$parentdir/output/${subseq}bp_${bw}k_${mac}_${data}2";
+my $out_path = "$parentdir/motif_counts";
 make_path("$out_path");
-
-# print "Getting reference for chr$chr...\n";
-# my $f_fasta;
-# if($data eq "mask"){
-#   $f_fasta = "$parentdir/reference_data/human_g1k_v37.mask.fasta";
-# } else {
-#   $f_fasta = "$parentdir/reference_data/human_g1k_v37.fasta";
-# }
-#
-# my $seq=getRef($f_fasta, $chr);
-#
-# my $seqlength=length($seq);
-# print "chr$chr seqlength: $seqlength\n";
-# print "Done\n";
 
 ##############################################################################
 # Counts possible mutable sites per bin for 6 main categories
@@ -88,50 +75,56 @@ if($count_motifs eq "TRUE"){
 
   my $fname = "$parentdir/reference_data/human_g1k_v37/chr$chr.fasta.gz";
   # if ( -e "$fname$chr.fasta.gz" ) { $fname = "$fname$chr.fasta.gz"; }
-  # my $fa = FaSlice->new(file=>$fname, size=>5_000_000);
+  my $fa = FaSlice->new(file=>$fname, size=>5_000_000);
 
-  # print $binFH "CHR\tBIN\tMOTIF\tCOUNT\n";
   my $startpos;
   my $endpos;
 	my @motifs;
   my $header;
   my $bin_out;
-	if($bin_scheme eq "fixed"){
 
-    my $fixedfile = "$parentdir/reference_data/genome.${bw}kb.sorted.bed";
-    open my $fixedFH, '<', $fixedfile or die "$fixedfile: $!";
+  my @schemes = qw( fixed band all );
 
-    $bin_out = "$out_path/chr$chr.motif_counts_fixed.txt";
-    open(my $outFH, '>', $bin_out) or die "can't write to $bin_out: $!\n";
+  foreach my $bin_scheme (@schemes){
+    if($bin_scheme eq "fixed"){
 
-    $header = "CHR\tSTART\tEND\tBIN\tMotif\tCOUNT\n";
+      my $fixedfile = "$parentdir/reference_data/genome.${bw}kb.sorted.bed";
+      open my $fixedFH, '<', $fixedfile or die "$fixedfile: $!";
 
-    readWindows($fixedFH, $outFH, $header, $fname);
+      $bin_out = "$out_path/chr$chr.$subseq-mer_motif_counts_fixed.txt";
+      open(my $outFH, '>', $bin_out) or die "can't write to $bin_out: $!\n";
 
-  } elsif($bin_scheme eq "band") {
+      $header = "CHR\tSTART\tEND\tBIN\tMotif\tCOUNT\n";
 
-    my $bandfile = "$parentdir/reference_data/cytoBand.txt";
-    open my $bandFH, '<', $bandfile or die "$bandfile: $!";
+      readWindows($fixedFH, $outFH, $header, $fa);
 
-    $bin_out = "$out_path/chr$chr.motif_counts_band.txt";
-    open(my $outFH, '>', $bin_out) or die "can't write to $bin_out: $!\n";
+    } elsif($bin_scheme eq "band") {
 
-    $header = "CHR\tSTART\tEND\tBAND\tgieStain\tBIN\tMotif\tCOUNT\n";
+      my $bandfile = "$parentdir/reference_data/cytoBand.txt";
+      open my $bandFH, '<', $bandfile or die "$bandfile: $!";
 
-    readWindows($bandFH, $outFH, $header, $fname);
+      $bin_out = "$out_path/chr$chr.$subseq-mer_motif_counts_band.txt";
+      open(my $outFH, '>', $bin_out) or die "can't write to $bin_out: $!\n";
 
-  }	else {
-    my $genome = "$parentdir/reference_data/genome.full.sorted.bed";
-    open my $gFH, '<', $genome or die "can't open $genome: $!";
+      $header = "CHR\tSTART\tEND\tBAND\tgieStain\tBIN\tMotif\tCOUNT\n";
 
-    $bin_out = "$out_path/chr$chr.motif_counts_all.txt";
-    open(my $outFH, '>', $bin_out) or die "can't write to $bin_out: $!\n";
+      readWindows($bandFH, $outFH, $header, $fa);
 
-    $header = "CHR\tSTART\tEND\tBIN\tMotif\tCOUNT\n";
+    }	else {
+      my $genome = "$parentdir/reference_data/genome.full.sorted.bed";
+      open my $gFH, '<', $genome or die "can't open $genome: $!";
 
-    readWindows($gFH, $outFH, $header, $fname);
+      $bin_out = "$out_path/chr$chr.$subseq-mer_motif_counts_all.txt";
+      open(my $outFH, '>', $bin_out) or die "can't write to $bin_out: $!\n";
 
+      $header = "CHR\tSTART\tEND\tBIN\tMotif\tCOUNT\n";
+
+      readWindows($gFH, $outFH, $header, $fa);
+
+    }
   }
+
+
 
 	my $end_time=new Benchmark;
 	my $difference = timediff($end_time, $start_time);
@@ -143,8 +136,7 @@ sub readWindows {
   my $windowFH = shift;
   my $outFH = shift;
   my $header = shift;
-  my $fname = shift;
-  my $fa = FaSlice->new(file=>$fname, size=>5_000_000);
+  my $fa = shift;
 
   my $startpos;
   my $endpos;

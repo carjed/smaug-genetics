@@ -90,7 +90,7 @@ if($count_motifs eq "TRUE"){
       print "Getting fixed bins\n";
       my $fixedfile = "$parentdir/reference_data/genome.${bw}kb.sorted.bed";
       open my $fixedFH, '<', $fixedfile or die "$fixedfile: $!";
-      $fa = FaSlice->new(file=>$fname, size=>$binw);
+      $fa = FaSlice->new(file=>$fname, oob=>'N', size=>$binw);
       $bin_out = "$out_path/chr$chr.$subseq-mer_motifs_fixed_${bw}kb_${data}.txt";
 
       $header = "CHR\tSTART\tEND\tBIN\tMotif\tCOUNT\n";
@@ -101,7 +101,7 @@ if($count_motifs eq "TRUE"){
       print "getting bands\n";
       my $bandfile = "$parentdir/reference_data/cytoBand.txt";
       open my $bandFH, '<', $bandfile or die "$bandfile: $!";
-      $fa = FaSlice->new(file=>$fname, size=>5_000_000);
+      $fa = FaSlice->new(file=>$fname, oob=>'N',size=>1_000_000);
       $bin_out = "$out_path/chr$chr.$subseq-mer_motifs_band_${data}.txt";
 
       $header = "CHR\tSTART\tEND\tBAND\tgieStain\tBIN\tMotif\tCOUNT\n";
@@ -112,7 +112,7 @@ if($count_motifs eq "TRUE"){
       print "getting all\n";
       my $genome = "$parentdir/reference_data/genome.full.sorted.bed";
       open my $gFH, '<', $genome or die "can't open $genome: $!";
-      $fa = FaSlice->new(file=>$fname, size=>5_000_000);
+      $fa = FaSlice->new(file=>$fname, oob=>'N', size=>1_000_000);
       $bin_out = "$out_path/chr$chr.$subseq-mer_motifs_all_${data}.txt";
 
       $header = "CHR\tSTART\tEND\tBIN\tMotif\tCOUNT\n";

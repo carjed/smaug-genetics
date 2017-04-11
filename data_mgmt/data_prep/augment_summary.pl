@@ -83,7 +83,7 @@ if($count_motifs eq "TRUE"){
   my $header;
   my $bin_out;
 
-  my @schemes = qw( all fixed band );
+  my @schemes = qw( fixed band );
 
   foreach my $bin_scheme (@schemes){
     if($bin_scheme eq "fixed"){

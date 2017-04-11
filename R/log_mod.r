@@ -113,7 +113,7 @@ logitMod <- function(motif, nbp, parentdir, categ){
 		paste0(parentdir, "/reference_data/DHS.bed"))
 	sites$TIME <- repCol(sites,
 		paste0(parentdir, "/reference_data/lymph_rep_time.txt"))
-	sites$GC <- gcCol(sites, paste0(parentdir, "/output/3bp_10k/full_bin.txt"))
+	sites$GC <- gcCol(sites, paste0(parentdir, "reference_data/gc10kb.bed"))
 	# sites$GC <- gcContentCalc(sites_for_GC, 10000, organism=Hsapiens)
 
 	# Run logit model for categories with >10 singletons, return coefficients

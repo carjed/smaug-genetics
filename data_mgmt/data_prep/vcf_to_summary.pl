@@ -54,7 +54,6 @@ if ($makecopy eq "copy") {
                             ->maxdepth(3)
                             ->in($rawvcfdir);
 
-	# print STDERR "Processing VCFs with extension '$rawvcfext'\n from $rawvcfdir...\n";
 	foreach my $rawvcf (@rawvcfs) {
 		my $filename=fileparse($rawvcf);
 
@@ -104,7 +103,7 @@ if ($script==1){
                             ->maxdepth(1)
                             ->in($vcfdir);
 
-  my $header = "\"CHR\\tPOS\\tREF\\tALT\\tAA\\tAN\\tMotif\\tCategory\"";
+  my $header = "\"CHR\tPOS\tREF\tALT\tAA\tAN\tMotif\tCategory\"";
   my $headercmd = "echo $header > $outdir/full.summary";
   forkExecWait($headercmd);
 

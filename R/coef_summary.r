@@ -163,16 +163,15 @@ runTest <- function(cov, dir){
     covdir <- covtmp %>% filter(Est<0)
   }
 
-  dnmstmp <- chrpfdnm[paste0(chrpfdnm$Category.x, "_", substr(chrpfdnm$SEQ, 0, 7)) %in%
+  dnmstmp <- chrpfdnm[paste0(chrpdnm$Category, "_", substr(chrpfdnm$SEQ, 0, 7)) %in%
     paste0(covdir$Category, "_", covdir$Sequence),]
   if(nrow(dnmstmp)>=5){
     if(cov=="GC"){
       covbase <- paste0(parentdir, "/reference_data/high_gc")
-      covbed <- paste0(parentdir, "/output/3bp_10k/full_bin.txt")
-      dnmstmp$GC <- gcCol(dnmstmp,
-        paste0(parentdir, "/output/3bp_10k/full_bin.txt"))
+      covbed <- paste0(parentdir, "/reference_data/gc10kb.bed")
+      dnmstmp$GC <- gcCol(dnmstmp, covbed)
       dnmstmp$inside <- ifelse(dnmstmp$GC>=0.55, 1, 0)
-      awkstr <- "awk -F\"\\t\" '{if($4>=0.55 && NR>1) print $1\"\\t\"$5*10000-10000+1\"\\t\"$5*10000}'"
+      awkstr <- "awk -F\"\\t\" '{if($4>=0.55 && NR>1) print }'"
     } else if(cov=="TIME"){
       covbed <- paste0(parentdir, "/reference_data/lymph_rep_time.txt")
       dnmstmp$TIME <- repCol(dnmstmp, covbed)

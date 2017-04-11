@@ -91,7 +91,7 @@ if($count_motifs eq "TRUE"){
       my $fixedfile = "$parentdir/reference_data/genome.${bw}kb.sorted.bed";
       open my $fixedFH, '<', $fixedfile or die "$fixedfile: $!";
 
-      $bin_out = "$out_path/chr$chr.$subseq-mer_motif_counts_fixed.txt";
+      $bin_out = "$out_path/chr$chr.$subseq-mer_motifs_fixed_${bw}kb_${data}.txt";
       open(my $outFH, '>', $bin_out) or die "can't write to $bin_out: $!\n";
 
       $header = "CHR\tSTART\tEND\tBIN\tMotif\tCOUNT\n";
@@ -103,7 +103,7 @@ if($count_motifs eq "TRUE"){
       my $bandfile = "$parentdir/reference_data/cytoBand.txt";
       open my $bandFH, '<', $bandfile or die "$bandfile: $!";
 
-      $bin_out = "$out_path/chr$chr.$subseq-mer_motif_counts_band.txt";
+      $bin_out = "$out_path/chr$chr.$subseq-mer_motifs_band_${data}.txt";
       open(my $outFH, '>', $bin_out) or die "can't write to $bin_out: $!\n";
 
       $header = "CHR\tSTART\tEND\tBAND\tgieStain\tBIN\tMotif\tCOUNT\n";
@@ -114,7 +114,7 @@ if($count_motifs eq "TRUE"){
       my $genome = "$parentdir/reference_data/genome.full.sorted.bed";
       open my $gFH, '<', $genome or die "can't open $genome: $!";
 
-      $bin_out = "$out_path/chr$chr.$subseq-mer_motif_counts_all.txt";
+      $bin_out = "$out_path/chr$chr.$subseq-mer_motifs_all_${data}.txt";
       open(my $outFH, '>', $bin_out) or die "can't write to $bin_out: $!\n";
 
       $header = "CHR\tSTART\tEND\tBIN\tMotif\tCOUNT\n";
@@ -123,8 +123,6 @@ if($count_motifs eq "TRUE"){
 
     }
   }
-
-
 
 	my $end_time=new Benchmark;
 	my $difference = timediff($end_time, $start_time);

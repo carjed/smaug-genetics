@@ -75,7 +75,7 @@ if($count_motifs eq "TRUE"){
 
   my $fname = "$parentdir/reference_data/human_g1k_v37/chr$chr.fasta.gz";
   # if ( -e "$fname$chr.fasta.gz" ) { $fname = "$fname$chr.fasta.gz"; }
-  my $fa = FaSlice->new(file=>$fname, size=>1_000_000);
+  my $fa = FaSlice->new(file=>$fname, size=>1000000);
 
   my $startpos;
   my $endpos;

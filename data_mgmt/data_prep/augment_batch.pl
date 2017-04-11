@@ -9,10 +9,6 @@ use POSIX;
 use File::Basename;
 use File::Path qw(make_path);
 use FindBin;
-use lib "~/home/jedidiah/perl5/lib/perl5/x86_64-linux-gnu-thread-multi/YAML";
-use lib "$FindBin::Bin/../lib";
-use SmaugFunctions qw(forkExecWait getRef);
-
 use YAML::XS 'LoadFile';
 use feature 'say';
 
@@ -23,7 +19,8 @@ my $config = LoadFile("$configpath/_config.yaml");
 my $email = $config->{email};
 my $parentdir = $config->{parentdir};
 
-
+use lib "$FindBin::Bin/../lib";
+use SmaugFunctions qw(forkExecWait getRef);
 
 my $today = POSIX::strftime('%Y%m%d', localtime);
 my $slurmdir = "$parentdir/output/slurm/$today";

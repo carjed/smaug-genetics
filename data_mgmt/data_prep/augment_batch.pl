@@ -9,7 +9,7 @@ use POSIX;
 use File::Basename;
 use File::Path qw(make_path);
 use FindBin;
-use lib "~/perl5/lib/perl5";
+use lib "~/home/jedidiah/perl5/lib/perl5/x86_64-linux-gnu-thread-multi/YAML";
 use lib "$FindBin::Bin/../lib";
 use SmaugFunctions qw(forkExecWait getRef);
 

@@ -75,7 +75,7 @@ if($count_motifs eq "TRUE"){
 
   my $fname = "$parentdir/reference_data/human_g1k_v37/chr$chr.fasta.gz";
   # if ( -e "$fname$chr.fasta.gz" ) { $fname = "$fname$chr.fasta.gz"; }
-  my $fa = FaSlice->new(file=>$fname, size=>1000000);
+  my $fa;
 
   my $startpos;
   my $endpos;
@@ -90,37 +90,34 @@ if($count_motifs eq "TRUE"){
       print "Getting fixed bins\n";
       my $fixedfile = "$parentdir/reference_data/genome.${bw}kb.sorted.bed";
       open my $fixedFH, '<', $fixedfile or die "$fixedfile: $!";
-
+      $fa = FaSlice->new(file=>$fname, size=>$binw);
       $bin_out = "$out_path/chr$chr.$subseq-mer_motifs_fixed_${bw}kb_${data}.txt";
-      open(my $outFH, '>', $bin_out) or die "can't write to $bin_out: $!\n";
 
       $header = "CHR\tSTART\tEND\tBIN\tMotif\tCOUNT\n";
 
-      readWindows($fixedFH, $outFH, $header, $fa);
+      readWindows($fixedFH, $bin_out, $header, $fa);
 
     } elsif($bin_scheme eq "band") {
       print "getting bands\n";
       my $bandfile = "$parentdir/reference_data/cytoBand.txt";
       open my $bandFH, '<', $bandfile or die "$bandfile: $!";
-
+      $fa = FaSlice->new(file=>$fname, size=>5_000_000);
       $bin_out = "$out_path/chr$chr.$subseq-mer_motifs_band_${data}.txt";
-      open(my $outFH, '>', $bin_out) or die "can't write to $bin_out: $!\n";
 
       $header = "CHR\tSTART\tEND\tBAND\tgieStain\tBIN\tMotif\tCOUNT\n";
 
-      readWindows($bandFH, $outFH, $header, $fa);
+      readWindows($bandFH, $bin_out, $header, $fa);
 
     }	else {
       print "getting all\n";
       my $genome = "$parentdir/reference_data/genome.full.sorted.bed";
       open my $gFH, '<', $genome or die "can't open $genome: $!";
-
+      $fa = FaSlice->new(file=>$fname, size=>5_000_000);
       $bin_out = "$out_path/chr$chr.$subseq-mer_motifs_all_${data}.txt";
-      open(my $outFH, '>', $bin_out) or die "can't write to $bin_out: $!\n";
 
       $header = "CHR\tSTART\tEND\tBIN\tMotif\tCOUNT\n";
 
-      readWindows($gFH, $outFH, $header, $fa);
+      readWindows($gFH, $bin_out, $header, $fa);
 
     }
   }
@@ -133,7 +130,7 @@ if($count_motifs eq "TRUE"){
 
 sub readWindows {
   my $windowFH = shift;
-  my $outFH = shift;
+  my $bin_out = shift;
   my $header = shift;
   my $fa = shift;
 
@@ -141,6 +138,7 @@ sub readWindows {
   my $endpos;
   my @motifs;
   my $bandno = 1;
+  open(my $outFH, '>', $bin_out) or die "can't write to $bin_out: $!\n";
 
   print $outFH $header;
   while(<$windowFH>){

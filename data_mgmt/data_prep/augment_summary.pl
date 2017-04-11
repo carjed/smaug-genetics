@@ -87,7 +87,7 @@ if($count_motifs eq "TRUE"){
 
   foreach my $bin_scheme (@schemes){
     if($bin_scheme eq "fixed"){
-
+      print "Getting fixed bins\n";
       my $fixedfile = "$parentdir/reference_data/genome.${bw}kb.sorted.bed";
       open my $fixedFH, '<', $fixedfile or die "$fixedfile: $!";
 
@@ -99,7 +99,7 @@ if($count_motifs eq "TRUE"){
       readWindows($fixedFH, $outFH, $header, $fa);
 
     } elsif($bin_scheme eq "band") {
-
+      print "getting bands\n";
       my $bandfile = "$parentdir/reference_data/cytoBand.txt";
       open my $bandFH, '<', $bandfile or die "$bandfile: $!";
 
@@ -111,6 +111,7 @@ if($count_motifs eq "TRUE"){
       readWindows($bandFH, $outFH, $header, $fa);
 
     }	else {
+      print "getting all\n";
       my $genome = "$parentdir/reference_data/genome.full.sorted.bed";
       open my $gFH, '<', $genome or die "can't open $genome: $!";
 

@@ -19,19 +19,13 @@ my $config = LoadFile("$configpath/_config.yaml");
 my $parentdir = $config->{parentdir};
 
 use lib "$FindBin::Bin/../lib";
-use SmaugFunctions qw(forkExecWait getMotif);
+use SmaugFunctions qw(forkExecWait);
 
-my $catind = $ARGV[0]-1;
-my @categs = qw( AT_CG AT_GC AT_TA GC_AT GC_CG GC_TA );
-my $categ = $categs[$catind];
+my $categ = $ARGV[0];
+my $chr = $ARGV[1];
 
 my $outpath = "$parentdir/output/logmod_data/motifs2/$categ";
-make_path($outpath);
 
-foreach my $chr (1..22){
-
-  my $fullfile = "$parentdir/output/logmod_data/chr${chr}_${categ}_full.txt.gz";
-  my $subcmd = "zcat $fullfile | awk '{print >> \"$outpath/${categ}_\" substr(\$3, 1, 7) \".txt\"}' &";
-
-  forkExecWait($subcmd);
-}
+my $fullfile = "$parentdir/output/logmod_data/chr${chr}_${categ}_full.txt.gz";
+my $subcmd = "zcat $fullfile | awk '{print >> \"$outpath/${categ}_\" substr(\$3, 1, 7) \".txt\"}'";
+forkExecWait($subcmd);

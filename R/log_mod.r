@@ -83,6 +83,8 @@ logitMod <- function(motif, nbp, parentdir, categ){
 
 	sites <- read.table(sitefile, header=F, stringsAsFactors=F)
 	names(sites) <- c("CHR", "POS", "Sequence", "mut", "DP")
+	sites <- sites %>%
+		arrange(CHR, POS)
 
 	# Initialize data for calculating GC content
 	# sites_for_GC <- data.frame(position=sites$POS, chr=paste0("chr", sites$CHR))
@@ -116,7 +118,8 @@ logitMod <- function(motif, nbp, parentdir, categ){
 		paste0(parentdir, "/reference_data/DHS.bed"))
 	sites$TIME <- repCol(sites,
 		paste0(parentdir, "/reference_data/lymph_rep_time.txt"))
-	sites$GC <- gcCol(sites, paste0(parentdir, "reference_data/gc10kb.bed"))
+	sites$GC <- gcCol(sites,
+		paste0(parentdir, "/reference_data/gc10kb.bed"))
 	# sites$GC <- gcContentCalc(sites_for_GC, 10000, organism=Hsapiens)
 
 	# Run logit model for categories with >10 singletons, return coefficients

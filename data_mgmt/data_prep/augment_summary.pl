@@ -25,10 +25,10 @@ my $relpath = $FindBin::Bin;
 my $configpath = dirname(dirname($relpath));
 my $config = LoadFile("$configpath/_config.yaml");
 
-print "Script will run with the following parameters:\n";
-for (sort keys %{$config}) {
-    say "$_: $config->{$_}";
-}
+# print "Script will run with the following parameters:\n";
+# for (sort keys %{$config}) {
+#     say "$_: $config->{$_}";
+# }
 
 # my $adj = $config->{adj};
 # my $adj=1;
@@ -219,7 +219,7 @@ sub readWindows2 {
 
     if($chrind eq "chr$chr"){
       $startpos = $line[1]+1;
-      $endpos = $line[2]+2;
+      $endpos = $line[2]+$subseq-1;
 
       my $binseq = $fa->get_slice($chr, $startpos, $endpos);
 

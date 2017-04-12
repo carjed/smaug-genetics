@@ -18,6 +18,9 @@ my $config = LoadFile("$configpath/_config.yaml");
 
 my $parentdir = $config->{parentdir};
 
+use lib "$FindBin::Bin/../lib";
+use SmaugFunctions qw(forkExecWait getMotif);
+
 my $catind = $ARGV[0]-1;
 my @categs = qw( AT_CG AT_GC AT_TA GC_AT GC_CG GC_TA );
 my $categ = $categs[$catind];

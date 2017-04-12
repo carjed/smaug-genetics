@@ -25,7 +25,7 @@ my $data = $config->{data};
 my $parentdir = $config->{parentdir};
 
 use lib "$FindBin::Bin/../lib";
-use SmaugFunctions qw(forkExecWait getRef);
+use SmaugFunctions qw(forkExecWait getRef getMotif);
 
 my $chr;
 my $categ;

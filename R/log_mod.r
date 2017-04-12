@@ -64,19 +64,22 @@ logitMod <- function(motif, nbp, parentdir, categ){
 	# Define name of temporary file for motif i
 	# sitefile <- paste0(parentdir, "/output/logmod_data/motifs/", categ, "/",
 	# 	categ, "_", escmotif, ".txt")
-	sitefile <- paste0(parentdir, "/output/logmod_data/motifs/", categ, "/dp/",
-			categ, "_", escmotif, "_dp.txt")
+	# sitefile <- paste0(parentdir, "/output/logmod_data/motifs/", categ, "/dp/",
+	# 		categ, "_", escmotif, "_dp.txt")
 
-	if(!(file.exists(sitefile))){
-		cat("Merging ", motif, " files...\n")
+	sitefile <- paste0(parentdir, "/output/logmod_data/motifs/", categ, "/",
+			categ, "_", escmotif, ".txt")
 
-		perchrtmp <- paste0(parentdir,
-			"/output/logmod_data/chr*/chr*_", categ, "_", motif, ".txt")
-
-		catcmd1 <- paste0("find ", parentdir, "/output/logmod_data/chr* -name '*",
-			escmotif, "*.txt' | sort -V | xargs cat >> ", sitefile)
-		system(catcmd1)
-	}
+	# if(!(file.exists(sitefile))){
+	# 	cat("Merging ", motif, " files...\n")
+	#
+	# 	perchrtmp <- paste0(parentdir,
+	# 		"/output/logmod_data/chr*/chr*_", categ, "_", motif, ".txt")
+	#
+	# 	catcmd1 <- paste0("find ", parentdir, "/output/logmod_data/chr* -name '*",
+	# 		escmotif, "*.txt' | sort -V | xargs cat >> ", sitefile)
+	# 	system(catcmd1)
+	# }
 
 	sites <- read.table(sitefile, header=F, stringsAsFactors=F)
 	names(sites) <- c("CHR", "POS", "Sequence", "mut", "DP")

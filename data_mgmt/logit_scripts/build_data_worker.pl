@@ -33,7 +33,7 @@ my $categ;
 GetOptions ('chr=s'=> \$chr,
 'categ=s' => \$categ);
 
-make_path("$parentdir/output/logmod_data/chr${chr}/");
+# make_path("$parentdir/output/logmod_data/chr${chr}/");
 
 my $b1;
 my $b2;

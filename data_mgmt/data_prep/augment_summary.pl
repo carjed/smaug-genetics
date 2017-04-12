@@ -74,9 +74,9 @@ if($count_motifs eq "TRUE"){
 	print "Counting motifs...\n";
 	# print "seqlength: $length\n";
   my $fname;
-  if($data eq "mask"){
+  if($data eq "full"){
     $fname = "$parentdir/reference_data/human_g1k_v37/chr$chr.fasta.gz";
-  } elsif($data eq "full"){
+  } elsif($data eq "mask"){
     $fname = "$parentdir/reference_data/human_g1k_v37_mask/chr$chr.fasta.gz";
   }
 

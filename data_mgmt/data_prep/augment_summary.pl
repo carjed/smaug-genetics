@@ -147,6 +147,12 @@ sub readWindows {
   open(my $outFH, '>', $bin_out) or die "can't write to $bin_out: $!\n";
 
   print $outFH $header;
+
+  my %full_count=();
+  my $tmpseq = $fa->get_slice($chr, 1, 1000000);
+  @motifs = ($tmpseq =~ /(?=([ACGT]{$subseq}))/g);
+  $full_count{$_}++ for @motifs;
+
   while(<$windowFH>){
     chomp;
     my @line=split(/\t/, $_);
@@ -160,10 +166,47 @@ sub readWindows {
 
       @motifs = ($binseq =~ /(?=([ACGT]{$subseq}))/g);
 
-      writeCounts($_, $bandno, \@motifs, $outFH);
+        # get overall load
+        my %tri_count=();
+        $tri_count{$_}++ for @motifs;
+
+        foreach my $motif (sort keys %tri_count) {
+          my $altmotif = $motif;
+          $altmotif =~ tr/ACGT/TGCA/;
+          $altmotif = reverse $altmotif;
+
+          # my $seqp = "$motif\($altmotif\)";
+
+          my $sum;
+          if(exists($tri_count{$motif}) && exists($tri_count{$altmotif})){
+            $sum=$tri_count{$motif}+$tri_count{$altmotif};
+          } elsif(exists($tri_count{$motif}) && !exists($tri_count{$altmotif})) {
+            $sum=$tri_count{$motif};
+          } elsif(!exists($tri_count{$motif}) && exists($tri_count{$altmotif})) {
+            $sum=$tri_count{$altmotif};
+          }
+
+          $full_count{$motif}=$full_count{$motif}+$sum;
+
+          # print $outFH "$first\t$bin\t$seqp\t$sum\n";
+        }
+
+      # writeCounts($_, $bandno, \@motifs, $outFH);
       $bandno = $bandno+1;
     }
   }
+
+  foreach my $motif (sort keys %full_count){
+    my $altmotif = $motif;
+    $altmotif =~ tr/ACGT/TGCA/;
+    $altmotif = reverse $altmotif;
+
+    my $seqp = "$motif\($altmotif\)";
+    my $sum = $full_count{$motif};
+    # print $outFH "$first\t$bin\t$seqp\t$sum\n";
+    print $outFH "$chr\t$seqp\t$sum\n";
+  }
+
 }
 
 ##############################################################################

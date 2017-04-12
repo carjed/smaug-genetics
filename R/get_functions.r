@@ -60,7 +60,7 @@ getData <- function(summfile, binfile){
 get_mct <- function(bins){
   out <- bins %>%
   	# dplyr::select(CHR, BIN, Sequence=MOTIF, nMotifs=COUNT) %>%
-  	dplyr::select(CHR, Motif, nMotifs=COUNT) %>%
+  	# dplyr::select(CHR, Motif, nMotifs=COUNT) %>%
   	group_by(Motif) %>%
   	summarise(nMotifs=sum(nMotifs))
   return(out)

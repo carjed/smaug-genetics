@@ -49,7 +49,7 @@ datadir <- paste0(parentdir,
 	"/output/", nbp, "bp_", bink, "k_singletons_", data)
 
 summfile <- paste0(parentdir, "/summaries/full.summary")
-binfile <- paste0(parentdir, "/motif_counts/bins_full_", nbp, "mers.txt")
+binfile <- paste0(parentdir, "/motif_counts/bins_full_", nbp, "-mers.txt")
 
 ##############################################################################
 # Read and preprocess data

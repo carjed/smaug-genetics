@@ -97,33 +97,22 @@ if($count_motifs eq "TRUE"){
       my $fixedfile = "$parentdir/reference_data/genome.${bw}kb.sorted.bed";
       open my $fixedFH, '<', $fixedfile or die "$fixedfile: $!";
       $fa = FaSlice->new(file=>$fname, oob=>'N', size=>$binw);
-      $bin_out = "$out_path/chr$chr.$subseq-mer_motifs_fixed_${bw}kb_${data}.txt";
+      $bin_out = "$out_path/chr$chr.$subseq-mer_motifs_${data}.txt";
 
-      $header = "CHR\tSTART\tEND\tBIN\tMotif\tCOUNT\n";
+      $header = "CHR\tMotif\tnMotifs\n";
 
       readWindows($fixedFH, $bin_out, $header, $fa);
 
-    } elsif($bin_scheme eq "band") {
+    } elsif(($bin_scheme eq "band") && ($adj==3)) {
       print "getting bands\n";
       my $bandfile = "$parentdir/reference_data/cytoBand.txt";
       open my $bandFH, '<', $bandfile or die "$bandfile: $!";
       $fa = FaSlice->new(file=>$fname, oob=>'N',size=>1_000_000);
       $bin_out = "$out_path/chr$chr.$subseq-mer_motifs_band_${data}.txt";
 
-      $header = "CHR\tSTART\tEND\tBAND\tgieStain\tBIN\tMotif\tCOUNT\n";
+      $header = "CHR\tSTART\tEND\tBAND\tgieStain\tBIN\tMotif\tnMotifs\n";
 
-      readWindows($bandFH, $bin_out, $header, $fa);
-
-    }	else {
-      print "getting all\n";
-      my $genome = "$parentdir/reference_data/genome.full.sorted.bed";
-      open my $gFH, '<', $genome or die "can't open $genome: $!";
-      $fa = FaSlice->new(file=>$fname, oob=>'N', size=>1_000_000);
-      $bin_out = "$out_path/chr$chr.$subseq-mer_motifs_all_${data}.txt";
-
-      $header = "CHR\tSTART\tEND\tBIN\tMotif\tCOUNT\n";
-
-      readWindows($gFH, $bin_out, $header, $fa);
+      readWindows2($bandFH, $bin_out, $header, $fa);
 
     }
   }
@@ -149,8 +138,9 @@ sub readWindows {
   print $outFH $header;
 
   my %full_count=();
-  my $tmpseq = $fa->get_slice($chr, 1, 1000000);
-  @motifs = ($tmpseq =~ /(?=([ACGT]{$subseq}))/g);
+  # my $tmpseq = $fa->get_slice($chr, 1, 1000000);
+  # @motifs = ($tmpseq =~ /(?=([ACGT]{$subseq}))/g);
+  @motifs = glob "{A,C,G,T}"x $subseq;
   $full_count{$_}++ for @motifs;
 
   while(<$windowFH>){
@@ -207,6 +197,38 @@ sub readWindows {
     print $outFH "$chr\t$seqp\t$sum\n";
   }
 
+}
+
+sub readWindows2 {
+  my $windowFH = shift;
+  my $bin_out = shift;
+  my $header = shift;
+  my $fa = shift;
+
+  my $startpos;
+  my $endpos;
+  my @motifs;
+  my $bandno = 1;
+  open(my $outFH, '>', $bin_out) or die "can't write to $bin_out: $!\n";
+
+  print $outFH $header;
+  while(<$windowFH>){
+    chomp;
+    my @line=split(/\t/, $_);
+    my $chrind=$line[0];
+
+    if($chrind eq "chr$chr"){
+      $startpos = $line[1]+1;
+      $endpos = $line[2]+2;
+
+      my $binseq = $fa->get_slice($chr, $startpos, $endpos);
+
+      @motifs = ($binseq =~ /(?=([ACGT]{$subseq}))/g);
+
+      writeCounts($_, $bandno, \@motifs, $outFH);
+      $bandno = $bandno+1;
+    }
+  }
 }
 
 ##############################################################################

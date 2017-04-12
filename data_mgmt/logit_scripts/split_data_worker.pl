@@ -25,7 +25,7 @@ my $categ = $categs[$catind];
 foreach my $chr (1..22){
 
   my $fullfile = "$parentdir/output/logmod_data/chr${chr}_${categ}_full.txt.gz";
-  my $subcmd = "zcat $fullfile | awk '{print >> \"$parentdir/output/logmod_data/motifs/$categ/${categ}_\" \$4 \".txt\"}'";
+  my $subcmd = "zcat $fullfile | awk '{print >> \"$parentdir/output/logmod_data/motifs/$categ/${categ}_\" substr(\$3, 1, 7) \".txt\"}'";
 
   forkExecWait($subcmd);
 }

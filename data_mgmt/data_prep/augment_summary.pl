@@ -103,7 +103,7 @@ if($count_motifs eq "TRUE"){
 
       readWindows($fixedFH, $bin_out, $header, $fa);
 
-    } elsif(($bin_scheme eq "band") && ($adj==3)) {
+    } elsif(($bin_scheme eq "band") && ($adj==1)) {
       print "getting bands\n";
       my $bandfile = "$parentdir/reference_data/cytoBand.txt";
       open my $bandFH, '<', $bandfile or die "$bandfile: $!";

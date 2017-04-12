@@ -123,7 +123,7 @@ my $fa = FaSlice->new(file=>$fname, oob=>'N', size=>1_000_000);
 # Write data files
 print "Writing chr${chr}: ${categ} data file...\n";
 
-my $fixedfile = "$parentdir/reference_data/genome.${bw}kb.sorted.bed";
+my $fixedfile = "$parentdir/reference_data/genome.1000kb.sorted.bed";
 open my $fixedFH, '<', $fixedfile or die "$fixedfile: $!";
 # $fa = FaSlice->new(file=>$fname, oob=>'N', size=>$binw);
 
@@ -133,8 +133,8 @@ while(<$fixedFH>){
 	my $chrind=$line[0];
 
 	if($chrind eq "chr$chr"){
-		$startpos = $line[1]+1;
-		$endpos = $line[2];
+		my $startpos = $line[1]+1;
+		my $endpos = $line[2];
 		for my $pos ($startpos .. $endpos){
 				my $base = $fa->get_base($chr, $pos);
 

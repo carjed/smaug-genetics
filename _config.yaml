@@ -40,7 +40,7 @@ binw: 1000000
 # Define path to custom user library--used in log_mod.r
 # when distributing across jobs nodes that might not have
 # all of the same packages installed in shared libraries
-libpath: "~/R/x86_64-pc-linux-gnu-library/2.13"
+libpath: "/net/snowwhite/home/jedidiah/R/x86_64-pc-linux-gnu-library/3.3"
 
 # Random seed
 seed: 36087318

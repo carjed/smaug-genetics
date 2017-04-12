@@ -1,29 +1,11 @@
 ##############################################################################
 # Function gets basic summary data from input directory
 ##############################################################################
-getData <- function(summfile, binfile){
-
-  # summfile <- paste0(datadir, "/full.summary")
-  # binfile <- paste0(datadir, "/full_motif_counts_", bin_scheme, ".txt")
-
-  bindir <- gsub("chr.*", "", binfile)
+getData <- function(summfile, bindir){
 
   if(!file.exists(summfile)){
     msg <- paste0("Summary file ", summfile, " does not exist.\n")
   	stop(msg)
-  	# combine_sites <- paste0(
-  	# 	"awk 'FNR==1 && NR!=1{while(/^CHR/) getline; } 1 {print} ' ",
-  	# 	datadir, "/chr*.expanded.summary > ", summfile)
-  	# system(combine_sites)
-  }
-
-  if(!file.exists(binfile)){
-  	cat("Merged bin file does not exist---Merging now...\n")
-  	combine_motifs <- paste0(
-  		"awk 'FNR==1 && NR!=1{while(/^CHR/) getline; } 1 {print} ' ",
-  		# datadir, "/chr*.motif_counts_", bin_scheme, ".txt > ", binfile)
-      bindir, "/chr*fixed*.txt > ", binfile)
-  	system(combine_motifs)
   }
 
   # Read in per-site summary data
@@ -36,8 +18,7 @@ getData <- function(summfile, binfile){
     paste0(parentdir, "/reference_data/testmask2.bed"))
 
   # Read in motif counts per chromosome
-  cat("Reading bin file:", binfile, "...\n")
-  bins <- read.table(binfile, header=T, stringsAsFactors=F, check.names=F)
+  bins <- get_bins(bindir)
 
   # summarize motif counts genome-wide
   cat("Counting motifs...\n")
@@ -57,6 +38,20 @@ getData <- function(summfile, binfile){
 ##############################################################################
 # Helper functions for getData()
 ##############################################################################
+get_bins <- function(bindir){
+  files <- list.files(path=bindir, pattern="motifs_full.txt", full.names=T)
+  if(length(files)!=22){
+    msg <- paste0("Per-chromosome motif counts not initiated. \n")
+    stop(msg)
+  }
+
+  cat("Reading bin files from:", bindir, "...\n")
+  out <- do.call(`rbind`,
+    lapply(files, read.table, header=T, stringsAsFactors=F))
+
+  return(out)
+}
+
 get_mct <- function(bins){
   out <- bins %>%
   	# dplyr::select(CHR, BIN, Sequence=MOTIF, nMotifs=COUNT) %>%

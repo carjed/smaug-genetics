@@ -49,7 +49,7 @@ datadir <- paste0(parentdir,
 	"/output/", nbp, "bp_", bink, "k_singletons_", data)
 
 summfile <- paste0(parentdir, "/summaries/full.summary")
-binfile <- paste0(parentdir, "/motif_counts/bins_full_", nbp, "-mers.txt")
+bindir <- paste0(parentdir, "/motif_counts/", nbp, "-mers/full")
 
 ##############################################################################
 # Read and preprocess data
@@ -59,7 +59,7 @@ binfile <- paste0(parentdir, "/motif_counts/bins_full_", nbp, "-mers.txt")
 # - full_data$mct (motif counts genome-wide)
 # -full_data$aggseq (initial relative mutation rates per K-mer subtype)
 ##############################################################################
-full_data <- getData(summfile, binfile)
+full_data <- getData(summfile, bindir)
 
 ##############################################################################
 # Prepare singleton input for logit model
@@ -113,6 +113,7 @@ for(j in 1:5){
 	# the data_pipeline/augment_summary.pl script with shorter motifs to ensure
 	# proper counting of mutable sites
 	nbptmp <- i*2+1
+	bindir <- paste0(parentdir, "/motif_counts/", nbptmp, "-mers/full")
 
 	gpdat <- full_data$aggseq %>%
 		mutate(Type=gsub("cpg_", "", Category2),
@@ -143,10 +144,12 @@ for(j in 1:5){
 			group_by(Type, Motif) %>%
 			summarise(nERVs=sum(nERVs))
 
-		mcfile <- paste0(parentdir, "/output/", nbptmp, "bp_final_rates.txt")
-		mcount <- read.table(mcfile, header=T, stringsAsFactors=F)
-		mcount <- mcount %>%
-			dplyr::select(Type, Motif, nMotifs)
+		bins <- get_bins(bindir)
+		mcount <- get_mct(bins)
+		# mcfile <- paste0(parentdir, "/output/", nbptmp, "bp_final_rates.txt")
+		# mcount <- read.table(mcfile, header=T, stringsAsFactors=F)
+		# mcount <- mcount %>%
+		# 	dplyr::select(Type, Motif, nMotifs)
 
 		gpdat <- merge(gpdat, mcount, by=c("Type", "Motif")) %>%
 			mutate(ERV_rel_rate=nERVs/nMotifs)
@@ -246,25 +249,9 @@ cat("Done (", tottime, "s)\n")
 # Compare rates between ERVs and common variants
 ##############################################################################
 if(common){
-	commondatadir <- paste0(parentdir,
-		"/output/", nbp, "bp_", bink, "k_common_", data)
-	common_data <- getData(commondatadir, bin_scheme)
-
-	rates7_common <- common_data$aggseq
-	cat("Reading common summary file:", summfile, "...\n")
-	common_sites <- read.table(common_summfile, header=T, stringsAsFactors=F)
-	common_sites$BIN <- ceiling(sites$POS/binw)
-
-	rates7_common <- common_sites %>%
-		dplyr::select(CHR, POS, Motif=Sequence, Type=Category, BIN) %>%
-		group_by(Type, Motif) %>%
-		# summarise(n=n()) %>%
-		summarise(nCommon=n())
-	rates7_common <- merge(rates7_common, mct, by="Motif")
-	rates7_common$Common_rel_rate <- rates7_common$nCommon/rates7_common$nMotifs
 
 	rates7 <- ratelist[[4]]
-	r5m <- merge(rates7, rates7_common, by=c("Type", "Motif"))
+	# r5m <- merge(rates7, rates7_common, by=c("Type", "Motif"))
 
 	avrates <- read.xlsx(paste0(parentdir, "/reference_data/AV_rates.xlsx"),
 		sheet=10)

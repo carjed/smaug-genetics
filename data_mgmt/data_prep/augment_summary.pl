@@ -150,7 +150,7 @@ sub readWindows {
 
     if($chrind eq "chr$chr"){
       $startpos = $line[1]+1;
-      $endpos = $line[2]+2;
+      $endpos = $line[2]+$adj-1;
 
       my $binseq = $fa->get_slice($chr, $startpos, $endpos);
 

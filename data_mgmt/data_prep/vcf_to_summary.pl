@@ -64,7 +64,7 @@ if ($makecopy eq "copy") {
       my $i = $nameparts[0];
       $i =~ s/chr//g;
 
-      my $newvcf = "$vcfdir/$basename.ma.aa.vcf.gz";
+      my $newvcf = "$parentdir/vcfs/$basename.ma.aa.vcf.gz";
       my $ancestral = "$parentdir/reference_data/human_ancestor_GRCh37_e59/human_ancestor_$i.fa.gz";
       my $fasta = "$parentdir/reference_data//human_g1k_v37/chr$i.fasta.gz";
 

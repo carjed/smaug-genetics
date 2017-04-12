@@ -1,17 +1,20 @@
 ##############################################################################
 # Function gets basic summary data from input directory
 ##############################################################################
-getData <- function(datadir, bin_scheme){
+getData <- function(summfile, binfile){
 
-  summfile <- paste0(datadir, "/full.summary")
-  binfile <- paste0(datadir, "/full_motif_counts_", bin_scheme, ".txt")
+  # summfile <- paste0(datadir, "/full.summary")
+  # binfile <- paste0(datadir, "/full_motif_counts_", bin_scheme, ".txt")
+
+  bindir <- gsub("chr.*", "", binfile)
 
   if(!file.exists(summfile)){
-  	cat("Merged summary file does not exist---Merging now...\n")
-  	combine_sites <- paste0(
-  		"awk 'FNR==1 && NR!=1{while(/^CHR/) getline; } 1 {print} ' ",
-  		datadir, "/chr*.expanded.summary > ", summfile)
-  	system(combine_sites)
+    msg <- paste0("Summary file ", summfile, " does not exist.\n")
+  	stop(msg)
+  	# combine_sites <- paste0(
+  	# 	"awk 'FNR==1 && NR!=1{while(/^CHR/) getline; } 1 {print} ' ",
+  	# 	datadir, "/chr*.expanded.summary > ", summfile)
+  	# system(combine_sites)
   }
 
   if(!file.exists(binfile)){
@@ -19,7 +22,7 @@ getData <- function(datadir, bin_scheme){
   	combine_motifs <- paste0(
   		"awk 'FNR==1 && NR!=1{while(/^CHR/) getline; } 1 {print} ' ",
   		# datadir, "/chr*.motif_counts_", bin_scheme, ".txt > ", binfile)
-      datadir, "/chr*.motif_counts.txt > ", binfile)
+      bindir, "/chr*fixed*.txt > ", binfile)
   	system(combine_motifs)
   }
 
@@ -57,8 +60,8 @@ getData <- function(datadir, bin_scheme){
 get_mct <- function(bins){
   out <- bins %>%
   	# dplyr::select(CHR, BIN, Sequence=MOTIF, nMotifs=COUNT) %>%
-  	dplyr::select(CHR, Motif=MOTIF, nMotifs=COUNT) %>%
-  	group_by(Sequence) %>%
+  	dplyr::select(CHR, Motif, nMotifs=COUNT) %>%
+  	group_by(Motif) %>%
   	summarise(nMotifs=sum(nMotifs))
   return(out)
 }

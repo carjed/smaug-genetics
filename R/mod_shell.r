@@ -48,8 +48,8 @@ nbp <- adj*2+1
 datadir <- paste0(parentdir,
 	"/output/", nbp, "bp_", bink, "k_singletons_", data)
 
-summfile <- paste0(datadir, "/full.summary")
-binfile <- paste0(datadir, "/full_motif_counts_", bin_scheme, ".txt")
+summfile <- paste0(parentdir, "/summaries/full.summary")
+binfile <- paste0(parentdir, "/motif_counts/bins_full_", nbp, "mers.txt")
 
 ##############################################################################
 # Read and preprocess data
@@ -59,7 +59,7 @@ binfile <- paste0(datadir, "/full_motif_counts_", bin_scheme, ".txt")
 # - full_data$mct (motif counts genome-wide)
 # -full_data$aggseq (initial relative mutation rates per K-mer subtype)
 ##############################################################################
-full_data <- getData(datadir, bin_scheme)
+full_data <- getData(summfile, binfile)
 
 ##############################################################################
 # Prepare singleton input for logit model

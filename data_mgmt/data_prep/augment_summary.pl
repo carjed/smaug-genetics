@@ -31,7 +31,7 @@ for (sort keys %{$config}) {
 }
 
 # my $adj = $config->{adj};
-my $adj=1;
+# my $adj=1;
 my $mac = $config->{mac};
 my $binw = $config->{binw};
 my $data = $config->{data};
@@ -45,6 +45,7 @@ use lib "$FindBin::Bin/../lib";
 use SmaugFunctions qw(forkExecWait getRef getMotif);
 
 my $chr=$ARGV[0];
+my $adj=$ARGV[1];
 
 ##############################################################################
 #Process inputs
@@ -61,7 +62,7 @@ my $bw=$binw/1000;
 ##############################################################################
 # my $in_path = "/net/bipolar/jedidiah/testpipe/summaries";
 # my $out_path = "$parentdir/output/${subseq}bp_${bw}k_${mac}_${data}2";
-my $out_path = "$parentdir/motif_counts";
+my $out_path = "$parentdir/motif_counts/$subseq-mers/$data";
 make_path("$out_path");
 
 ##############################################################################
@@ -72,8 +73,13 @@ if($count_motifs eq "TRUE"){
 	my $start_time=new Benchmark;
 	print "Counting motifs...\n";
 	# print "seqlength: $length\n";
+  my $fname;
+  if($data eq "mask"){
+    $fname = "$parentdir/reference_data/human_g1k_v37/chr$chr.fasta.gz";
+  } elsif($data eq "full"){
+    $fname = "$parentdir/reference_data/human_g1k_v37_mask/chr$chr.fasta.gz";
+  }
 
-  my $fname = "$parentdir/reference_data/human_g1k_v37/chr$chr.fasta.gz";
   # if ( -e "$fname$chr.fasta.gz" ) { $fname = "$fname$chr.fasta.gz"; }
   my $fa;
 

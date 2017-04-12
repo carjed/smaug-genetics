@@ -26,23 +26,28 @@ my $today = POSIX::strftime('%Y%m%d', localtime);
 my $slurmdir = "$parentdir/output/slurm/$today";
   make_path("$slurmdir");
 
-my $jobcmd="augment_summaries";
-my $builddatbatch = "$parentdir/slurm/$jobcmd.txt";
-open my $mdFH, '>', $builddatbatch or die "can't write to $builddatbatch: $!\n";
-print $mdFH "#!/bin/sh \n";
-print $mdFH "#SBATCH --mail-type=FAIL \n";
-print $mdFH "#SBATCH --mail-user=$email \n";
-print $mdFH "#SBATCH --ntasks=1 \n";
-print $mdFH "#SBATCH --mem=3000 \n";
-print $mdFH "#SBATCH --time 00:20:00 \n";
-print $mdFH "#SBATCH --job-name=$jobcmd \n";
-print $mdFH "#SBATCH --partition=nomosix \n";
-print $mdFH "#SBATCH --array=1-22 \n";
-print $mdFH "#SBATCH --requeue \n";
-# print $mdFH "#SBATCH --exclude=psoriasis-mc01,psoriasis-mc02 \n";
-print $mdFH "#SBATCH --output=\"$slurmdir/slurmJob-%J.out\" --error=\"$slurmdir/slurmJob-%J.err\" \n";
-print $mdFH "srun perl $relpath/augment_summary.pl \${SLURM_ARRAY_TASK_ID}";
-close($mdFH) or die "Unable to close file: $builddatbatch $!";
+for my $adj (1 .. 4) {
+  # my $nbp=$adj*2+1;
 
-my $slurmcmd="sbatch $builddatbatch";
-forkExecWait($slurmcmd);
+  my $jobcmd="augment_summaries_$adj";
+  my $builddatbatch = "$parentdir/slurm/$jobcmd.txt";
+  open my $mdFH, '>', $builddatbatch or die "can't write to $builddatbatch: $!\n";
+  print $mdFH "#!/bin/sh \n";
+  print $mdFH "#SBATCH --mail-type=FAIL \n";
+  print $mdFH "#SBATCH --mail-user=$email \n";
+  print $mdFH "#SBATCH --ntasks=1 \n";
+  print $mdFH "#SBATCH --mem=4000 \n";
+  print $mdFH "#SBATCH --time 00:30:00 \n";
+  print $mdFH "#SBATCH --job-name=$jobcmd \n";
+  print $mdFH "#SBATCH --partition=nomosix \n";
+  print $mdFH "#SBATCH --array=1-22 \n";
+  print $mdFH "#SBATCH --requeue \n";
+  # print $mdFH "#SBATCH --exclude=psoriasis-mc01,psoriasis-mc02 \n";
+  print $mdFH "#SBATCH --output=\"$slurmdir/slurmJob-%J.out\" --error=\"$slurmdir/slurmJob-%J.err\" \n";
+  print $mdFH "srun perl $relpath/augment_summary.pl \${SLURM_ARRAY_TASK_ID} $adj";
+  close($mdFH) or die "Unable to close file: $builddatbatch $!";
+
+  my $slurmcmd="sbatch $builddatbatch";
+  forkExecWait($slurmcmd);
+
+}

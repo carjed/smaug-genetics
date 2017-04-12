@@ -12,6 +12,7 @@ use Getopt::Long;
 use File::Basename;
 use File::Path qw(make_path);
 use FindBin;
+use FaSlice;
 use YAML::XS 'LoadFile';
 use feature 'say';
 
@@ -57,7 +58,7 @@ if ($adj!=0) {
 }
 
 # initialize output file
-my $outfile = "$parentdir/output/logmod_data/chr${chr}_${categ}_full.txt.gz";
+my $outfile = "$parentdir/output/logmod_data/chr${chr}_${categ}_full.txt2.gz";
 
 # Initialize gzipped output
 open(my $OUT, "| gzip -c > $outfile") or

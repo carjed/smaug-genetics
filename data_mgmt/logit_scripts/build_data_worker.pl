@@ -45,19 +45,19 @@ if(substr($categ, 0, 2) eq "AT"){
 }
 
 # Initialize gzipped output
-my $outfile = "$parentdir/output/logmod_data/chr${chr}_${categ}_full.txt.gz";
-open(my $OUT, "| gzip -c > $outfile") or
-  die "Could not write to $outfile: $!";
+# my $outfile = "$parentdir/output/logmod_data/chr${chr}_${categ}_full.txt.gz";
+# open(my $outFH, "| gzip -c > $outfile") or
+#   die "Could not write to $outfile: $!";
 
 # initialize singleton file
 my $f_positions = "$parentdir/output/logmod_data/chr${chr}_${categ}_sites.txt";
-open my $positions, '<', $f_positions or die "can't open $f_positions: $!";
+open my $posFH, '<', $f_positions or die "can't open $f_positions: $!";
 
 # Create hash keyed by singleton positions, with input line as value
 print "Indexing chr${chr}: ${categ} singleton positions...\n";
 my @POS;
 my %poshash=();
-while (<$positions>) {
+while (<$posFH>) {
 	chomp;
 	my @line=split(/\t/, $_);
 	my $key=$line[1];
@@ -69,12 +69,10 @@ while (<$positions>) {
 # hash depth file
 my $dpdir="$parentdir/output/glf_depth/meandp";
 my %dphash=();
-my $chrfile="$dpdir/chr$chr.dp";
-my $chrFH;
-open($chrFH, '<', $chrfile) or
-	die "Unable to open file $chrfile : $!";
+my $dpfile="$dpdir/chr$chr.dp";
+open my $dpFH, '<', $chrfile or die "Unable to open file $dpfile : $!";
 
-while(my $dp=<$chrFH>){
+while(my $dp=<$dpFH>){
 	chomp($dp);
 	my @dpline=split(/\t/, $dp);
 	my $dp_pos=$dpline[0];
@@ -99,6 +97,9 @@ print "Writing chr${chr}: ${categ} data file...\n";
 my $fixedfile = "$parentdir/reference_data/genome.1000kb.sorted.bed";
 open my $fixedFH, '<', $fixedfile or die "$fixedfile: $!";
 # $fa = FaSlice->new(file=>$fname, oob=>'N', size=>$binw);
+
+my $outpath = "$parentdir/output/logmod_data/motifs3/$categ";
+make_path($outpath);
 
 while(<$fixedFH>){
 	chomp;
@@ -128,7 +129,16 @@ while(<$fixedFH>){
 			# query depth hash and write if value exists
 			if(exists($dphash{$poslim}) && defined($outline)){
 				my $dpout=$dphash{$poslim};
-				print $OUT "$outline\t$dpout\n";
+
+				my @cols = split(/\t/, $outline);
+				my $motif = $cols[2];
+				$motif = substr($motif, 0, 7);
+
+				my $outfile = "$outpath/${categ}_$motif.txt.gz";
+				open(my $outFH, "| gzip -c > $outfile") or
+				  die "Could not write to $outfile: $!";
+
+				print $outFH "$outline\t$dpout\n";
 			}
 		}
 	}

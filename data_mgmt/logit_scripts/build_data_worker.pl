@@ -94,12 +94,15 @@ my $fa = FaSlice->new(file=>$fname, oob=>'N', size=>1_000_000);
 # Write data files
 print "Writing chr${chr}: ${categ} data file...\n";
 
-my $fixedfile = "$parentdir/reference_data/genome.1000kb.sorted.bed";
+my $fixedfile = "$parentdir/reference_data/genome.100kb.sorted.bed";
 open my $fixedFH, '<', $fixedfile or die "$fixedfile: $!";
 # $fa = FaSlice->new(file=>$fname, oob=>'N', size=>$binw);
 
-my $outpath = "$parentdir/output/logmod_data/motifs3";
-make_path($outpath);
+my $chunkpath = "$parentdir/output/logmod_data/chr$chr";
+make_path($chunkpath);
+
+my $splitpath = "$parentdir/output/logmod_data/motifs3";
+make_path($splitpath);
 
 my $i=1;
 while(<$fixedFH>){
@@ -110,7 +113,7 @@ while(<$fixedFH>){
 	my $endpos = $line[2];
 
 
-	my $outfile = "$outpath/$categ/$chrind.$startpos-$endpos.${categ}.txt";
+	my $outfile = "$chunkpath/$chrind/$chrind.$startpos-$endpos.${categ}.txt";
 
 	if($chrind eq "chr$chr"){
 

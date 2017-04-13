@@ -123,7 +123,7 @@ foreach my $chr (1 .. 22){
 			print "Writing chunk $i output file: $outfile...\n";
 			open my $outFH, '>', $outfile or die "Could not write to $outfile: $!";
 
-			for my $pos ($startpos+$adj .. $endpos-$adj){
+			for my $pos ($startpos+$adj .. $endpos){
 				# my $base = $fa->get_base($chr, $pos);
 				my $motif = $fa->get_slice($chr, $pos-$adj, $pos+$adj);
 				my $base = substr($motif, 3, 1);

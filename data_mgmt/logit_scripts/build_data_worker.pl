@@ -28,21 +28,21 @@ my $parentdir = $config->{parentdir};
 use lib "$FindBin::Bin/../lib";
 use SmaugFunctions qw(forkExecWait getMotif);
 
-my $catind = $ARGV[0]-1;
-
-my @categs = qw( AT_CG AT_GC AT_TA GC_AT GC_CG GC_TA );
-
-my $categ = $categs[$catind];
-
-my $b1;
-my $b2;
-if(substr($categ, 0, 2) eq "AT"){
-	$b1="A";
-	$b2="T";
-} elsif(substr($categ, 0, 2) eq "GC") {
-	$b1="C";
-	$b2="G";
-}
+# my $catind = $ARGV[0]-1;
+#
+# my @categs = qw( AT_CG AT_GC AT_TA GC_AT GC_CG GC_TA );
+#
+# my $categ = $categs[$catind];
+#
+# my $b1;
+# my $b2;
+# if(substr($categ, 0, 2) eq "AT"){
+# 	$b1="A";
+# 	$b2="T";
+# } elsif(substr($categ, 0, 2) eq "GC") {
+# 	$b1="C";
+# 	$b2="G";
+# }
 
 # Initialize gzipped output
 # my $outfile = "$parentdir/output/logmod_data/chr${chr}_${categ}_full.txt.gz";
@@ -52,8 +52,12 @@ if(substr($categ, 0, 2) eq "AT"){
 foreach my $chr (1 .. 22){
 
 	# Create hash keyed by singleton positions, with input line as value
-	print "Indexing chr${chr}: ${categ} singleton positions...\n";
-	my $posfile = "$parentdir/output/logmod_data/chr${chr}_${categ}_sites.txt";
+	# print "Indexing chr${chr}: ${categ} singleton positions...\n";
+
+	# my $posfile = "$parentdir/output/logmod_data/chr${chr}_${categ}_sites.txt";
+	my $posfile = "$parentdir/output/logmod_data/chr${chr}_sites.txt";
+	print "Indexing chr${chr} singleton file: $posfile...\n";
+
 	open my $posFH, '<', $posfile or die "can't open $posfile: $!";
 	my %poshash=();
 
@@ -82,7 +86,8 @@ foreach my $chr (1 .. 22){
 	my $chunkpath = "$parentdir/output/logmod_data/chr$chr";
 	make_path($chunkpath);
 
-	my $splitpath = "$parentdir/output/logmod_data/motifs3/$categ";
+	# my $splitpath = "$parentdir/output/logmod_data/motifs3/$categ";
+	my $splitpath = "$parentdir/output/logmod_data/motifs3";
 	make_path($splitpath);
 
 	my $i = 1;
@@ -93,7 +98,8 @@ foreach my $chr (1 .. 22){
 		my $startpos = $binfields[1]+1;
 		my $endpos = $binfields[2];
 
-		my $outfile = "$chunkpath/$chrind.$startpos-$endpos.${categ}.txt";
+		# my $outfile = "$chunkpath/$chrind.$startpos-$endpos.${categ}.txt";
+		my $outfile = "$chunkpath/$chrind.$startpos-$endpos.txt";
 
 		if($chrind eq "chr$chr"){
 
@@ -122,13 +128,14 @@ foreach my $chr (1 .. 22){
 				my $poslim = rounddown($pos,10);
 				my $outline;
 
-				if(($base =~ /$b1|$b2/) & (!exists $poshash{$pos})){
+				# if(($base =~ /$b1|$b2/) & (!exists $poshash{$pos})){
+				if((!exists $poshash{$pos})){
 					my $motif = $fa->get_slice($chr, $pos-$adj, $pos+$adj);
 	        $motif = getMotif($motif, $adj);
 
 					# write line if site has non-N context
 					if($motif =~ /\A [ACGT()]+\z/ix){
-						$outline = "$chr\t$pos\t$motif\t0\t";
+						$outline = "$chr\t$pos\t$motif\t0\t0\t0\t0\t0\t0\t";
 					}
 				} elsif(exists $poshash{$pos}){
 					$outline = "$poshash{$pos}\t";
@@ -148,7 +155,8 @@ foreach my $chr (1 .. 22){
 			print "Splitting chunk $i output file: $outfile...\n";
 			# my $fullfile = "$parentdir/output/logmod_data/chr${chr}_${categ}_full.txt.gz";
 			# my $subcmd = "sort -k3 $outfile | awk '{print >> \"$splitpath/${categ}_\" substr(\$3, 1, 7) \".txt\"}'";
-			my $subcmd = "cat $outfile | awk '{print >> \"$splitpath/${categ}_\" substr(\$3, 1, 7) \".txt\"}'";
+			my $subcmd = "sort -k3 $outfile | awk '{print >> \"$splitpath/\" substr(\$3, 1, 7) \".txt\"}'";
+			# my $subcmd = "cat $outfile | awk '{print >> \"$splitpath/${categ}_\" substr(\$3, 1, 7) \".txt\"}'";
 			forkExecWait($subcmd);
 			$i++;
 		}

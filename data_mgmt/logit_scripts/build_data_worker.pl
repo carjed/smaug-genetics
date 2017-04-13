@@ -135,8 +135,7 @@ while(<$fixedFH>){
 				$motif = substr($motif, 0, 7);
 
 				my $outfile = "$outpath/${categ}_$motif.txt.gz";
-				open(my $outFH, "| gzip -c > $outfile") or
-				  die "Could not write to $outfile: $!";
+				open my $outFH, '>>', $outfile or die "Could not write to $outfile: $!";
 
 				print $outFH "$outline\t$dpout\n";
 			}

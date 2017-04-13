@@ -134,7 +134,7 @@ while(<$fixedFH>){
 				my $motif = $cols[2];
 				$motif = substr($motif, 0, 7);
 
-				my $outfile = "$outpath/${categ}_$motif.txt.gz";
+				my $outfile = "$outpath/${categ}_$motif.txt";
 				open my $outFH, '>>', $outfile or die "Could not write to $outfile: $!";
 
 				print $outFH "$outline\t$dpout\n";

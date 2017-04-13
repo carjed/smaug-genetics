@@ -139,20 +139,20 @@ foreach my $chr (reverse(1 .. 22)){
 				my $base = substr($motif, 3, 1);
 
 				my $outline;
-
+				my $poslim;
 				if(($motif =~ /\A [ACGT()]+\z/ix) && (!exists $poshash{$pos})){
 					my $fullmotif = getMotif($motif, $adj);
 					$outline = "$chr\t$pos\t$fullmotif\t0\t0\t0\t0\t0\t0\t";
+					$poslim = rounddown($pos,10);
 
 				} elsif(exists $poshash{$pos}){
 					$outline = "$poshash{$pos}\t";
+					$poslim = rounddown($pos,10);
 				}
 
 				# query depth hash and write if value exists
 				if(exists($dphash{$poslim}) && defined($outline)){
-					my $poslim = rounddown($pos,10);
 					my $dpout = $dphash{$poslim};
-
 					my @cols = split(/\t/, $outline);
 					print $outFH "$outline\t$dpout\n";
 				}

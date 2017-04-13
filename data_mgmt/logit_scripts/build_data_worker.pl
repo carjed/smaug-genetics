@@ -50,8 +50,8 @@ if(substr($categ, 0, 2) eq "AT"){
 #   die "Could not write to $outfile: $!";
 
 # initialize singleton file
-my $f_positions = "$parentdir/output/logmod_data/chr${chr}_${categ}_sites.txt";
-open my $posFH, '<', $f_positions or die "can't open $f_positions: $!";
+my $posfile = "$parentdir/output/logmod_data/chr${chr}_${categ}_sites.txt";
+open my $posFH, '<', $posfile or die "can't open $posfile: $!";
 
 # Create hash keyed by singleton positions, with input line as value
 print "Indexing chr${chr}: ${categ} singleton positions...\n";
@@ -70,7 +70,7 @@ while (<$posFH>) {
 my $dpdir="$parentdir/output/glf_depth/meandp";
 my %dphash=();
 my $dpfile="$dpdir/chr$chr.dp";
-open my $dpFH, '<', $chrfile or die "Unable to open file $dpfile : $!";
+open my $dpFH, '<', $dpfile or die "Unable to open file $dpfile : $!";
 
 while(my $dp=<$dpFH>){
 	chomp($dp);

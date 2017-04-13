@@ -28,11 +28,11 @@ my $parentdir = $config->{parentdir};
 use lib "$FindBin::Bin/../lib";
 use SmaugFunctions qw(forkExecWait getMotif);
 
-my $chr;
-my $categ;
+my $catind = $ARGV[0]-1;
 
-GetOptions ('chr=s'=> \$chr,
-'categ=s' => \$categ);
+my @categs = qw( AT_CG AT_GC AT_TA GC_AT GC_CG GC_TA );
+
+my $categ = $categs[$catind];
 
 my $b1;
 my $b2;
@@ -49,121 +49,112 @@ if(substr($categ, 0, 2) eq "AT"){
 # open(my $outFH, "| gzip -c > $outfile") or
 #   die "Could not write to $outfile: $!";
 
-# initialize singleton file
-my $posfile = "$parentdir/output/logmod_data/chr${chr}_${categ}_sites.txt";
-open my $posFH, '<', $posfile or die "can't open $posfile: $!";
+foreach my $chr (1 .. 22){
 
-# Create hash keyed by singleton positions, with input line as value
-print "Indexing chr${chr}: ${categ} singleton positions...\n";
-my @POS;
-my %poshash=();
-while (<$posFH>) {
-	chomp;
-	my @line=split(/\t/, $_);
-	my $key=$line[1];
-	push (@POS, $key);
+	# Create hash keyed by singleton positions, with input line as value
+	print "Indexing chr${chr}: ${categ} singleton positions...\n";
+	my $posfile = "$parentdir/output/logmod_data/chr${chr}_${categ}_sites.txt";
+	open my $posFH, '<', $posfile or die "can't open $posfile: $!";
+	my %poshash=();
 
-	$poshash{$key}=$_;
-}
+	while (my $posline=<$posFH>) {
+		chomp($posline);
+		my @posfields=split(/\t/, $posline);
+		my $key = $posfields[1];
 
-# hash depth file
-my $dpdir="$parentdir/output/glf_depth/meandp";
-my %dphash=();
-my $dpfile="$dpdir/chr$chr.dp";
-open my $dpFH, '<', $dpfile or die "Unable to open file $dpfile : $!";
-
-while(my $dp=<$dpFH>){
-	chomp($dp);
-	my @dpline=split(/\t/, $dp);
-	my $dp_pos=$dpline[0];
-	my $depth=$dpline[1];
-
-	$dphash{$dp_pos}=$depth;
-}
-
-print "Getting reference for chr$chr...\n";
-my $fname;
-if($data eq "full"){
-	$fname = "$parentdir/reference_data/human_g1k_v37/chr$chr.fasta.gz";
-} elsif($data eq "mask"){
-	$fname = "$parentdir/reference_data/human_g1k_v37_mask/chr$chr.fasta.gz";
-}
-
-my $fa = FaSlice->new(file=>$fname, oob=>'N', size=>1_000_000);
-
-# Write data files
-print "Writing chr${chr}: ${categ} data file...\n";
-
-my $fixedfile = "$parentdir/reference_data/genome.10000kb.sorted.bed";
-open my $fixedFH, '<', $fixedfile or die "$fixedfile: $!";
-# $fa = FaSlice->new(file=>$fname, oob=>'N', size=>$binw);
-
-my $chunkpath = "$parentdir/output/logmod_data/chr$chr";
-make_path($chunkpath);
-
-my $splitpath = "$parentdir/output/logmod_data/motifs3/$categ";
-make_path($splitpath);
-
-my $i=1;
-while(<$fixedFH>){
-	chomp;
-	my @line=split(/\t/, $_);
-	my $chrind=$line[0];
-	my $startpos = $line[1]+1;
-	my $endpos = $line[2];
-
-
-	my $outfile = "$chunkpath/$chrind.$startpos-$endpos.${categ}.txt";
-
-	if($chrind eq "chr$chr"){
-
-		print "Writing chunk $i...\n";
-		open my $outFH, '>>', $outfile or die "Could not write to $outfile: $!";
-
-		for my $pos ($startpos .. $endpos){
-			my $base = $fa->get_base($chr, $pos);
-			my $poslim=rounddown($pos,10);
-			my $outline;
-
-			if(($base =~ /$b1|$b2/) & (!exists $poshash{$pos})){
-				my $motif = $fa->get_slice($chr, $pos-$adj, $pos+$adj);
-        $motif = getMotif($motif, $adj);
-
-				# write line if site has non-N context
-				if($motif =~ /\A [ACGT()]+\z/ix){
-					$outline = "$chr\t$pos\t$motif\t0\t";
-				}
-			} elsif(exists $poshash{$pos}){
-				$outline = "$poshash{$pos}\t";
-			}
-
-			# query depth hash and write if value exists
-			if(exists($dphash{$poslim}) && defined($outline)){
-				my $dpout=$dphash{$poslim};
-
-				my @cols = split(/\t/, $outline);
-				# my $motif = $cols[2];
-				# $motif = substr($motif, 2, 3);
-
-
-
-				print $outFH "$outline\t$dpout\n";
-			}
-		}
-
-		$i++;
-		# my $outpath = "$parentdir/output/logmod_data/motifs2/$categ";
-		close $outFH or warn $! ? "Error closing: $!" : "Exit status $? ";
-
-		print "Splitting chunk by motif...\n";
-		# my $fullfile = "$parentdir/output/logmod_data/chr${chr}_${categ}_full.txt.gz";
-		my $subcmd = "sort -k3 $outfile | awk '{print >> \"$splitpath/${categ}_\" substr(\$3, 1, 7) \".txt\"}'";
-		forkExecWait($subcmd);
-
+		$poshash{$key} = $posline;
 	}
-}
 
-print "Done\n";
+	# hash depth file
+	print "Indexing chr${chr}: depth file...\n";
+	my $dpdir = "$parentdir/output/glf_depth/meandp";
+	my $dpfile = "$dpdir/chr$chr.dp";
+	open my $dpFH, '<', $dpfile or die "Unable to open file $dpfile : $!";
+	my %dphash=();
+
+	while(my $dpline=<$dpFH>){
+		chomp($dpline);
+		my @dpfields = split(/\t/, $dpline);
+		my $dp_pos = $dpfields[0];
+		my $depth = $dpfields[1];
+
+		$dphash{$dp_pos}=$depth;
+	}
+
+	print "Getting chr${chr}: reference sequence...\n";
+	my $fname;
+	if($data eq "full"){
+		$fname = "$parentdir/reference_data/human_g1k_v37/chr$chr.fasta.gz";
+	} elsif($data eq "mask"){
+		$fname = "$parentdir/reference_data/human_g1k_v37_mask/chr$chr.fasta.gz";
+	}
+
+	my $fa = FaSlice->new(file=>$fname, oob=>'N', size=>1_000_000);
+
+	my $fixedfile = "$parentdir/reference_data/genome.10000kb.sorted.bed";
+	open my $fixedFH, '<', $fixedfile or die "$fixedfile: $!";
+	# $fa = FaSlice->new(file=>$fname, oob=>'N', size=>$binw);
+
+	my $chunkpath = "$parentdir/output/logmod_data/chr$chr";
+	make_path($chunkpath);
+
+	my $splitpath = "$parentdir/output/logmod_data/motifs3/$categ";
+	make_path($splitpath);
+
+	my $i = 1;
+	while(my $binline=<$fixedFH>){
+		chomp($binline);
+		my @binfields = split(/\t/, $binline);
+		my $chrind = $binfields[0];
+		my $startpos = $binfields[1]+1;
+		my $endpos = $binfields[2];
+
+		my $outfile = "$chunkpath/$chrind.$startpos-$endpos.${categ}.txt";
+
+		if($chrind eq "chr$chr"){
+
+			print "Writing chunk $i output to $outfile...\n";
+			open my $outFH, '>>', $outfile or die "Could not write to $outfile: $!";
+
+			for my $pos ($startpos .. $endpos){
+				my $base = $fa->get_base($chr, $pos);
+				my $poslim = rounddown($pos,10);
+				my $outline;
+
+				if(($base =~ /$b1|$b2/) & (!exists $poshash{$pos})){
+					my $motif = $fa->get_slice($chr, $pos-$adj, $pos+$adj);
+	        $motif = getMotif($motif, $adj);
+
+					# write line if site has non-N context
+					if($motif =~ /\A [ACGT()]+\z/ix){
+						$outline = "$chr\t$pos\t$motif\t0\t";
+					}
+				} elsif(exists $poshash{$pos}){
+					$outline = "$poshash{$pos}\t";
+				}
+
+				# query depth hash and write if value exists
+				if(exists($dphash{$poslim}) && defined($outline)){
+					my $dpout = $dphash{$poslim};
+
+					my @cols = split(/\t/, $outline);
+					print $outFH "$outline\t$dpout\n";
+				}
+			}
+
+			$i++;
+			close $outFH or warn $! ? "Error closing: $!" : "Exit status $? ";
+
+			print "Splitting $outfile by motif...\n";
+			# my $fullfile = "$parentdir/output/logmod_data/chr${chr}_${categ}_full.txt.gz";
+			my $subcmd = "sort -k3 $outfile | awk '{print >> \"$splitpath/${categ}_\" substr(\$3, 1, 7) \".txt\"}'";
+			forkExecWait($subcmd);
+
+		}
+	}
+
+	print "Done\n";
+}
 
 ##############################################################################
 # Rounding subroutines

@@ -121,7 +121,7 @@ foreach my $chr (1 .. 22){
 			}
 
 			print "Writing chunk $i output file: $outfile...\n";
-			open my $outFH, '>>', $outfile or die "Could not write to $outfile: $!";
+			open my $outFH, '>', $outfile or die "Could not write to $outfile: $!";
 
 			for my $pos ($startpos .. $endpos){
 				my $base = $fa->get_base($chr, $pos);

@@ -129,7 +129,7 @@ foreach my $chr (1 .. 22){
 				my $outline;
 
 				# if(($base =~ /$b1|$b2/) & (!exists $poshash{$pos})){
-				if((!exists $poshash{$pos})){
+				if(($base =~ /[ACGT]/) && (!exists $poshash{$pos})){
 					my $motif = $fa->get_slice($chr, $pos-$adj, $pos+$adj);
 	        $motif = getMotif($motif, $adj);
 

@@ -155,7 +155,7 @@ foreach my $chr (1 .. 22){
 			print "Splitting chunk $i output file: $outfile...\n";
 			# my $fullfile = "$parentdir/output/logmod_data/chr${chr}_${categ}_full.txt.gz";
 			# my $subcmd = "sort -k3 $outfile | awk '{print >> \"$splitpath/${categ}_\" substr(\$3, 1, 7) \".txt\"}'";
-			my $subcmd = "sort -k3,3 $outfile | awk '{print >> \"$splitpath/\" substr(\$3, 1, 7) \".txt\"}'";
+			my $subcmd = "sort -s -k3,3 $outfile | awk '{print >> \"$splitpath/\" substr(\$3, 1, 7) \".txt\"}'";
 			# my $subcmd = "cat $outfile | awk '{print >> \"$splitpath/${categ}_\" substr(\$3, 1, 7) \".txt\"}'";
 			forkExecWait($subcmd);
 			$i++;

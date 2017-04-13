@@ -49,7 +49,7 @@ use SmaugFunctions qw(forkExecWait getMotif);
 # open(my $outFH, "| gzip -c > $outfile") or
 #   die "Could not write to $outfile: $!";
 
-foreach my $chr (1 .. 22){
+foreach my $chr (reverse(1 .. 22)){
 
 	# Create hash keyed by singleton positions, with input line as value
 	# print "Indexing chr${chr}: ${categ} singleton positions...\n";

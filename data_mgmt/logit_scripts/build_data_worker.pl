@@ -157,7 +157,7 @@ while(<$fixedFH>){
 
 		print "Splitting chunk by motif...\n";
 		# my $fullfile = "$parentdir/output/logmod_data/chr${chr}_${categ}_full.txt.gz";
-		my $subcmd = "sort -k3 $outfile | awk '{print >> \"$outpath/$categ/${categ}_\" substr(\$3, 1, 7) \".txt\"}'";
+		my $subcmd = "sort -k3 $outfile | awk '{print >> \"$splitpath/$categ/${categ}_\" substr(\$3, 1, 7) \".txt\"}'";
 		forkExecWait($subcmd);
 
 	}

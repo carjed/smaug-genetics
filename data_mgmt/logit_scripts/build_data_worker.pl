@@ -132,7 +132,7 @@ while(<$fixedFH>){
 
 				my @cols = split(/\t/, $outline);
 				my $motif = $cols[2];
-				$motif = substr($motif, 0, 7);
+				$motif = substr($motif, 2, 3);
 
 				my $outfile = "$outpath/${categ}_$motif.txt";
 				open my $outFH, '>>', $outfile or die "Could not write to $outfile: $!";

@@ -65,22 +65,6 @@ foreach my $chr (1 .. 22){
 		$poshash{$key} = $posline;
 	}
 
-	# hash depth file
-	print "Indexing chr${chr}: depth file...\n";
-	my $dpdir = "$parentdir/output/glf_depth/meandp";
-	my $dpfile = "$dpdir/chr$chr.dp";
-	open my $dpFH, '<', $dpfile or die "Unable to open file $dpfile : $!";
-	my %dphash=();
-
-	while(my $dpline=<$dpFH>){
-		chomp($dpline);
-		my @dpfields = split(/\t/, $dpline);
-		my $dp_pos = $dpfields[0];
-		my $depth = $dpfields[1];
-
-		$dphash{$dp_pos}=$depth;
-	}
-
 	print "Getting chr${chr}: reference sequence...\n";
 	my $fname;
 	if($data eq "full"){
@@ -91,7 +75,7 @@ foreach my $chr (1 .. 22){
 
 	my $fa = FaSlice->new(file=>$fname, oob=>'N', size=>1_000_000);
 
-	my $fixedfile = "$parentdir/reference_data/genome.10000kb.sorted.bed";
+	my $fixedfile = "$parentdir/reference_data/genome.5000kb.sorted.bed";
 	open my $fixedFH, '<', $fixedfile or die "$fixedfile: $!";
 	# $fa = FaSlice->new(file=>$fname, oob=>'N', size=>$binw);
 
@@ -112,6 +96,23 @@ foreach my $chr (1 .. 22){
 		my $outfile = "$chunkpath/$chrind.$startpos-$endpos.${categ}.txt";
 
 		if($chrind eq "chr$chr"){
+
+			# hash depth file
+			my $dpdir = "$parentdir/output/glf_depth/meandp";
+			# /net/bipolar/jedidiah/mutation/output/glf_depth/meandp/chr20.5000001.10000000.txt
+			my $dpfile = "$dpdir/chr$chr.$startpos.$endpos.txt";
+			print "Indexing chunk $i depth file: $dpfile...\n";
+			open my $dpFH, '<', $dpfile or die "Unable to open file $dpfile : $!";
+			my %dphash=();
+
+			while(my $dpline=<$dpFH>){
+				chomp($dpline);
+				my @dpfields = split(/\t/, $dpline);
+				my $dp_pos = $dpfields[0];
+				my $depth = $dpfields[1];
+
+				$dphash{$dp_pos}=$depth;
+			}
 
 			print "Writing chunk $i output to $outfile...\n";
 			open my $outFH, '>>', $outfile or die "Could not write to $outfile: $!";

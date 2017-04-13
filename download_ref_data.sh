@@ -40,6 +40,8 @@ curl -s "https://genome.ucsc.edu/goldenpath/help/hg19.chrom.sizes" > "$refdir/hg
 # Make fixed-width windows
 bedtools makewindows -g "$refdir/hg19.genome" -w 1000000 | grep -Ev "_|X|Y|M" | sort -k 1,1 -k2,2n > "$refdir/genome.1000kb.sorted.bed"
 
+bedtools makewindows -g "$refdir/hg19.genome" -w 5000000 | grep -Ev "_|X|Y|M" | sort -k 1,1 -k2,2n > "$refdir/genome.5000kb.sorted.bed"
+
 bedtools makewindows -g "$refdir/hg19.genome" -w 100000 | grep -Ev "_|X|Y|M" | sort -k 1,1 -k2,2n > "$refdir/genome.100kb.sorted.bed"
 
 bedtools makewindows -g "$refdir/hg19.genome" -w 10000 | grep -Ev "_|X|Y|M" | sort -k 1,1 -k2,2n > "$refdir/genome.10kb.sorted.bed"

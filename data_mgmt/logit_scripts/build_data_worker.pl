@@ -94,7 +94,7 @@ my $fa = FaSlice->new(file=>$fname, oob=>'N', size=>1_000_000);
 # Write data files
 print "Writing chr${chr}: ${categ} data file...\n";
 
-my $fixedfile = "$parentdir/reference_data/genome.100kb.sorted.bed";
+my $fixedfile = "$parentdir/reference_data/genome.5000kb.sorted.bed";
 open my $fixedFH, '<', $fixedfile or die "$fixedfile: $!";
 # $fa = FaSlice->new(file=>$fname, oob=>'N', size=>$binw);
 

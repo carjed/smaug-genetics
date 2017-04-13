@@ -97,6 +97,7 @@ foreach my $chr (reverse(1 .. 22)){
 		my $chrind = $binfields[0];
 		my $startpos = $binfields[1]+1;
 		my $endpos = $binfields[2];
+		my $length = $endpos-$startpos+1;
 
 		# my $outfile = "$chunkpath/$chrind.$startpos-$endpos.${categ}.txt";
 		my $outfile = "$chunkpath/$chrind.$startpos-$endpos.txt";
@@ -123,18 +124,24 @@ foreach my $chr (reverse(1 .. 22)){
 			print "Writing chunk $i output file: $outfile...\n";
 			open my $outFH, '>', $outfile or die "Could not write to $outfile: $!";
 
-			for my $pos ($startpos+$adj .. $endpos){
+			my $loopstart = $startpos;
+			my $loopend = $endpos;
+
+			if($startpos <= $adj){
+				$loopstart = $startpos+$adj;
+			} elsif($length != 5000000) {
+				$loopend = $endpos-$adj;
+			}
+
+			for my $pos ($loopstart .. $loopend){
 				# my $base = $fa->get_base($chr, $pos);
 				my $motif = $fa->get_slice($chr, $pos-$adj, $pos+$adj);
 				my $base = substr($motif, 3, 1);
 
-				my $poslim = rounddown($pos,10);
 				my $outline;
 
-				# if(($base =~ /$b1|$b2/) & (!exists $poshash{$pos})){
 				if(($motif =~ /\A [ACGT()]+\z/ix) && (!exists $poshash{$pos})){
-					# my $motif = $fa->get_slice($chr, $pos-$adj, $pos+$adj);
-	        my $fullmotif = getMotif($motif, $adj);
+					my $fullmotif = getMotif($motif, $adj);
 					$outline = "$chr\t$pos\t$fullmotif\t0\t0\t0\t0\t0\t0\t";
 
 				} elsif(exists $poshash{$pos}){
@@ -143,6 +150,7 @@ foreach my $chr (reverse(1 .. 22)){
 
 				# query depth hash and write if value exists
 				if(exists($dphash{$poslim}) && defined($outline)){
+					my $poslim = rounddown($pos,10);
 					my $dpout = $dphash{$poslim};
 
 					my @cols = split(/\t/, $outline);
@@ -155,7 +163,7 @@ foreach my $chr (reverse(1 .. 22)){
 			print "Splitting chunk $i output file: $outfile...\n";
 			# my $fullfile = "$parentdir/output/logmod_data/chr${chr}_${categ}_full.txt.gz";
 			# my $subcmd = "sort -k3 $outfile | awk '{print >> \"$splitpath/${categ}_\" substr(\$3, 1, 7) \".txt\"}'";
-			my $subcmd = "sort -s -k3,3 $outfile | awk '{print >> \"$splitpath/\" substr(\$3, 1, 7) \".txt\"}'";
+			my $subcmd = "sort -k3,3 $outfile | awk '{print >> \"$splitpath/\" substr(\$3, 1, 7) \".txt\"}'";
 			# my $subcmd = "cat $outfile | awk '{print >> \"$splitpath/${categ}_\" substr(\$3, 1, 7) \".txt\"}'";
 			forkExecWait($subcmd);
 			$i++;

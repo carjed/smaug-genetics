@@ -70,27 +70,22 @@ if(build_logit){
 	mut_cats <- c("AT_CG", "AT_GC", "AT_TA", "GC_AT", "GC_CG", "GC_TA")
 
 	i<-3
-	for(categ in mut_cats){
-		cat("Extracting", categ, "sites...\n")
-		summfile1 <- full_data$sites %>%
+	for(chr in 1:22){
+		posfile <- paste0(parentdir,
+			"/output/logmod_data/chr", chr, "_sites.txt")
+		dat <- full_data$sites %>%
 		# summfile1 <- sites %>%
-			filter(Category==categ) %>%
+			# filter(Category==categ) %>%
+			filter(CHR==chr) %>%
 			mutate(Type=gsub("cpg_", "", Category2),
 				SEQA=substr(Motif, cbp-i, cbp+i),
 				SEQB=substr(Motif, cbp*3-i, cbp*3+i),
 				Sequence=paste0(SEQA, "(", SEQB, ")")) %>%
-			dplyr::select(CHR, POS, Sequence) %>%
-			mutate(mut=1)
+			dplyr::select(CHR, POS, Sequence, Type) %>%
+			mutate(mut=1) %>%
+			spread(Type, mut, fill=0)
 
-		for(chr in 1:22){
-			posfile <- paste0(parentdir,
-					"/output/logmod_data/chr", chr, "_", categ,"_sites.txt")
-			dat <- summfile1 %>%
-				filter(CHR==chr) %>%
-				arrange(POS)
-
-			write.table(dat, posfile, col.names=F, row.names=F, quote=F, sep="\t")
-		}
+		write.table(dat, posfile, col.names=F, row.names=F, quote=F, sep="\t")
 	}
 }
 

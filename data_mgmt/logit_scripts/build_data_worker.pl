@@ -101,7 +101,7 @@ open my $fixedFH, '<', $fixedfile or die "$fixedfile: $!";
 my $chunkpath = "$parentdir/output/logmod_data/chr$chr";
 make_path($chunkpath);
 
-my $splitpath = "$parentdir/output/logmod_data/motifs3";
+my $splitpath = "$parentdir/output/logmod_data/motifs3/$categ";
 make_path($splitpath);
 
 my $i=1;
@@ -157,7 +157,7 @@ while(<$fixedFH>){
 
 		print "Splitting chunk by motif...\n";
 		# my $fullfile = "$parentdir/output/logmod_data/chr${chr}_${categ}_full.txt.gz";
-		my $subcmd = "sort -k3 $outfile | awk '{print >> \"$splitpath/$categ/${categ}_\" substr(\$3, 1, 7) \".txt\"}'";
+		my $subcmd = "sort -k3 $outfile | awk '{print >> \"$splitpath/${categ}_\" substr(\$3, 1, 7) \".txt\"}'";
 		forkExecWait($subcmd);
 
 	}

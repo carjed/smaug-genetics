@@ -98,17 +98,25 @@ my $fixedfile = "$parentdir/reference_data/genome.1000kb.sorted.bed";
 open my $fixedFH, '<', $fixedfile or die "$fixedfile: $!";
 # $fa = FaSlice->new(file=>$fname, oob=>'N', size=>$binw);
 
-my $outpath = "$parentdir/output/logmod_data/motifs3/$categ";
+my $outpath = "$parentdir/output/logmod_data/motifs3";
 make_path($outpath);
 
+my $i=1;
 while(<$fixedFH>){
 	chomp;
 	my @line=split(/\t/, $_);
 	my $chrind=$line[0];
+	my $startpos = $line[1]+1;
+	my $endpos = $line[2];
+
+
+	my $outfile = "$outpath/$categ/$chrind.$startpos-$endpos.${categ}.txt";
 
 	if($chrind eq "chr$chr"){
-		my $startpos = $line[1]+1;
-		my $endpos = $line[2];
+
+		print "Writing chunk $i...\n";
+		open my $outFH, '>>', $outfile or die "Could not write to $outfile: $!";
+
 		for my $pos ($startpos .. $endpos){
 			my $base = $fa->get_base($chr, $pos);
 			my $poslim=rounddown($pos,10);
@@ -131,15 +139,24 @@ while(<$fixedFH>){
 				my $dpout=$dphash{$poslim};
 
 				my @cols = split(/\t/, $outline);
-				my $motif = $cols[2];
-				$motif = substr($motif, 2, 3);
+				# my $motif = $cols[2];
+				# $motif = substr($motif, 2, 3);
 
-				my $outfile = "$outpath/${categ}_$motif.txt";
-				open my $outFH, '>>', $outfile or die "Could not write to $outfile: $!";
+
 
 				print $outFH "$outline\t$dpout\n";
 			}
 		}
+
+		$i++;
+		# my $outpath = "$parentdir/output/logmod_data/motifs2/$categ";
+		close $outFH or warn $! ? "Error closing: $!" : "Exit status $? ";
+
+		print "Splitting chunk by motif...\n";
+		# my $fullfile = "$parentdir/output/logmod_data/chr${chr}_${categ}_full.txt.gz";
+		my $subcmd = "sort -k3 $outfile | awk '{print >> \"$outpath/$categ/${categ}_\" substr(\$3, 1, 7) \".txt\"}'";
+		forkExecWait($subcmd);
+
 	}
 }
 

@@ -113,7 +113,7 @@ while(<$fixedFH>){
 	my $endpos = $line[2];
 
 
-	my $outfile = "$chunkpath/$chrind/$chrind.$startpos-$endpos.${categ}.txt";
+	my $outfile = "$chunkpath/$chrind.$startpos-$endpos.${categ}.txt";
 
 	if($chrind eq "chr$chr"){
 

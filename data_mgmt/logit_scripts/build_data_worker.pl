@@ -114,7 +114,7 @@ foreach my $chr (1 .. 22){
 				$dphash{$dp_pos}=$depth;
 			}
 
-			print "Writing chunk $i output to $outfile...\n";
+			print "Writing chunk $i output file: $outfile...\n";
 			open my $outFH, '>>', $outfile or die "Could not write to $outfile: $!";
 
 			for my $pos ($startpos .. $endpos){
@@ -143,14 +143,14 @@ foreach my $chr (1 .. 22){
 				}
 			}
 
-			$i++;
 			close $outFH or warn $! ? "Error closing: $!" : "Exit status $? ";
 
-			print "Splitting $outfile by motif...\n";
+			print "Splitting chunk $i output file: $outfile...\n";
 			# my $fullfile = "$parentdir/output/logmod_data/chr${chr}_${categ}_full.txt.gz";
-			my $subcmd = "sort -k3 $outfile | awk '{print >> \"$splitpath/${categ}_\" substr(\$3, 1, 7) \".txt\"}'";
+			# my $subcmd = "sort -k3 $outfile | awk '{print >> \"$splitpath/${categ}_\" substr(\$3, 1, 7) \".txt\"}'";
+			my $subcmd = "cat $outfile | awk '{print >> \"$splitpath/${categ}_\" substr(\$3, 1, 7) \".txt\"}'";
 			forkExecWait($subcmd);
-
+			$i++;
 		}
 	}
 

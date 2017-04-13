@@ -124,19 +124,19 @@ foreach my $chr (1 .. 22){
 			open my $outFH, '>', $outfile or die "Could not write to $outfile: $!";
 
 			for my $pos ($startpos .. $endpos){
-				my $base = $fa->get_base($chr, $pos);
+				# my $base = $fa->get_base($chr, $pos);
+				my $motif = $fa->get_slice($chr, $pos-$adj, $pos+$adj);
+				my $base = substr($motif, 3, 1);
+
 				my $poslim = rounddown($pos,10);
 				my $outline;
 
 				# if(($base =~ /$b1|$b2/) & (!exists $poshash{$pos})){
-				if(($base =~ /[ACGT]/) && (!exists $poshash{$pos})){
-					my $motif = $fa->get_slice($chr, $pos-$adj, $pos+$adj);
-	        $motif = getMotif($motif, $adj);
+				if(($motif =~ /\A [ACGT()]+\z/ix) && (!exists $poshash{$pos})){
+					# my $motif = $fa->get_slice($chr, $pos-$adj, $pos+$adj);
+	        my $fullmotif = getMotif($motif, $adj);
+					$outline = "$chr\t$pos\t$fullmotif\t0\t0\t0\t0\t0\t0\t";
 
-					# write line if site has non-N context
-					if($motif =~ /\A [ACGT()]+\z/ix){
-						$outline = "$chr\t$pos\t$motif\t0\t0\t0\t0\t0\t0\t";
-					}
 				} elsif(exists $poshash{$pos}){
 					$outline = "$poshash{$pos}\t";
 				}

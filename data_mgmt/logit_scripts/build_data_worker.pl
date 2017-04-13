@@ -49,7 +49,8 @@ use SmaugFunctions qw(forkExecWait getMotif);
 # open(my $outFH, "| gzip -c > $outfile") or
 #   die "Could not write to $outfile: $!";
 
-foreach my $chr (reverse(1 .. 22)){
+# foreach my $chr (reverse(1 .. 22)){
+foreach my $chr (1 .. 22){
 
 	# Create hash keyed by singleton positions, with input line as value
 	# print "Indexing chr${chr}: ${categ} singleton positions...\n";
@@ -140,7 +141,7 @@ foreach my $chr (reverse(1 .. 22)){
 
 				my $outline;
 				my $poslim = rounddown($pos,10);
-				
+
 				if(($motif =~ /\A [ACGT()]+\z/ix) && (!exists $poshash{$pos})){
 					my $fullmotif = getMotif($motif, $adj);
 					$outline = "$chr\t$pos\t$fullmotif\t0\t0\t0\t0\t0\t0\t";

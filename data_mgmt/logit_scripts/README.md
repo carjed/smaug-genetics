@@ -5,39 +5,35 @@ Our model to predict the effects of sequence context and genomic features requir
 ## Preparing input data
 ----------------------------------------------
 
-*Before running the scripts in this directory, we must have already generated indices for per-site average depth, which should be located at* `output/glf_depth/meandp/chr*.dp`. *See `data_mgmt/per-site_dp/README.md` for details on how to generate these files.*
+*Before running the scripts in this directory, we must have already generated indices for per-site average depth, which should be located at* `output/glf_depth/meandp/chr*.txt`. *See `data_mgmt/per-site_dp/README.md` for details on how to generate these files.*
 
-*Also, when running `R/mod_shell.r` the first time, make sure the `build_logit` flag in `_config.yaml` is set to* TRUE *to index the singleton sites when building this model. These files will be located at `output/logmod_data/chr*_{type}_sites.txt`.*
+*Also, when running `R/mod_shell.r` the first time, make sure the `build_logit` flag in `_config.yaml` is set to* TRUE *to index the singleton sites when building this model. These files will be located at `output/logmod_data/chr*_sites.txt`.*
 
 ----------------------------------------------
 
 ## Running the scripts
 
-Once the necessary depth and singleton indices have been generated, we will run scripts to execute three batch files:
+### Generating input data
+Once the necessary depth and singleton indices have been generated, run the `build_data_worker.pl` script to prepare the input data for the models.
 
-1. `build_data_batch.pl`
-2. `split_data_batch.pl`
-3. `runmod_batch.pl`
-
-### Building data
-
-The `build_data_batch.pl` script will generate and execute a slurm batch file, which writes a table for each chromosome/type with 5 columns:
+This script writes a file for each 5Mb chunk of sequence containing 10 columns:
 1. CHR
 2. POS
 3. SEQUENCE \[7-mer motif centered at site, with symmetric sequence\]
-4. MUT \[indicates if site is singleton (1) or non-mutated (0)\]
+4. AT_CG \[indicator if site is an AT>CG singleton (1) or non-mutated (0)\]
+5. AT_GC
+6. AT_TA
+7. GC_AT
+8. GC_CG
+9. GC_TA
 5. DP \[average depth of coverage at site\]
 
-These compressed files (~55GB total) are located at `output/logmod_data/chr*_${type}_full.txt.gz`.
+These files are written to: `output/logmod_data/chr*/chr*.{start}-{end}.txt`. Because our model eventually needs to run independently for each subtype, after each file has been generated, it divided by the SEQUENCE column into and appended to motif-specific files at `output/logmod_data/motifs/{motif}.txt`.
 
-### Splitting by subtype
+Runtime for this script is ~12-13 hours, though this may be bottlenecked significantly by your available RAM (for the sort operation), disk read/write speeds, and single-core CPU speed.
 
-Because our model runs independently for each subtype, we need to split the input data by type/motif by running `split_data_batch.pl`. This creates and executes a slurm batch file that writes subtype-specific input data to `/output/logmod_data/motifs/{type}_{motif}.txt`.
-
-Note that unlike the `build_data_batch.pl` script, `split_data_batch.pl` executes a single batch file with 6 jobs in the array (one per type, each sequentially looping through 22 chromosomes) rather than 6 batch files with 22 jobs in the array that run simultaneously. This is because when each `chr*_${type}_full.txt.gz` file is split, the data for a given subtype is appended to the same `{type}_{motif}.txt` file. Consequently, this script can take a long time to run.
-
-## Running the models
-Once the subtype-specific input files have been generated, we are ready to run the models. The `runmod_batch.pl` script creates and executes 6 slurm batch files (one per type), calling `R/log_mod.r` independently for each of the 24,576 7-mer subtypes.
+### Running the models
+Once the subtype-specific input files have been generated, we are ready to run the models. The `runmod_batch.pl` script creates and executes 6 slurm batch files (one per type), calling `R/log_mod.r` independently for each set of 4,096 7-mer subtypes corresponding to a given type.
 
 For each subtype, we obtain two output files:
 1. the beta coefficients and standard errors for the features considered in the model, located at `output/logmod_data/coefs/{type}/{type}_{motif}_coefs.txt`

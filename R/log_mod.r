@@ -67,8 +67,7 @@ logitMod <- function(motif, nbp, parentdir, categ){
 	# sitefile <- paste0(parentdir, "/output/logmod_data/motifs/", categ, "/dp/",
 	# 		categ, "_", escmotif, "_dp.txt")
 
-	sitefile <- paste0(parentdir, "/output/logmod_data/motifs/", categ, "/",
-			categ, "_", escmotif, ".txt")
+	sitefile <- paste0(parentdir, "/output/logmod_data/motifs/", escmotif, ".txt")
 
 	# if(!(file.exists(sitefile))){
 	# 	cat("Merging ", motif, " files...\n")
@@ -81,8 +80,13 @@ logitMod <- function(motif, nbp, parentdir, categ){
 	# 	system(catcmd1)
 	# }
 
+	motiffile <- paste0(parentdir, "/output/logmod_data/motifs/AT_CG/dp/AAAAAAG_dp.txt")
+	incmd <- paste0("cut -f1-6 ", motiffile)
+	tm2 <- read.table(pipe(incmd), header=F, stringsAsFactors=F)
+	# motifdat <- read.table(pipe(incmd), header=T, stringsAsFactors=F)
+
 	sites <- read.table(sitefile, header=F, stringsAsFactors=F)
-	names(sites) <- c("CHR", "POS", "Sequence", "mut", "DP")
+	names(sites) <- c("CHR", "POS", "Sequence", mut_cats, "DP")
 	sites <- sites %>%
 		arrange(CHR, POS)
 
@@ -128,8 +132,8 @@ logitMod <- function(motif, nbp, parentdir, categ){
 
 	coefs <- data.frame()
 	if(sum(sites$mut)>10){
-		log_mod_formula <- as.formula(paste("mut~",
-			paste(names(sites)[-(1:5)], collapse="+")))
+		log_mod_formula <- as.formula(paste("AT_CG~",
+			paste(names(sites)[-(1:9)], collapse="+")))
 		log_mod <- speedglm(log_mod_formula, data=sites, family=binomial(), maxit=50)
 
 		predicted$mu <- round(inv.logit(predict(log_mod, newdata=sites)), 6)

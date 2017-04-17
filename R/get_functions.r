@@ -1,7 +1,7 @@
 ##############################################################################
 # Function gets basic summary data from input directory
 ##############################################################################
-getData <- function(summfile, bindir){
+getData <- function(summfile, singfile, bindir){
 
   if(!file.exists(summfile)){
     msg <- paste0("Summary file ", summfile, " does not exist.\n")
@@ -12,16 +12,20 @@ getData <- function(summfile, bindir){
   cat("Reading summary file:", summfile, "...\n")
   sites <- read.table(summfile, header=T, stringsAsFactors=F)
   sites$Category2 <- sites$Category
-  sites$Category <- gsub("cpg", "", sites$Category)
+  sites$Category <- gsub("cpg_", "", sites$Category)
   sites$BIN <- ceiling(sites$POS/binw)
   sites$MASK <- binaryCol(sites,
     paste0(parentdir, "/reference_data/testmask2.bed"))
 
-  # Read in motif counts per chromosome
-  bins <- get_bins(bindir)
+  cat("Annotating with sample ID...\n")
+  inds <- read.table(singfile, header=T, stringsAsFactors=F)
+  names(inds) <- c("CHR", "POS", "S", "ALT", "ID")
+  sites <- merge(sites, inds, by=c("CHR", "POS", "ALT"))
 
   # summarize motif counts genome-wide
   cat("Counting motifs...\n")
+  # Read in motif counts per chromosome
+  bins <- get_bins(bindir)
   mct <- get_mct(bins)
 
   cat("Calculating K-mer rates...\n")
@@ -358,7 +362,7 @@ rcrCol <- function(sites, file){
     arrange(CHR, POS)
 
   rates<-rate_table$id
-  rates[is.na(rates)]<-0
+  # rates[is.na(rates)]<-0
   return(as.numeric(rates))
 }
 

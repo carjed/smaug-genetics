@@ -6,13 +6,13 @@ In our models used to estimate the effects of genomic features on mutability, it
 These scripts require perl 5, version 18 or higher, [`samtools-hybrid`](https://github.com/statgen/samtools-0.1.7a-hybrid), and the [slurm](http://slurm.schedmd.com/slurm.html) workload management system be installed on your system. Note that the slurm batch files generated in these scripts contain parameters unique to our system environment; if you are using slurm, you will need to manually modify these parameters accordingly. If you do not have slurm, you will need to write custom versions of the batchfile-generating scripts to run the worker processes across the .glf files.
 
 ### Processing
-Our variant calling pipeline generates one .glf file per individual per 5Mb chunk of sequence, resulting in tens of thousands of files that must be processed.
+The gotCloud variant calling pipeline generates one .glf file per individual per 5Mb chunk of sequence, resulting in tens of thousands of files that must be processed.
 
 Processing of an individual .glf file is performed by the `process_glf_worker.pl` script, which calls `samtools-hybrid glfview` to generate a file containing the depth at each site. A second script, `process_glf_meandp.pl` further summarizes the depth by aggregating over 10bp windows (reducing the storage needed by 10-fold while maintaining accuracy).
 
 To more easily manage these thousands of jobs, the `process_glf_master.pl` script generates and submits slurm batch files to distribute the two worker processes across multiple nodes. Due to server limitations, the number of jobs requested in a batch file cannot exceed ~1000. To handle this, we have set `process_glf_master.pl` to run the worker processes on a single chromosome at a time, and have wrapped this in a shell process, `process_glf_shell.pl` to loop through all chromosomes.
 
-Confirm that the mean depth file for each chunk has been successfully generated (there should be exactly 589 files in `output/glf_depth/meandp`, assuming 5Mb chunks), then run `merge_dp.pl` to create per-chromosome files named `output/glf_depth/meandp/chr*.dp`
+Once complete, there should be exactly 589 files in `output/glf_depth/meandp/chr*.{start}.{end}.txt` (assuming the analysis pipeline generated .glf files in 5Mb chunks). Confirm that these files have been successfully generated before proceeding.
 
 ### Annotating
-Once the per-chromosome mean depth files have been created, the `data_mgmt/logit_scripts/build_logit_batch.pl` script will add the depth at each site when generating the input data for the logistic regression models.
+Once the per-chromosome mean depth files have been created, the `data_mgmt/logit_scripts/build_data_worker.pl` script will add the depth at each site when generating the input data for the logistic regression models.

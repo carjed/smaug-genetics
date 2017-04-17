@@ -202,6 +202,7 @@ sub readWindows {
     print $outFH "$chr\t$seqp\t$sum\n";
   }
 
+	close $outFH;
 }
 
 sub readWindows2 {
@@ -256,6 +257,8 @@ sub readWindows2 {
       $bandno = $bandno+1;
     }
   }
+
+	close $outFH;
 }
 
 ##############################################################################

@@ -103,10 +103,10 @@ if($count_motifs eq "TRUE"){
 
       readWindows($fixedFH, $bin_out, $header, $fa);
 
-			if($adj==1){
+			# if($adj==1){
 				$bin_out = "$out_path/chr$chr.$subseq-mer_motifs_${bw}kb_${data}.txt";
 				readWindows2($fixedFH, $bin_out, $header, $fa);
-			}
+			# }
 
     } elsif(($bin_scheme eq "band") && ($adj==1)) {
       print "getting bands\n";

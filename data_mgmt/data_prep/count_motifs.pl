@@ -107,6 +107,7 @@ if($count_motifs eq "TRUE"){
 			if($adj==1){
 				$bin_out = "$out_path/chr$chr.$subseq-mer_motifs_${bw}kb_${data}.txt";
 				open my $fixedFH, '<', $fixedfile or die "$fixedfile: $!";
+				$header = "CHR\tSTART\tEND\tBIN\tMotif\tnMotifs\n";
 				readWindows2($fixedFH, $bin_out, $header, $fa);
 			}
 

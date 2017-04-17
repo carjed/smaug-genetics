@@ -230,7 +230,29 @@ sub readWindows2 {
 
       @motifs = ($binseq =~ /(?=([ACGT]{$subseq}))/g);
 
-      writeCounts($_, $bandno, \@motifs, $outFH);
+			my %tri_count=();
+			$tri_count{$_}++ for @motifs;
+
+			foreach my $motif (sort keys %tri_count) {
+				my $altmotif = $motif;
+				$altmotif =~ tr/ACGT/TGCA/;
+				$altmotif = reverse $altmotif;
+
+				my $seqp = "$motif\($altmotif\)";
+
+				my $sum;
+				if(exists($tri_count{$motif}) && exists($tri_count{$altmotif})){
+					$sum=$tri_count{$motif}+$tri_count{$altmotif};
+				} elsif(exists($tri_count{$motif}) && !exists($tri_count{$altmotif})) {
+					$sum=$tri_count{$motif};
+				} elsif(!exists($tri_count{$motif}) && exists($tri_count{$altmotif})) {
+					$sum=$tri_count{$altmotif};
+				}
+
+				print $outFH "$_\t$bandno\t$seqp\t$sum\n";
+			}
+
+      # writeCounts($_, $bandno, \@motifs, $outFH);
       $bandno = $bandno+1;
     }
   }

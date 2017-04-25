@@ -73,7 +73,7 @@ negbin_model: FALSE
 ##############################################################################
 # ped files containing sample info
 ##############################################################################
-ped: "/net/wonderland/home/mattz/BRIDGES/FinalAnalysis/ped/BRIDGES_Assoc.20160226.ped"
+pedfile: "/net/wonderland/home/mattz/BRIDGES/FinalAnalysis/ped/BRIDGES_Assoc.20160226.ped"
 plates: "/net/wonderland/home/mattz/BRIDGES/sampleIDs_plates.txt"
 qcped: "/net/bipolar/lockeae/final_freeze/snps/QC/final_freeze.merged.vcfast_vcfdiff_qplot.v2.txt"
 qcped2: "/net/bipolar/bridges/phenotype/qplotstats.txt"

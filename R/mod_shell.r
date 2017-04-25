@@ -13,7 +13,7 @@ source("./R/get_functions.r")
 
 packages <- c("tidyverse", "RColorBrewer", "MASS", "boot", "speedglm", "psych",
 "lmtest", "fmsb", "hexbin", "cowplot", "grid", "gtable", "gridExtra", "yaml",
-"devtools", "openxlsx", "Biostrings", "svglite")
+"devtools", "openxlsx", "Biostrings", "svglite", "NMF")
 
 sapply(packages, function(x) suppressMessages(usePackage(x)))
 
@@ -67,7 +67,7 @@ full_data <- getData(summfile, singfile, bindir)
 ##############################################################################
 ptm <- proc.time()
 cat("Analyzing sample mutation signatures...\n")
-source("/R/ind_sigs.r")
+source("./R/ind_sigs.r")
 tottime <- (proc.time()-ptm)[3]
 cat("Done (", tottime, "s)\n")
 

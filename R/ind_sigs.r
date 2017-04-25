@@ -31,7 +31,7 @@ mct3 <- get_mct_b(bins1Mb) %>%
   summarise(nMotifs=sum(nMotifs))
 
 # get ids in ped file
-ped <- read.table(ped, header=F, stringsAsFactors=F)
+ped <- read.table(pedfile, header=F, stringsAsFactors=F)
 ped2 <- read.table(qcped, header=T, stringsAsFactors=F)
 
 # get per-person rates and filter IDs

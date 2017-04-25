@@ -6,32 +6,6 @@
 # Add columns for 5-mer, 3-mer, and 1-mer rates
 ##############################################################################
 
-rates9 <- ratelist[[5]] %>%
-  dplyr::select(Category=Type, SEQ=Motif, MU_9=ERV_rel_rate)
-
-rates_mask <- maskgpdat %>%
-  mutate(SEQ7=substr(Motif, 1, 7)) %>%
-  dplyr::select(Category=Type, SEQ7, MU_7M=ERV_rel_rate_mask)
-
-rates7 <- ratelist[[4]] %>%
-	mutate(SEQ7=substr(Motif, 1, 7)) %>%
-	dplyr::select(Category=Type, SEQ7, MU_7=ERV_rel_rate)
-
-rates5 <- ratelist[[3]] %>%
-	mutate(SEQ5=substr(Motif, 1, 5)) %>%
-	dplyr::select(Category=Type, SEQ5, MU_5=ERV_rel_rate)
-
-rates3 <- ratelist[[2]] %>%
-	mutate(SEQ3=substr(Motif, 1, 3)) %>%
-	dplyr::select(Category=Type, SEQ3, MU_3=ERV_rel_rate)
-
-rates1 <- ratelist[[1]] %>%
-	dplyr::select(Category=Type, MU_1=ERV_rel_rate)
-
-rates7A <- avrates %>%
-  mutate(SEQ7=substr(Motif, 1, 7)) %>%
-  dplyr::select(Category=Type, SEQ7, MU_7A=eur)
-
 # r7s <- r5m %>%
 # 	dplyr::select(Category.x=Category,
 # 		SEQ=Sequence,
@@ -42,7 +16,6 @@ rates7A <- avrates %>%
 cat("Reading data...\n")
 
 validation_file <- paste0(parentdir, "/output/predicted/validation_sites.txt")
-
 chrp <- read.table(validation_file, header=F, stringsAsFactors=F)
 names(chrp) <- c("CHR", "POS", "BIN", "MU", "OBS", "Category", "SEQ", "ID")
 
@@ -71,17 +44,47 @@ chrp_c <- bind_rows(list(chrp, chrpdnm)) %>%
     SEQ5 = substr(SEQ, 3, 7),
     SEQ3 = substr(SEQ, 4, 6))
 
+rates9 <- ratelist[[5]] %>%
+  dplyr::select(Category=Type, SEQ=Motif, MU_9=ERV_rel_rate)
+
+rates7 <- ratelist[[4]] %>%
+	mutate(SEQ7=substr(Motif, 1, 7)) %>%
+	dplyr::select(Category=Type, SEQ7, MU_7=ERV_rel_rate)
+
+rates5 <- ratelist[[3]] %>%
+	mutate(SEQ5=substr(Motif, 1, 5)) %>%
+	dplyr::select(Category=Type, SEQ5, MU_5=ERV_rel_rate)
+
+rates3 <- ratelist[[2]] %>%
+	mutate(SEQ3=substr(Motif, 1, 3)) %>%
+	dplyr::select(Category=Type, SEQ3, MU_3=ERV_rel_rate)
+
+rates1 <- ratelist[[1]] %>%
+	dplyr::select(Category=Type, MU_1=ERV_rel_rate)
+
+rates7A <- avrates %>%
+  mutate(SEQ7=substr(Motif, 1, 7)) %>%
+  dplyr::select(Category=Type, SEQ7, MU_7A=eur)
+
 chrp_c <- merge(chrp_c, rates9, by=c("Category", "SEQ"), all.x=T)
 chrp_c <- merge(chrp_c, rates7A, by=c("Category", "SEQ7"), all.x=T)
-chrp_c <- merge(chrp_c, rates_mask, by=c("Category", "SEQ7"), all.x=T)
 chrp_c <- merge(chrp_c, rates7, by=c("Category", "SEQ7"), all.x=T)
 chrp_c <- merge(chrp_c, rates5, by=c("Category", "SEQ5"), all.x=T)
 chrp_c <- merge(chrp_c, rates3, by=c("Category", "SEQ3"))
 chrp_c <- merge(chrp_c, rates1, by=c("Category"))
 
+if(exists(maskgpdat)){
+  rates_mask <- maskgpdat %>%
+    mutate(SEQ7=substr(Motif, 1, 7)) %>%
+    dplyr::select(Category=Type, SEQ7, MU_7M=ERV_rel_rate_mask)
+
+    chrp_c <- merge(chrp_c, rates_mask, by=c("Category", "SEQ7"), all.x=T)
+}
+
 chrp_c <- chrp_c %>%
   mutate(Category=ifelse(substr(SEQ,adj+1,adj+2)=="CG",
                 paste0("cpg_",Category), Category)) %>%
+  mutate(BIN=ceiling(POS/binw)) %>%
   # mutate(Category =
   #     plyr::mapvalues(Category, orderedcats1, orderedcats2)) %>%
   mutate(resid3=MU_3-MU_1,
@@ -92,12 +95,12 @@ chrp_c <- chrp_c %>%
     resid7a=MU_7-MU_1,
     residLa=MU-MU_1)
 
-simMu <- function(data, nobs, chunksize=50000, seed){
+simMu <- function(data, nobs, chunksize=50000, rseed){
   success <- FALSE
   mutated <- data.frame()
   seedit <- 1
 	while(!success){
-    set.seed(seed+seedit)
+    set.seed(rseed+seedit)
 		rowind <- sample(nrow(data), chunksize)
 		batch <- data[rowind,]
 		mu <- batch$MU
@@ -110,13 +113,13 @@ simMu <- function(data, nobs, chunksize=50000, seed){
 	}
 
   # last batch will go over; sample to desired # of simulated sites
-  set.seed(seed)
+  set.seed(rseed)
   mutated <- mutated[sample(nrow(mutated), nobs),] %>%
     mutate(OBS=0, SIM="b")
   return(mutated)
 }
 
-chrpdnmsim <- simMu(data=chrp_c, nobs=nrow(chrpdnm), seed=seed)
+chrpdnmsim <- simMu(data=chrp_c, nobs=nrow(chrpdnm), seed=rseed)
 
 chrp_s <- bind_rows(list(chrp_c[chrp_c$OBS==0,], chrpdnmsim)) %>%
   group_by(Category) %>%
@@ -147,8 +150,9 @@ runDNMLogit<-function(data, group){
 		outdat$mod_3mers <- glm(OBS~MU_3, data=data, family=binomial())
 		outdat$mod_5mers <- glm(OBS~MU_5, data=data, family=binomial())
 		outdat$mod_7mers <- glm(OBS~MU_7, data=data, family=binomial())
+    # outdat$mod_7mers_sig <- glm(OBS~MU_7+X1+X2+X3+X4+X5, data=data, family=binomial())
 		outdat$mod_7mers_features <- glm(OBS~MU, data=data, family=binomial())
-    outdat$mod_7mers_masked <- glm(OBS~MU_7M, data=data, family=binomial())
+    # outdat$mod_7mers_masked <- glm(OBS~MU_7M, data=data, family=binomial())
 		outdat$mod_7mers_AV <- glm(OBS~MU_7A, data=data, family=binomial())
     outdat$mod_9mers <- glm(OBS~MU_9, data=data, family=binomial())
 	} else {

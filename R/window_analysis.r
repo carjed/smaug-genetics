@@ -141,7 +141,7 @@ ggplot()+
     axis.title.x=element_text(size=16))+
   guides(colour=FALSE,
     fill = guide_legend(override.aes = list(size=6)))
-ggsave("/net/bipolar/jedidiah/mutation/images/chr20_bin_pca.png", height=12, width=12)
+ggsave(paste0(parentdir, "/images/chr20_bin_pca.png"), height=12, width=12)
 
 ggplot(data, aes_string(x="V1", y="V2", color=var_cluster)) +
 geom_point(size=0.25) +
@@ -193,7 +193,7 @@ ggplot()+
     axis.title.x=element_text(size=16))+
   guides(colour=FALSE,
     fill = guide_legend(override.aes = list(size=6)))
-ggsave("/net/bipolar/jedidiah/mutation/images/chr20_bin_tsne.png", height=12, width=12)
+ggsave(paste0(parentdir, "/images/chr20_bin_tsne.png"), height=12, width=12)
 
 clusterdat$midpt <- clusterdat$START+clusterdat$Length/2
 
@@ -210,7 +210,7 @@ hg19 <- keepSeqlevels(hg19IdeogramCyto, paste0("chr", c(1:22, "X", "Y")))
 clustchrs<-hg19[seqnames(hg19) %in% unique(seqnames(clust_markers)),]
 seqlengths(clustchrs) <- seqlengths(hg19Ideogram)[names(seqlengths(clustchrs))]
 
-maskbed<-read.table("/net/bipolar/jedidiah/mutation/reference_data/testcov.bed", header=F, stringsAsFactors=F)
+maskbed<-read.table(paste0(parentdir, "/reference_data/testcov.bed"), header=F, stringsAsFactors=F)
 names(maskbed)<-c("CHR", "START", "END", "name", "gieStain", "V1", "V2", "V3", "pctmask")
 maskbed<-maskbed %>% filter(!grepl("X|Y", CHR))
 mask_markers <- GRanges(seqnames=maskbed$CHR,
@@ -219,7 +219,7 @@ mask_markers <- GRanges(seqnames=maskbed$CHR,
                         pctmask=maskbed$pctmask)
 seqlengths(mask_markers) <- seqlengths(hg19Ideogram)[names(seqlengths(mask_markers))]
 
-harbed<-read.table("/net/bipolar/jedidiah/mutation/reference_data/2xHARs.hg19.sort.bed", header=F, stringsAsFactors=F)
+harbed<-read.table(paste0(parentdir, "/reference_data/2xHARs.hg19.sort.bed"), header=F, stringsAsFactors=F)
 names(harbed)<-c("CHR", "START", "END", "ID", "VAL")
 harbed<-harbed %>% filter(!grepl("X|Y", CHR))
 
@@ -236,7 +236,8 @@ seqlengths(har_markers) <- seqlengths(hg19Ideogram)[names(seqlengths(har_markers
 
 p <- ggplot(clustchrs)+
   layout_karyogram(cytoband = TRUE)+
-    scale_fill_manual(values=c(giemsacols, stalk="#cd3333"))
+  geom_text(label=name)
+  scale_fill_manual(values=c(giemsacols, stalk="#cd3333"))
 p <- p+
   layout_karyogram(mask_markers,
     geom = "rect",
@@ -254,7 +255,7 @@ p <- p+
   guides(fill=FALSE,
     colour = guide_legend(override.aes=list(fill="white")))
 p
-ggsave("/net/bipolar/jedidiah/mutation/images/chr20_cluster_karyo.png", height=8, width=8)
+ggsave(paste0(parentdir, "/images/chr20_cluster_karyo.png"), height=8, width=8)
 # , size=6
 # , xlim=c(-25, NA)
 
@@ -264,4 +265,172 @@ ggplot(chr20_atcg, aes(x=BIN, y=ERV_rel_rate, fill=Motif, colour=Motif, group=Mo
   # geom_point()+
   # geom_line()+
   facet_wrap(~Motif)
-ggsave("/net/bipolar/jedidiah/mutation/images/chr20_rates_stacked.png")
+ggsave(paste0(parentdir, "/images/chr20_rates_stacked.png"))
+
+
+###############################################################################
+# Analysis by 1Mb bin
+###############################################################################
+mct3a <- get_mct_b(bins1Mb)
+
+# Count singletons per 3-mer subtype bin
+bin_counts <- full_data$sites %>%
+  mutate(Type=gsub("cpg_", "", Category2),
+    SEQA=substr(Motif, cbp-i, cbp+i),
+    SEQB=substr(Motif, cbp*3-i, cbp*3+i),
+    Motif=paste0(SEQA, "(", SEQB, ")")) %>%
+  group_by(CHR, BIN, Type, Motif) %>%
+  summarise(n=n())
+
+bin_counts <- merge(bin_counts, mct3a, by=c("CHR", "BIN", "Motif")) %>%
+  mutate(ERV_rel_rate=n/nMotifs,
+  subtype=paste0(Type, "_", Motif))
+
+
+# Coerce from long to wide format
+bins_wide <- bin_counts  %>%
+  dplyr::select(CHR, BIN, subtype, ERV_rel_rate) %>%
+  spread(subtype, ERV_rel_rate)
+
+bins_wide[is.na(bins_wide)] <- 0
+
+# Run PCA on bin matrix
+bins_pca <- prcomp(scale(bins_wide[,-c(1:2)]))
+
+# Cumulative variance explained by 96 PCs
+# bin_cumvar <- cumsum((bins_pca$sdev)^2) / sum(bins_pca$sdev^2)
+
+# Data frame containing bin IDs and components
+bins_wide_pcs <- cbind(bins_wide[,c(1:2)], as.data.frame(bins_pca$x))
+
+# Run NMF on bin matrix; get top signature for each bin
+bins_nmf <- nmf(bins_wide[,-c(1:2)], 3, nrun=10)
+bins_pred <- predict(bins_nmf, "rows", prob=T)
+
+sigloads <- get_loads(bins_wide[,-c(1:2)], bins_nmf)
+plot_loads(sigloads)
+ggsave(paste0(parentdir, "/images/sigloads_bin.png"))
+
+# Add predicted NMF class to data frame
+# bins_wide_c <- cbind(bins_wide_c, sig=bins_pred[[1]])
+bins_nmf_plotdat <- data.frame(bins_wide[,c(1:2)],
+    basis(bins_nmf),
+    sig=bins_pred[[1]]) %>%
+  mutate(sum=X1+X2+X3,
+    X1a=X1/sum,
+    X2a=X2/sum,
+    X3a=X3/sum)
+
+# chrp_c <- merge(chrp_c, bins_nmf_plotdat, by=c("CHR", "BIN"))
+
+bins_nmf_long <- bins_nmf_plotdat %>%
+  gather(cluster, prob, X1a:X3a) %>%
+  arrange(CHR, BIN) %>%
+  group_by(cluster) %>%
+  mutate(window=row_number(),
+    CHR.BIN=paste0(CHR, "_", BIN),
+    prob_m=rollmedian(prob, 5, fill=NA),
+    # prob_m=prob,
+    log_prob=log(prob_m)) %>%
+  filter(log_prob > -5)
+
+write.table(bins_nmf_long, "/net/csgsites/mutation/share/bin_sig_prob.txt", col.names=T, row.names=F, sep="\t", quote=F)
+write.table(ind_nmf_long, "/net/csgsites/mutation/share/ing_sig_prob.txt", col.names=T, row.names=F, sep="\t", quote=F)
+
+labs <- bins_nmf_long %>%
+  group_by(CHR) %>%
+  summarise(start=min(window),
+    end=max(window),
+    window=ceiling(start+(end-start)/2)) %>%
+  mutate(fillcol=ifelse(CHR%%2==0, "even", "odd"))
+
+iwhPalette5 <- c("#9555b4", "#98be57", "#514143", "#c7624e", "#92b5b5")
+ggplot()+
+  # facet_wrap(~CHR, ncol=1, scales="free_y", strip.position="right")+
+  geom_rect(data=labs, aes(xmin=start, xmax=end, ymin=0, ymax=1, fill=fillcol), alpha=0.5)+
+  # geom_point(data=bins_nmf_long,
+  #   aes(x=window, y=prob, colour=cluster, group=cluster), alpha=0.6)+
+  geom_line(data=bins_nmf_long,
+    aes(x=window, y=prob_m, colour=cluster, group=cluster), alpha=0.6)+
+  # geom_bar(stat="identity")+
+  # geom_smooth(method = "lm", formula = y ~ splines::bs(x, 3), se = FALSE)+
+  # geom_smooth(method="loess", span=0.2)+
+  scale_fill_manual(values=c("grey40", "grey50"), guide=FALSE)+
+  scale_colour_manual(values=iwhPalette5)+
+  scale_y_continuous(expand=c(0,0))+
+  scale_x_continuous(expand=c(0,0), breaks=labs$window, labels=labs$CHR)+
+  # ylab("log(cluster probability)")+
+  ylab("signature contribution")+
+  theme_bw()+
+  # theme(axis.text.x=element_blank())+
+  theme(legend.position="bottom",
+    axis.title.x=element_blank())
+ggsave(paste0(parentdir, "/images/by_bin2.png"), width=12, height=8)
+
+bins_nmf_long %>%
+  # filter(CHR==16) %>%
+ggplot(aes(x=BIN, y=prob, colour=cluster, fill=cluster, group=cluster))+
+  facet_wrap(~CHR, ncol=1, scales="free_y", strip.position="right")+
+  # geom_point()+
+  # geom_bar(stat="identity")+
+  # geom_smooth(method = "lm", formula = y ~ splines::bs(x, 3), se = FALSE)+
+  geom_smooth(method="loess", span=0.2)+
+  theme_bw()+
+  theme(axis.text.x=element_blank())+
+  theme(legend.position="bottom")
+ggsave(paste0(parentdir, "/images/by_bin.png"), width=12, height=18)
+
+ggplot()+
+  geom_point(data=bins_wide_c, aes(x=PC1, y=PC2),
+    colour="black",pch=21, alpha=0.8)+
+  theme_bw()+
+  theme(axis.text.x=element_text(size=14),
+    axis.text.y=element_text(size=14),
+    axis.title.y = element_text(size=16),
+    axis.title.x=element_text(size=16))+
+  guides(colour=FALSE,
+    fill = guide_legend(override.aes = list(size=6)))
+ggsave(paste0(parentdir, "/images/bin_pca.png"), height=12, width=12)
+
+
+clust_markers <- GRanges(seqnames=paste0("chr", pcd2$CHR),
+                       ranges=IRanges(start=pcd2$BIN*binw-binw,
+                         end=pcd2$BIN*binw),
+                       sig=pcd2$sig,
+                       yval=15)
+data(hg19Ideogram, package = "biovizBase")
+seqlengths(clust_markers) <- seqlengths(hg19Ideogram)[names(seqlengths(clust_markers))]
+hg19 <- keepSeqlevels(hg19IdeogramCyto, paste0("chr", c(1:22, "X", "Y")))
+
+# clustchrs <- hg19
+clustchrs<-hg19[seqnames(hg19) %in% unique(seqnames(clust_markers)),]
+seqlengths(clustchrs) <- seqlengths(hg19Ideogram)[names(seqlengths(clustchrs))]
+
+p <- ggplot(clustchrs)+
+  layout_karyogram(cytoband = TRUE, label=name)+
+  layout_karyogram(cytoband=FALSE, geom="text", label=name)
+    # scale_fill_manual(values=c(giemsacols, stalk="#cd3333"))
+p <- p+
+  layout_karyogram(clust_markers,
+    geom = "rect",
+    size=6,
+    ylim = c(10, 20),
+    aes(x=start, color = factor(sig)))+
+  scale_colour_manual(values=myPaletteCatN(8)[1:4])+
+  guides(fill=FALSE,
+    colour = guide_legend(override.aes=list(fill="white")))
+
+ggsave(paste0(parentdir, "/images/nmf_cluster_karyo.png"), height=8, width=8)
+
+# IDs PC1 vs PC2
+ggplot()+
+  geom_point(data=pcd2, aes(x=PC1, y=PC2),
+         colour="black",pch=21, alpha=0.8)+
+  theme_bw()+
+  theme(axis.text.x=element_text(size=14),
+    axis.text.y=element_text(size=14),
+    axis.title.y = element_text(size=16),
+    axis.title.x=element_text(size=16))+
+  guides(colour=FALSE,
+    fill = guide_legend(override.aes = list(size=6)))
+ggsave(paste0(parentdir, "/images/id_pca.png"), height=12, width=12)

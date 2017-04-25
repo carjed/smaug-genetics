@@ -11,9 +11,9 @@
 cat("Loading functions and packages...\n")
 source("./R/get_functions.r")
 
-packages <- c("ggplot2", "dplyr", "tidyr", "broom", "RColorBrewer", "MASS",
-"speedglm", "boot", "devtools", "psych", "lmtest", "fmsb", "stringr", "hexbin",
-"cowplot", "grid", "gridExtra", "gtable", "yaml", "openxlsx")
+packages <- c("tidyverse", "RColorBrewer", "MASS", "boot", "speedglm", "psych",
+"lmtest", "fmsb", "hexbin", "cowplot", "grid", "gtable", "gridExtra", "yaml",
+"devtools", "openxlsx", "Biostrings", "svglite")
 
 sapply(packages, function(x) suppressMessages(usePackage(x)))
 
@@ -63,6 +63,18 @@ bindir <- paste0(parentdir, "/motif_counts/", nbp, "-mers/full")
 full_data <- getData(summfile, singfile, bindir)
 
 ##############################################################################
+# Drop singletons in individuals with abnormal mutation signatures
+##############################################################################
+ptm <- proc.time()
+cat("Analyzing sample mutation signatures...\n")
+source("/R/ind_sigs.r")
+tottime <- (proc.time()-ptm)[3]
+cat("Done (", tottime, "s)\n")
+
+full_data$sites <- full_data$sites %>%
+	filter(ID %in% keep_ids$ID)
+
+##############################################################################
 # Prepare singleton input for logit model
 ##############################################################################
 if(build_logit){
@@ -99,7 +111,6 @@ source("/R/kmer_analysis.r")
 tottime <- (proc.time()-ptm)[3]
 cat("Done (", tottime, "s)\n")
 
-
 ##############################################################################
 # Compare 7-mer rates between ERVs and Aggarwala & Voight rates
 ##############################################################################
@@ -108,7 +119,6 @@ cat("Comparing with AV model...\n")
 source("/R/av_comp.r")
 tottime <- (proc.time()-ptm)[3]
 cat("Done (", tottime, "s)\n")
-
 
 ##############################################################################
 # Scripts below assume 7-mers+features model is already complete

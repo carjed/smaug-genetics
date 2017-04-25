@@ -12,7 +12,6 @@ coefsout$Category <- factor(coefsout$Category, levels=orderedcats2)
 write.table(coefsout, paste0(parentdir,
   "/output/logmod_data/coefs/supplementary_table_7.txt"),
   quote=F, col.names=T, row.names=F, sep="\t")
-# coefs$Cov <- factor(plotcts$Cov, levels=orderedcovs)
 
 ratefile <- paste0(parentdir, "/output/7bp_1000k_rates.txt")
 rates <- read.table(ratefile, header=T, stringsAsFactors=F)
@@ -56,7 +55,17 @@ plotcts <- plotdat %>%
 plotcts$Category <- factor(plotcts$Category, levels=orderedcats2)
 plotcts$Cov <- factor(plotcts$Cov, levels=orderedcovs)
 
-# ggplot()+
+theme_coef <- function(base_size = 12, base_family = ""){
+  theme_bw(base_size = base_size) %+replace%
+  theme(legend.position="bottom",
+    legend.title=element_blank(),
+    strip.text=element_text(size=12),
+    axis.text.x=element_blank(),
+    axis.title.x=element_blank(),
+    axis.text.y=element_text(size=10),
+    axis.title.y=element_text(size=12))
+}
+
 svglite(paste0(parentdir, "/images/coef_violin2.svg"), width=7, height=7)
 plotdat %>%
   filter(Cov!="CpGI") %>%
@@ -74,23 +83,9 @@ plotdat %>%
     scale_alpha_discrete(range = c(0.95, 0.96), guide=F)+
     facet_wrap(~Cov, ncol=4, drop=F)+
     ylab("odds ratio for mutability")+
-    theme_bw()+
     guides(fill = guide_legend(nrow = 3))+
-    theme(legend.position="bottom",
-    legend.title=element_blank(),
-    strip.text=element_text(size=12),
-    axis.text.x=element_blank(),
-    axis.title.x=element_blank(),
-    axis.text.y=element_text(size=10),
-    axis.title.y=element_text(size=12))
+    theme_coef()
 dev.off()
-# ggsave(paste0(parentdir, "/images/coef_violin2.svg"), width=7, height=7)
-
-# my_svg <- function(file, width, height) {
-#    library(RSvgDevice)
-#    devSVG(file = file, width = width, height = height, bg = "white", fg = "black",
-#           onefile = TRUE, xmlHeader = TRUE)
-# }
 
 svglite(paste0(parentdir, "/images/coef_violin2_cpgi2.svg"), width=7, height=7)
 plotdat %>%
@@ -105,22 +100,12 @@ plotdat %>%
     scale_x_discrete(drop=FALSE)+
     scale_y_log10(breaks=c(.125, .25, 0.5, 1, 2, 4, 8),
       labels=c(.125, .25, 0.5, 1, 2, 4, 8))+
-    # scale_y_log10(breaks=c(0.5, 1, 2))+
     scale_alpha_discrete(range = c(0.95, 0.96), guide=F)+
     facet_wrap(~Cov, ncol=4, drop=F)+
-    # facet_wrap(~Cov, ncol=4, drop=T)+
     ylab("odds ratio for mutability")+
-    theme_bw()+
     guides(fill = guide_legend(nrow = 3))+
-    theme(legend.position="bottom",
-    legend.title=element_blank(),
-    strip.text=element_text(size=12),
-    axis.text.x=element_blank(),
-    axis.title.x=element_blank(),
-    axis.text.y=element_text(size=10),
-    axis.title.y=element_text(size=12))
+    theme_coef()
 dev.off()
-# ggsave(paste0(parentdir, "/images/coef_violin2_cpgi2.svg"), width=7, height=7)
 
 coefs <- coefs %>%
   mutate(Category = plyr::mapvalues(Category, orderedcats1, orderedcats2))
@@ -136,21 +121,127 @@ coefs %>%
     scale_colour_manual(values=cols, drop=FALSE)+
     facet_wrap(~Cov, ncol=4, scales="free_y")+
     ylab("odds ratio for mutability")+
-    theme_bw()+
     guides(fill = guide_legend(nrow = 3))+
-    theme(legend.position="bottom",
-    strip.text=element_text(size=16),
-    axis.text.x=element_blank(),
-    axis.title.x=element_blank(),
-    axis.text.y=element_text(size=14),
-    axis.title.y=element_text(size=16))
+    theme_coef()
 ggsave(paste0(parentdir, "/images/coef_violin_full.png"), width=9, height=8)
+
+##############################################################################
+# Interpolate GC effects for Jun
+##############################################################################
+plotdat_gc <- plotdat %>%
+  filter(Cov=="GC" & Category=="A>G") %>%
+  mutate(Odds=exp(Est), subtype=paste0(Category, "_", Sequence)) %>%
+  dplyr::select(Category, Sequence, subtype, Odds) %>%
+  filter(Odds<2)
+
+plotdat_exp <- plotdat_gc %>%
+  tidyr::expand(subtype, ind=seq(0:10)-1)
+
+plotdat_gc <- merge(plotdat_exp, plotdat_gc, by="subtype") %>%
+  mutate(Odds=Odds^ind, pctGC=ind*10, seq3=substr(Sequence, 3, 5))
+
+# Get top 6 positive/negative effects
+top <- plotdat_gc %>%
+  ungroup() %>%
+  filter(pctGC==100) %>%
+  top_n(6, Odds) %>%
+  dplyr::select(subtype)
+
+bottom <- plotdat_gc %>%
+  ungroup() %>%
+  filter(pctGC==100) %>%
+  top_n(-6, Odds) %>%
+  dplyr::select(Sequence)
+
+tb <- rbind(top, bottom)
+
+plotdat_gc <- plotdat_gc %>%
+  filter(subtype %in% tb$subtype)
+
+ggplot(plotdat_gc, aes(x=pctGC, y=log(Odds), colour=subtype, group=subtype))+
+  geom_point()+
+  geom_line()+
+  geom_hline(yintercept=0)+
+  scale_x_continuous(expand=c(0,0.4),
+    breaks=seq(0, 100, 10),
+    labels=seq(0, 100, 10))+
+  scale_colour_manual(values=iwhPalette[1:12])+
+  ylab("log-odds of mutability")+
+  xlab("%GC")+
+  theme_bw()+
+  theme(legend.position="bottom")
+
+ggsave(paste0(parentdir, "/images/gc_effect.png"))
+
+sitefile1 <- paste0(parentdir, "/output/logmod_data/motifs3/CGTAATT.txt")
+sitefile2 <- paste0(parentdir, "/output/logmod_data/motifs3/TCGATTG.txt")
+
+sites1 <- read.table(sitefile1, header=F, stringsAsFactors=F)
+names(sites1) <- c("CHR", "POS", "Sequence", mut_cats, "DP")
+
+sites1$GC <- gcCol(sites1,
+  paste0(parentdir, "/reference_data/gc10kb.bed"))
+
+sites2 <- read.table(sitefile2, header=F, stringsAsFactors=F)
+names(sites2) <- c("CHR", "POS", "Sequence", mut_cats, "DP")
+
+sites2$GC <- gcCol(sites2,
+  paste0(parentdir, "/reference_data/gc10kb.bed"))
+
+sites1$GP <- "CGT[A>G]ATT (+)"
+sites2$GP <- "TCG[A>G]TTG (-)"
+
+mround <- function(x,base){
+  base*round(x/base)
+}
+
+# sites2 <- sites2 %>%
+rbind(sites1, sites2) %>%
+mutate(GC=mround(GC*100, 0.5)) %>%
+group_by(GP, GC, AT_GC) %>%
+tally() %>%
+spread(AT_GC, n) %>%
+setNames(c("GP", "GC", "nonmut", "nERVs")) %>%
+na.omit() %>%
+mutate(tot=nERVs+nonmut, pctmut=nERVs/tot) %>% #data.frame
+filter(nERVs>2) %>%
+ggplot(aes(x=GC, y=pctmut, colour=GP))+
+  geom_point(aes(group=GP, size=nERVs))+
+  geom_smooth(method="lm", aes(weight=tot))+
+  facet_wrap(~GP)+
+  # geom_line()+
+  scale_colour_manual(values=iwhPalette[c(6,10)])+
+  xlab("%GC")+
+  ylab("ERV fraction")+
+  theme_bw()
+ggsave(paste0(parentdir, "/images/gc_effect_raw.png"))
+
+# rbind(sites1, sites2) %>%
+# # mutate(GC=mround(GC*100, 2)) %>%
+# group_by(GP, GC, AT_GC) %>%
+# filter(GC>0.3 & GC<0.6) %>%
+# # tally() %>%
+# # spread(AT_GC, n) %>%
+# # setNames(c("GP", "GC", "nonmut", "mut")) %>%
+# # na.omit() %>%
+# # mutate(tot=mut+nonmut, pctmut=mut/tot) %>% #data.frame
+# # filter(mut>3) %>%
+# ggplot(aes(x=AT_GC, y=GC, fill=GP, group=AT_GC))+
+#   # geom_point(alpha=0.3, shape=21)+
+#   geom_violin()+
+#   facet_wrap(~GP)+
+#   # geom_line()+
+#   scale_colour_manual(values=iwhPalette[c(6,10)])+
+#   xlab("%GC")+
+#   ylab("mutated")+
+#   theme_bw()
+# ggsave(paste0(parentdir, "/images/gc_effect_raw2.png"), width=8, height=6)
 
 ##############################################################################
 # Code below is used to validate specific results of feature-associated subtypes
 # -Must already have read in DNM data
 #
-# runTest() function counts the total observed number of de novo mutations within
+# runTest() function counts the total observed number of DNMs within
 # feature-associated subtypes, the number of these within each feature, and the
 # expected number assuming no effect of genomic features, then tests for
 # difference between expected/observed
@@ -256,8 +347,7 @@ runTest <- function(cov, dir){
     motifcts$REVSEQ <- unlist(lapply(motifcts$SEQ, revcomp))
     motifcts$Sequence <- ifelse(substr(motifcts$SEQ,4,4) %in% c("A", "C"),
       motifcts$SEQ, motifcts$REVSEQ)
-      # paste0(motifcts$SEQ, "(", motifcts$REVSEQ, ")"),
-      # paste0(motifcts$REVSEQ, "(", motifcts$SEQ, ")"))
+
     motifcts2 <- motifcts %>%
       group_by(Sequence) %>%
       summarise(Count=sum(Count))
@@ -275,7 +365,6 @@ runTest <- function(cov, dir){
     }
     newrow <- data.frame(cov, dir=dir, obs=obs, exp=exp, n=total,
       propobs=test$estimate[1], propexp=test$estimate[2], pval=test$p.value)
-    # testdat <- rbind(testdat, newrow)
     newrow
   }
 }

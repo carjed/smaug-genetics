@@ -46,11 +46,6 @@ runmotif <- motifs[jobid]
 escmotif <- substr(runmotif, 0, nbp)
 
 ##############################################################################
-# Run models
-##############################################################################
-cat("Running model on", runmotif, "sites...\n")
-
-##############################################################################
 # Function for running logit model--given input motif,
 # writes predicted mutation rates and returns list of coefficient estimates
 ##############################################################################
@@ -58,40 +53,15 @@ logitMod <- function(motif, nbp, parentdir, categ){
 
 	escmotif <- substr(motif, 0, nbp)
 
-	# source("./get_functions.r")
-
-	# Merge per-chromosome motif files to single file
-	# Define name of temporary file for motif i
-	# sitefile <- paste0(parentdir, "/output/logmod_data/motifs/", categ, "/",
-	# 	categ, "_", escmotif, ".txt")
-	# sitefile <- paste0(parentdir, "/output/logmod_data/motifs/", categ, "/dp/",
-	# 		categ, "_", escmotif, "_dp.txt")
-
 	sitefile <- paste0(parentdir, "/output/logmod_data/motifs/", escmotif, ".txt")
 
 	# if(!(file.exists(sitefile))){
-	# 	cat("Merging ", motif, " files...\n")
-	#
-	# 	perchrtmp <- paste0(parentdir,
-	# 		"/output/logmod_data/chr*/chr*_", categ, "_", motif, ".txt")
-	#
-	# 	catcmd1 <- paste0("find ", parentdir, "/output/logmod_data/chr* -name '*",
-	# 		escmotif, "*.txt' | sort -V | xargs cat >> ", sitefile)
-	# 	system(catcmd1)
 	# }
-
-	motiffile <- paste0(parentdir, "/output/logmod_data/motifs/AT_CG/dp/AAAAAAG_dp.txt")
-	incmd <- paste0("cut -f1-6 ", motiffile)
-	tm2 <- read.table(pipe(incmd), header=F, stringsAsFactors=F)
-	# motifdat <- read.table(pipe(incmd), header=T, stringsAsFactors=F)
 
 	sites <- read.table(sitefile, header=F, stringsAsFactors=F)
 	names(sites) <- c("CHR", "POS", "Sequence", mut_cats, "DP")
-	sites <- sites %>%
-		arrange(CHR, POS)
-
-	# Initialize data for calculating GC content
-	# sites_for_GC <- data.frame(position=sites$POS, chr=paste0("chr", sites$CHR))
+	# sites <- sites %>%
+	# 	arrange(CHR, POS)
 
 	# Add histone marks to site data
 	hists <- c("H3K4me1", "H3K4me3", "H3K9ac", "H3K9me3",
@@ -131,8 +101,10 @@ logitMod <- function(motif, nbp, parentdir, categ){
 	predicted <- sites[,1:2]
 
 	coefs <- data.frame()
-	if(sum(sites$mut)>10){
-		log_mod_formula <- as.formula(paste("AT_CG~",
+
+	ind <- match(categ, mut_cats)+3
+	if(sum(sites[,catind])>10){
+		log_mod_formula <- as.formula(paste(categ, "~",
 			paste(names(sites)[-(1:9)], collapse="+")))
 		log_mod <- speedglm(log_mod_formula, data=sites, family=binomial(), maxit=50)
 
@@ -185,6 +157,11 @@ logitMod <- function(motif, nbp, parentdir, categ){
 
 	return(coefs)
 }
+
+##############################################################################
+# Run models
+##############################################################################
+cat("Running model on", runmotif, "sites...\n")
 
 coefs <- logitMod(motif=runmotif, nbp=nbp, parentdir=parentdir, categ=categ)
 

@@ -1,6 +1,4 @@
 # Summarise aggseq rates for shorter motifs
-ptm <- proc.time()
-
 cbp <- adj+1
 
 ratelist <- list()
@@ -15,7 +13,7 @@ for(j in 1:5){
 	# proper counting of mutable sites
 	nbptmp <- i*2+1
 	bindir <- paste0(parentdir, "/motif_counts/", nbptmp, "-mers/full")
-
+  p1 <- "motifs_full.txt"
 	gpdat <- full_data$aggseq %>%
 		mutate(Type=gsub("cpg_", "", Category2),
 			SEQA=substr(Motif, cbp-i, cbp+i),
@@ -45,39 +43,17 @@ for(j in 1:5){
 			group_by(Type, Motif) %>%
 			summarise(nERVs=sum(nERVs))
 
-		bins <- get_bins(bindir)
+		bins <- get_bins(bindir, p1)
 		mcount <- get_mct(bins)
-		# mcfile <- paste0(parentdir, "/output/", nbptmp, "bp_final_rates.txt")
-		# mcount <- read.table(mcfile, header=T, stringsAsFactors=F)
-		# mcount <- mcount %>%
-		# 	dplyr::select(Type, Motif, nMotifs)
 
 		gpdat <- merge(gpdat, mcount, by=c("Motif")) %>%
 			mutate(ERV_rel_rate=nERVs/nMotifs)
 
-		# Plot heatmap panels
-		plotdat <- gpdat %>%
-			mutate(v2=substr(Motif,1,i),
-				v2a=factor(as.character(lapply(as.vector(v2), reverse_chars))),
-				v3=substr(Motif, i+2, i*2+1),
-				v4=ERV_rel_rate,
-				Category=Type,
-				v5=factor(gsub("_", ">", Type)))
-
-		nbox <- length(unique(plotdat$v2a))
-	  nint <- nbox/(4^(i-1))
-	  xhi <- rep(1:(4^(i-1)),4^(i-1))*nint+0.5
-	  xlo <- xhi-nint
-	  yhi <- rep(1:(4^(i-1)),each=4^(i-1))*nint+0.5
-	  ylo <- yhi-nint
-	  f <- data.frame(xlo,xhi,ylo,yhi)
-
-	  levs_a <- as.character(lapply(as.vector(levels(plotdat$v2a)),
-			reverse_chars))
-
+		cat("Plotting heatmap panels...\n")
 		for(k in 1:6){
 			categ <- orderedcats[k]
-			p1 <- rrheat2(plotdat[plotdat$Category==categ,], f, levs_a, "v5", nbptmp)
+
+			p1 <- rrheat2(gpdat[gpdat$Type==categ,], i)
 			p1a <- p1+theme(legend.position="none")
 
 			png(paste0(parentdir, "/images/", categ, "_", nbptmp, "bp_heatmap.png"),
@@ -87,6 +63,7 @@ for(j in 1:5){
 			dev.off()
 		}
 
+		cat("Trimming panel whitespace...\n")
 		# trim whitespace on panels with imagemagick mogrify
 		trimcmd <- paste0("mogrify -trim ",
 			parentdir, "/images/*", nbptmp, "bp_heatmap.png")
@@ -142,6 +119,3 @@ for(j in 1:5){
 		paste0(parentdir, "/output/rates/", nbptmp, "bp_final_rates2.txt"),
 		col.names=T, row.names=F, quote=F, sep="\t")
 }
-
-tottime <- (proc.time()-ptm)[3]
-cat("Done (", tottime, "s)\n")

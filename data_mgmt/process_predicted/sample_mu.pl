@@ -21,7 +21,7 @@ my $config = LoadFile("$configpath/_config.yaml");
 my $adj = $config->{adj};
 my $data = $config->{data};
 my $parentdir = $config->{parentdir};
-my $seed = $config->{seed};
+my $seed = $config->{rseed};
 my $subseq=$adj*2+1;
 
 use lib "$FindBin::Bin/../lib";

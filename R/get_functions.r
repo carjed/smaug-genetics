@@ -25,7 +25,8 @@ getData <- function(summfile, singfile, bindir){
   # summarize motif counts genome-wide
   cat("Counting motifs...\n")
   # Read in motif counts per chromosome
-  bins <- get_bins(bindir)
+  p1 <- "motifs_full.txt"
+  bins <- get_bins(bindir, p1)
   mct <- get_mct(bins)
 
   cat("Calculating K-mer rates...\n")
@@ -42,8 +43,8 @@ getData <- function(summfile, singfile, bindir){
 ##############################################################################
 # Helper functions for getData()
 ##############################################################################
-get_bins <- function(bindir){
-  files <- list.files(path=bindir, pattern="motifs_full.txt", full.names=T)
+get_bins <- function(bindir, pattern){
+  files <- list.files(path=bindir, pattern=pattern, full.names=T)
   if(length(files)!=22){
     msg <- paste0("Per-chromosome motif counts not initiated. \n")
     stop(msg)
@@ -86,11 +87,32 @@ toBin <- function(a,b){
 ##############################################################################
 # Function for plotting K-mer heatmaps
 ##############################################################################
-rrheat2 <- function(dat, f, levels, facetvar, nbp){
+rrheat2 <- function(dat, adj){
+
+  plotdat <- dat %>%
+  plotdat <- gpdat[gpdat$Category==categ,] %>%
+    mutate(v2=substr(Motif,1,adj),
+      v2a=factor(as.character(lapply(as.vector(v2), reverse_chars))),
+      v3=substr(Motif, adj+2, adj*2+1),
+      v4=ERV_rel_rate,
+      Category=Type,
+      v5=factor(gsub("_", ">", Type)))
+
+  nbox <- length(unique(plotdat$v2a))
+  nint <- nbox/(4^(adj-1))
+  xhi <- rep(1:(4^(adj-1)), 4^(adj-1))*nint+0.5
+  xlo <- xhi-nint
+  yhi <- rep(1:(4^(adj-1)),each=4^(adj-1))*nint+0.5
+  ylo <- yhi-nint
+  f <- data.frame(xlo,xhi,ylo,yhi)
+
+  levs_a <- as.character(lapply(as.vector(levels(plotdat$v2a)),
+		reverse_chars))
+
 	p <- ggplot()+
 	# log(v4*10000+1,2)
 	# limits=c(min(dat$v4), max(dat$v4))
-	geom_tile(data=dat, aes(x=v3, y=v2a, fill=v4))+
+	geom_tile(data=plotdat, aes(x=v3, y=v2a, fill=v4))+
 	# geom_text(data=dat, aes(x=v2a, y=v3, label=v4a, family="Courier", size=0.1))+
 	geom_rect(data=f, size=0.6, colour="grey70",
 		aes(xmin=xlo, xmax=xhi, ymin=ylo, ymax=yhi), fill=NA)+

@@ -10,6 +10,7 @@
 ##############################################################################
 cat("Loading functions and packages...\n")
 source("./R/get_functions.r")
+install_github('carjed/smaug')
 
 packages <- c("tidyverse", "broom", "RColorBrewer", "MASS", "boot", "speedglm",
 	"psych", "lmtest", "fmsb", "hexbin", "cowplot", "grid", "gtable", "gridExtra",

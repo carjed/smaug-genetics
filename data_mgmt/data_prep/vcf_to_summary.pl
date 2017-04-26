@@ -89,7 +89,8 @@ if ($makecopy eq "copy") {
       if($mac eq "singletons"){
         $pipe = "$maparse | $aaparse | $infoparse | bgzip -c > $newvcf";
       } elsif($mac eq "common"){
-        $pipe = "bcftools view -i 'AC>=10' -f PASS | $infoparse | bgzip -c > $newvcf";
+        my $filter = "bcftools view -i 'AC>=10' -f PASS";
+        $pipe = "$filter $rawvcf | $infoparse | bgzip -c > $newvcf";
       }
 
       print STDERR "Input file: $rawvcf\n";

@@ -8,18 +8,21 @@
 # The usePackage function loads packages if they already exist,
 # otherwise installs from default CRAN repository
 ##############################################################################
-cat("Loading functions and packages...\n")
-source("./R/get_functions.r")
+cat("Loading packages...\n")
+# source("./R/get_functions.r")
+
+require(devtools)
 install_github('carjed/smaug')
+require(smaug)
 
 packages <- c("tidyverse", "broom", "RColorBrewer", "MASS", "boot", "speedglm",
 	"psych", "lmtest", "fmsb", "hexbin", "cowplot", "grid", "gtable", "gridExtra",
-	"yaml", "devtools", "openxlsx", "Biostrings", "svglite", "NMF")
+	"yaml", "openxlsx", "Biostrings", "svglite", "NMF")
 
 sapply(packages, function(x) suppressMessages(usePackage(x)))
 
 # Load predefined color palettes, once RColorBrewer package is loaded
-source("./R/palettes.r")
+# source("./R/palettes.r")
 
 ##############################################################################
 # Setup: get arguments from _config.yaml file

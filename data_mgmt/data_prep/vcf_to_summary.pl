@@ -22,7 +22,7 @@ my $config = LoadFile("$configpath/_config.yaml");
 
 my $mac = $config->{mac};
 my $parentdir = $config->{parentdir};
-my $inputdir = $config->{inputdir};
+# my $inputdir = $config->{inputdir};
 my $vcftoolsdir = $config->{vcftoolsdir};
 my $rawvcfdir = $config->{rawvcfdir};
 my $rawvcfext = $config->{rawvcfext};
@@ -47,7 +47,7 @@ if(defined($ARGV[1])){
 }
 
 # Specify project folder for VCFs
-my $vcfdir="$inputdir/vcfs";
+my $vcfdir="$parentdir/vcfs";
 make_path($vcfdir);
 
 ################################################################################
@@ -112,8 +112,8 @@ my $script = 1;
 
 if ($script==1){
   my @vcfs = File::Find::Rule->file()
-                            ->name("*${mac}.vcf.gz")
-                            ->maxdepth(2)
+                            ->name("*$mac.vcf.gz")
+                            ->maxdepth(1)
                             ->in($vcfdir);
   my $header;
   if($mac eq "common"){

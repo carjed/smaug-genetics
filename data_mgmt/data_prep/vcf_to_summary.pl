@@ -113,7 +113,7 @@ my $script = 1;
 if ($script==1){
   my @vcfs = File::Find::Rule->file()
                             ->name("$mac.vcf.gz")
-                            ->maxdepth(1)
+                            ->maxdepth(2)
                             ->in($vcfdir);
   my $header;
   if($mac eq "common"){

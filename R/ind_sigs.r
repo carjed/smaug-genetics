@@ -267,55 +267,61 @@ ggsave("/net/bipolar/jedidiah/mutation/images/sig_snp_pcs.png", width=8, height=
 ###############################################################################
 # Correlate with Alexandrov's somatic signatures
 ###############################################################################
-cs <- read.table(paste0(parentdir, "/cancer_sigs.txt"), header=T, sep="\t")
 
-cs <- cs[,1:33]
+somatic_corr <- 0
 
-snames <- paste0("S", 1:30)
+if(somatic_corr){
+  cs <- read.table(paste0(parentdir, "/cancer_sigs.txt"), header=T, sep="\t")
 
-names(cs) <- c("Category", "Seq3", "Type", snames)
+  cs <- cs[,1:33]
 
-cs$Category <- as.factor(cs$Category)
-levels(cs$Category) <- c("GC_TA", "GC_CG", "GC_AT", "AT_TA", "AT_GC", "AT_CG")
+  snames <- paste0("S", 1:30)
 
-cs$Seq3a <- as.character(reverse(complement(DNAStringSet(cs$Seq3))))
-#cs<-cs %>% mutate(Seq3b=revcomp(Seq3))
-#cs$Seq3a<-apply(cs$Seq3, 2, function(x) revcomp(x))
+  names(cs) <- c("Category", "Seq3", "Type", snames)
 
-cs$Sequence <- ifelse(
-  substr(cs$Seq3,2,2)<substr(cs$Seq3a,2,2),
-  paste0(cs$Seq3,"(",cs$Seq3a,")"),
-  paste0(cs$Seq3a,"(",cs$Seq3,")")
-)
+  cs$Category <- as.factor(cs$Category)
+  levels(cs$Category) <- c("GC_TA", "GC_CG", "GC_AT", "AT_TA", "AT_GC", "AT_CG")
 
-cs2 <- cs %>%
-  arrange(Category, Sequence) %>%
-  mutate(subtype=paste0(Category, "_", Sequence))
+  cs$Seq3a <- as.character(reverse(complement(DNAStringSet(cs$Seq3))))
+  #cs<-cs %>% mutate(Seq3b=revcomp(Seq3))
+  #cs$Seq3a<-apply(cs$Seq3, 2, function(x) revcomp(x))
 
-bin_coefs <- data.frame(subtype=colnames(coef(bins_nmf)), t(coef(bins_nmf)))
-names(bin_coefs) <- c("subtype", "binsig1", "binsig2", "binsig3")
+  cs$Sequence <- ifelse(
+    substr(cs$Seq3,2,2)<substr(cs$Seq3a,2,2),
+    paste0(cs$Seq3,"(",cs$Seq3a,")"),
+    paste0(cs$Seq3a,"(",cs$Seq3,")")
+  )
 
-ind_coefs <- data.frame(subtype=colnames(coef(ind_nmf)), t(coef(ind_nmf)))
-names(ind_coefs) <- c("subtype", "indsig1", "indsig2", "indsig3")
+  cs2 <- cs %>%
+    arrange(Category, Sequence) %>%
+    mutate(subtype=paste0(Category, "_", Sequence))
 
-cs2 <- merge(cs2, bin_coefs, by="subtype")
-cs2 <- merge(cs2, ind_coefs, by="subtype")
+  bin_coefs <- data.frame(subtype=colnames(coef(bins_nmf)), t(coef(bins_nmf)))
+  names(bin_coefs) <- c("subtype", "binsig1", "binsig2", "binsig3")
 
-corrheat <- cs2 %>%
-  dplyr::select(c(S1:S30, binsig1:binsig3, indsig1:indsig3)) %>%
-  correlate() %>%
-  focus(c(binsig1:binsig3, indsig1:indsig3)) %>%
-  gather(key, correlation, -rowname)
+  ind_coefs <- data.frame(subtype=colnames(coef(ind_nmf)), t(coef(ind_nmf)))
+  names(ind_coefs) <- c("subtype", "indsig1", "indsig2", "indsig3")
 
-corrheat$rowname <- as.factor(corrheat$rowname)
-levels(corrheat$rowname) <- paste0("S", 1:30)
+  cs2 <- merge(cs2, bin_coefs, by="subtype")
+  cs2 <- merge(cs2, ind_coefs, by="subtype")
 
-ggplot(corrheat, aes(x=key, y=rowname, fill=correlation))+
-  geom_tile()+
-  xlab("ERV Signature")+
-  ylab("Somatic Signature")+
-  scale_fill_gradient(low="white",high="darkgreen")
-ggsave(paste0(parentdir, "/images/sigheat.png"))
+  corrheat <- cs2 %>%
+    dplyr::select(c(S1:S30, binsig1:binsig3, indsig1:indsig3)) %>%
+    correlate() %>%
+    focus(c(binsig1:binsig3, indsig1:indsig3)) %>%
+    gather(key, correlation, -rowname)
+
+  corrheat$rowname <- as.factor(corrheat$rowname)
+  levels(corrheat$rowname) <- paste0("S", 1:30)
+
+  ggplot(corrheat, aes(x=key, y=rowname, fill=correlation))+
+    geom_tile()+
+    xlab("ERV Signature")+
+    ylab("Somatic Signature")+
+    scale_fill_gradient(low="white",high="darkgreen")
+  ggsave(paste0(parentdir, "/images/sigheat.png"))
+
+}
 
 ###############################################################################
 # Additional QC

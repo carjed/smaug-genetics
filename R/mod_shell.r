@@ -11,9 +11,9 @@
 cat("Loading functions and packages...\n")
 source("./R/get_functions.r")
 
-packages <- c("tidyverse", "RColorBrewer", "MASS", "boot", "speedglm", "psych",
-"lmtest", "fmsb", "hexbin", "cowplot", "grid", "gtable", "gridExtra", "yaml",
-"devtools", "openxlsx", "Biostrings", "svglite", "NMF")
+packages <- c("tidyverse", "broom", "RColorBrewer", "MASS", "boot", "speedglm",
+	"psych", "lmtest", "fmsb", "hexbin", "cowplot", "grid", "gtable", "gridExtra",
+	"yaml", "devtools", "openxlsx", "Biostrings", "svglite", "NMF")
 
 sapply(packages, function(x) suppressMessages(usePackage(x)))
 

@@ -17,10 +17,14 @@ getData <- function(summfile, singfile, bindir){
   sites$MASK <- binaryCol(sites,
     paste0(parentdir, "/reference_data/testmask2.bed"))
 
-  cat("Annotating with sample ID...\n")
-  inds <- read.table(singfile, header=T, stringsAsFactors=F)
-  names(inds) <- c("CHR", "POS", "S", "ALT", "ID")
-  sites <- merge(sites, inds, by=c("CHR", "POS", "ALT"))
+  if(!missing(singfile)){
+    cat("Annotating with sample ID...\n")
+    inds <- read.table(singfile, header=T, stringsAsFactors=F)
+    names(inds) <- c("CHR", "POS", "S", "ALT", "ID")
+    sites <- merge(sites, inds, by=c("CHR", "POS", "ALT"))
+  } else {
+    cat("No ID file specified! Downstream scripts may fail.\n")
+  }
 
   # summarize motif counts genome-wide
   cat("Counting motifs...\n")

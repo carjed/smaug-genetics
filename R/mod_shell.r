@@ -107,7 +107,7 @@ if(build_logit){
 ##############################################################################
 ptm <- proc.time()
 cat("Analyzing K-mer mutation rates...\n")
-source("/R/kmer_analysis.r")
+source("./R/kmer_analysis.r")
 tottime <- (proc.time()-ptm)[3]
 cat("Done (", tottime, "s)\n")
 
@@ -116,7 +116,7 @@ cat("Done (", tottime, "s)\n")
 ##############################################################################
 ptm <- proc.time()
 cat("Comparing with AV model...\n")
-source("/R/av_comp.r")
+source("./R/av_comp.r")
 tottime <- (proc.time()-ptm)[3]
 cat("Done (", tottime, "s)\n")
 

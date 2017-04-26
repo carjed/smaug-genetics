@@ -25,18 +25,6 @@ orderedcats <- c("AT_CG", "AT_GC", "AT_TA",
 #Define colors if using this ordering
 # cols <- myPaletteCat(12)[c(8,10,12,2,4,6,1,3,5)]
 
-# reordered to group ts and tv
-orderedcats1 <- c("AT_GC", "GC_AT", "cpg_GC_AT",
-  "AT_CG", "GC_CG", "cpg_GC_CG",
-  "AT_TA", "GC_TA", "cpg_GC_TA")
-orderedcats2 <- c("A>G", "C>T", "CpG>TpG",
-  "A>C", "C>G", "CpG>GpG",
-  "A>T", "C>A", "CpG>ApG")
-cols <- myPaletteCat(12)[
-  c(10,2,1,
-    8,4,3,
-    12,6,5)] #<- colors if using this ordering
-
 orderedcats1 <- c("AT_GC", "AT_CG", "AT_TA",
   "GC_AT", "GC_TA", "GC_CG",
   "cpg_GC_AT", "cpg_GC_TA", "cpg_GC_CG")
@@ -47,3 +35,20 @@ cols <- myPaletteCat(12)[
   c(10,8,12,
     2,4,6,
     1,3,5)] #<- colors if using this ordering
+
+# cols returns following color list:
+# "#6A3D9A" "#FF7F00" "#B15928" # A>N
+# "#1F78B4" "#33A02C" "#E31A1C" # C>N (non-CpG)
+# "#A6CEE3" "#B2DF8A" "#FB9A99" # CpG>NpG
+
+# DEPRECATED: groups transitions & transversions
+# orderedcats1 <- c("AT_GC", "GC_AT", "cpg_GC_AT",
+#   "AT_CG", "GC_CG", "cpg_GC_CG",
+#   "AT_TA", "GC_TA", "cpg_GC_TA")
+# orderedcats2 <- c("A>G", "C>T", "CpG>TpG",
+#   "A>C", "C>G", "CpG>GpG",
+#   "A>T", "C>A", "CpG>ApG")
+# cols <- myPaletteCat(12)[
+#   c(10,2,1,
+#     8,4,3,
+#     12,6,5)] #<- colors if using this ordering

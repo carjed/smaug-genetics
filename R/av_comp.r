@@ -20,8 +20,7 @@ avrates <- avrates %>%
 
 r5m <- merge(rates7, avrates, by=c("Type", "Motif"))
 
-r5m$Category2 <- ifelse(
-  substr(r5m$Motif,4,5)=="CG",
+r5m$Category2 <- ifelse(substr(r5m$Motif,4,5)=="CG",
   paste0("cpg_",r5m$Type),
   r5m$Type)
 
@@ -39,6 +38,15 @@ r5m$v2 <- substr(r5m$Motif,1,3)
 r5m$v2a <- as.character(lapply(as.vector(r5m$v2), reverse_chars))
 r5m$v2a <- factor(r5m$v2a)
 r5m$v3 <- substr(r5m$Motif,3+2,3*2+1)
+
+##############################################################################
+# Get BRIDGES MAC10+ rates
+##############################################################################
+summfile <- paste0(parentdir, "/summaries/full.summary")
+singfile <- paste0(parentdir, "/singletons/full.singletons")
+bindir <- paste0(parentdir, "/motif_counts/", nbp, "-mers/full")
+
+full_data <- getData(commonfile, singfile, bindir)
 
 ##############################################################################
 # Plot heatmap of change in relative rates

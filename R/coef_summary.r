@@ -66,7 +66,6 @@ theme_coef <- function(base_size = 12, base_family = ""){
     axis.title.y=element_text(size=12))
 }
 
-svglite(paste0(parentdir, "/images/coef_violin2.svg"), width=7, height=7)
 plotdat %>%
   filter(Cov!="CpGI") %>%
   ggplot(aes(x=Category, y=exp(Est), alpha=factor(dir), fill=Category))+
@@ -85,9 +84,8 @@ plotdat %>%
     ylab("odds ratio for mutability")+
     guides(fill = guide_legend(nrow = 3))+
     theme_coef()
-dev.off()
+ggsave(paste0(parentdir, "/images/coef_violin2.svg"), width=7, height=7)
 
-svglite(paste0(parentdir, "/images/coef_violin2_cpgi2.svg"), width=7, height=7)
 plotdat %>%
   ggplot(aes(x=Category, y=exp(Est), alpha=factor(dir), fill=Category))+
     geom_hline(yintercept=1, linetype="dashed")+
@@ -105,7 +103,7 @@ plotdat %>%
     ylab("odds ratio for mutability")+
     guides(fill = guide_legend(nrow = 3))+
     theme_coef()
-dev.off()
+ggsave(paste0(parentdir, "/images/coef_violin2_cpgi2.svg"), width=7, height=7)
 
 coefs <- coefs %>%
   mutate(Category = plyr::mapvalues(Category, orderedcats1, orderedcats2))

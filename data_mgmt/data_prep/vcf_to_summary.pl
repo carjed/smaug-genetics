@@ -76,7 +76,7 @@ if ($makecopy eq "copy") {
 
       # first command extracts singletons with filter PASS, including any that
       # occur in multiallelic sites
-      my $maparse = "perl $relpath/ma_parse.pl --i $rawvcf --mac $mac";
+      my $maparse = "perl $relpath/ma_parse.pl --i $rawvcf";
 
       # second command fills ancestral allele to AA field
       my $aaparse = "perl $vcftoolsdir/perl/fill-aa -a $ancestral";

@@ -42,11 +42,24 @@ r5m$v3 <- substr(r5m$Motif,3+2,3*2+1)
 ##############################################################################
 # Get BRIDGES MAC10+ rates
 ##############################################################################
-summfile <- paste0(parentdir, "/summaries/full.summary")
-singfile <- paste0(parentdir, "/singletons/full.singletons")
+commonfile <- paste0(parentdir, "/summaries/common.full.summary")
+# singfile <- paste0(parentdir, "/singletons/full.singletons")
 bindir <- paste0(parentdir, "/motif_counts/", nbp, "-mers/full")
 
-full_data <- getData(commonfile, singfile, bindir)
+common_data <- getData(summfile=commonfile, bindir=bindir)
+
+i <- 3
+gpdat <- common_data$aggseq %>%
+  mutate(Type=gsub("cpg_", "", Category2),
+    SEQA=substr(Motif, cbp-i, cbp+i),
+    SEQB=substr(Motif, cbp*3-i, cbp*3+i),
+    Motif=paste0(SEQA, "(", SEQB, ")")) %>%
+    dplyr::select(Type, Motif, nERVs) %>%
+    group_by(Type, Motif) %>%
+    summarise(nMAC10=sum(nERVs))
+
+r5m <- merge(r5m, gpdat, by=c("Type", "Motif")) %>%
+  mutate(MAC10_rel_rate=nMAC10/nMotifs)
 
 ##############################################################################
 # Plot heatmap of change in relative rates

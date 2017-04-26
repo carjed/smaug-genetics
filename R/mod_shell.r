@@ -48,7 +48,7 @@ nbp <- adj*2+1
 datadir <- paste0(parentdir,
 	"/output/", nbp, "bp_", bink, "k_singletons_", data)
 
-summfile <- paste0(parentdir, "/summaries/full.summary")
+summfile <- paste0(parentdir, "/summaries/", mac, ".", data, ".summary")
 singfile <- paste0(parentdir, "/singletons/full.singletons")
 bindir <- paste0(parentdir, "/motif_counts/", nbp, "-mers/full")
 
@@ -79,8 +79,6 @@ full_data$sites <- full_data$sites %>%
 ##############################################################################
 if(build_logit){
 	cat("Preparing data for logistic regression model...\n")
-
-	mut_cats <- c("AT_CG", "AT_GC", "AT_TA", "GC_AT", "GC_CG", "GC_TA")
 
 	i<-3
 	for(chr in 1:22){

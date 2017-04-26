@@ -51,7 +51,7 @@ rseed: 36087318
 # rawvcfext defines the suffix of the raw vcfs we want to copy into inputdir
 ##############################################################################
 rawvcfdir: "/net/bipolar/lockeae/final_freeze/snps/vcfs"
-rawvcfext: "filtered.sites.vcf.gz"
+rawvcfext: "filtered.sites.modified.vcf.gz"
 
 ##############################################################################
 # set flags for which files to output when running augment_summary.pl script

@@ -4,46 +4,36 @@
 # Script for running genome-wide models
 # Built under R version 3.3.2
 ##############################################################################
-# Setup: load function helper scripts and packages
-# The usePackage function loads packages if they already exist,
-# otherwise installs from default CRAN repository
+
+##############################################################################
+# Setup: load functions, packages, and arguments
 ##############################################################################
 cat("Loading packages...\n")
 # source("./R/get_functions.r")
-
-require(devtools)
-install_github('carjed/smaug')
-require(smaug)
-
-packages <- c("tidyverse", "broom", "RColorBrewer", "MASS", "boot", "speedglm",
-	"psych", "lmtest", "fmsb", "hexbin", "cowplot", "grid", "gtable", "gridExtra",
-	"yaml", "openxlsx", "Biostrings", "svglite", "NMF")
-
-sapply(packages, function(x) suppressMessages(usePackage(x)))
-
 # Load predefined color palettes, once RColorBrewer package is loaded
 # source("./R/palettes.r")
 
-##############################################################################
-# Setup: get arguments from _config.yaml file
-##############################################################################
+# load packages from Github
+require(devtools)
+install_github('carjed/smaug', quiet=TRUE)
+install_github('slowkow/ggrepel', quiet=TRUE)
+gh_packages <- c("smaug", "ggrepel")
+sapply(gh_packages, function(x) suppressMessages(require(x)))
+
+# load CRAN packages
+packages <- c("tidyverse", "broom", "RColorBrewer", "MASS", "boot", "speedglm",
+	"psych", "lmtest", "fmsb", "hexbin", "cowplot", "grid", "gtable", "gridExtra",
+	"yaml", "openxlsx", "Biostrings", "svglite", "NMF")
+sapply(packages, function(x) suppressMessages(usePackage(x)))
+
+# load Bioconductor packages
+# suppressMessages(usePackage(ggbio))
+
 args <- yaml.load_file("./_config.yaml")
 attach(args)
 
 cat("Script will run with the following parameters:\n")
-print(data.frame(n=paste0(names(args), ": ", unlist(args))), right=F)
-
-# Install the bedr package from github, if needed
-# install_github('carjed/bedr')
-
-# Load forked bedr package from custom library path specified in config file
-suppressMessages(require(bedr, lib.loc=libpath, quietly=T))
-
-# suppressMessages(usePackage(ggbio))
-
-# Install ggrepel from github for advanced options
-# install_github('slowkow/ggrepel')
-# suppressMessages(require(ggrepel))
+print(data.frame(ARGLIST = paste0(names(args), ":\t", unlist(args))), right=F)
 
 # Define additional variables for cleaner strings, etc.
 bink <- binw/1000
@@ -70,13 +60,18 @@ full_data <- getData(summfile, singfile, bindir)
 # Drop singletons in individuals with abnormal mutation signatures
 ##############################################################################
 ptm <- proc.time()
+
 cat("Analyzing sample mutation signatures...\n")
 source("./R/ind_sigs.r")
-tottime <- (proc.time()-ptm)[3]
-cat("Done (", tottime, "s)\n")
 
 full_data$sites <- full_data$sites %>%
-	filter(ID %in% keep_ids$ID)
+	filter(ID %in% ped$V1)
+
+# full_data$sites <- full_data$sites %>%
+# 	filter(ID %in% keep_ids$ID)
+
+tottime <- (proc.time()-ptm)[3]
+cat("Done (", tottime, "s)\n")
 
 ##############################################################################
 # Prepare singleton input for logit model
@@ -108,8 +103,10 @@ if(build_logit){
 # Get relative mutation rates per subtype; plot as heatmap
 ##############################################################################
 ptm <- proc.time()
+
 cat("Analyzing K-mer mutation rates...\n")
 source("./R/kmer_analysis.r")
+
 tottime <- (proc.time()-ptm)[3]
 cat("Done (", tottime, "s)\n")
 
@@ -117,8 +114,10 @@ cat("Done (", tottime, "s)\n")
 # Compare 7-mer rates between ERVs and Aggarwala & Voight rates
 ##############################################################################
 ptm <- proc.time()
+
 cat("Comparing with AV model...\n")
 source("./R/av_comp.r")
+
 tottime <- (proc.time()-ptm)[3]
 cat("Done (", tottime, "s)\n")
 
@@ -135,23 +134,30 @@ if(file.exists(sitefile)){
 	# 	-ERVs (MU_S)
 	# 	-AV (MU_A)
 	ptm <- proc.time()
+
 	cat("Validating models on de novo mutations...\n")
 	source("./R/validation.r")
+
 	tottime <- (proc.time()-ptm)[3]
 	cat("Done (", tottime, "s)\n")
 
 	# Analyze effects of genomic features
 	ptm <- proc.time()
+
 	cat("Analyzing genomic features...\n")
 	source("./R/coef_summary.r")
+
 	tottime <- (proc.time()-ptm)[3]
 	cat("Done (", tottime, "s)\n")
 
 	# Run region-based models
 	if(negbin_model){
-		cat("Initializing negbin regression model...\n")
+
 		ptm <- proc.time()
+
+		cat("Initializing negbin regression model...\n")
 		source("./R/negbin_mod.r")
+
 		tottime <- (proc.time()-ptm)[3]
 		cat("Done. Finished in", tottime, "seconds \n")
 	}

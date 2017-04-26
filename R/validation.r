@@ -30,7 +30,7 @@ chrpdnm <- chrp[chrp$ID!="all",] %>%
   mutate(SIM="a", SIMOBS=0)
 chrp <- chrp[chrp$ID=="all",]
 
-set.seed(seed)
+set.seed(rseed)
 chrp <- chrp[sample(nrow(chrp), 2000000),] %>%
   mutate(SIM="ab", SIMOBS=0) # include in simulation analysis
 

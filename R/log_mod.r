@@ -5,7 +5,7 @@
 ##############################################################################
 args <- commandArgs(trailingOnly=TRUE)
 
-categ <- args[1]
+catopt <- args[1]
 parentdir <- args[2]
 libpath <- args[3]
 jobid <- args[4]
@@ -13,43 +13,45 @@ jobid <- as.numeric(jobid)
 
 options(useHTTPS=FALSE)
 suppressMessages(require(speedglm, lib.loc=libpath, quietly=T))
-suppressMessages(require(bedr, lib.loc=libpath, quietly=T))
+suppressMessages(require(smaug, lib.loc=libpath, quietly=T))
 suppressMessages(require(dplyr, lib.loc=libpath, quietly=T))
-suppressMessages(require(BSgenome.Hsapiens.UCSC.hg19, lib.loc=libpath, quietly=T))
-suppressMessages(require(Repitools, lib.loc=libpath, quietly=T))
 suppressMessages(require(boot, lib.loc=libpath, quietly=T))
 suppressMessages(require(yaml, lib.loc=libpath, quietly=T))
 
-source(paste0(parentdir, "/smaug-genetics/R/get_functions.r"))
+# source(paste0(parentdir, "/smaug-genetics/R/get_functions.r"))
 
 yaml_args <- yaml.load_file(paste0(parentdir, "/smaug-genetics/_config.yaml"))
 attach(yaml_args)
 
-nbp <- 7
+options(scipen = 8)
+
+nbp_run <- 7
 
 # Fast list of 6 basic categories from agg_5bp_100k data
 mut_cats <- c("AT_CG", "AT_GC", "AT_TA", "GC_AT", "GC_CG", "GC_TA")
 
 # subset reference data to only AT or GC bases
-catopt <- substr(categ,0,2)
+# catopt <- substr(categ,0,2)
+
+run_cats <- mut_cats[grepl(paste0("^", catopt), mut_cats)]
 
 motiffile <- paste0(parentdir, "/output/7bp_1000k_rates.txt")
 incmd <- paste0("cut -f1-3 ", motiffile)
 motifdat <- read.table(pipe(incmd), header=T, stringsAsFactors=F)
 motifs <- motifdat %>%
 	mutate(Category=gsub("cpg_", "", Category2)) %>%
-	filter(Category==categ) %>%
+	filter(grepl(paste0("^", catopt), Category)) %>%
 	dplyr::select(Sequence) %>%
 	unlist
 
 runmotif <- motifs[jobid]
-escmotif <- substr(runmotif, 0, nbp)
+escmotif <- substr(runmotif, 0, nbp_run)
 
 ##############################################################################
 # Function for running logit model--given input motif,
 # writes predicted mutation rates and returns list of coefficient estimates
 ##############################################################################
-logitMod <- function(motif, nbp, parentdir, categ){
+logitMod <- function(motif, nbp, parentdir, categ, split){
 
 	escmotif <- substr(motif, 0, nbp)
 
@@ -60,8 +62,8 @@ logitMod <- function(motif, nbp, parentdir, categ){
 
 	sites <- read.table(sitefile, header=F, stringsAsFactors=F)
 	names(sites) <- c("CHR", "POS", "Sequence", mut_cats, "DP")
-	# sites <- sites %>%
-	# 	arrange(CHR, POS)
+	sites <- sites %>%
+		arrange(CHR, POS)
 
 	# Add histone marks to site data
 	hists <- c("H3K4me1", "H3K4me3", "H3K9ac", "H3K9me3",
@@ -101,9 +103,10 @@ logitMod <- function(motif, nbp, parentdir, categ){
 	predicted <- sites[,1:2]
 
 	coefs <- data.frame()
-
+	mut_cats <- c("AT_CG", "AT_GC", "AT_TA", "GC_AT", "GC_CG", "GC_TA")
 	ind <- match(categ, mut_cats)+3
-	if(sum(sites[,catind])>10){
+
+	if(sum(sites[,ind])>10){
 		log_mod_formula <- as.formula(paste(categ, "~",
 			paste(names(sites)[-(1:9)], collapse="+")))
 		log_mod <- speedglm(log_mod_formula, data=sites, family=binomial(), maxit=50)
@@ -115,10 +118,9 @@ logitMod <- function(motif, nbp, parentdir, categ){
 		coefs <- cbind(Cov = rownames(coefs), coefs)
 		coefs$Cov <- as.character(coefs$Cov)
 		rownames(coefs) <- NULL
-
-		coefs[,-1] <- data.frame(apply(coefs[,-1], 2,
-			function(x) as.numeric(as.character(x))))
 		names(coefs) <- c("Cov", "Estimate", "SE", "Z", "pval")
+		coefs$pval <- as.numeric(as.character(coefs$pval))
+
 		coefs$Sequence <- escmotif
 
 	} else {
@@ -126,33 +128,18 @@ logitMod <- function(motif, nbp, parentdir, categ){
 		predicted$mu <- round(sum(sites$mut)/nrow(sites), 6)
 	}
 
-	# New dir for each bin (slower to write, faster to sort)
-		# chr.split<-split(sites, sites$CHR)
-		# for(i in 1:length(chr.split)){
-		# 	bin.split<-split(chr.split[[i]], chr.split[[i]]$BIN)
-		# 	for(j in 1:length(bin.split)){
-		# 		chr<-unique(bin.split[[j]]$CHR)
-		# 		bin<-unique(bin.split[[j]]$BIN)
-		# 		preddir <- paste0(parentdir,
-						# "/output/predicted/", categ, "/chr", chr, "/bin", bin, "/")
-		# 		dir.create(preddir, recursive=T)
-		#
-		# 		predfile<-paste0(preddir, categ, "_", escmotif, ".txt")
-				# write.table(bin.split[[j]], predfile,
-				# 	col.names=F, row.names=F, quote=F, sep="\t")
-		# 	}
-		# }
-
 	# New dir for each chromosome (faster to write, slower to sort?)
-	chr.split <- split(predicted, predicted$CHR)
-	for(i in 1:length(chr.split)){
-		chr <- unique(chr.split[[i]]$CHR)
-		preddir <- paste0(parentdir, "/output/predicted/", categ, "/chr", chr, "/")
-		dir.create(preddir, recursive=T)
+	if(split){
+		chr.split <- split(predicted, predicted$CHR)
+		for(i in 1:length(chr.split)){
+			chr <- unique(chr.split[[i]]$CHR)
+			preddir <- paste0(parentdir, "/output/predicted/", categ, "/chr", chr, "/")
+			dir.create(preddir, recursive=T)
 
-		predfile <- paste0(preddir, categ, "_", escmotif, ".txt")
-		write.table(chr.split[[i]], predfile,
-			col.names=F, row.names=F, quote=F, sep="\t")
+			predfile <- paste0(preddir, categ, "_", escmotif, ".txt")
+			write.table(chr.split[[i]], predfile,
+				col.names=F, row.names=F, quote=F, sep="\t")
+		}
 	}
 
 	return(coefs)
@@ -163,9 +150,11 @@ logitMod <- function(motif, nbp, parentdir, categ){
 ##############################################################################
 cat("Running model on", runmotif, "sites...\n")
 
-coefs <- logitMod(motif=runmotif, nbp=nbp, parentdir=parentdir, categ=categ)
+for(categ in run_cats){
+	coefs <- logitMod(motif=runmotif, nbp=nbp_run, parentdir=parentdir, categ=categ, split=FALSE)
 
-coefdir <- paste0(parentdir, "/output/logmod_data/coefs/", categ, "/")
-dir.create(coefdir, recursive=T)
-coeffile <- paste0(coefdir, categ, "_", escmotif, "_coefs.txt")
-write.table(coefs, coeffile, col.names=F, row.names=F, quote=F, sep="\t")
+	coefdir <- paste0(parentdir, "/output/logmod_data/coefs/", categ, "/")
+	dir.create(coefdir, recursive=T)
+	coeffile <- paste0(coefdir, categ, "_", escmotif, "_coefs.txt")
+	write.table(coefs, coeffile, col.names=F, row.names=F, quote=F, sep="\t")
+}

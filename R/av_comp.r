@@ -43,9 +43,7 @@ r5m$v3 <- substr(r5m$Motif,3+2,3*2+1)
 # Get BRIDGES MAC10+ rates
 ##############################################################################
 commonfile <- paste0(parentdir, "/summaries/common.full.summary")
-# singfile <- paste0(parentdir, "/singletons/full.singletons")
 bindir <- paste0(parentdir, "/motif_counts/", nbp, "-mers/full")
-
 common_data <- getData(summfile=commonfile, bindir=bindir)
 
 i <- 3
@@ -61,11 +59,133 @@ gpdat <- common_data$aggseq %>%
 r5m <- merge(r5m, gpdat, by=c("Type", "Motif")) %>%
   mutate(MAC10_rel_rate=nMAC10/nMotifs)
 
+rm2 <- r5m %>% dplyr::select(-Category2)
+
+##############################################################################
+# Theme & styling for 7-mer rate comparison plots
+##############################################################################
+theme_mac_comp <- function(base_size = 12, base_family = ""){
+  theme_bw(base_size = base_size) %+replace%
+  theme(legend.position="bottom",
+    strip.text.x=element_text(size=14),
+    legend.title=element_text(size=12),
+    axis.title.x=element_text(size=14),
+    axis.title.y=element_text(size=14, angle=90),
+		axis.text.x=element_text(size=12, angle=45, hjust=1, vjust=1),
+		axis.text.y=element_text(size=12))
+}
+
+format_mac_comp <- list(
+  coord_fixed(),
+  scale_colour_manual(values=cols),
+  guides(colour = guide_legend(title=NULL,
+      nrow=3,
+      override.aes = list(alpha=1, shape=16))),
+  scale_x_log10(expand=c(0,0),
+    labels=c(0.0001, 0.001, 0.01, 0.1),
+    breaks=c(0.0001, 0.001, 0.01, 0.1),
+    limits=c(0.00005, 0.22)),
+  scale_y_log10(expand=c(0,0),
+    labels=c(0.0001, 0.001, 0.01, 0.1),
+		breaks=c(0.0001, 0.001, 0.01, 0.1),
+		limits=c(0.00005, 0.22)))
+
+format_mac_comp_facet <- function(corlabs){
+  list(
+    geom_point(data=rm2, alpha=0.3, size=2, colour="grey70"),
+    geom_hex(bins=50),
+    geom_abline(intercept=0, linetype="dashed"),
+    geom_text(data=corlabs, aes(label=paste0("rho==", round(cor,2))),
+              x=-Inf, y=Inf, hjust=0, vjust=1, parse=TRUE, size=4),
+    scale_fill_gradientn(colours = myPalette(6)),
+    facet_wrap(~Category2, dir="v"),
+    theme(legend.position="none")
+  )
+}
+
+format_mac_comp_nf <- list(
+  geom_point(aes(group=Category2, colour=Category2),
+    alpha=0.3, size=2, shape=1),
+  geom_abline(intercept=0, linetype="dashed"))
+
+ervlab <- "Relative mutation rate \n (BRIDGES ERVs)"
+mac10lab <- "Relative mutation rate \n (BRIDGES MAC10+ variants)"
+avlab <- "Relative mutation rate \n (1000G EUR intergenic variants)"
+
+##############################################################################
+# ERVs vs AV
+##############################################################################
+p <- ggplot(data=r5m,
+    aes(x=ERV_rel_rate, y=eur*mean(ERV_rel_rate)/mean(eur)))+
+  xlab(ervlab)+
+  ylab(avlab)+
+  format_mac_comp+
+  theme_mac_comp()
+
+p + format_mac_comp_nf
+ggsave(paste0(parentdir, "/images/ERV_vs_AV_corr.png"),
+	width=4, height=5)
+
+corlabs <- r5m %>%
+	group_by(Category2) %>%
+	summarise(cor=cor(ERV_rel_rate, eur, method="spearman")) %>%
+	mutate(label=paste0("rho=", round(cor,2)))
+
+p + format_mac_comp_facet(corlabs)
+ggsave(paste0(parentdir, "/images/ERV_vs_MAC10_corr_facet.png"),
+  width=6, height=6)
+
+##############################################################################
+# ERVs vs MAC10
+##############################################################################
+p <- ggplot(data=r5m,
+    aes(x=ERV_rel_rate, y=MAC10_rel_rate*mean(ERV_rel_rate)/mean(MAC10_rel_rate)))+
+  xlab(ervlab)+
+  ylab(mac10lab)+
+  format_mac_comp+
+  theme_mac_comp()
+
+p + format_mac_comp_nf
+ggsave(paste0(parentdir, "/images/ERV_vs_MAC10_corr.png"),
+	width=4, height=5)
+
+corlabs <- r5m %>%
+	group_by(Category2) %>%
+	summarise(cor=cor(ERV_rel_rate, MAC10_rel_rate, method="spearman")) %>%
+	mutate(label=paste0("rho=", round(cor,2)))
+
+p + format_mac_comp_facet(corlabs)
+ggsave(paste0(parentdir, "/images/ERV_vs_MAC10_corr_facet.png"),
+  width=6, height=6)
+
+##############################################################################
+# MAC10 vs AV
+##############################################################################
+p <- ggplot(data=r5m,
+    aes(x=MAC10_rel_rate, y=eur*mean(MAC10_rel_rate)/mean(eur)))+
+  xlab(mac10lab)+
+  ylab(avlab)+
+  format_mac_comp+
+  theme_mac_comp()
+
+p + format_mac_comp_nf
+ggsave(paste0(parentdir, "/images/MAC10_vs_AV_corr.png"),
+	width=4, height=5)
+
+corlabs <- r5m %>%
+	group_by(Category2) %>%
+	summarise(cor=cor(MAC10_rel_rate, eur, method="spearman")) %>%
+	mutate(label=paste0("rho=", round(cor,2)))
+
+p + format_mac_comp_facet(corlabs)
+ggsave(paste0(parentdir, "/images/MAC10_vs_AV_corr_facet.png"),
+  width=6, height=6)
+
 ##############################################################################
 # Plot heatmap of change in relative rates
 ##############################################################################
-nbox<-length(unique(r5m$v2a))
-nint<-nbox/4
+nbox <- length(unique(r5m$v2a))
+nint <- nbox/4
 xhi <- rep(1:4,4)*nint+0.5
 xlo <- xhi-nint
 yhi <- rep(1:4,each=4)*nint+0.5

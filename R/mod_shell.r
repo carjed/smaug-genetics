@@ -10,7 +10,6 @@
 ##############################################################################
 cat("Loading packages...\n")
 # source("./R/get_functions.r")
-# Load predefined color palettes, once RColorBrewer package is loaded
 # source("./R/palettes.r")
 
 # load packages from Github
@@ -18,13 +17,15 @@ require(devtools)
 install_github('carjed/smaug', quiet=TRUE)
 install_github('slowkow/ggrepel', quiet=TRUE)
 gh_packages <- c("smaug", "ggrepel")
-sapply(gh_packages, function(x) suppressMessages(require(x)))
+invisible(sapply(gh_packages, function(x)
+	suppressMessages(require(x, character.only=TRUE))))
 
 # load CRAN packages
 packages <- c("tidyverse", "broom", "RColorBrewer", "MASS", "boot", "speedglm",
 	"psych", "lmtest", "fmsb", "hexbin", "cowplot", "grid", "gtable", "gridExtra",
 	"yaml", "openxlsx", "Biostrings", "svglite", "NMF")
-sapply(packages, function(x) suppressMessages(usePackage(x)))
+invisible(sapply(packages, function(x)
+	suppressMessages(usePackage(x))))
 
 # load Bioconductor packages
 # suppressMessages(usePackage(ggbio))
@@ -33,7 +34,7 @@ args <- yaml.load_file("./_config.yaml")
 attach(args)
 
 cat("Script will run with the following parameters:\n")
-print(data.frame(ARGLIST = paste0(names(args), ":\t", unlist(args))), right=F)
+print(data.frame(ARGLIST = paste0(names(args), ": ", unlist(args))), right=F)
 
 # Define additional variables for cleaner strings, etc.
 bink <- binw/1000
@@ -46,32 +47,23 @@ summfile <- paste0(parentdir, "/summaries/", mac, ".", data, ".summary")
 singfile <- paste0(parentdir, "/singletons/full.singletons")
 bindir <- paste0(parentdir, "/motif_counts/", nbp, "-mers/full")
 
-##############################################################################
 # Read and preprocess data
-# returns list of 4 elements:
-# - full_data$sites (summarized info for each singleton)
-# - full_data$bins (raw bin file)
-# - full_data$mct (motif counts genome-wide)
-# -full_data$aggseq (initial relative mutation rates per K-mer subtype)
-##############################################################################
 full_data <- getData(summfile, singfile, bindir)
+gc()
 
 ##############################################################################
 # Drop singletons in individuals with abnormal mutation signatures
 ##############################################################################
-ptm <- proc.time()
-
 cat("Analyzing sample mutation signatures...\n")
-source("./R/ind_sigs.r")
+timefun("./R/ind_sigs.r")
 
 full_data$sites <- full_data$sites %>%
 	filter(ID %in% ped$V1)
+dim(full_data$sites)
 
-# full_data$sites <- full_data$sites %>%
-# 	filter(ID %in% keep_ids$ID)
-
-tottime <- (proc.time()-ptm)[3]
-cat("Done (", tottime, "s)\n")
+full_data$sites <- full_data$sites %>%
+	filter(ID %in% keep_ids$ID)
+dim(full_data$sites)
 
 ##############################################################################
 # Prepare singleton input for logit model
@@ -102,24 +94,14 @@ if(build_logit){
 ##############################################################################
 # Get relative mutation rates per subtype; plot as heatmap
 ##############################################################################
-ptm <- proc.time()
-
 cat("Analyzing K-mer mutation rates...\n")
-source("./R/kmer_analysis.r")
-
-tottime <- (proc.time()-ptm)[3]
-cat("Done (", tottime, "s)\n")
+timefun("./R/kmer_analysis.r")
 
 ##############################################################################
 # Compare 7-mer rates between ERVs and Aggarwala & Voight rates
 ##############################################################################
-ptm <- proc.time()
-
 cat("Comparing with AV model...\n")
-source("./R/av_comp.r")
-
-tottime <- (proc.time()-ptm)[3]
-cat("Done (", tottime, "s)\n")
+timefun("./R/av_comp.r")
 
 ##############################################################################
 # Scripts below assume 7-mers+features model is already complete
@@ -133,33 +115,18 @@ if(file.exists(sitefile)){
 	# 	-MAC10+ (MU_C)
 	# 	-ERVs (MU_S)
 	# 	-AV (MU_A)
-	ptm <- proc.time()
 
 	cat("Validating models on de novo mutations...\n")
-	source("./R/validation.r")
-
-	tottime <- (proc.time()-ptm)[3]
-	cat("Done (", tottime, "s)\n")
+	timefun("./R/validation.r")
 
 	# Analyze effects of genomic features
-	ptm <- proc.time()
-
 	cat("Analyzing genomic features...\n")
-	source("./R/coef_summary.r")
-
-	tottime <- (proc.time()-ptm)[3]
-	cat("Done (", tottime, "s)\n")
+	timefun("./R/coef_summary.r")
 
 	# Run region-based models
 	if(negbin_model){
-
-		ptm <- proc.time()
-
 		cat("Initializing negbin regression model...\n")
-		source("./R/negbin_mod.r")
-
-		tottime <- (proc.time()-ptm)[3]
-		cat("Done. Finished in", tottime, "seconds \n")
+		timefun("./R/negbin_mod.r")
 	}
 } else {
 	cat("Looks like you haven't run the logit models yet.

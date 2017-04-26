@@ -72,7 +72,7 @@ if ($makecopy eq "copy") {
 
       my $newvcf = "$parentdir/vcfs/$basename.ma.aa.$mac.vcf.gz";
       my $ancestral = "$parentdir/reference_data/human_ancestor_GRCh37_e59/human_ancestor_$i.fa.gz";
-      my $fasta = "$parentdir/reference_data//human_g1k_v37/chr$i.fasta.gz";
+      my $fasta = "$parentdir/reference_data/human_g1k_v37/chr$i.fasta.gz";
 
       # first command extracts singletons with filter PASS, including any that
       # occur in multiallelic sites

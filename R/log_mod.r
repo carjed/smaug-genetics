@@ -47,55 +47,51 @@ motifs <- motifdat %>%
 runmotif <- motifs[jobid]
 escmotif <- substr(runmotif, 0, nbp_run)
 
+sitefile <- paste0(parentdir, "/output/logmod_data/motifs/", escmotif, ".txt")
+sites <- read.table(sitefile, header=F, stringsAsFactors=F)
+names(sites) <- c("CHR", "POS", "Sequence", mut_cats, "DP")
+sites <- sites %>%
+	arrange(CHR, POS)
+
+# Add histone marks to site data
+hists <- c("H3K4me1", "H3K4me3", "H3K9ac", "H3K9me3",
+	"H3K27ac", "H3K27me3", "H3K36me3")
+dflist <- list()
+for(i in 1:length(hists)){
+  mark <- hists[i]
+  file <- paste0(parentdir, "/reference_data/sort.E062-",
+		mark, ".bed")
+  hist <- binaryCol(sites, file)
+  dflist[[i]] <- hist
+}
+
+df <- as.data.frame(do.call(cbind, dflist))
+names(df) <- hists
+sites <- cbind(sites, df)
+
+# Add other features
+sites$EXON <- binaryCol(sites,
+	paste0(parentdir, "/reference_data/GRCh37_RefSeq_sorted.bed"))
+sites$CpGI <- binaryCol(sites,
+	paste0(parentdir, "/reference_data/cpg_islands_sorted.bed"))
+sites$RR <- rcrCol(sites,
+	paste0(parentdir, "/reference_data/recomb_rate.bed"))
+sites$LAMIN <- binaryCol(sites,
+	paste0(parentdir, "/reference_data/lamin_B1_LADS2.bed"))
+sites$DHS <- binaryCol(sites,
+	paste0(parentdir, "/reference_data/DHS.bed"))
+sites$TIME <- repCol(sites,
+	paste0(parentdir, "/reference_data/lymph_rep_time.txt"))
+sites$GC <- gcCol(sites,
+	paste0(parentdir, "/reference_data/gc10kb.bed"))
+
+
 ##############################################################################
 # Function for running logit model--given input motif,
 # writes predicted mutation rates and returns list of coefficient estimates
 ##############################################################################
-logitMod <- function(motif, nbp, parentdir, categ, split){
+logitMod <- function(sites, categ, split){
 
-	escmotif <- substr(motif, 0, nbp)
-
-	sitefile <- paste0(parentdir, "/output/logmod_data/motifs/", escmotif, ".txt")
-
-	# if(!(file.exists(sitefile))){
-	# }
-
-	sites <- read.table(sitefile, header=F, stringsAsFactors=F)
-	names(sites) <- c("CHR", "POS", "Sequence", mut_cats, "DP")
-	sites <- sites %>%
-		arrange(CHR, POS)
-
-	# Add histone marks to site data
-	hists <- c("H3K4me1", "H3K4me3", "H3K9ac", "H3K9me3",
-		"H3K27ac", "H3K27me3", "H3K36me3")
-	dflist <- list()
-	for(i in 1:length(hists)){
-	  mark <- hists[i]
-	  file <- paste0(parentdir, "/reference_data/sort.E062-",
-			mark, ".bed")
-	  hist <- binaryCol(sites, file)
-	  dflist[[i]] <- hist
-	}
-
-	df <- as.data.frame(do.call(cbind, dflist))
-	names(df) <- hists
-	sites <- cbind(sites, df)
-
-	# Add other features
-	sites$EXON <- binaryCol(sites,
-		paste0(parentdir, "/reference_data/GRCh37_RefSeq_sorted.bed"))
-	sites$CpGI <- binaryCol(sites,
-		paste0(parentdir, "/reference_data/cpg_islands_sorted.bed"))
-	sites$RR <- rcrCol(sites,
-		paste0(parentdir, "/reference_data/recomb_rate.bed"))
-	sites$LAMIN <- binaryCol(sites,
-		paste0(parentdir, "/reference_data/lamin_B1_LADS2.bed"))
-	sites$DHS <- binaryCol(sites,
-		paste0(parentdir, "/reference_data/DHS.bed"))
-	sites$TIME <- repCol(sites,
-		paste0(parentdir, "/reference_data/lymph_rep_time.txt"))
-	sites$GC <- gcCol(sites,
-		paste0(parentdir, "/reference_data/gc10kb.bed"))
 	# sites$GC <- gcContentCalc(sites_for_GC, 10000, organism=Hsapiens)
 
 	# Run logit model for categories with >10 singletons, return coefficients
@@ -151,7 +147,7 @@ logitMod <- function(motif, nbp, parentdir, categ, split){
 cat("Running model on", runmotif, "sites...\n")
 
 for(categ in run_cats){
-	coefs <- logitMod(motif=runmotif, nbp=nbp_run, parentdir=parentdir, categ=categ, split=FALSE)
+	coefs <- logitMod(sites=sites, categ=categ, split=FALSE)
 
 	coefdir <- paste0(parentdir, "/output/logmod_data/coefs/", categ, "/")
 	dir.create(coefdir, recursive=T)

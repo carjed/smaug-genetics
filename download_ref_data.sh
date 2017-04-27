@@ -57,6 +57,7 @@ curl -s  "ftp://ftp.1000genomes.ebi.ac.uk/vol1/ftp/release/20130502/supporting/a
 # Reference genomes in fasta format
 #############################################################################
 # v37
+mkdir "$refdir/human_g1k_v37"
 curl -s "ftp://ftp-trace.ncbi.nih.gov/1000genomes/ftp/technical/reference/human_g1k_v37.fasta.gz" | gunzip -c > "$refdir/human_g1k_v37/human_g1k_v37.fasta"
 
 for i in `seq 1 22`; do
@@ -65,6 +66,7 @@ for i in `seq 1 22`; do
 done
 
 # mask v37
+mkdir "$refdir/human_g1k_v37_mask"
 bedtools maskfasta -fi "$refdir/human_g1k_v37/human_g1k_v37.fasta" -bed "$refdir/testmask2.bed" -fo "$refdir/human_g1k_v37_mask/human_g1k_v37.mask.fasta"
 
 # perl -ane 'if(/\>/){$a++;print ">$a dna:chromosome\n"}else{print;}' "$refdir/human_g1k_v37_mask/human_g1k_v37.mask.fasta" > "$refdir/human_g1k_v37_mask/human_g1k_v37.mask.fasta"

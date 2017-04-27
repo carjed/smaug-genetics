@@ -27,7 +27,8 @@ GetOptions('parentjob=i' => \$parentjob);
 my $jobids = "1-4096";
 
 # can run with --parentjob {jobno} to query failed child jobs and rebuild batch
-my @categs = qw( AT_CG AT_GC AT_TA GC_AT GC_CG GC_TA );
+# my @categs = qw( AT_CG AT_GC AT_TA GC_AT GC_CG GC_TA );
+my @categs = qw(AT GC);
 if($parentjob>1){
 		$jobids=`sacct -j $jobid --format=jobid%30,jobname%30,state | grep "FAILED" | grep -v "\\\." | awk '{print \$1}' | sed 's/${parentjob}_//g'`;
 		$jobids =~ s/\r?\n/,/g;

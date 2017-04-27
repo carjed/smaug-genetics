@@ -44,7 +44,7 @@ for my $adj (1 .. 4) {
   print $mdFH "#SBATCH --requeue \n";
   # print $mdFH "#SBATCH --exclude=psoriasis-mc01,psoriasis-mc02 \n";
   print $mdFH "#SBATCH --output=\"$slurmdir/slurmJob-%J.out\" --error=\"$slurmdir/slurmJob-%J.err\" \n";
-  print $mdFH "srun perl $relpath/augment_summary.pl \${SLURM_ARRAY_TASK_ID} $adj";
+  print $mdFH "srun perl $relpath/count_motifs.pl \${SLURM_ARRAY_TASK_ID} $adj";
   close($mdFH) or die "Unable to close file: $builddatbatch $!";
 
   my $slurmcmd="sbatch $builddatbatch";

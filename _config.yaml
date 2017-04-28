@@ -67,6 +67,7 @@ expand_summ: TRUE
 # negbin_model runs another arm of analysis currently
 # under development--no need to set to TRUE at this time
 ##############################################################################
+drop_mispolarized: FALSE
 build_logit: FALSE
 negbin_model: FALSE
 

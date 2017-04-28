@@ -66,6 +66,42 @@ full_data$sites <- full_data$sites %>%
 dim(full_data$sites)
 
 ##############################################################################
+# Get relative mutation rates per subtype; plot as heatmap
+##############################################################################
+cat("Analyzing K-mer mutation rates...\n")
+cat("Calculating K-mer rates...\n")
+full_data$aggseq <- get_aggseq(full_data$sites, full_data$mct)
+timefun("./R/kmer_analysis.r")
+
+##############################################################################
+# Compare full data to strict ancestral data
+##############################################################################
+cat("Comparing full data with high-confidence ancestral data...\n")
+timefun("./R/ancestral.r")
+
+# Choose to drop ERVs with mispolarized/unknown ancestral state?
+# Recalculates rates
+if(drop_mispolarized){
+	full_data$sites <- sites_c_hc
+	full_data$aggseq <- get_aggseq(full_data$sites, full_data$mct)
+	timefun("./R/kmer_analysis.r")
+}
+
+##############################################################################
+# Compare full data to masked data
+##############################################################################
+cat("Comparing full data with strict mask...\n")
+timefun("./R/full_vs_mask.r")
+
+# Additional filtering?
+
+##############################################################################
+# Compare 7-mer rates between ERVs and Aggarwala & Voight rates
+##############################################################################
+cat("Comparing with AV model...\n")
+timefun("./R/av_comp.r")
+
+##############################################################################
 # Prepare singleton input for logit model
 ##############################################################################
 if(build_logit){
@@ -90,18 +126,6 @@ if(build_logit){
 		write.table(dat, posfile, col.names=F, row.names=F, quote=F, sep="\t")
 	}
 }
-
-##############################################################################
-# Get relative mutation rates per subtype; plot as heatmap
-##############################################################################
-cat("Analyzing K-mer mutation rates...\n")
-timefun("./R/kmer_analysis.r")
-
-##############################################################################
-# Compare 7-mer rates between ERVs and Aggarwala & Voight rates
-##############################################################################
-cat("Comparing with AV model...\n")
-timefun("./R/av_comp.r")
 
 ##############################################################################
 # Scripts below assume 7-mers+features model is already complete

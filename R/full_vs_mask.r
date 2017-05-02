@@ -27,17 +27,21 @@ maskgpdat <- maskaggseq %>%
 		nERVs_mask=nERVs, nMotifs_mask=nMotifs,
 		ERV_rel_rate_mask=rel_prop)
 
-test_mask <- merge(ratelist[[4]], maskgpdat, by=c("Type", "Motif")) %>%
+maskgpdat <- merge(ratelist[[4]], maskgpdat, by=c("Type", "Motif"))
+
+test_mask <- maskgpdat %>%
 	filter(nERVs >= 10 & nERVs_mask >= 10) %>%
   # mutate(pval=prop.test())
   group_by(Type, Motif) %>%
   do(tidy(prop.test(c(.$nERVs, .$nERVs_mask), c(.$nMotifs, .$nMotifs_mask)))) %>%
 	dplyr::select(Type, Motif, estimate1, estimate2, statistic, p.value)
 
+test_mask <- merge(test_mask, maskgpdat, by=c("Type", "Motif"))
+
 sig_mask <- test_mask %>%
-  filter(p.value<0.05/nrow(qctestdat)) %>%
+  filter(p.value<0.05/nrow(test_mask)) %>%
   mutate(prop=estimate1/estimate2,
-    gt10=ifelse(abs(log(prop))>0.223, TRUE, FALSE)) %>%
+    gt10=ifelse(abs(log(prop))>log(1.2), TRUE, FALSE)) %>%
 	filter(gt10==TRUE) %>%
 	arrange(desc(prop))
 

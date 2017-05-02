@@ -132,30 +132,34 @@ plot_loads(sigloads)
 ggsave(paste0(parentdir, "/images/sigloads.png"))
 
 # Add NMF basis and predicted class to data frame
-ind_nmf_plotdat <- data.frame(ID=ind_wide$ID, basis(ind_nmf), sig=ind_pred[[1]])
+nmfdat1 <- data.frame(ID=ind_wide$ID, basis(ind_nmf), sig=ind_pred[[1]])
 
-# head(ind_nmf_plotdat)
-# summary(ind_nmf_plotdat$sig)
+# head(nmfdat)
+# summary(nmfdat1$sig)
 
 samples <- ped %>%
   dplyr::select(ID=V1, Study=V7, BP=V6, PC1=V14, PC2=V15, PC3=V16, PC4=V17)
 
-ind_nmf_plotdat <- merge(ind_nmf_plotdat, samples, by="ID") %>%
+nmfdat1 <- merge(nmfdat1, samples, by="ID") %>%
   mutate(sum=X1+X2+X3,
     X1a=X1/sum,
     X2a=X2/sum,
     X3a=X3/sum)
 
-ind_nmf_plotdat$ID <- factor(ind_nmf_plotdat$ID, levels = unique(ind_nmf_plotdat$ID))
+nmfdat1$ID <- factor(nmfdat1$ID, levels = unique(nmfdat1$ID))
 
-ind_nmf_long <- ind_nmf_plotdat %>%
+plates <- read.table(plates, header=F, stringsAsFactors=F)
+names(plates) <- c("ID", "PLATE")
+nmfdat1 <- merge(nmfdat1, plates, by="ID")
+
+ind_nmf_long <- nmfdat1 %>%
   gather(cluster, prob, X1a:X3a) %>%
   arrange(Study, sum)
 
 plot_ind_sigs(ind_nmf_long)
 ggsave(paste0(parentdir, "/images/by_ind_all.png"), width=12, height=8)
 
-# cbind(ind_wide, g2=ind_nmf_plotdat$sig) %>%
+# cbind(ind_wide, g2=nmfdat1$sig) %>%
 #   mutate(g2=ifelse(g2==1, TRUE, FALSE)) %>%
 #   mutate(key=paste0(ID, "+", g2)) %>%
 #   dplyr::select(-c(ID, g2)) %>%
@@ -180,13 +184,13 @@ keep_cis <- ind_nmf_long %>%
   # do(tidy(t.test(.$prob))) %>%
   # dplyr::select(cluster, conf.low, conf.high)
 
-keep_ids <- ind_nmf_plotdat %>%
+keep_ids <- nmfdat1 %>%
   filter(X1a > keep_cis[1,]$conf.low & X1a < keep_cis[1,]$conf.high) %>%
   filter(X2a > keep_cis[2,]$conf.low & X2a < keep_cis[2,]$conf.high) %>%
   filter(X3a > keep_cis[3,]$conf.low & X3a < keep_cis[3,]$conf.high) %>%
   dplyr::select(ID)
 
-drop_ids <- ind_nmf_plotdat %>%
+drop_ids <- nmfdat1 %>%
   filter(!(ID %in% keep_ids$ID)) %>%
   dplyr::select(ID)
 
@@ -201,7 +205,7 @@ ped2 %>%
 
 # plates <- read.table(plates, header=F, stringsAsFactors=F)
 # names(plates) <- c("ID", "PLATE")
-# ind_nmf_plotdat <- merge(ind_nmf_plotdat, plates, by="ID")
+# nmfdat1 <- merge(nmfdat1, plates, by="ID")
 #
 # ped2 %>%
 #   filter(HAID %in% sig1$ID) %>%
@@ -219,17 +223,17 @@ sigloads <- get_loads(ind_wide2[,-c(1)], ind_nmf2)
 plot_loads(sigloads)
 ggsave(paste0(parentdir, "/images/sigloads2.png"))
 
-ind_nmf_plotdat <- data.frame(ID=ind_wide2$ID, basis(ind_nmf2), sig=ind_pred2[[1]])
+nmfdat2 <- data.frame(ID=ind_wide2$ID, basis(ind_nmf2), sig=ind_pred2[[1]])
 
-ind_nmf_plotdat <- merge(ind_nmf_plotdat, samples, by="ID") %>%
+nmfdat2 <- merge(nmfdat2, samples, by="ID") %>%
   mutate(sum=X1+X2+X3,
     X1a=X1/sum,
     X2a=X2/sum,
     X3a=X3/sum)
 
-ind_nmf_plotdat$ID <- factor(ind_nmf_plotdat$ID, levels = unique(ind_nmf_plotdat$ID))
+nmfdat2$ID <- factor(nmfdat2$ID, levels = unique(nmfdat2$ID))
 
-ind_nmf_long <- ind_nmf_plotdat %>%
+ind_nmf_long <- nmfdat2 %>%
   gather(cluster, prob, X1a:X3a) %>%
   arrange(Study, sum)
 
@@ -237,7 +241,7 @@ plot_ind_sigs(ind_nmf_long)
 ggsave(paste0(parentdir, "/images/by_ind_keep.png"), width=12, height=8)
 
 # test for significant differences between groups
-cbind(ind_wide2, g2=ind_nmf_plotdat$sig) %>%
+cbind(ind_wide2, g2=nmfdat2$sig) %>%
   mutate(g2=ifelse(g2==2, TRUE, FALSE)) %>%
   # mutate(g2=(ID %in% s2ids$ID)) %>% # dplyr::select(ID, AT_CG_AAA.TTT., g2) %>% group_by(g2) %>% summarise(val=mean(AT_CG_AAA.TTT.))
   # group_by(g2) %>%
@@ -255,11 +259,11 @@ cbind(ind_wide2, g2=ind_nmf_plotdat$sig) %>%
   filter(p.value<0.05/96)
 
 ggplot()+
-  geom_point(data=ind_nmf_plotdat[ind_nmf_plotdat$sig==3,],
+  geom_point(data=nmfdat2[nmfdat2$sig==3,],
     aes(x=PC4, y=PC2), colour="gray30", alpha=0.3)+
-  geom_point(data=ind_nmf_plotdat[ind_nmf_plotdat$sig==1,],
+  geom_point(data=nmfdat2[nmfdat2$sig==1,],
     aes(x=PC4, y=PC2), colour="blue", alpha=0.3)+
-  geom_point(data=ind_nmf_plotdat[ind_nmf_plotdat$sig==2,],
+  geom_point(data=nmfdat2[nmfdat2$sig==2,],
     aes(x=PC4, y=PC2), colour="yellow", alpha=0.3)+
   theme_bw()
 ggsave("/net/bipolar/jedidiah/mutation/images/sig_snp_pcs.png", width=8, height=8)
@@ -331,8 +335,8 @@ if(ind_extra){
   sig1 <- ind_wide_c %>%
     filter(sig==1)
 
-  sig1 <- ind_nmf_plotdat %>% filter(sig==1)
-  sig2 <- ind_nmf_plotdat %>% filter(sig==2)
+  sig1 <- nmfdat1 %>% filter(sig==1)
+  sig2 <- nmfdat1 %>% filter(sig==2)
 
   ped2 %>%
     filter(HAID %in% sig1$ID)
@@ -347,7 +351,7 @@ if(ind_extra){
     head(300) %>%
     arrange(ID)
 
-  sig1_2<-ind_nmf_plotdat %>%
+  sig1_2<-nmfdat1 %>%
     filter(sig==1) %>%
     arrange(desc(prob)) %>%
     dplyr::select(ID, Study, sig, PLATE) %>%

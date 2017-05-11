@@ -32,11 +32,64 @@ mct3 <- get_mct_b(bins1Mb) %>%
 
 # get ids in ped file
 ped <- read.table(pedfile, header=F, stringsAsFactors=F)
-ped2 <- read.table(qcped, header=T, stringsAsFactors=F)
+names(ped)[1] <- "ID"
+
+pheno <- read.table(phenofile, header=T, stringsAsFactors=F)
+pheno <- pheno %>%
+  # filter(DROP==FALSE) %>%
+  dplyr::select(ID=SEQID, Sex, Case.Control, Study, DROP) %>%
+  filter(!(is.na(ID)))
+
+qplotdat <- read.table(qplotfile, header=T, stringsAsFactors=F)
+names(qplotdat)[1] <- "ID"
+
+contam <- read.table(contamfile, header=T, stringsAsFactors=F)
+names(contam) <- c("ID", "FREEMIX", "CHIPMIX", "PLATE")
+
+vcfast <- read.table(vcfastfile,
+  header=T, stringsAsFactors=F, sep="\t", comment.char=" ")
+names(vcfast) <- c("ID", "SNPs", "Singletons", "Doubletons", "lt0.5", "gt0.5", "Ref", "Het", "Alt", "Heterozygosity")
+
+# ped <- merge(ped, contam, by.x="V1", by.y="SAMPLE")
+# ped2a<-merge(ped, vcfast, by="ID")
+
+
+
+pcs <- read.table(pcfile, header=F, stringsAsFactors=F, skip=1)
+names(pcs) <- c("ID", paste0("PC",1:10), "Study")
+pcs <- pcs %>%
+  dplyr::select(-Study)
+
+p1 <- merge(pheno, pcs, by="ID")
+p2 <- merge(p1, vcfast, by="ID")
+p3 <- merge(p2, contam, by="ID", all.x=TRUE) %>% distinct(ID, .keep_all = TRUE)
+
+# Get PED ids ending with B (not in ped2 file)
+# paste0(ped2$ID, "B")
+ped_b_ids <- p3[!(p3$ID %in% qplotdat$ID),] %>%
+  dplyr::select(ID_B=ID) %>%
+  mutate(ID=gsub("B", "", ID_B))
+
+ped1B <- ped_b_ids %>%
+  filter(ID %in% ped_b_ids$ID_B) %>%
+  mutate(ID=gsub("B", "", ID))
+
+ # ped %>%
+ #  filter(ID %in% p1_ids$ID)
+
+# Subset ped2 to B ids
+qplotB <- qplotdat %>%
+  filter(ID %in% ped_b_ids$ID) %>%
+  mutate(ID=paste0(ID, "B"))
+
+qplot2 <- rbind(qplotdat, qplotB)
+p4 <- merge(p3, qplot2, by="ID")
+
+# ped[(ped$V1 %in% paste0(ped2$ID, "B")),] %>% dplyr::select(V1)
 
 # get per-person rates and filter IDs
 ind_counts <- merge(ind_counts, mct3, by="Motif") %>%
-  filter(ID %in% ped$V1) %>%
+  filter(ID %in% p4$ID) %>%
   mutate(ERV_rel_rate=n/nMotifs,
     subtype=paste0(Type, "_", Motif))
 
@@ -129,35 +182,48 @@ ind_pred <- predict(ind_nmf, "rows", prob=T)
 
 sigloads <- get_loads(ind_wide[,-c(1)], ind_nmf)
 plot_loads(sigloads)
-ggsave(paste0(parentdir, "/images/sigloads.png"))
+ggsave(paste0(parentdir, "/images/sigloads.png"), width=14, height=8)
 
 # Add NMF basis and predicted class to data frame
 nmfdat1 <- data.frame(ID=ind_wide$ID, basis(ind_nmf), sig=ind_pred[[1]])
 
 # head(nmfdat)
 # summary(nmfdat1$sig)
+#
+# samples <- ped %>%
+#   dplyr::select(ID=V1, Study=V7, BP=V6, PC1=V14, PC2=V15, PC3=V16, PC4=V17)
 
-samples <- ped %>%
-  dplyr::select(ID=V1, Study=V7, BP=V6, PC1=V14, PC2=V15, PC3=V16, PC4=V17)
-
-nmfdat1 <- merge(nmfdat1, samples, by="ID") %>%
+nmfdat1 <- merge(nmfdat1, p4, by="ID") %>%
   mutate(sum=X1+X2+X3,
-    X1a=X1/sum,
-    X2a=X2/sum,
-    X3a=X3/sum)
+    sig1=X1/sum,
+    sig2=X2/sum,
+    sig3=X3/sum)
 
 nmfdat1$ID <- factor(nmfdat1$ID, levels = unique(nmfdat1$ID))
 
-plates <- read.table(plates, header=F, stringsAsFactors=F)
-names(plates) <- c("ID", "PLATE")
-nmfdat1 <- merge(nmfdat1, plates, by="ID")
+# plates <- read.table(plates, header=F, stringsAsFactors=F)
+# names(plates) <- c("ID", "PLATE")
+# nmfdat1 <- merge(nmfdat1, plates, by="ID")
 
 ind_nmf_long <- nmfdat1 %>%
-  gather(cluster, prob, X1a:X3a) %>%
+  gather(cluster, prob, sig1:sig3) %>%
   arrange(Study, sum)
 
 plot_ind_sigs(ind_nmf_long)
-ggsave(paste0(parentdir, "/images/by_ind_all.png"), width=12, height=8)
+ggsave(paste0(parentdir, "/images/by_ind_all.png"), width=8, height=6)
+
+nmfdat1 %>%
+  # filter(sig!=2) %>%
+  group_by(sig) %>%
+  dplyr::select(ID, sig, Singletons, CHIPMIX, gcbias, insmedian, Heterozygosity, coverage) %>%
+  filter(coverage < 15) %>%
+  gather(var, val, Singletons:coverage) %>%
+  group_by(sig, var) %>%
+  summarise(mean=mean(val, na.rm=T))
+  ggplot(aes(x=sig, y=val, group=sig, fill=sig))+
+    geom_boxplot()+
+    facet_wrap(~var, scales="free")
+ggsave(paste0(parentdir, "/images/gp_qc.png"))
 
 # cbind(ind_wide, g2=nmfdat1$sig) %>%
 #   mutate(g2=ifelse(g2==1, TRUE, FALSE)) %>%
@@ -194,22 +260,24 @@ drop_ids <- nmfdat1 %>%
   filter(!(ID %in% keep_ids$ID)) %>%
   dplyr::select(ID)
 
-ped2$drop <- (ped2$HAID %in% drop_ids$ID)
-ped2 %>% do(tidy(t.test(gcbias~drop, data=.)))
-ped2 %>%
-  group_by(drop) %>%
-  summarise(cov=mean(coverage),
-    sing=mean(Singletons),
-    gcbias=mean(gcbias),
-    insmedian=mean(insmedian))
+cnv_drops <- read.table("~/drops.txt", header=F)
+names(cnv_drops) <- "ID"
+cnv_drops$gp <- "CNV"
+
+
+
+# ped2$drop <- (ped2$HAID %in% drop_ids$ID)
+# ped2 %>% do(tidy(t.test(gcbias~drop, data=.)))
+# ped2 %>%
+#   group_by(drop) %>%
+#   summarise(cov=mean(coverage),
+#     sing=mean(Singletons),
+#     gcbias=mean(gcbias),
+#     insmedian=mean(insmedian))
 
 # plates <- read.table(plates, header=F, stringsAsFactors=F)
 # names(plates) <- c("ID", "PLATE")
 # nmfdat1 <- merge(nmfdat1, plates, by="ID")
-#
-# ped2 %>%
-#   filter(HAID %in% sig1$ID) %>%
-#   dplyr::select(HAID, N_SNPs, Singletons, Study)
 
 ###############################################################################
 # Repeat with kept IDs
@@ -221,7 +289,7 @@ ind_pred2 <- predict(ind_nmf2, "rows", prob=T)
 
 sigloads <- get_loads(ind_wide2[,-c(1)], ind_nmf2)
 plot_loads(sigloads)
-ggsave(paste0(parentdir, "/images/sigloads2.png"))
+ggsave(paste0(parentdir, "/images/sigloads2.png"), width=14, height=8)
 
 nmfdat2 <- data.frame(ID=ind_wide2$ID, basis(ind_nmf2), sig=ind_pred2[[1]])
 
@@ -242,7 +310,7 @@ ggsave(paste0(parentdir, "/images/by_ind_keep.png"), width=12, height=8)
 
 # test for significant differences between groups
 cbind(ind_wide2, g2=nmfdat2$sig) %>%
-  mutate(g2=ifelse(g2==2, TRUE, FALSE)) %>%
+  mutate(g2=ifelse(g2==1, TRUE, FALSE)) %>%
   # mutate(g2=(ID %in% s2ids$ID)) %>% # dplyr::select(ID, AT_CG_AAA.TTT., g2) %>% group_by(g2) %>% summarise(val=mean(AT_CG_AAA.TTT.))
   # group_by(g2) %>%
   mutate(key=paste0(ID, "+", g2)) %>%

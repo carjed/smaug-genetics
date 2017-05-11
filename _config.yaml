@@ -76,8 +76,13 @@ negbin_model: FALSE
 ##############################################################################
 pedfile: "/net/wonderland/home/mattz/BRIDGES/FinalAnalysis/ped/BRIDGES_Assoc.20160226.ped"
 plates: "/net/wonderland/home/mattz/BRIDGES/sampleIDs_plates.txt"
-qcped: "/net/bipolar/lockeae/final_freeze/snps/QC/final_freeze.merged.vcfast_vcfdiff_qplot.v2.txt"
-qcped2: "/net/bipolar/bridges/phenotype/qplotstats.txt"
+# qcped: "/net/bipolar/lockeae/final_freeze/snps/QC/final_freeze.merged.vcfast_vcfdiff_qplot.v2.txt"
+qplotfile: "/net/bipolar/bridges/phenotype/qplotstats.txt"
+vcfastfile: "/net/bipolar/lockeae/final_freeze/snps/QC/vcfast/final.snps.vcfast.merged.txt"
+contamfile: "/net/bipolar/bridges/QC/contamination/clean/contest.txt"
+phenofile: "/net/wonderland/home/mattz/BRIDGES/pheno.txt"
+pcfile: "/net/wonderland/home/mattz/BRIDGES/Assoc/StudyPCs/BRIDGES_sample_PCA.eigen.evec"
+
 ##############################################################################
 # Info for processing glf files
 ##############################################################################

@@ -53,8 +53,6 @@ names(vcfast) <- c("ID", "SNPs", "Singletons", "Doubletons", "lt0.5", "gt0.5", "
 # ped <- merge(ped, contam, by.x="V1", by.y="SAMPLE")
 # ped2a<-merge(ped, vcfast, by="ID")
 
-
-
 pcs <- read.table(pcfile, header=F, stringsAsFactors=F, skip=1)
 names(pcs) <- c("ID", paste0("PC",1:10), "Study")
 pcs <- pcs %>%
@@ -212,17 +210,20 @@ ind_nmf_long <- nmfdat1 %>%
 plot_ind_sigs(ind_nmf_long)
 ggsave(paste0(parentdir, "/images/by_ind_all.png"), width=8, height=6)
 
-nmfdat1 %>%
+sumdat <- nmfdat1 %>%
   # filter(sig!=2) %>%
   group_by(sig) %>%
   dplyr::select(ID, sig, Singletons, CHIPMIX, gcbias, insmedian, Heterozygosity, coverage) %>%
   filter(coverage < 15) %>%
   gather(var, val, Singletons:coverage) %>%
-  group_by(sig, var) %>%
+  group_by(sig, var)
+
+sumdat %>%
   summarise(mean=mean(val, na.rm=T))
-  ggplot(aes(x=sig, y=val, group=sig, fill=sig))+
-    geom_boxplot()+
-    facet_wrap(~var, scales="free")
+
+ggplot(sumdat, aes(x=sig, y=val, group=sig, fill=sig))+
+  geom_boxplot()+
+  facet_wrap(~var, scales="free")
 ggsave(paste0(parentdir, "/images/gp_qc.png"))
 
 # cbind(ind_wide, g2=nmfdat1$sig) %>%
@@ -251,9 +252,9 @@ keep_cis <- ind_nmf_long %>%
   # dplyr::select(cluster, conf.low, conf.high)
 
 keep_ids <- nmfdat1 %>%
-  filter(X1a > keep_cis[1,]$conf.low & X1a < keep_cis[1,]$conf.high) %>%
-  filter(X2a > keep_cis[2,]$conf.low & X2a < keep_cis[2,]$conf.high) %>%
-  filter(X3a > keep_cis[3,]$conf.low & X3a < keep_cis[3,]$conf.high) %>%
+  filter(sig1 > keep_cis[1,]$conf.low & sig1 < keep_cis[1,]$conf.high) %>%
+  filter(sig2 > keep_cis[2,]$conf.low & sig2 < keep_cis[2,]$conf.high) %>%
+  filter(sig3 > keep_cis[3,]$conf.low & sig3 < keep_cis[3,]$conf.high) %>%
   dplyr::select(ID)
 
 drop_ids <- nmfdat1 %>%
@@ -293,16 +294,16 @@ ggsave(paste0(parentdir, "/images/sigloads2.png"), width=14, height=8)
 
 nmfdat2 <- data.frame(ID=ind_wide2$ID, basis(ind_nmf2), sig=ind_pred2[[1]])
 
-nmfdat2 <- merge(nmfdat2, samples, by="ID") %>%
+nmfdat2 <- merge(nmfdat2, p4, by="ID") %>%
   mutate(sum=X1+X2+X3,
-    X1a=X1/sum,
-    X2a=X2/sum,
-    X3a=X3/sum)
+    sig1=X1/sum,
+    sig2=X2/sum,
+    sig3=X3/sum)
 
 nmfdat2$ID <- factor(nmfdat2$ID, levels = unique(nmfdat2$ID))
 
 ind_nmf_long <- nmfdat2 %>%
-  gather(cluster, prob, X1a:X3a) %>%
+  gather(cluster, prob, sig1:sig3) %>%
   arrange(Study, sum)
 
 plot_ind_sigs(ind_nmf_long)

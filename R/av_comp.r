@@ -45,6 +45,7 @@ r5m$v3 <- substr(r5m$Motif,3+2,3*2+1)
 commonfile <- paste0(parentdir, "/summaries/common.full.summary")
 bindir <- paste0(parentdir, "/motif_counts/", nbp, "-mers/full")
 common_data <- getData(summfile=commonfile, bindir=bindir)
+common_data$aggseq <- get_aggseq(common_data$sites, common_data$mct)
 
 i <- 3
 gpdat <- common_data$aggseq %>%
@@ -77,7 +78,7 @@ theme_mac_comp <- function(base_size = 12, base_family = ""){
 
 format_mac_comp <- list(
   coord_fixed(),
-  scale_colour_manual(values=cols),
+  scale_colour_manual(values=gp_cols),
   guides(colour = guide_legend(title=NULL,
       nrow=3,
       override.aes = list(alpha=1, shape=16))),

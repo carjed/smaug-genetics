@@ -58,7 +58,7 @@ cat("Analyzing sample mutation signatures...\n")
 timefun("./R/ind_sigs.r")
 
 full_data$sites <- full_data$sites %>%
-	filter(ID %in% ped$V1)
+	filter(ID %in% ped$ID)
 dim(full_data$sites)
 
 full_data$sites <- full_data$sites %>%

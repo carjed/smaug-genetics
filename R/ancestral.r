@@ -24,29 +24,31 @@ nbp2 <- 7
 sites_c_hc <- full_data$sites %>%
   # filter(REF==AA) %>%
   # filter(MASK==0 & REF==AA) %>%
-  filter(tolower(REF)==tolower(AA))
+  # filter(tolower(REF)==tolower(AA))
+  filter(!(tolower(ALT)==tolower(AA)))
+  # filter(!(ALT==AA))
 
 prop <- nrow(sites_c_hc)/nrow(full_data$sites)
 # prop <- 0.946
 
 sites_c_hc <- sites_c_hc %>%
-  filter(MASK==0) %>%
+  # filter(MASK==0) %>%
   mutate(SEQA=substr(Motif, cbp-i, cbp+i),
     SEQB=substr(Motif, cbp*3-i, cbp*3+i),
     Motif=paste0(SEQA, "(", SEQB, ")"))
 
-# bindir <- paste0(parentdir, "/motif_counts/", nbp2, "-mers/full")
-# p1 <- "motifs_full.txt"
-# bins <- get_bins(bindir, p1)
-# mct <- get_mct(bins)
-# ancaggseq <- get_aggseq(sites_c_hc, mct)
+bindir <- paste0(parentdir, "/motif_counts/", nbp2, "-mers/full")
+p1 <- "motifs_full.txt"
+bins <- get_bins(bindir, p1)
+mct <- get_mct(bins)
+ancaggseq <- get_aggseq(sites_c_hc, mct)
 
 maskdir <- paste0(parentdir, "/motif_counts/", nbp2, "-mers/mask")
 p1 <- "motifs_mask.txt"
 maskbins <- get_bins(maskdir, p1)
 maskmct <- get_mct(maskbins)
 # grepl("^[[:upper:]]+$", s)
-ancaggseq <- get_aggseq(sites_c_hc, maskmct)
+# ancaggseq <- get_aggseq(sites_c_hc, maskmct)
 # rm(masktmp)
 
 ancgpdat <- ancaggseq %>%

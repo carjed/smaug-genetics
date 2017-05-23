@@ -73,13 +73,19 @@ chrp_c <- merge(chrp_c, rates5, by=c("Category", "SEQ5"), all.x=T)
 chrp_c <- merge(chrp_c, rates3, by=c("Category", "SEQ3"))
 chrp_c <- merge(chrp_c, rates1, by=c("Category"))
 
-if(exists(maskgpdat)){
+if(exists("maskgpdat")){
   rates_mask <- maskgpdat %>%
     mutate(SEQ7=substr(Motif, 1, 7)) %>%
     dplyr::select(Category=Type, SEQ7, MU_7M=ERV_rel_rate_mask)
 
     chrp_c <- merge(chrp_c, rates_mask, by=c("Category", "SEQ7"), all.x=T)
 }
+
+rates_anc <- ancgpdat %>%
+  mutate(SEQ7=substr(Motif, 1, 7)) %>%
+  dplyr::select(Category=Type, SEQ7, MU_7AN=ERV_rel_rate_anc)
+
+chrp_c <- merge(chrp_c, rates_anc, by=c("Category", "SEQ7"), all.x=T)
 
 chrp_c <- chrp_c %>%
   mutate(Category=ifelse(substr(SEQ,adj+1,adj+2)=="CG",
@@ -119,7 +125,7 @@ simMu <- function(data, nobs, chunksize=50000, rseed){
   return(mutated)
 }
 
-chrpdnmsim <- simMu(data=chrp_c, nobs=nrow(chrpdnm), seed=rseed)
+chrpdnmsim <- simMu(data=chrp_c, nobs=nrow(chrpdnm), rseed=rseed)
 
 chrp_s <- bind_rows(list(chrp_c[chrp_c$OBS==0,], chrpdnmsim)) %>%
   group_by(Category) %>%
@@ -152,7 +158,8 @@ runDNMLogit<-function(data, group){
 		outdat$mod_7mers <- glm(OBS~MU_7, data=data, family=binomial())
     # outdat$mod_7mers_sig <- glm(OBS~MU_7+X1+X2+X3+X4+X5, data=data, family=binomial())
 		outdat$mod_7mers_features <- glm(OBS~MU, data=data, family=binomial())
-    # outdat$mod_7mers_masked <- glm(OBS~MU_7M, data=data, family=binomial())
+    outdat$mod_7mers_masked <- glm(OBS~MU_7M, data=data, family=binomial())
+    outdat$mod_7mers_anc <- glm(OBS~MU_7AN, data=data, family=binomial())
 		outdat$mod_7mers_AV <- glm(OBS~MU_7A, data=data, family=binomial())
     outdat$mod_9mers <- glm(OBS~MU_9, data=data, family=binomial())
 	} else {
@@ -177,7 +184,7 @@ runDNMLogit<-function(data, group){
 }
 
 overall_models <- runDNMLogit(chrp_c, "FULL")
-overall_models_sim <- runDNMLogit(chrp_s, "FULL")
+# overall_models_sim <- runDNMLogit(chrp_s, "FULL")
 
 rsq <- unname(unlist(lapply(overall_models, function(x)
 	NagelkerkeR2(x)))[seq(2, 2*length(overall_models), by=2)])

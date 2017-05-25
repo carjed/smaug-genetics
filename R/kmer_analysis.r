@@ -91,7 +91,7 @@ for(j in 1:5){
 	if(i>0){
 		parentdat <- gpdat %>%
 			# dplyr::select(Type, Motif, nERVs, nMotifs, rel_prop) %>%
-			filter(nERVs > 20) %>%
+			# filter(nERVs > 20) %>%
 			mutate(SEQA=substr(Motif, 2, nbptmp-1),
 				SEQB=substr(Motif, nbptmp+3, nchar(Motif)-2),
 				MotifP=paste0(SEQA, "(", SEQB, ")")) %>%

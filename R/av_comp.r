@@ -60,6 +60,23 @@ gpdat <- common_data$aggseq %>%
 r5m <- merge(r5m, gpdat, by=c("Type", "Motif")) %>%
   mutate(MAC10_rel_rate=nMAC10/nMotifs)
 
+set.seed(sum(r5m$nMAC10))
+ervs_down <- full_data$sites[sample(nrow(full_data$sites), sum(r5m$nMAC10)),]
+ervs_down_aggseq <- get_aggseq(ervs_down, common_data$mct)
+
+i <- 3
+gpdat <- ervs_down_aggseq %>%
+  mutate(Type=gsub("cpg_", "", Category2),
+    SEQA=substr(Motif, cbp-i, cbp+i),
+    SEQB=substr(Motif, cbp*3-i, cbp*3+i),
+    Motif=paste0(SEQA, "(", SEQB, ")")) %>%
+    dplyr::select(Type, Motif, nERVs) %>%
+    group_by(Type, Motif) %>%
+    summarise(nERVs_down=sum(nERVs))
+
+r5m <- merge(r5m, gpdat, by=c("Type", "Motif")) %>%
+  mutate(ERV_down_rel_rate=nERVs_down/nMotifs)
+
 rm2 <- r5m %>% dplyr::select(-Category2)
 
 ##############################################################################

@@ -81,10 +81,20 @@ if(exists("maskgpdat")){
     chrp_c <- merge(chrp_c, rates_mask, by=c("Category", "SEQ7"), all.x=T)
 }
 
+rates_7C <- r5m %>%
+  mutate(SEQ7=substr(Motif, 1, 7)) %>%
+  dplyr::select(Category=Type, SEQ7, MU_7C=MAC10_rel_rate)
+
+rates_7D <- r5m %>%
+  mutate(SEQ7=substr(Motif, 1, 7)) %>%
+  dplyr::select(Category=Type, SEQ7, MU_7D=ERV_down_rel_rate)
+
 rates_anc <- ancgpdat %>%
   mutate(SEQ7=substr(Motif, 1, 7)) %>%
   dplyr::select(Category=Type, SEQ7, MU_7AN=ERV_rel_rate_anc)
 
+chrp_c <- merge(chrp_c, rates7C, by=c("Category", "SEQ7"), all.x=T)
+chrp_c <- merge(chrp_c, rates7D, by=c("Category", "SEQ7"), all.x=T)
 chrp_c <- merge(chrp_c, rates_anc, by=c("Category", "SEQ7"), all.x=T)
 
 chrp_c <- chrp_c %>%
@@ -143,54 +153,83 @@ gc()
 runDNMLogit<-function(data, group){
 	outdat <- list()
 	if(nrow(data)>1e6){
-		# outdat$logmod1<-glm(OBS~MU_1, data=data, family=binomial())
-		# outdat$logmod3<-glm(OBS~MU_1+resid3, data=data, family=binomial())
-		# outdat$logmod5<-glm(OBS~MU_1+resid3+resid5, data=data, family=binomial())
-		# outdat$logmod7<-glm(OBS~MU_1+resid3+resid5+resid7,
-			# data=data, family=binomial())
-		# outdat$logmodL<-glm(OBS~MU_1+resid3+resid5+resid7+residL,
-			# data=data, family=binomial())
-		# outdat$logmodSa<-glm(OBS~MU_7S, data=data, family=binomial())
-		# outdat$logmodPa<-glm(OBS~MU_7P, data=data, family=binomial())
+
+    # Nested models (1-5)
+		outdat$mod_1mers_n <- glm(OBS~MU_1,
+      data=data, family=binomial())
+		outdat$mod_3mers_n <- glm(OBS~MU_1+resid3,
+      data=data, family=binomial())
+		outdat$mod_5mers_n <- glm(OBS~MU_1+resid3+resid5,
+      data=data, family=binomial())
+		outdat$mod_7mers_n <- glm(OBS~MU_1+resid3+resid5+resid7,
+			data=data, family=binomial())
+		outdat$mod_7mers_features_n <- glm(OBS~MU_1+resid3+resid5+resid7+residL,
+			data=data, family=binomial())
+
+    # Non-nested models (6-8)
 		outdat$mod_1mers <- glm(OBS~MU_1, data=data, family=binomial())
+    outdat$mod_3mers <- glm(OBS~MU_3, data=data, family=binomial())
+		outdat$mod_5mers <- glm(OBS~MU_5, data=data, family=binomial())
+
+    # Comparison of 7-mer models (9-13)
+		outdat$mod_7mers <- glm(OBS~MU_7, data=data, family=binomial())
+    outdat$mod_7mers_ERVs_down <- glm(OBS~MU_7D, data=data, family=binomial())
+    outdat$mod_7mers_MAC10 <- glm(OBS~MU_7C, data=data, family=binomial())
+    outdat$mod_7mers_AV <- glm(OBS~MU_7A, data=data, family=binomial())
+    outdat$mod_7mers_masked <- glm(OBS~MU_7M, data=data, family=binomial())
+
+    # Non-nested 7-mer+features model (14)
+    outdat$mod_7mers_features <- glm(OBS~MU, data=data, family=binomial())
+    # outdat$mod_7mers_anc <- glm(OBS~MU_7AN, data=data, family=binomial())
+    # outdat$mod_7mers_sig <- glm(OBS~MU_7+X1+X2+X3+X4+X5, data=data, family=binomial())
+    # outdat$mod_9mers <- glm(OBS~MU_9, data=data, family=binomial())
+
+	} else {
+    # Nested models (1-4)
+		outdat$mod_3mers_n <- glm(OBS~MU_3,
+      data=data, family=binomial())
+		outdat$mod_5mers_n <- glm(OBS~MU_3+resid5,
+      data=data, family=binomial())
+		outdat$mod_7mers_n <- glm(OBS~MU_3+resid5+resid7,
+			data=data, family=binomial())
+		outdat$mod_7mers_features_n <- glm(OBS~MU_3+resid5+resid7+residL,
+			data=data, family=binomial())
+
+    # Non-nested models (5-7)
 		outdat$mod_3mers <- glm(OBS~MU_3, data=data, family=binomial())
 		outdat$mod_5mers <- glm(OBS~MU_5, data=data, family=binomial())
 		outdat$mod_7mers <- glm(OBS~MU_7, data=data, family=binomial())
-    # outdat$mod_7mers_sig <- glm(OBS~MU_7+X1+X2+X3+X4+X5, data=data, family=binomial())
-		outdat$mod_7mers_features <- glm(OBS~MU, data=data, family=binomial())
-    outdat$mod_7mers_masked <- glm(OBS~MU_7M, data=data, family=binomial())
-    outdat$mod_7mers_anc <- glm(OBS~MU_7AN, data=data, family=binomial())
-		outdat$mod_7mers_AV <- glm(OBS~MU_7A, data=data, family=binomial())
-    outdat$mod_9mers <- glm(OBS~MU_9, data=data, family=binomial())
-	} else {
-		outdat$logmod3<-glm(OBS~MU_3, data=data, family=binomial())
-		outdat$logmod5<-glm(OBS~MU_3+resid5, data=data, family=binomial())
-		outdat$logmod7<-glm(OBS~MU_3+resid5+resid7,
-			data=data, family=binomial())
-		outdat$logmodL<-glm(OBS~MU_3+resid5+resid7+residL,
-			data=data, family=binomial())
 
-		# outdat$logmodS<-glm(OBS~MU_7S, data=data, family=binomial())
-		# outdat$logmodP<-glm(OBS~MU_7P, data=data, family=binomial())
-		# outdat$logmod1a<-glm(OBS~MU_1, data=data, family=binomial())
-		outdat$logmod3a<-glm(OBS~MU_3, data=data, family=binomial())
-		outdat$logmod5a<-glm(OBS~MU_5, data=data, family=binomial())
-		outdat$logmod7a<-glm(OBS~MU_S, data=data, family=binomial())
-		outdat$logmodLa<-glm(OBS~MU, data=data, family=binomial())
-		outdat$logmodAa<-glm(OBS~MU_A, data=data, family=binomial())
+    # Comparison of 7-mer models (8-12)
+    outdat$mod_7mers_ERVs_down <- glm(OBS~MU_7D, data=data, family=binomial())
+    outdat$mod_7mers_MAC10 <- glm(OBS~MU_7C, data=data, family=binomial())
+    outdat$mod_7mers_AV <- glm(OBS~MU_7A, data=data, family=binomial())
+    outdat$mod_7mers_masked <- glm(OBS~MU_7M, data=data, family=binomial())
+
+    # Non-nested 7-mer+features model (13)
+    outdat$mod_7mers_features <- glm(OBS~MU, data=data, family=binomial())
+    # outdat$mod_7mers_anc <- glm(OBS~MU_7AN, data=data, family=binomial())
+    # outdat$mod_7mers_sig <- glm(OBS~MU_7+X1+X2+X3+X4+X5, data=data, family=binomial())
+    # outdat$mod_9mers <- glm(OBS~MU_9, data=data, family=binomial())
 	}
 
   return(outdat)
 }
 
+overall_models_sim <- runDNMLogit(chrp_s, "FULL")
+# rsqsim <- unlist(lapply(overall_models_sim, function(x)
+# 	NagelkerkeR2(x)))[seq(2, 2*length(overall_models_sim), by=2)] %>%
+#   data.frame() %>%
+#   tibble::rownames_to_column("model") %>%
+#   dplyr::select(model, rsq_sim=.)
+
 overall_models <- runDNMLogit(chrp_c, "FULL")
-# overall_models_sim <- runDNMLogit(chrp_s, "FULL")
-
-rsq <- unname(unlist(lapply(overall_models, function(x)
-	NagelkerkeR2(x)))[seq(2, 2*length(overall_models), by=2)])
-
-# rsqsim <- unname(unlist(lapply(overall_models_sim, function(x)
-# 	NagelkerkeR2(x)))[seq(2, 2*length(overall_models_sim), by=2)])
+rsq <- data.frame(
+  rsq=unlist(lapply(overall_models, function(x)
+	  NagelkerkeR2(x)))[seq(2, 2*length(overall_models), by=2)],
+  rsq_sim=unlist(lapply(overall_models_sim, function(x)
+    NagelkerkeR2(x)))[seq(2, 2*length(overall_models_sim), by=2)]) %>%
+  tibble::rownames_to_column("model")
 
 test13 <- lrtest(overall_models[[1]], overall_models[[2]])
 test35 <- lrtest(overall_models[[2]], overall_models[[3]])
@@ -245,13 +284,13 @@ lrtestdat <- data.frame()
 for(i in 1:length(orderedcats)){
   categ <- orderedcats2[i]
 
-  overall_dat <- chrp %>%
-		mutate(Category=ifelse(substr(SEQ,adj+1,adj+2)=="CG",
-										paste0("cpg_",Category), Category)) %>%
+  overall_dat <- chrp_c %>%
+		# mutate(Category=ifelse(substr(SEQ,adj+1,adj+2)=="CG",
+		# 								paste0("cpg_",Category), Category)) %>%
 		mutate(Category =
 				plyr::mapvalues(Category, orderedcats1, orderedcats2)) %>%
     filter(Category==categ) %>%
-    mutate(resid5=MU_5-MU_3, resid7=MU_S-MU_5, residL=MU-MU_S)
+    mutate(resid5=MU_5-MU_3, resid7=MU_7-MU_5, residL=MU-MU_7)
   overall_models <- runDNMLogit(overall_dat, "FULL")
 
   test53 <- lrtest(overall_models[[1]], overall_models[[2]])
@@ -265,18 +304,21 @@ for(i in 1:length(orderedcats)){
   lrtests <- data.frame(category=categ, mod=mods, pvals)
   lrtestdat <- bind_rows(lrtestdat, lrtests)
 
-  rsq <- unlist(lapply(overall_models, function(x)
-		NagelkerkeR2(x)))[seq(2,14,2)]
+  # rsq <- unlist(lapply(overall_models, function(x)
+	# 	NagelkerkeR2(x)))[seq(2,14,2)]
+  rsq <- unname(unlist(lapply(overall_models, function(x)
+  	NagelkerkeR2(x)))[seq(2, 2*length(overall_models), by=2)])
   aic <- unlist(lapply(overall_models, function(x) AIC(x)))
-  mod <- c("3-mers", "5-mers", "7-mers", "7-mers+features",
-		"ERVs", "Common", "AV")
+  # mod <- c("3-mers", "5-mers", "7-mers", "7-mers+features",
+	# 	"ERVs", "Common", "AV")
+  mod <- names(overall_models)
   df <- data.frame(group="FULL", category=categ, mod, rsq, aic)
 
   fulldat <- bind_rows(fulldat, df)
 }
 
 fd2 <- fulldat %>%
-	filter(mod %in% c("7-mers", "5-mers", "3-mers", "7-mers+features"))
+	filter(mod %in% paste0("logmod", c(3,5,7,"L")))
 
 fd3 <- fd2 %>%
 	dplyr::select(-aic) %>%
@@ -333,6 +375,7 @@ buildSegmentData <- function(){
 	out <- list()
 	out$corplot <- corplot
 	out$corplot2 <- corplot2
+  return(out)
 }
 
 segment_data <- buildSegmentData()
@@ -340,13 +383,15 @@ corplot <- segment_data$corplot
 corplot2 <- segment_data$corplot2
 
 # Plot pseudo-r^2 for 7-mers vs 5-mers vs 3-mers
-rsqdat<-fulldat %>%
-  filter(mod %in% c("7-mers", "5-mers", "3-mers", "7-mers+features")) %>%
+rsqdat <- fd2 %>%
+  # fulldat %>%
+  # filter(mod %in% c("7-mers", "5-mers", "3-mers", "7-mers+features")) %>%
   filter(group=="FULL") %>%
   mutate(Category =
       factor(plyr::mapvalues(category, orderedcats2, orderedcats2),
 				levels=orderedcats2))
-Lv7v5v3<-ggplot(rsqdat)+
+
+Lv7v5v3 <- ggplot(rsqdat)+
   geom_bar(aes(x=Category, y=rsq, fill=mod), stat="identity", position="dodge")+
   # scale_fill_manual("Model", values=cbbPalette[c(4,6,7,8)])+
 	scale_fill_manual("Model", values=c(iwhPalette[c(3,4,5,9)]))+

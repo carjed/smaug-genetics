@@ -189,8 +189,8 @@ overall_models <- runDNMLogit(chrp_c, "FULL")
 rsq <- unname(unlist(lapply(overall_models, function(x)
 	NagelkerkeR2(x)))[seq(2, 2*length(overall_models), by=2)])
 
-rsqsim <- unname(unlist(lapply(overall_models_sim, function(x)
-	NagelkerkeR2(x)))[seq(2, 2*length(overall_models_sim), by=2)])
+# rsqsim <- unname(unlist(lapply(overall_models_sim, function(x)
+# 	NagelkerkeR2(x)))[seq(2, 2*length(overall_models_sim), by=2)])
 
 test13 <- lrtest(overall_models[[1]], overall_models[[2]])
 test35 <- lrtest(overall_models[[2]], overall_models[[3]])

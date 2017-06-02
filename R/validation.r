@@ -93,8 +93,8 @@ rates_anc <- ancgpdat %>%
   mutate(SEQ7=substr(Motif, 1, 7)) %>%
   dplyr::select(Category=Type, SEQ7, MU_7AN=ERV_rel_rate_anc)
 
-chrp_c <- merge(chrp_c, rates7C, by=c("Category", "SEQ7"), all.x=T)
-chrp_c <- merge(chrp_c, rates7D, by=c("Category", "SEQ7"), all.x=T)
+chrp_c <- merge(chrp_c, rates_7C, by=c("Category", "SEQ7"), all.x=T)
+chrp_c <- merge(chrp_c, rates_7D, by=c("Category", "SEQ7"), all.x=T)
 chrp_c <- merge(chrp_c, rates_anc, by=c("Category", "SEQ7"), all.x=T)
 
 chrp_c <- chrp_c %>%

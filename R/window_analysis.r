@@ -12,10 +12,13 @@ getOption("biovizBase")$cytobandColor
 #     SEQB=substr(Sequence, cbp*3-i, cbp*3+i),
 #     Motif=paste0(SEQA, "(", SEQB, ")"))
 
-site_ranges <- GRanges(seqnames=paste0("chr",sites$CHR),
-                       ranges=IRanges(start=sites$POS, end=sites$POS))
+site_ranges <- GRanges(
+  seqnames=paste0("chr",full_data$sites$CHR),
+  ranges=IRanges(start=full_data$sites$POS, end=full_data$sites$POS)
+)
+
 s2 <- nearest(site_ranges, hg19IdeogramCyto)
-sites <- cbind(sites, as.data.frame(hg19IdeogramCyto[s2])[-c(1:5)])
+sites <- cbind(full_data$sites, as.data.frame(hg19IdeogramCyto[s2])[-c(1:5)])
 
 sites$name <- as.character(sites$name)
 sites$gieStain <- as.character(sites$gieStain)

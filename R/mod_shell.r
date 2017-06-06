@@ -12,7 +12,18 @@ cat("Loading packages...\n")
 # source("./R/get_functions.r")
 # source("./R/palettes.r")
 
-# load packages from Github
+# load yaml package to parse args
+install.packages("yaml", quiet=TRUE)
+require(yaml)
+
+# parse args
+args <- yaml.load_file("./_config.yaml")
+attach(args)
+
+# add user libpath, if it exists (useful if running on a different node)
+.libPaths(c(.libPaths(), libpath))
+
+# install/load devtools packages
 require(devtools)
 install_github('carjed/smaug', quiet=TRUE)
 install_github('slowkow/ggrepel', quiet=TRUE)
@@ -20,7 +31,7 @@ gh_packages <- c("smaug", "ggrepel")
 invisible(sapply(gh_packages, function(x)
 	suppressMessages(require(x, character.only=TRUE))))
 
-# load CRAN packages
+# install/load CRAN packages
 packages <- c("tidyverse", "broom", "RColorBrewer", "MASS", "boot", "speedglm",
 	"psych", "lmtest", "fmsb", "hexbin", "cowplot", "grid", "gtable", "gridExtra",
 	"yaml", "openxlsx", "Biostrings", "svglite", "NMF")
@@ -29,9 +40,6 @@ invisible(sapply(packages, function(x)
 
 # load Bioconductor packages
 # suppressMessages(usePackage(ggbio))
-
-args <- yaml.load_file("./_config.yaml")
-attach(args)
 
 cat("Script will run with the following parameters:\n")
 print(data.frame(ARGLIST = paste0(names(args), ": ", unlist(args))), right=F)

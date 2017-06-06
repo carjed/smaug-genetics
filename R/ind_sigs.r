@@ -261,9 +261,9 @@ drop_ids <- nmfdat1 %>%
   filter(!(ID %in% keep_ids$ID)) %>%
   dplyr::select(ID)
 
-cnv_drops <- read.table("~/drops.txt", header=F)
-names(cnv_drops) <- "ID"
-cnv_drops$gp <- "CNV"
+# cnv_drops <- read.table("/net/snowwhite/home/jedidiah/drops.txt", header=F)
+# names(cnv_drops) <- "ID"
+# cnv_drops$gp <- "CNV"
 
 
 

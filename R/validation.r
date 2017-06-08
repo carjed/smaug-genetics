@@ -91,7 +91,7 @@ simMu <- function(data, nobs, chunksize=50000, rseed){
   mutated <- data.frame()
   seedit <- 1
 	while(!success){
-    set.seed(rseed+seedit)
+    # set.seed(rseed+seedit)
 		rowind <- sample(nrow(data), chunksize)
 		batch <- data[rowind,]
 		mu <- batch$MU
@@ -104,7 +104,7 @@ simMu <- function(data, nobs, chunksize=50000, rseed){
 	}
 
   # last batch will go over; sample to desired # of simulated sites
-  set.seed(rseed)
+  # set.seed(rseed)
   mutated <- mutated[sample(nrow(mutated), nobs),] %>%
     mutate(OBS=0, SIM="b")
   return(mutated)
@@ -114,7 +114,7 @@ simMu <- function(data, nobs, chunksize=50000, rseed){
 # function samples user-defined number of non-mutated sites
 ##############################################################################
 buildValidationData <- function(data, nsites){
-  set.seed(rseed)
+  # set.seed(rseed)
   outdat <- data[sample(nrow(data), nsites),] %>%
     mutate(SIM="ab", SIMOBS=0) # include in simulation analysis
 
@@ -207,7 +207,7 @@ validationPipe <- function(nsites){
   sampled_sites <- buildValidationData(input_sites, nsites)
 
   cat("Merging DNMs with sub-sampled background...\n")
-  eval_sites <- bind_rows(list(sampled_sites, input_dnms)) %>%
+  eval_sites <- bind_rows(list(sampled_sites2, input_dnms)) %>%
     group_by(Category) %>%
     mutate(prop=cumsum(OBS)/sum(OBS)) %>%
     arrange(MU, prop) %>%
@@ -265,7 +265,7 @@ validationPipe <- function(nsites){
   for(i in 1:length(orderedcats)){
     categ <- orderedcats2[i]
 
-    type_dat_s <- chrp_s %>%
+    type_dat_s <- eval_sites %>%
       ungroup() %>%
       mutate(Category =
           plyr::mapvalues(Category, orderedcats1, orderedcats2)) %>%
@@ -303,7 +303,7 @@ validationPipe <- function(nsites){
   typefitfile <- paste0(parentdir, "/output/model_fit_by_type", nsites, ".txt")
   write.table(type_models_summary, typefitfile,
     col.names=T, row.names=F, quote=F, sep="\t")
-
+  return(type_models_summary)
 }
 
 ##############################################################################
@@ -325,6 +325,7 @@ input_dnms <- input_sites[input_sites$ID!="all",] %>%
 
 input_sites <- input_sites[input_sites$ID=="all",]
 
-validationPipe(500000)
-validationPipe(1000000)
-validationPipe(2000000)
+m500k <- validationPipe(500000)
+m1m <- validationPipe(1000000)
+m2m <- validationPipe(2000000)
+m3m <- validationPipe(3000000)

@@ -265,7 +265,7 @@ validationPipe <- function(nsites){
   for(i in 1:length(orderedcats)){
     categ <- orderedcats2[i]
 
-    type_dat_s <- eval_sites %>%
+    type_dat_s <- eval_sites_sim %>%
       ungroup() %>%
       mutate(Category =
           plyr::mapvalues(Category, orderedcats1, orderedcats2)) %>%
@@ -273,7 +273,7 @@ validationPipe <- function(nsites){
       mutate(resid5=MU_5-MU_3, resid7=MU_7-MU_5, residL=MU-MU_7)
     type_models_sim <- runDNMLogit(type_dat_s, "TYPE")
 
-    type_dat <- chrp_c %>%
+    type_dat <- eval_sites %>%
   		mutate(Category =
   				plyr::mapvalues(Category, orderedcats1, orderedcats2)) %>%
       filter(Category==categ) %>%

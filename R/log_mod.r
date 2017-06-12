@@ -112,7 +112,7 @@ logitMod <- function(sites, categ, split){
 
 		predicted$mu <- round(inv.logit(predict(log_mod, newdata=sites)), 6)
 
-		predicted$mu[is.na(predicted$mu)] <- round(sum(sites$mut)/nrow(sites), 6)
+		predicted$mu[is.na(predicted$mu)] <- round(sum(sites[,ind])/nrow(sites), 6)
 
 		# Get coefficients from model summary, clean up data formats
 		coefs <- data.frame(summary(log_mod)$coefficients, stringsAsFactors=F)
@@ -126,7 +126,7 @@ logitMod <- function(sites, categ, split){
 
 	} else {
 		cat("Not enough data--predicted rates will be marginal rate only\n")
-		predicted$mu <- round(sum(sites$mut)/nrow(sites), 6)
+		predicted$mu <- round(sum(sites[,ind])/nrow(sites), 6)
 	}
 
 	# New dir for each chromosome (faster to write, slower to sort?)

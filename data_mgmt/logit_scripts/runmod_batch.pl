@@ -62,7 +62,7 @@ foreach my $categ (@categs){
   print $mdFH "#SBATCH --partition=nomosix \n";
   print $mdFH "#SBATCH --array=$jobids \n";
   print $mdFH "#SBATCH --requeue \n";
-	print $mdFH "#SBATCH --exclude=hunt-mc05,hunt-mc06,hunt-mc07,hunt-mc08,dl3614,dl3615,dl3616,dl3617,dl3618,dl3619 \n";
+	print $mdFH "#SBATCH --exclude=hunt-mc05,hunt-mc06,hunt-mc07,hunt-mc08,twins-mc01,twins-mc04,finnseq-mc02,dl3614,dl3615,dl3616,dl3617,dl3618,dl3619 \n";
   # print $mdFH "#SBATCH --exclude=psoriasis-mc01,psoriasis-mc02 \n";
   print $mdFH "#SBATCH --output=\"$slurmdir/slurmJob-%J.out\" --error=\"$slurmdir/slurmJob-%J.err\" \n";
   print $mdFH "srun Rscript $parentdir/smaug-genetics/R/log_mod.r $categ $parentdir $libpath \$SLURM_ARRAY_TASK_ID\n";

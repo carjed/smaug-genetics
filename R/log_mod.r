@@ -131,6 +131,7 @@ logitMod <- function(sites, categ, split){
 
 	# New dir for each chromosome (faster to write, slower to sort?)
 	if(split){
+		cat(paste0("Writing predicted rates to: ", parentdir, "/output/predicted/", categ, "/chr*/", escmotif, ".txt\n"))
 		chr.split <- split(predicted, predicted$CHR)
 		for(i in 1:length(chr.split)){
 			chr <- unique(chr.split[[i]]$CHR)
@@ -138,7 +139,6 @@ logitMod <- function(sites, categ, split){
 			dir.create(preddir, recursive=T, showWarnings = FALSE)
 
 			predfile <- paste0(preddir, categ, "_", escmotif, ".txt")
-			cat(paste0("Writing predicted rates to: ", predfile, "\n"))
 			write.table(chr.split[[i]], predfile,
 				col.names=F, row.names=F, quote=F, sep="\t")
 		}

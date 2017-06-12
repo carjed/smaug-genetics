@@ -18,14 +18,14 @@ options(useHTTPS=FALSE)
 packages <- c("speedglm", "smaug", "dplyr", "boot", "yaml", "bedr")
 
 invisible(sapply(packages, function(x)
-	suppressMessages(require(x))))
+	suppressMessages(library(x))))
 
-suppressMessages(require(speedglm, quietly=T))
-suppressMessages(require(smaug, quietly=T))
-suppressMessages(require(dplyr, quietly=T))
-suppressMessages(require(boot, quietly=T))
-suppressMessages(require(yaml, quietly=T))
-suppressMessages(require(bedr, quietly=T))
+# suppressMessages(require(speedglm, quietly=T))
+# suppressMessages(require(smaug, quietly=T))
+# suppressMessages(require(dplyr, quietly=T))
+# suppressMessages(require(boot, quietly=T))
+# suppressMessages(require(yaml, quietly=T))
+# suppressMessages(require(bedr, quietly=T))
 
 # source(paste0(parentdir, "/smaug-genetics/R/get_functions.r"))
 

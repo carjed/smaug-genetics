@@ -18,7 +18,7 @@ options(useHTTPS=FALSE)
 packages <- c("speedglm", "smaug", "dplyr", "boot", "yaml", "bedr")
 
 invisible(sapply(packages, function(x)
-	suppressMessages(usePackage(x))))
+	suppressMessages(require(x))))
 
 suppressMessages(require(speedglm, quietly=T))
 suppressMessages(require(smaug, quietly=T))

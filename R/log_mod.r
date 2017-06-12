@@ -15,17 +15,12 @@ jobid <- as.numeric(jobid)
 
 options(useHTTPS=FALSE)
 
-packages <- c("speedglm", "smaug", "dplyr", "boot", "yaml", "bedr")
-
-invisible(sapply(packages, function(x)
-	suppressMessages(library(x))))
-
-# suppressMessages(require(speedglm, quietly=T))
-# suppressMessages(require(smaug, quietly=T))
-# suppressMessages(require(dplyr, quietly=T))
-# suppressMessages(require(boot, quietly=T))
-# suppressMessages(require(yaml, quietly=T))
-# suppressMessages(require(bedr, quietly=T))
+invisible(suppressMessages(require(speedglm, quietly=T)))
+invisible(suppressMessages(require(smaug, quietly=T)))
+invisible(suppressMessages(require(dplyr, quietly=T)))
+invisible(suppressMessages(require(boot, quietly=T)))
+invisible(suppressMessages(require(yaml, quietly=T)))
+invisible(suppressMessages(require(bedr, quietly=T)))
 
 # source(paste0(parentdir, "/smaug-genetics/R/get_functions.r"))
 
@@ -129,7 +124,7 @@ logitMod <- function(sites, categ, split){
 		coefs$Sequence <- escmotif
 
 	} else {
-		cat("Not enough data--using marginal rate only\n")
+		cat("Not enough data--predicted rates will be marginal rate only\n")
 		predicted$mu <- round(sum(sites$mut)/nrow(sites), 6)
 	}
 
@@ -139,9 +134,10 @@ logitMod <- function(sites, categ, split){
 		for(i in 1:length(chr.split)){
 			chr <- unique(chr.split[[i]]$CHR)
 			preddir <- paste0(parentdir, "/output/predicted/", categ, "/chr", chr, "/")
-			dir.create(preddir, recursive=T)
+			dir.create(preddir, recursive=T, showWarnings = FALSE)
 
 			predfile <- paste0(preddir, categ, "_", escmotif, ".txt")
+			cat(paste0("Writing predicted rates to: ", predfile, "\n")
 			write.table(chr.split[[i]], predfile,
 				col.names=F, row.names=F, quote=F, sep="\t")
 		}
@@ -159,7 +155,8 @@ for(categ in run_cats){
 	coefs <- logitMod(sites=sites, categ=categ, split=TRUE)
 
 	coefdir <- paste0(parentdir, "/output/logmod_data/coefs/", categ, "/")
-	dir.create(coefdir, recursive=T)
+	dir.create(coefdir, recursive=T, showWarnings = FALSE)
 	coeffile <- paste0(coefdir, categ, "_", escmotif, "_coefs.txt")
+	cat(paste0("Writing coefficient estimates to: ", coeffile, "\n")
 	write.table(coefs, coeffile, col.names=F, row.names=F, quote=F, sep="\t")
 }

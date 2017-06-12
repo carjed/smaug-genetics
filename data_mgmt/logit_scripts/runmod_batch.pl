@@ -28,6 +28,9 @@ my $slurmdir = "$parentdir/output/slurm/$today";
 my $parentjob=1;
 GetOptions('parentjob=i' => \$parentjob);
 
+use lib "$FindBin::Bin/../lib";
+use SmaugFunctions qw(forkExecWait);
+
 my $jobids = "1-4096";
 
 # can run with --parentjob {jobno} to query failed child jobs and rebuild batch

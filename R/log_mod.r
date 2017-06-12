@@ -14,20 +14,19 @@ jobid <- as.numeric(jobid)
 .libPaths(c(.libPaths(), libpath))
 
 options(useHTTPS=FALSE)
+options(scipen = 8)
 
-invisible(suppressMessages(require(speedglm, quietly=T)))
-invisible(suppressMessages(require(smaug, quietly=T)))
-invisible(suppressMessages(require(dplyr, quietly=T)))
-invisible(suppressMessages(require(boot, quietly=T)))
-invisible(suppressMessages(require(yaml, quietly=T)))
-invisible(suppressMessages(require(bedr, quietly=T)))
+invisible(suppressMessages(require(speedglm, quietly=T, warn.conflicts=FALSE)))
+invisible(suppressMessages(require(smaug, quietly=T, warn.conflicts=FALSE)))
+invisible(suppressMessages(require(dplyr, quietly=T, warn.conflicts=FALSE)))
+invisible(suppressMessages(require(boot, quietly=T, warn.conflicts=FALSE)))
+invisible(suppressMessages(require(yaml, quietly=T, warn.conflicts=FALSE)))
+invisible(suppressMessages(require(bedr, quietly=T, warn.conflicts=FALSE)))
 
 # source(paste0(parentdir, "/smaug-genetics/R/get_functions.r"))
 
 yaml_args <- yaml.load_file(paste0(parentdir, "/smaug-genetics/_config.yaml"))
 attach(yaml_args)
-
-options(scipen = 8)
 
 nbp_run <- 7
 
@@ -137,7 +136,7 @@ logitMod <- function(sites, categ, split){
 			dir.create(preddir, recursive=T, showWarnings = FALSE)
 
 			predfile <- paste0(preddir, categ, "_", escmotif, ".txt")
-			cat(paste0("Writing predicted rates to: ", predfile, "\n")
+			cat(paste0("Writing predicted rates to: ", predfile, "\n"))
 			write.table(chr.split[[i]], predfile,
 				col.names=F, row.names=F, quote=F, sep="\t")
 		}
@@ -157,6 +156,6 @@ for(categ in run_cats){
 	coefdir <- paste0(parentdir, "/output/logmod_data/coefs/", categ, "/")
 	dir.create(coefdir, recursive=T, showWarnings = FALSE)
 	coeffile <- paste0(coefdir, categ, "_", escmotif, "_coefs.txt")
-	cat(paste0("Writing coefficient estimates to: ", coeffile, "\n")
+	cat(paste0("Writing coefficient estimates to: ", coeffile, "\n"))
 	write.table(coefs, coeffile, col.names=F, row.names=F, quote=F, sep="\t")
 }

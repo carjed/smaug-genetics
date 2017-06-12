@@ -14,6 +14,12 @@ jobid <- as.numeric(jobid)
 .libPaths(c(.libPaths(), libpath))
 
 options(useHTTPS=FALSE)
+
+packages <- c("speedglm", "smaug", "dplyr", "boot", "yaml", "bedr")
+
+invisible(sapply(packages, function(x)
+	suppressMessages(usePackage(x))))
+
 suppressMessages(require(speedglm, quietly=T))
 suppressMessages(require(smaug, quietly=T))
 suppressMessages(require(dplyr, quietly=T))
@@ -150,7 +156,7 @@ logitMod <- function(sites, categ, split){
 cat("Running model on", runmotif, "sites...\n")
 
 for(categ in run_cats){
-	coefs <- logitMod(sites=sites, categ=categ, split=FALSE)
+	coefs <- logitMod(sites=sites, categ=categ, split=TRUE)
 
 	coefdir <- paste0(parentdir, "/output/logmod_data/coefs/", categ, "/")
 	dir.create(coefdir, recursive=T)

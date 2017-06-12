@@ -112,6 +112,8 @@ logitMod <- function(sites, categ, split){
 
 		predicted$mu <- round(inv.logit(predict(log_mod, newdata=sites)), 6)
 
+		predicted$mu[is.na(predicted$mu)] <- round(sum(sites$mut)/nrow(sites), 6)
+
 		# Get coefficients from model summary, clean up data formats
 		coefs <- data.frame(summary(log_mod)$coefficients, stringsAsFactors=F)
 		coefs <- cbind(Cov = rownames(coefs), coefs)

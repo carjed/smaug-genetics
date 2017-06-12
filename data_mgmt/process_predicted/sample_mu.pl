@@ -18,11 +18,12 @@ my $configpath = dirname(dirname($relpath));
 
 my $config = LoadFile("$configpath/_config.yaml");
 
-my $adj = $config->{adj};
+# my $adj = $config->{adj};
+my $adj = 3;
 my $data = $config->{data};
 my $parentdir = $config->{parentdir};
 my $seed = $config->{rseed};
-my $subseq=$adj*2+1;
+my $subseq = $adj*2+1;
 
 use lib "$FindBin::Bin/../lib";
 use SmaugFunctions qw(forkExecWait getRef getMotif);

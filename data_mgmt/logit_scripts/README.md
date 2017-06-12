@@ -28,7 +28,7 @@ This script writes a file for each 5Mb chunk of sequence containing 10 columns:
 9. GC_TA
 5. DP \[average depth of coverage at site\]
 
-These files are written to: `output/logmod_data/chr*/chr*.{start}-{end}.txt`. Because our model eventually needs to run independently for each subtype, after each file has been generated, it divided by the SEQUENCE column into and appended to motif-specific files at `output/logmod_data/motifs/{motif}.txt`.
+These files are written to: `output/logmod_data/chr*/chr*.{start}-{end}.txt`. Because our model eventually needs to run independently for each subtype, after each file has been generated, it is divided by the SEQUENCE column and appended into motif-specific files at `output/logmod_data/motifs/{motif}.txt`.
 
 Runtime for this script is ~12-13 hours, though this may be bottlenecked significantly by your available RAM (for the sort operation), disk read/write speeds, and single-core CPU speed.
 

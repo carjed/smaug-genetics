@@ -11,12 +11,15 @@ libpath <- args[3]
 jobid <- args[4]
 jobid <- as.numeric(jobid)
 
+.libPaths(c(.libPaths(), libpath))
+
 options(useHTTPS=FALSE)
-suppressMessages(require(speedglm, lib.loc=libpath, quietly=T))
-suppressMessages(require(smaug, lib.loc=libpath, quietly=T))
-suppressMessages(require(dplyr, lib.loc=libpath, quietly=T))
-suppressMessages(require(boot, lib.loc=libpath, quietly=T))
-suppressMessages(require(yaml, lib.loc=libpath, quietly=T))
+suppressMessages(require(speedglm, quietly=T))
+suppressMessages(require(smaug, quietly=T))
+suppressMessages(require(dplyr, quietly=T))
+suppressMessages(require(boot, quietly=T))
+suppressMessages(require(yaml, quietly=T))
+suppressMessages(require(bedr, quietly=T))
 
 # source(paste0(parentdir, "/smaug-genetics/R/get_functions.r"))
 
@@ -42,7 +45,7 @@ motifs <- motifdat %>%
 	mutate(Category=gsub("cpg_", "", Category2)) %>%
 	filter(grepl(paste0("^", catopt), Category)) %>%
 	dplyr::select(Sequence) %>%
-	unlist
+	unlist %>% unique
 
 runmotif <- motifs[jobid]
 escmotif <- substr(runmotif, 0, nbp_run)

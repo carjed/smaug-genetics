@@ -21,6 +21,10 @@ my $email = $config->{email};
 my $parentdir = $config->{parentdir};
 my $libpath = $config->{libpath};
 
+my $today = POSIX::strftime('%Y%m%d', localtime);
+my $slurmdir = "$parentdir/output/slurm/$today";
+  make_path("$slurmdir");
+
 my $parentjob=1;
 GetOptions('parentjob=i' => \$parentjob);
 
@@ -30,12 +34,12 @@ my $jobids = "1-4096";
 # my @categs = qw( AT_CG AT_GC AT_TA GC_AT GC_CG GC_TA );
 my @categs = qw(AT GC);
 if($parentjob>1){
-		$jobids=`sacct -j $jobid --format=jobid%30,jobname%30,state | grep "FAILED" | grep -v "\\\." | awk '{print \$1}' | sed 's/${parentjob}_//g'`;
+		$jobids=`sacct -j $parentjob --format=jobid%30,jobname%30,state | grep "FAILED" | grep -v "\\\." | awk '{print \$1}' | sed 's/${parentjob}_//g'`;
 		$jobids =~ s/\r?\n/,/g;
 		$jobids =~ s/,$//; # get rid of last comma
 
 		# In re-run, only want loop below to run for category with failed jobs
-		my $jobname=`sacct -j $jobid --format=jobid%30,jobname%30,state | grep "FAILED" | grep -v "\\\." | awk 'NR==3{print \$2}'`;
+		my $jobname=`sacct -j $parentjob --format=jobid%30,jobname%30,state | grep "FAILED" | grep -v "\\\." | awk 'NR==3{print \$2}'`;
 		chomp $jobname;
 		my $cat = substr($jobname, 0, 5);
 		my @categs = ($cat);

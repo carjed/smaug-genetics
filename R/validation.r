@@ -114,7 +114,7 @@ simMu <- function(data, nobs, chunksize=50000, rseed){
 # function samples user-defined number of non-mutated sites
 ##############################################################################
 buildValidationData <- function(data, nsites){
-  # set.seed(rseed)
+  set.seed(nsites)
   outdat <- data[sample(nrow(data), nsites),] %>%
     mutate(SIM="ab", SIMOBS=0) # include in simulation analysis
 
@@ -207,7 +207,7 @@ validationPipe <- function(nsites){
   sampled_sites <- buildValidationData(input_sites, nsites)
 
   cat("Merging DNMs with sub-sampled background...\n")
-  eval_sites <- bind_rows(list(sampled_sites2, input_dnms)) %>%
+  eval_sites <- bind_rows(list(sampled_sites, input_dnms)) %>%
     group_by(Category) %>%
     mutate(prop=cumsum(OBS)/sum(OBS)) %>%
     arrange(MU, prop) %>%

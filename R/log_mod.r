@@ -4,7 +4,7 @@
 # Logistic regression model
 ##############################################################################
 args <- commandArgs(trailingOnly=TRUE)
-
+args <- c("AT", "/net/bipolar/jedidiah/mutation", "/net/snowwhite/home/jedidiah/R/x86_64-pc-linux-gnu-library/3.3", 16)
 catopt <- args[1]
 parentdir <- args[2]
 libpath <- args[3]
@@ -49,6 +49,8 @@ motifs <- motifdat %>%
 
 runmotif <- motifs[jobid]
 escmotif <- substr(runmotif, 0, nbp_run)
+
+# stopif(file.exists(paste0(parentdir, "output/logmod_data/coefs")))
 
 sitefile <- paste0(parentdir, "/output/logmod_data/motifs/", escmotif, ".txt")
 sites <- read.table(sitefile, header=F, stringsAsFactors=F)

@@ -52,7 +52,7 @@ if($parentjob>1){
 
 # foreach my $categ (@categs){
   # my $jobcmd="${categ}_logmod";
-  my $builddatbatch = "$parentdir/slurm/$jobcmd.txt";
+  my $builddatbatch = "$parentdir/slurm/logmod.txt";
   open my $mdFH, '>', $builddatbatch or die "can't write to $builddatbatch: $!\n";
   print $mdFH "#!/bin/bash \n";
 	print $mdFH "#SGRIDBATCH CAT='AT' 'CG' \n";
@@ -77,7 +77,7 @@ if($parentjob>1){
   print $mdFH "exit 0 \n";
 	print $mdFH "fi \n";
 
-  print $mdFH "srun Rscript $parentdir/smaug-genetics/R/log_mod.r $categ $parentdir $libpath \$INDEX 1>\$STDOUT 2>\$STDERR \n";
+  print $mdFH "srun Rscript $parentdir/smaug-genetics/R/log_mod.r \$CAT $parentdir $libpath \$INDEX 1>\$STDOUT 2>\$STDERR \n";
   close($mdFH) or die "Unable to close file: $builddatbatch $!";
 
   my $slurmcmd="gridbatch $builddatbatch";

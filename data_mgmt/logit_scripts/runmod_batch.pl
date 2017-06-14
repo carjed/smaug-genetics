@@ -57,7 +57,7 @@ foreach my $categ (@categs){
   print $mdFH "#SBATCH --mail-user=$email \n";
   print $mdFH "#SBATCH --ntasks=1 \n";
   print $mdFH "#SBATCH --mem=8000 \n";
-  print $mdFH "#SBATCH --time 1:00:00 \n";
+  print $mdFH "#SBATCH --time 00:20:00 \n";
   print $mdFH "#SBATCH --job-name=$jobcmd \n";
   print $mdFH "#SBATCH --partition=nomosix \n";
   print $mdFH "#SBATCH --array=$jobids \n";

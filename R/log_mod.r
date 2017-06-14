@@ -4,7 +4,7 @@
 # Logistic regression model
 ##############################################################################
 args <- commandArgs(trailingOnly=TRUE)
-args <- c("AT", "/net/bipolar/jedidiah/mutation", "/net/snowwhite/home/jedidiah/R/x86_64-pc-linux-gnu-library/3.3", 16)
+# args <- c("AT", "/net/bipolar/jedidiah/mutation", "/net/snowwhite/home/jedidiah/R/x86_64-pc-linux-gnu-library/3.3", 16)
 catopt <- args[1]
 parentdir <- args[2]
 libpath <- args[3]

@@ -60,7 +60,7 @@ if($parentjob>1){
   print $mdFH "#SBATCH --mail-type=FAIL \n";
   print $mdFH "#SBATCH --mail-user=$email \n";
   print $mdFH "#SBATCH --ntasks=1 \n";
-  print $mdFH "#SBATCH --mem=6000 \n";
+  print $mdFH "#SBATCH --mem=8000 \n";
   print $mdFH "#SBATCH --time 00:20:00 \n";
   print $mdFH "#SBATCH --job-name=logmod \n";
   print $mdFH "#SBATCH --partition=bipolar \n";

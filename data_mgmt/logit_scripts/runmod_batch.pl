@@ -32,6 +32,7 @@ use lib "$FindBin::Bin/../lib";
 use SmaugFunctions qw(forkExecWait);
 
 my $jobids = "1-4096";
+my $mem=4000;
 
 # can run with --parentjob {jobno} to query failed child jobs and rebuild batch
 # my @categs = qw( AT_CG AT_GC AT_TA GC_AT GC_CG GC_TA );
@@ -46,6 +47,7 @@ if($parentjob>1){
 		chomp $jobname;
 		my $cat = substr($jobname, 0, 5);
 		my @categs = ($cat);
+		$mem = 8000;
 }
 
 foreach my $categ (@categs){
@@ -56,7 +58,7 @@ foreach my $categ (@categs){
   print $mdFH "#SBATCH --mail-type=FAIL \n";
   print $mdFH "#SBATCH --mail-user=$email \n";
   print $mdFH "#SBATCH --ntasks=1 \n";
-  print $mdFH "#SBATCH --mem=8000 \n";
+  print $mdFH "#SBATCH --mem=$mem \n";
   print $mdFH "#SBATCH --time 00:20:00 \n";
   print $mdFH "#SBATCH --job-name=$jobcmd \n";
   print $mdFH "#SBATCH --partition=nomosix \n";

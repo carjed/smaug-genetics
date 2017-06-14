@@ -50,26 +50,36 @@ if($parentjob>1){
 		$mem = 8000;
 }
 
-foreach my $categ (@categs){
-  my $jobcmd="${categ}_logmod";
+# foreach my $categ (@categs){
+  # my $jobcmd="${categ}_logmod";
   my $builddatbatch = "$parentdir/slurm/$jobcmd.txt";
   open my $mdFH, '>', $builddatbatch or die "can't write to $builddatbatch: $!\n";
-  print $mdFH "#!/bin/sh \n";
+  print $mdFH "#!/bin/bash \n";
+	print $mdFH "#SGRIDBATCH CAT='AT' 'CG' \n";
+	print $mdFH "#SGRIDBATCH INDEX=\$(seq 1 4096) \n";
   print $mdFH "#SBATCH --mail-type=FAIL \n";
   print $mdFH "#SBATCH --mail-user=$email \n";
   print $mdFH "#SBATCH --ntasks=1 \n";
-  print $mdFH "#SBATCH --mem=$mem \n";
+  print $mdFH "#SBATCH --mem=6000 \n";
   print $mdFH "#SBATCH --time 00:20:00 \n";
-  print $mdFH "#SBATCH --job-name=$jobcmd \n";
-  print $mdFH "#SBATCH --partition=nomosix \n";
-  print $mdFH "#SBATCH --array=$jobids \n";
+  print $mdFH "#SBATCH --job-name=logmod \n";
+  print $mdFH "#SBATCH --partition=bipolar \n";
+  # print $mdFH "#SBATCH --array=$jobids \n";
   print $mdFH "#SBATCH --requeue \n";
-	print $mdFH "#SBATCH --exclude=hunt-mc05,hunt-mc06,hunt-mc07,hunt-mc08,twins-mc01,twins-mc04,finnseq-mc02,dl3614,dl3615,dl3616,dl3617,dl3618,dl3619 \n";
+	# print $mdFH "#SBATCH --exclude=hunt-mc05,hunt-mc06,hunt-mc07,hunt-mc08,twins-mc01,twins-mc04,finnseq-mc02,dl3614,dl3615,dl3616,dl3617,dl3618,dl3619 \n";
   # print $mdFH "#SBATCH --exclude=psoriasis-mc01,psoriasis-mc02 \n";
-  print $mdFH "#SBATCH --output=\"$slurmdir/slurmJob-%J.out\" --error=\"$slurmdir/slurmJob-%J.err\" \n";
-  print $mdFH "srun Rscript $parentdir/smaug-genetics/R/log_mod.r $categ $parentdir $libpath \$SLURM_ARRAY_TASK_ID\n";
+  # print $mdFH "#SBATCH --output=\"$slurmdir/slurmJob-%J.out\" --error=\"$slurmdir/slurmJob-%J.err\" \n";
+	print $mdFH "export STDOUT=\"$slurmdir/\$CAT.\$INDEX.out\"\n";
+	print $mdFH "export STDERR=\"$slurmdir/\$CAT.\$INDEX.err\"\n";
+
+	print $mdFH "if [ -f \$STDOUT ] ; then \n";
+  print $mdFH "echo results for job \$STDOUT already exists \n";
+  print $mdFH "exit 0 \n";
+	print $mdFH "fi \n";
+
+  print $mdFH "srun Rscript $parentdir/smaug-genetics/R/log_mod.r $categ $parentdir $libpath \$INDEX 1>\$STDOUT 2>\$STDERR \n";
   close($mdFH) or die "Unable to close file: $builddatbatch $!";
 
-  my $slurmcmd="sbatch $builddatbatch";
+  my $slurmcmd="gridbatch $builddatbatch";
   forkExecWait($slurmcmd);
-}
+# }

@@ -52,7 +52,7 @@ escmotif <- substr(runmotif, 0, nbp_run)
 
 # stopif(file.exists(paste0(parentdir, "output/logmod_data/coefs")))
 
-sitefile <- paste0(parentdir, "/output/logmod_data/motifs/", escmotif, ".txt")
+sitefile <- paste0(parentdir, "/output/logmod_data/motifs3/", escmotif, ".txt")
 sites <- read.table(sitefile, header=F, stringsAsFactors=F)
 names(sites) <- c("CHR", "POS", "Sequence", mut_cats, "DP")
 sites <- sites %>%

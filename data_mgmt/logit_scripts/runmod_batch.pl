@@ -55,14 +55,14 @@ if($parentjob>1){
   my $builddatbatch = "$parentdir/slurm/logmod.txt";
   open my $mdFH, '>', $builddatbatch or die "can't write to $builddatbatch: $!\n";
   print $mdFH "#!/bin/bash \n";
-	print $mdFH "#SGRIDBATCH CAT='AT' 'CG' \n";
-	print $mdFH "#SGRIDBATCH INDEX=\$(seq 1 4096) \n";
+	print $mdFH "#SGRIDBATCH CAT='AT' 'CG'\n";
+	print $mdFH "#SGRIDBATCH INDEX=\$(seq 1 4096)\n";
   print $mdFH "#SBATCH --mail-type=FAIL \n";
   print $mdFH "#SBATCH --mail-user=$email \n";
   print $mdFH "#SBATCH --ntasks=1 \n";
   print $mdFH "#SBATCH --mem=8000 \n";
   print $mdFH "#SBATCH --time 00:20:00 \n";
-  print $mdFH "#SBATCH --job-name=logmod \n";
+  # print $mdFH "#SBATCH --job-name=logmod \n";
   print $mdFH "#SBATCH --partition=bipolar \n";
   # print $mdFH "#SBATCH --array=$jobids \n";
   print $mdFH "#SBATCH --requeue \n";

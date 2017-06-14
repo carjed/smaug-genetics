@@ -16,12 +16,12 @@ jobid <- as.numeric(jobid)
 options(useHTTPS=FALSE)
 options(scipen = 8)
 
-invisible(suppressMessages(library("speedglm", quietly=T, warn.conflicts=FALSE)))
-invisible(suppressMessages(library("smaug", quietly=T, warn.conflicts=FALSE)))
-invisible(suppressMessages(library("dplyr", quietly=T, warn.conflicts=FALSE)))
-invisible(suppressMessages(library("boot", quietly=T, warn.conflicts=FALSE)))
-invisible(suppressMessages(library("yaml", quietly=T, warn.conflicts=FALSE)))
-invisible(suppressMessages(library("bedr", quietly=T, warn.conflicts=FALSE)))
+invisible(suppressPackageStartupMessages(library("speedglm", quietly=T, warn.conflicts=FALSE)))
+invisible(suppressPackageStartupMessages(library("smaug", quietly=T, warn.conflicts=FALSE)))
+invisible(suppressPackageStartupMessages(library("dplyr", quietly=T, warn.conflicts=FALSE)))
+invisible(suppressPackageStartupMessages(library("boot", quietly=T, warn.conflicts=FALSE)))
+invisible(suppressPackageStartupMessages(library("yaml", quietly=T, warn.conflicts=FALSE)))
+invisible(suppressPackageStartupMessages(library("bedr", quietly=T, warn.conflicts=FALSE)))
 
 # source(paste0(parentdir, "/smaug-genetics/R/get_functions.r"))
 

@@ -16,12 +16,12 @@ jobid <- as.numeric(jobid)
 options(useHTTPS=FALSE)
 options(scipen = 8)
 
-invisible(suppressPackageStartupMessages(library("speedglm", quietly=T, warn.conflicts=FALSE)))
-invisible(suppressPackageStartupMessages(library("smaug", quietly=T, warn.conflicts=FALSE)))
-invisible(suppressPackageStartupMessages(library("dplyr", quietly=T, warn.conflicts=FALSE)))
-invisible(suppressPackageStartupMessages(library("boot", quietly=T, warn.conflicts=FALSE)))
-invisible(suppressPackageStartupMessages(library("yaml", quietly=T, warn.conflicts=FALSE)))
-invisible(suppressPackageStartupMessages(library("bedr", quietly=T, warn.conflicts=FALSE)))
+suppressPackageStartupMessages(library("speedglm", quietly=TRUE, warn.conflicts=FALSE))
+suppressPackageStartupMessages(library("smaug", quietly=TRUE, warn.conflicts=FALSE))
+suppressPackageStartupMessages(library("dplyr", quietly=TRUE, warn.conflicts=FALSE))
+suppressPackageStartupMessages(library("boot", quietly=TRUE, warn.conflicts=FALSE))
+suppressPackageStartupMessages(library("yaml", quietly=TRUE, warn.conflicts=FALSE))
+suppressPackageStartupMessages(library("bedr", quietly=TRUE, warn.conflicts=FALSE))
 
 # source(paste0(parentdir, "/smaug-genetics/R/get_functions.r"))
 

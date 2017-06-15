@@ -127,7 +127,7 @@ buildValidationData <- function(data, nsites){
 mergeRates <- function(chrp_c){
   # rates9 <- ratelist[[5]] %>%
   #   dplyr::select(Category=Type, SEQ=Motif, MU_9=ERV_rel_rate)
-
+	adj2 <- 3
   rates7 <- ratelist[[4]] %>%
     mutate(SEQ7=substr(Motif, 1, 7)) %>%
     dplyr::select(Category=Type, SEQ7, MU_7=ERV_rel_rate)
@@ -179,7 +179,7 @@ mergeRates <- function(chrp_c){
   chrp_c <- merge(chrp_c, rates_anc, by=c("Category", "SEQ7"), all.x=T)
 
   chrp_c <- chrp_c %>%
-    mutate(Category=ifelse(substr(SEQ,adj+1,adj+2)=="CG",
+    mutate(Category=ifelse(substr(SEQ,adj2+1,adj2+2)=="CG",
                   paste0("cpg_",Category), Category)) %>%
     mutate(BIN=ceiling(POS/binw)) %>%
     # mutate(Category =

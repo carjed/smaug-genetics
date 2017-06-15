@@ -125,8 +125,8 @@ buildValidationData <- function(data, nsites){
 # Function merges rate estimates with validation data
 ##############################################################################
 mergeRates <- function(chrp_c){
-  rates9 <- ratelist[[5]] %>%
-    dplyr::select(Category=Type, SEQ=Motif, MU_9=ERV_rel_rate)
+  # rates9 <- ratelist[[5]] %>%
+  #   dplyr::select(Category=Type, SEQ=Motif, MU_9=ERV_rel_rate)
 
   rates7 <- ratelist[[4]] %>%
     mutate(SEQ7=substr(Motif, 1, 7)) %>%
@@ -147,7 +147,7 @@ mergeRates <- function(chrp_c){
     mutate(SEQ7=substr(Motif, 1, 7)) %>%
     dplyr::select(Category=Type, SEQ7, MU_7A=eur)
 
-  chrp_c <- merge(chrp_c, rates9, by=c("Category", "SEQ"), all.x=T)
+  # chrp_c <- merge(chrp_c, rates9, by=c("Category", "SEQ"), all.x=T)
   chrp_c <- merge(chrp_c, rates7A, by=c("Category", "SEQ7"), all.x=T)
   chrp_c <- merge(chrp_c, rates7, by=c("Category", "SEQ7"), all.x=T)
   chrp_c <- merge(chrp_c, rates5, by=c("Category", "SEQ5"), all.x=T)
@@ -211,9 +211,9 @@ validationPipe <- function(nsites){
     group_by(Category) %>%
     mutate(prop=cumsum(OBS)/sum(OBS)) %>%
     arrange(MU, prop) %>%
-    mutate(SEQ7 = substr(SEQ, 2, 8),
-      SEQ5 = substr(SEQ, 3, 7),
-      SEQ3 = substr(SEQ, 4, 6))
+    mutate(SEQ7 = substr(SEQ, 1, 7),
+      SEQ5 = substr(SEQ, 2, 6),
+      SEQ3 = substr(SEQ, 3, 5))
 
   cat("Appending additional rate estimates...\n")
   eval_sites <- mergeRates(eval_sites)
@@ -312,7 +312,7 @@ validationPipe <- function(nsites){
 cat("Reading data...\n")
 validation_file <- paste0(parentdir, "/output/predicted/validation_sites.txt")
 input_sites <- read.table(validation_file, header=F, stringsAsFactors=F)
-names(input_sites) <- c("CHR", "POS", "BIN", "MU", "OBS", "Category", "SEQ", "ID")
+names(input_sites) <- c("CHR", "POS", "MU", "OBS", "Category", "SEQ", "ID")
 
 # Remove sites with mu=0
 input_sites <- input_sites[input_sites$MU>0,]

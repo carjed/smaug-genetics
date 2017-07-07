@@ -34,7 +34,7 @@ invisible(sapply(gh_packages, function(x)
 # install/load CRAN packages
 packages <- c("tidyverse", "broom", "RColorBrewer", "MASS", "boot", "speedglm",
 	"psych", "lmtest", "fmsb", "hexbin", "cowplot", "grid", "gtable", "gridExtra",
-	"yaml", "openxlsx", "Biostrings", "svglite", "NMF")
+	"yaml", "openxlsx", "Biostrings", "svglite", "NMF", "emdbook")
 invisible(sapply(packages, function(x)
 	suppressMessages(usePackage(x))))
 

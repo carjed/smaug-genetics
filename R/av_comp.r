@@ -39,6 +39,13 @@ r5m$v2a <- as.character(lapply(as.vector(r5m$v2), reverse_chars))
 r5m$v2a <- factor(r5m$v2a)
 r5m$v3 <- substr(r5m$Motif,3+2,3*2+1)
 
+r5m2 <- r5m %>%
+  mutate(eur2=eur/(mean(r5m$eur)/mean(r5m$ERV_rel_rate)))
+
+r5m3 <- r5m %>%
+  dplyr::select(Type, Motif, ERV_rel_rate, eur) %>%
+  gather(gp, val, ERV_rel_rate, eur)
+
 ##############################################################################
 # Get BRIDGES MAC10+ rates
 ##############################################################################
@@ -78,6 +85,11 @@ r5m <- merge(r5m, gpdat, by=c("Type", "Motif")) %>%
   mutate(ERV_down_rel_rate=nERVs_down/nMotifs)
 
 rm2 <- r5m %>% dplyr::select(-Category2)
+
+kspvals <- r5m %>%
+  mutate(eur_s=eur*mean(ERV_rel_rate)/mean(eur)) %>%
+	group_by(Category2) %>%
+	summarise(pval=ks.test(ERV_rel_rate, eur_s)$p.value)
 
 ##############################################################################
 # Theme & styling for 7-mer rate comparison plots
@@ -150,7 +162,7 @@ corlabs <- r5m %>%
 	mutate(label=paste0("rho=", round(cor,2)))
 
 p + format_mac_comp_facet(corlabs)
-ggsave(paste0(parentdir, "/images/ERV_vs_MAC10_corr_facet.png"),
+ggsave(paste0(parentdir, "/images/ERV_vs_AV_corr_facet.png"),
   width=6, height=6)
 
 ##############################################################################

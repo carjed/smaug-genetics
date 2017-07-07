@@ -137,12 +137,14 @@ get_loads <- function(widedat, nmfdat){
 # plot signature loadings
 ###############################################################################
 plot_loads <- function(sigloads){
-  p <- ggplot(sigloads, aes(x=Sequence, y=value))+
+  p <- ggplot(sigloads, aes(x=Sequence, y=value, fill=sig))+
     geom_bar(stat="identity")+
     facet_grid(sig~Category, scales="free_x")+
     # geom_label_repel(data=sigloads[sigloads$sig3>0.005,], aes(x=sig2, y=sig3, label=subtype))+
     theme_bw()+
-    theme(axis.text.x=element_text(angle=90, hjust=1))
+    theme(axis.text.x=element_text(angle=90, hjust=1),
+      strip.text=element_text(size=16),
+      legend.position="none")
   return(p)
 }
 
@@ -151,11 +153,26 @@ plot_loads <- function(sigloads){
 ###############################################################################
 plot_ind_sigs <- function(sigdat){
   p <- ggplot(sigdat,
-      aes(x=ID, y=prob, group=cluster, colour=cluster)) +
+      aes(x=ID, y=prob, group=factor(Signature), colour=factor(Signature)))+
     geom_line()+
     scale_x_discrete(expand=c(0,0))+
     scale_y_continuous(expand=c(0,0), limits=c(0,1))+
     facet_wrap(~Study, scales="free_x", nrow=1)+
+    ylab("signature contribution")+
+    theme_bw()+
+    theme(axis.text.x=element_blank(),
+      legend.position="bottom")
+
+  return(p)
+}
+
+plot_ind_sigs2 <- function(sigdat){
+  p <- ggplot(sigdat,
+      aes(x=ID, y=prob, group=factor(Signature), colour=factor(Signature)))+
+    geom_line()+
+    scale_x_discrete(expand=c(0,0))+
+    scale_y_continuous(expand=c(0,0), limits=c(0,1))+
+    facet_wrap(~top_r, scales="free_x", nrow=1)+
     ylab("signature contribution")+
     theme_bw()+
     theme(axis.text.x=element_blank(),
@@ -180,7 +197,7 @@ ind_pred <- predict(ind_nmf, "rows", prob=T)
 
 sigloads <- get_loads(ind_wide[,-c(1)], ind_nmf)
 plot_loads(sigloads)
-ggsave(paste0(parentdir, "/images/sigloads.png"), width=14, height=8)
+ggsave(paste0(parentdir, "/images/sigloads.png"), width=12, height=6)
 
 # Add NMF basis and predicted class to data frame
 nmfdat1 <- data.frame(ID=ind_wide$ID, basis(ind_nmf), sig=ind_pred[[1]])
@@ -195,20 +212,68 @@ nmfdat1 <- merge(nmfdat1, p4, by="ID") %>%
   mutate(sum=X1+X2+X3,
     sig1=X1/sum,
     sig2=X2/sum,
-    sig3=X3/sum)
+    sig3=X3/sum) %>%
+  mutate(top_r=apply(.[,51:53], 1, function(x) names(x)[which.max(x)]))
 
 nmfdat1$ID <- factor(nmfdat1$ID, levels = unique(nmfdat1$ID))
+
+
+svmdat <- nmfdat1 %>%
+  filter(!(is.na(PLATE))) %>%
+  filter(!(is.na(CHIPMIX)))
+
+nsvm<-svm(factor(top_r)~Singletons+Heterozygosity+CHIPMIX+PLATE+insmedian+zeromap+coverage+gcbias, svmdat)
+nsvm<-svm(sig1~Singletons+Heterozygosity+CHIPMIX+PLATE+insmedian+zeromap+coverage+gcbias, svmdat)
+pred_class <- predict(nsvm, svmdat)
+cor(svmdat$sig1, pred_class)
+
+
+
+
 
 # plates <- read.table(plates, header=F, stringsAsFactors=F)
 # names(plates) <- c("ID", "PLATE")
 # nmfdat1 <- merge(nmfdat1, plates, by="ID")
 
 ind_nmf_long <- nmfdat1 %>%
-  gather(cluster, prob, sig1:sig3) %>%
+  gather(Signature, prob, sig1:sig3) %>%
+  mutate(Signature=as.numeric(gsub("sig", "", Signature))) %>%
   arrange(Study, sum)
 
 plot_ind_sigs(ind_nmf_long)
 ggsave(paste0(parentdir, "/images/by_ind_all.png"), width=8, height=6)
+
+plot_ind_sigs2(ind_nmf_long)
+ggsave(paste0(parentdir, "/images/by_ind_all_by_sig.png"), width=8, height=6)
+
+inl2 <- ind_nmf_long %>%
+  group_by(ID) %>%
+  # filter(Signature!=1) %>%
+  filter(prob==max(prob))
+
+ggplot(inl2, aes(x=PC1, y=PC2, colour=Signature))+
+  geom_point(alpha=0.5)
+ggsave(paste0(parentdir, "/images/ind_pc_proj.png"), width=8, height=6)
+
+ggplot()+
+  geom_point(data=inl2[inl2$sig==3,],
+    aes(x=PC1, y=PC2, colour="gray70"))+
+  geom_point(data=inl2[inl2$sig==2,],
+    aes(x=PC1, y=PC2, colour="red"), size=3)+
+  geom_point(data=inl2[inl2$sig==1,],
+    aes(x=PC1, y=PC2, colour="cyan"), size=3)+
+  scale_colour_manual(name = 'Dominant\nSignature',
+    values = c('cyan'='cyan', 'red'='red', 'gray70'='gray70'),
+    breaks = c('cyan', 'red', 'gray70'),
+    labels = c(1,2,3))+
+  theme_bw()+
+  theme(axis.title.x=element_text(size=16),
+    axis.title.y=element_text(size=16),
+    legend.title=element_text(size=16),
+    legend.text=element_text(size=14),
+    legend.position = c(.1, .1),
+    legend.box.background = element_rect())
+ggsave(paste0(parentdir, "/images/sig_snp_pcs.png"), width=8, height=8)
 
 sumdat <- nmfdat1 %>%
   # filter(sig!=2) %>%
@@ -261,6 +326,12 @@ drop_ids <- nmfdat1 %>%
   filter(!(ID %in% keep_ids$ID)) %>%
   dplyr::select(ID)
 
+
+ind_nmf_long %>%
+  filter(ID %in% keep_ids$ID) %>%
+plot_ind_sigs()
+ggsave(paste0(parentdir, "/images/by_ind_post_filter.png"), width=8, height=6)
+
 # cnv_drops <- read.table("/net/snowwhite/home/jedidiah/drops.txt", header=F)
 # names(cnv_drops) <- "ID"
 # cnv_drops$gp <- "CNV"
@@ -290,7 +361,7 @@ ind_pred2 <- predict(ind_nmf2, "rows", prob=T)
 
 sigloads <- get_loads(ind_wide2[,-c(1)], ind_nmf2)
 plot_loads(sigloads)
-ggsave(paste0(parentdir, "/images/sigloads2.png"), width=14, height=8)
+ggsave(paste0(parentdir, "/images/sigloads2.png"), width=12, height=6)
 
 nmfdat2 <- data.frame(ID=ind_wide2$ID, basis(ind_nmf2), sig=ind_pred2[[1]])
 

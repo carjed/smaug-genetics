@@ -29,6 +29,7 @@ sites$bin <- ceiling(sites$POS/binw)
 i<-1
 cbp<-5
 band_counts <- sites %>%
+  mutate(Sequence=substr(Motif,1,9)) %>%
   mutate(Type=gsub("cpg_", "", Category2),
     SEQA=substr(Sequence, cbp-i, cbp+i),
     SEQB=substr(Sequence, cbp*3-i, cbp*3+i),

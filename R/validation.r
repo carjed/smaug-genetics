@@ -31,6 +31,7 @@ runDNMLogit <- function(data, group){
 
     # Non-nested 7-mer+features model (14)
     models$mod_7mers_features <- glm(OBS~MU, data=data, family=binomial())
+		models$mod_7mers_adj <- glm(OBS~MU_7adj, data=data, family=binomial())
     # models$mod_7mers_anc <- glm(OBS~MU_7AN, data=data, family=binomial())
     # models$mod_7mers_sig <- glm(OBS~MU_7+X1+X2+X3+X4+X5, data=data, family=binomial())
     # models$mod_9mers <- glm(OBS~MU_9, data=data, family=binomial())
@@ -177,6 +178,9 @@ mergeRates <- function(chrp_c){
   chrp_c <- merge(chrp_c, rates_7C, by=c("Category", "SEQ7"), all.x=T)
   chrp_c <- merge(chrp_c, rates_7D, by=c("Category", "SEQ7"), all.x=T)
   chrp_c <- merge(chrp_c, rates_anc, by=c("Category", "SEQ7"), all.x=T)
+
+	chrp_c <- chrp_c %>%
+		mutate(MU_7adj=-lambertW(-MU_7))
 
   chrp_c <- chrp_c %>%
     mutate(Category=ifelse(substr(SEQ,adj2+1,adj2+2)=="CG",

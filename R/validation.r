@@ -307,7 +307,7 @@ validationPipe <- function(nsites){
   typefitfile <- paste0(parentdir, "/output/model_fit_by_type", nsites, ".txt")
   write.table(type_models_summary, typefitfile,
     col.names=T, row.names=F, quote=F, sep="\t")
-  return(type_models_summary)
+  return(list(combined_models_summary, type_models_summary))
 }
 
 ##############################################################################

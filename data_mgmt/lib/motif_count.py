@@ -58,7 +58,7 @@ with open(args.motifs) as f:
 for m in motif_list:
     motif_dict[m] = 0
 
-fasta_reader = Fasta(args.input, read_ahead=1000000)
+fasta_reader = Fasta(args.input, read_ahead=10000)
 
 count = 0
 for key in fasta_reader.keys():

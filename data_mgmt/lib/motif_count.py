@@ -60,6 +60,7 @@ for m in motif_list:
 
 fasta_reader = Fasta(args.input, read_ahead=1000000)
 
+count = 0
 for key in fasta_reader.keys():
     seq = fasta_reader[key]
     seqstr = seq[0:len(seq)].seq
@@ -67,6 +68,10 @@ for key in fasta_reader.keys():
     for m in motif_dict.keys():
         occ = occurrences(seqstr, m)
         motif_dict[m] += occ
+    count += 1
+    # if count % 1000 == 0:
+    print("processed", count, "records in fasta")
+
 
 outfile = open(args.output, 'w')
 writer = csv.writer(outfile, delimiter = '\t')

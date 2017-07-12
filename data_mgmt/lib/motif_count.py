@@ -42,14 +42,26 @@ parser.add_argument("-o", "--output",
 
 args = parser.parse_args()
 
+# def occurrences(string, sub):
+#     count = start = 0
+#     while True:
+#         start = string.find(sub, start) + 1
+#         if start > 0:
+#             count+=1
+#         else:
+#             return count
+
 def occurrences(string, sub):
-    count = start = 0
-    while True:
-        start = string.find(sub, start) + 1
-        if start > 0:
-            count+=1
-        else:
-            return count
+    kmer_dict = {}
+    kmer_len = 7
+    startpos = 0
+    endpos = 7
+    while endpos < len(string):
+        kmer = string[startpos:endpos]
+        kmer_dict[kmer]+=1
+        startpos+=1
+        endpos+=1
+    return(kmer_dict[sub])
 
 # def overlapping_count(string, seek):
 #     matches = 0

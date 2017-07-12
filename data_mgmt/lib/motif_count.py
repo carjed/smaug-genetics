@@ -58,7 +58,10 @@ def occurrences(string, sub):
     endpos = 7
     while endpos < len(string):
         kmer = string[startpos:endpos]
-        kmer_dict[kmer]+=1
+        if not kmer in kmer_dict:
+            kmer_dict[kmer] = 0
+        # else:
+        kmer_dict[kmer] += 1
         startpos+=1
         endpos+=1
     return(kmer_dict[sub])

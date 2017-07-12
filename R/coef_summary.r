@@ -333,10 +333,17 @@ runTest <- function(cov, dir){
       system(paste0("bash ", get_fasta_file), ignore.stderr=TRUE)
     }
 
-    grepcmd <- paste0("grep -o -Ff ",
-      parentdir, "/seqs.txt ", covbase, ".fa | sort | uniq -c > ",
-      parentdir, "/testcounts.txt")
-    system(grepcmd)
+    # grepcmd <- paste0("grep -o -Ff ",
+    #   parentdir, "/seqs.txt ", covbase, ".fa | sort | uniq -c > ",
+    #   parentdir, "/testcounts.txt")
+    # system(grepcmd)
+
+    count_motifs_cmd <- paste0("python ../lib/motif_counts.py",
+      " -i ", covbase, ".fa",
+      " -m ", parentdir, "/seqs.txt",
+      " -o ", parentdir, "/testcounts.txt")
+
+    system(count_motifs_cmd)
 
     motifcts <- read.table(paste0(parentdir, "/testcounts.txt"),
       header=F, stringsAsFactors=F)
@@ -367,6 +374,7 @@ runTest <- function(cov, dir){
                   c(nmotifs_in, nmotifs_out), alternative=diralt))
 
       # test_result <- dnmstmp %>% do(tidy(t.test(MU~inside, data=., alternative=diralt)))
+      nseqs <- length(seqs)
       outdat <- cbind(cov, dir, test_result)
       # outdat$dnms <- dnmstmp %>%
       #   dplyr::select(CHR, POS, MU, inside) %>%

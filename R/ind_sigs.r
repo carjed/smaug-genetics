@@ -222,10 +222,10 @@ svmdat <- nmfdat1 %>%
   filter(!(is.na(PLATE))) %>%
   filter(!(is.na(CHIPMIX)))
 
-nsvm<-svm(factor(top_r)~Singletons+Heterozygosity+CHIPMIX+PLATE+insmedian+zeromap+coverage+gcbias, svmdat)
-nsvm<-svm(sig1~Singletons+Heterozygosity+CHIPMIX+PLATE+insmedian+zeromap+coverage+gcbias, svmdat)
-pred_class <- predict(nsvm, svmdat)
-cor(svmdat$sig1, pred_class)
+# nsvm<-svm(factor(top_r)~Singletons+Heterozygosity+CHIPMIX+PLATE+insmedian+zeromap+coverage+gcbias, svmdat)
+# nsvm<-svm(sig1~Singletons+Heterozygosity+CHIPMIX+PLATE+insmedian+zeromap+coverage+gcbias, svmdat)
+# pred_class <- predict(nsvm, svmdat)
+# cor(svmdat$sig1, pred_class)
 
 
 

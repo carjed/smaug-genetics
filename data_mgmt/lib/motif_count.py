@@ -51,6 +51,15 @@ def occurrences(string, sub):
         else:
             return count
 
+def overlapping_count(string, seek):
+    matches = 0
+    seek_len = len(seek)
+    seek_c = seek[0]
+    for i, c in enumerate(string):
+        if c == seek_c and string[i:i + seek_len] == seek:
+            matches += 1
+    return matches
+
 motif_dict = {}
 with open(args.motifs) as f:
     motif_list = f.read().splitlines()
@@ -66,7 +75,8 @@ for key in fasta_reader.keys():
     seqstr = seq[0:len(seq)].seq
 
     for m in motif_dict.keys():
-        occ = occurrences(seqstr, m)
+        # occ = occurrences(seqstr, m)
+        occ = overlapping_count(seqstr, m)
         motif_dict[m] += occ
     count += 1
     # if count % 1000 == 0:

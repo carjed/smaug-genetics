@@ -89,7 +89,7 @@ for key in fasta_reader.keys():
     seq = fasta_reader[key]
     seqstr = seq[0:len(seq)].seq
 
-    print("counting subtypes in record")
+    # print("counting subtypes in record")
     for m in motif_dict.keys():
         occ = occurrences(seqstr, m)
         # occ = overlapping_count(seqstr, m)

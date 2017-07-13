@@ -270,7 +270,7 @@ runTest <- function(cov, dir){
       dnmstmp$inside <- ifelse(dnmstmp$RR>=2, 1, 0)
       awkstr <- "awk -F\"\\t\" '{if($4>=2 && NR>1) print $1\"\\t\"$2\"\\t\"$3}'"
     } else if(cov=="DHS"){
-      covbase <- paste0(parentdir, "/reference_data/DHS.sort")
+      covbase <- paste0(parentdir, "/reference_data/DHS")
       covbed <- paste0(covbase, ".bed")
       dnmstmp$inside <- binaryCol(dnmstmp, covbed)
     } else if(cov=="CpGI"){
@@ -338,17 +338,19 @@ runTest <- function(cov, dir){
     #   parentdir, "/testcounts.txt")
     # system(grepcmd)
 
-    count_motifs_cmd <- paste0("python ../lib/motif_counts.py",
-      " -i ", covbase, ".fa",
-      " -m ", parentdir, "/seqs.txt",
-      " -o ", parentdir, "/testcounts.txt")
+    if(!file.exists(paste0(covbase, "_testcounts.txt"))){
+      count_motifs_cmd <- paste0("python data_mgmt/lib/motif_count.py",
+        " -i ", covbase, ".fa",
+        " -m ", parentdir, "/seqs.txt",
+        " -o ", covbase, "_testcounts.txt")
 
-    system(count_motifs_cmd)
+      system(count_motifs_cmd)
+    }
 
-    motifcts <- read.table(paste0(parentdir, "/testcounts.txt"),
+    motifcts <- read.table(paste0(covbase, "_testcounts.txt"),
       header=F, stringsAsFactors=F)
 
-    names(motifcts) <- c("Count", "SEQ")
+    names(motifcts) <- c("SEQ", "Count")
     motifcts$REVSEQ <- unlist(lapply(motifcts$SEQ, revcomp))
     motifcts$Sequence <- ifelse(substr(motifcts$SEQ,4,4) %in% c("A", "C"),
       motifcts$SEQ, motifcts$REVSEQ)

@@ -96,7 +96,7 @@ for key in fasta_reader.keys():
         motif_dict[m] += occ
     count += 1
     # if count % 1000 == 0:
-    print("processed", count, "records in fasta")
+    # print("processed", count, "records in fasta")
 
 
 outfile = open(args.output, 'w')

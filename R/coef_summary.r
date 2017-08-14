@@ -146,6 +146,26 @@ non_cpg_plotdat %>%
     theme_coef()
 ggsave(paste0(parentdir, "/images/coef_violin_10.pdf"), width=6.5, height=6.5)
 
+# non_cpg_plotdat %>%
+#   ggplot(aes(x=exp(Est), y=Category, alpha=factor(dir), fill=Category))+
+#     # geom_hline(yintercept=1, linetype="dashed")+
+#     # geom_text(data=sig10txt1,
+#     #   aes(x=Category2, y=Estmax, label=label, colour=Category2),
+#     #   vjust=1, size=4, angle=90)+
+#     geom_joy()+
+#     scale_fill_manual(values=gp_cols, drop=FALSE)+
+#     scale_colour_manual(values=gp_cols, drop=FALSE)+
+#     # scale_x_discrete(drop=FALSE)+
+#     # scale_y_log10(breaks=c(.125, .25, 0.5, 1, 2, 4, 8))+
+#     # scale_x_log10(breaks=c(0.5, 1, 2, 4))+
+#     # scale_alpha_discrete(range = c(0.95, 0.96), guide=F)+
+#     facet_wrap(~Cov, ncol=3, drop=F)#+
+#     # ylab("odds ratio for mutability")+
+#     # guides(fill = guide_legend(nrow = 3))+
+#     # theme_coef()
+# ggsave(paste0(parentdir, "/images/coef_joy_10.pdf"), width=6.5, height=6.5)
+
+
 ##############################################################################
 # Plot CpG island effects (w/ >10 subtypes)
 ##############################################################################
@@ -223,6 +243,42 @@ ggsave(paste0(parentdir, "/images/coef_violin_cpg_effects.pdf"), width=6.5, heig
 # expected number assuming no effect of genomic features, then tests for
 # difference between expected/observed
 ##############################################################################
+getfeats <- function(sitedf){
+  # Add histone marks to site data
+  hists <- c("H3K4me1", "H3K4me3", "H3K9ac", "H3K9me3",
+    "H3K27ac", "H3K27me3", "H3K36me3")
+  dflist <- list()
+  for(i in 1:length(hists)){
+    mark <- hists[i]
+    file <- paste0(parentdir, "/reference_data/sort.E062-",
+      mark, ".bed")
+    hist <- binaryCol(sitedf, file)
+    dflist[[i]] <- hist
+  }
+
+  df <- as.data.frame(do.call(cbind, dflist))
+  names(df) <- hists
+  sitedf <- cbind(sitedf, df)
+
+  # Add other features
+  sitedf$EXON <- binaryCol(sitedf,
+    paste0(parentdir, "/reference_data/GRCh37_RefSeq_sorted.bed"))
+  sitedf$CpGI <- binaryCol(sitedf,
+    paste0(parentdir, "/reference_data/cpg_islands_sorted.bed"))
+  sitedf$RR <- rcrCol(sitedf,
+    paste0(parentdir, "/reference_data/recomb_rate.bed"))
+  sitedf$LAMIN <- binaryCol(sitedf,
+    paste0(parentdir, "/reference_data/lamin_B1_LADS2.bed"))
+  sitedf$DHS <- binaryCol(sitedf,
+    paste0(parentdir, "/reference_data/DHS.bed"))
+  sitedf$TIME <- repCol(sitedf,
+    paste0(parentdir, "/reference_data/lymph_rep_time.txt"))
+  sitedf$GC <- gcCol(sitedf,
+    paste0(parentdir, "/reference_data/gc10kb.bed"))
+
+  return(sitedf)
+}
+
 runTest <- function(cov, dir){
   covtmp <- covdat %>% filter(Cov==cov)
   if(dir=="Up"){
@@ -233,160 +289,52 @@ runTest <- function(cov, dir){
     diralt <- "less"
   }
 
+  covdirsub <- paste0(covdir$Category, "_", covdir$Sequence)
+
   # subset DNMs to those in associated subtypes
   dnmstmp <- input_dnms %>%
     mutate(Category2 = ifelse(substr(SEQ, 4, 5)=="CG",
       paste0("cpg_", Category), Category)) %>%
     mutate(subtype=paste0(Category, "_", substr(SEQ, 1, 7))) %>%
-    filter(subtype %in% paste0(covdir$Category, "_", covdir$Sequence)) %>%
-    filter(Category2 == "cpg_GC_AT")
+    # filter(subtype %in% paste0(covdir$Category, "_", covdir$Sequence))
+    mutate(insub=ifelse(subtype %in% covdirsub, 1, 0))
+    # filter(Category2 == "cpg_GC_AT")
     # filter(Category %in% covdir$Category &
     #   substr(SEQ, 1, 7) %in% covdir$Sequence)
 
-  if(nrow(dnmstmp)>=10){
-    if(cov=="GC"){
-      covbase <- paste0(parentdir, "/reference_data/high_gc")
-      covbed <- paste0(parentdir, "/reference_data/gc10kb.bed")
-      dnmstmp$GC <- gcCol(dnmstmp, covbed)
-      dnmstmp$inside <- ifelse(dnmstmp$GC>=0.55, 1, 0)
-      awkstr <- "awk -F \"\\t\" '{if($4>=0.55 && NR>1) print }'"
-    } else if(cov=="TIME"){
-      covbed <- paste0(parentdir, "/reference_data/lymph_rep_time.txt")
-      dnmstmp$TIME <- repCol(dnmstmp, covbed)
-      if(dir=="Down"){
-        covbase <- paste0(parentdir, "/reference_data/late_rt")
-        dnmstmp$inside <- ifelse(dnmstmp$TIME<=-1.25, 1, 0)
-        awkstr <- "awk -F \"\\t\" '{if($3<=-1.25 && NR>1) print $1 \"\\t\"$2-500+1\"\\t\"$2+500}'"
-      } else if(dir=="Up"){
-        covbase <- paste0(parentdir, "/reference_data/early_rt")
-        dnmstmp$inside <- ifelse(dnmstmp$TIME>1.25, 1, 0)
-        awkstr <- "awk -F \"\\t\" '{if($3>1.25 && NR>1) print $1 \"\\t\"$2-500+1\"\\t\"$2+500}'"
-      }
-    } else if(cov=="RR"){
-      covbase <- paste0(parentdir, "/reference_data/high_rr")
-      covbed <- paste0(parentdir, "/reference_data/recomb_rate.bed")
-      dnmstmp$RR <- rcrCol(dnmstmp, covbed)
-      dnmstmp$RR[is.na(dnmstmp$RR)] <- 0
-      dnmstmp$inside <- ifelse(dnmstmp$RR>=2, 1, 0)
-      awkstr <- "awk -F\"\\t\" '{if($4>=2 && NR>1) print $1\"\\t\"$2\"\\t\"$3}'"
-    } else if(cov=="DHS"){
-      covbase <- paste0(parentdir, "/reference_data/DHS")
-      covbed <- paste0(covbase, ".bed")
-      dnmstmp$inside <- binaryCol(dnmstmp, covbed)
-    } else if(cov=="CpGI"){
-      covbase <- paste0(parentdir, "/reference_data/cpg_islands_sorted")
-      covbed <- paste0(covbase, ".bed")
-      dnmstmp$inside <- binaryCol(dnmstmp, covbed)
-    } else if(cov=="LAMIN"){
-      covbase <- paste0(parentdir, "/reference_data/lamin_B1_LADS2")
-      covbed <- paste0(covbase, ".bed")
-      dnmstmp$inside <- binaryCol(dnmstmp, covbed)
-    } else if(cov=="EXON"){
-      covbase <- paste0(parentdir, "/reference_data/GRCh37_RefSeq_sorted")
-      covbed <- paste0(covbase, ".bed")
-      dnmstmp$inside <- binaryCol(dnmstmp, covbed)
-    } else {
-      covbase <- paste0(parentdir,
-        "/reference_data/sort.E062-", cov)
-      covbed <- paste0(covbase, ".bed")
-      dnmstmp$inside <- binaryCol(dnmstmp, covbed)
-    }
+  dnms2 <- dnmstmp %>%
+    filter(insub==1) %>%
+    mutate(DNM=1)
+  dirlist <- sapply(unlist(covdir$Sequence),
+    function(x)
+      paste0(parentdir, "/output/logmod_data/motifs3/", x, ".txt"))
 
-    # seqs <- unique(unlist(c(covdir$Sequence, lapply(covdir$Sequence, revcomp))))
-    # write out list of sequence motifs (+ reverse complements)
-    # that contain a DNM
-    din <- dnmstmp #%>% filter(inside==1)
-    seqs <- unique(unlist(c(substr(din$SEQ, 1, 7), lapply(substr(din$SEQ, 1, 7), revcomp))))
-    write.table(seqs, paste0(parentdir, "/seqs.txt"),
-      col.names=F, row.names=F, quote=F, sep="\t")
+  motif_positions <- do.call(rbind,
+    lapply(dirlist,
+      function(x) read.table(x, header=F, stringsAsFactors=F)))
 
-    # Create fasta file from feature file
-    if(!file.exists(paste0(covbase, ".fa"))){
+  mut_cats <- c("AT_CG", "AT_GC", "AT_TA", "GC_AT", "GC_CG", "GC_TA")
+  names(motif_positions) <- c("CHR", "POS", "Sequence", mut_cats, "DP")
+  sites <- merge(motif_positions, dnms2[,c("CHR", "POS", "DNM")],
+    by=c("CHR", "POS"), all.x=TRUE) %>%
+    mutate(DNM=ifelse(DNM==1, 1, 0))
 
-      if(cov=="RR"){
-        getfastacmd <- paste0("bedtools getfasta -fi ", parentdir,
-          "/reference_data/human_g1k_v37.fasta -bed <(cut -f1-4 ", covbed,
-          " | sed 's/chr//g' | ", awkstr,
-          " | sed /^X/d | sed /^Y/d) -fo ", covbase, ".fa")
+  sites2 <- sites %>%
+    sample_n(100000)
 
-      } else if (cov=="TIME"){
-        getfastacmd <- paste0("bedtools getfasta -fi ", parentdir,
-          "/reference_data/human_g1k_v37.fasta -bed <(cut -f1-3 ", covbed,
-          " | sed 's/chr//g' | ", awkstr,
-          " | sed /^X/d | sed /^Y/d) -fo ", covbase, ".fa")
-      } else if (cov=="GC"){
-        getfastacmd <- paste0("bedtools getfasta -fi ", parentdir,
-          "/reference_data/human_g1k_v37.fasta -bed <(cut -f1-5 ", covbed,
-          " | sed 's/chr//g' | ", awkstr,
-          " | sed /^X/d | sed /^Y/d) -fo ", covbase, ".fa")
-      } else {
-        getfastacmd <- paste0("bedtools getfasta -fi ", parentdir,
-          "/reference_data/human_g1k_v37.fasta -bed <(sed 's/chr//g' ", covbed,
-          " | sed /^X/d | sed /^Y/d) -fo ", covbase, ".fa")
-      }
+  sites2 <- rbind(sites2, sites[sites$DNM==1,])
 
-      get_fasta_file <- paste0(parentdir, "/", cov, "_", dir, "get_fasta.sh")
-      fileConn<-file(get_fasta_file)
-      writeLines(c("#!/bin/bash", getfastacmd), fileConn)
-      close(fileConn)
-      # system(getfastacmd)
-      system(paste0("bash ", get_fasta_file), ignore.stderr=TRUE)
-    }
 
-    # grepcmd <- paste0("grep -o -Ff ",
-    #   parentdir, "/seqs.txt ", covbase, ".fa | sort | uniq -c > ",
-    #   parentdir, "/testcounts.txt")
-    # system(grepcmd)
 
-    if(!file.exists(paste0(covbase, "_testcounts.txt"))){
-      count_motifs_cmd <- paste0("python data_mgmt/lib/motif_count.py",
-        " -i ", covbase, ".fa",
-        " -m ", parentdir, "/seqs.txt",
-        " -o ", covbase, "_testcounts.txt")
+  sites3 <- getfeats(sites2)
+  dnm_mod_formula <- as.formula(paste("DNM ~",
+    paste(names(sites3)[-(1:12)], collapse="+")))
+  dnm_mod <- glm(dnm_mod_formula, data=sites3, family="binomial")
 
-      system(count_motifs_cmd)
-    }
-
-    motifcts <- read.table(paste0(covbase, "_testcounts.txt"),
-      header=F, stringsAsFactors=F)
-
-    names(motifcts) <- c("SEQ", "Count")
-    motifcts$REVSEQ <- unlist(lapply(motifcts$SEQ, revcomp))
-    motifcts$Sequence <- ifelse(substr(motifcts$SEQ,4,4) %in% c("A", "C"),
-      motifcts$SEQ, motifcts$REVSEQ)
-
-    motifcts2 <- motifcts %>%
-      group_by(Sequence) %>%
-      summarise(Count=sum(Count))
-    covdir2 <- merge(motifcts2, covdir[,c("Sequence", "nMotifs")], by=c("Sequence")) %>%
-      group_by(Sequence, Count) #%>%
-      # filter(row_number(nMotifs) == 1)
-      # filter(paste0(Category, "_", Sequence) %in% dnmstmp$subtype)
-
-    ndnms_in <- sum(dnmstmp$inside, na.rm=T)
-    ndnms_out <- nrow(dnmstmp)-ndnms_in
-
-    nmotifs_in <- sum(covdir2$Count)
-    nmotifs_out <- sum(covdir2$nMotifs) - nmotifs_in
-
-    # outdat <- list()
-    if(ndnms_in > 5){
-      test_result <- tidy(
-        prop.test(c(ndnms_in, ndnms_out),
-                  c(nmotifs_in, nmotifs_out), alternative=diralt))
-
-      # test_result <- dnmstmp %>% do(tidy(t.test(MU~inside, data=., alternative=diralt)))
-      nseqs <- length(seqs)
-      outdat <- cbind(cov, dir, test_result)
-      # outdat$dnms <- dnmstmp %>%
-      #   dplyr::select(CHR, POS, MU, inside) %>%
-      #   mutate(cov=cov, dir=dir)
-      return(outdat)
-     } # else {
-    #   return(rep(0,12))
-    # }
-
-  }
+  result <- tidy(dnm_mod) %>% filter(term==cov)
+  row <- c(dir, result)
+  return(row)
+  ###
 }
 
 ##############################################################################

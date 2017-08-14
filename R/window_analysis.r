@@ -31,8 +31,8 @@ cbp<-5
 band_counts <- sites %>%
   mutate(Sequence=substr(Motif,1,9)) %>%
   mutate(Type=gsub("cpg_", "", Category2),
-    SEQA=substr(Sequence, cbp-i, cbp+i),
-    SEQB=substr(Sequence, cbp*3-i, cbp*3+i),
+    SEQA=substr(Motif, cbp-i, cbp+i),
+    SEQB=substr(Motif, cbp*3-i, cbp*3+i),
     Motif=paste0(SEQA, "(", SEQB, ")"),
     band=paste0(CHR, name)) %>%
   filter(band!="18p11.1") %>%
@@ -41,13 +41,27 @@ band_counts <- sites %>%
 
 window_counts <- sites %>%
   mutate(Type=gsub("cpg_", "", Category2),
-    SEQA=substr(Sequence, cbp-i, cbp+i),
-    SEQB=substr(Sequence, cbp*3-i, cbp*3+i),
+    SEQA=substr(Motif, cbp-i, cbp+i),
+    SEQB=substr(Motif, cbp*3-i, cbp*3+i),
     Motif=paste0(SEQA, "(", SEQB, ")"),
     band=paste0(CHR, name)) %>%
   filter(band!="18p11.1") %>%
   group_by(CHR, bin, Type, Motif) %>%
   summarise(n=n())
+
+wc.m <- window_counts %>%
+  ungroup() %>%
+  mutate(ID=CHR+bin/binw) %>%
+  mutate(b1=ifelse(substr(Type, 1, 1)=="A", "A", "C")) %>%
+  mutate(b2=ifelse(b1=="A", substr(Type, 4, 4), substr(Type, 5, 5))) %>%
+  mutate(Type=paste0(b1, "_", b2)) %>%
+  mutate(subtype=paste0(Type, ".", substr(Motif,1,3))) %>%
+  dplyr::select(ID, subtype, n) %>%
+  spread(subtype, n, fill=0)
+
+write.table(wc.m,
+  "/net/snowwhite/home/jedidiah/NMF_M_spectra.txt",
+  col.names=T, row.names=F, sep="\t", quote=F)
 
 # chr20bins<-read.table("/net/bipolar/jedidiah/mutation/output/3bp_1000k_singletons_full/chr20.motif_counts_binned.txt", header=T, stringsAsFactors=F)
 band_motif_counts <- read.table(paste0(parentdir,
@@ -293,10 +307,11 @@ bin_counts <- merge(bin_counts, mct3a, by=c("CHR", "BIN", "Motif")) %>%
 
 # Coerce from long to wide format
 bins_wide <- bin_counts  %>%
-  dplyr::select(CHR, BIN, subtype, ERV_rel_rate) %>%
-  spread(subtype, ERV_rel_rate)
-
-bins_wide[is.na(bins_wide)] <- 0
+  dplyr::select(CHR, BIN, subtype, n) %>%
+  spread(subtype, n, fill=0) %>%
+  mutate(sumVar = rowSums(.[3:98])) %>%
+  mutate_at(vars(contains("_")), funs(./sumVar)) %>%
+  dplyr::select(-sumVar)
 
 # Run PCA on bin matrix
 bins_pca <- prcomp(scale(bins_wide[,-c(1:2)]))
@@ -305,15 +320,24 @@ bins_pca <- prcomp(scale(bins_wide[,-c(1:2)]))
 # bin_cumvar <- cumsum((bins_pca$sdev)^2) / sum(bins_pca$sdev^2)
 
 # Data frame containing bin IDs and components
-bins_wide_pcs <- cbind(bins_wide[,c(1:2)], as.data.frame(bins_pca$x))
+# bins_wide_pcs <- cbind(bins_wide[,c(1:2)], as.data.frame(bins_pca$x))
 
 # Run NMF on bin matrix; get top signature for each bin
-bins_nmf <- nmf(bins_wide[,-c(1:2)], 3, nrun=10)
+bins_nmf <- nmf(bins_wide[,-c(1:2)], 5, nrun=3)
 bins_pred <- predict(bins_nmf, "rows", prob=T)
 
-sigloads <- get_loads(bins_wide[,-c(1:2)], bins_nmf)
-plot_loads(sigloads)
-ggsave(paste0(parentdir, "/images/sigloads_bin.png"))
+sigloads <- coef(bins_nmf) %>%
+  data.frame %>%
+  mutate(signature = paste0("X",row_number())) %>%
+  mutate(sumVar = rowSums(.[1:96])) %>%
+  mutate_at(vars(contains("_")), funs(./sumVar)) %>%
+  gather(subtype, contribution, -c(signature, sumVar)) %>%
+  separate(subtype, into=c("Type", "Motif"), 5) %>%
+  mutate(Motif=substr(Motif,2,4))
+
+# sigloads <- get_loads(bins_wide[,-c(1:2)], bins_nmf)
+# plot_loads(sigloads)
+# ggsave(paste0(parentdir, "/images/sigloads_bin.png"))
 
 # Add predicted NMF class to data frame
 # bins_wide_c <- cbind(bins_wide_c, sig=bins_pred[[1]])
@@ -338,8 +362,9 @@ bins_nmf_long <- bins_nmf_plotdat %>%
     log_prob=log(prob_m)) %>%
   filter(log_prob > -5)
 
+write.table(sigloads, "/net/csgsites/mutation/share/sigloads.txt", col.names=T, row.names=F, sep="\t", quote=F)
 write.table(bins_nmf_long, "/net/csgsites/mutation/share/bin_sig_prob.txt", col.names=T, row.names=F, sep="\t", quote=F)
-write.table(ind_nmf_long, "/net/csgsites/mutation/share/ing_sig_prob.txt", col.names=T, row.names=F, sep="\t", quote=F)
+write.table(ind_nmf_long, "/net/csgsites/mutation/share/ind_sig_prob.txt", col.names=T, row.names=F, sep="\t", quote=F)
 
 labs <- bins_nmf_long %>%
   group_by(CHR) %>%

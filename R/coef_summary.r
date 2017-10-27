@@ -121,9 +121,14 @@ non_cpg_covs <- c("H3K9me3", "RR", "TIME",
 
 non_cpg_plotdat <- sigcoefs %>%
   filter(Cov %in% non_cpg_covs) %>%
-  filter(n>=10)
+  filter(n>=10) %>%
+  mutate(Est=ifelse(Cov=="TIME", -Est, Est))
 non_cpg_plotdat$Cov <- factor(non_cpg_plotdat$Cov, levels=non_cpg_covs)
 sig10txt1 <- sig10txt %>%
+  group_by(Cov, dir, Category2) %>%
+  summarise(label=max(label), Estmax=max(Estmax)) %>%
+  ungroup() %>%
+  mutate(Estmax=ifelse(Cov=="TIME", 1/Estmax, Estmax)) %>%
   filter(Cov %in% non_cpg_covs)
 sig10txt1$Cov <- factor(sig10txt1$Cov, levels=non_cpg_covs)
 
@@ -145,6 +150,26 @@ non_cpg_plotdat %>%
     guides(fill = guide_legend(nrow = 3))+
     theme_coef()
 ggsave(paste0(parentdir, "/images/coef_violin_10.pdf"), width=6.5, height=6.5)
+
+non_cpg_plotdat %>%
+  ggplot(aes(x=exp(Est), y=Category2, alpha=factor(dir), colour=Category2, fill=Category2))+
+    geom_vline(yintercept=1, linetype="dashed")+
+    geom_text(data=sig10txt1,
+      aes(x=Estmax, y=Category2, label=label, colour=Category2),
+      vjust=1, size=4, angle=90)+
+    geom_bar(position="identity", scale="area")+
+    scale_fill_manual(values=gp_cols, drop=FALSE)+
+    scale_colour_manual(values=gp_cols, drop=FALSE)+
+    scale_x_discrete(drop=FALSE)+
+    # scale_y_log10(breaks=c(.125, .25, 0.5, 1, 2, 4, 8))+
+    scale_y_log10(breaks=c(0.5, 1, 2, 4))+
+    scale_alpha_discrete(range = c(0.95, 0.96), guide=F)+
+    facet_wrap(~Cov, ncol=3, drop=F)+
+    ylab("odds ratio for mutability")+
+    guides(fill = guide_legend(nrow = 3))+
+    theme_coef()
+ggsave(paste0(parentdir, "/images/coef_hist_10.pdf"), width=6.5, height=6.5)
+
 
 # non_cpg_plotdat %>%
 #   ggplot(aes(x=exp(Est), y=Category, alpha=factor(dir), fill=Category))+
@@ -176,7 +201,9 @@ cpgi_plotdat <- sigcoefs %>%
   filter(n>=10)
 cpgi_plotdat$Cov <- factor(cpgi_plotdat$Cov, levels=cpgi_covs)
 sig10txt2 <- sig10txt %>%
-  filter(Cov %in% cpgi_covs)
+  group_by(Cov, dir, Category2) %>%
+  filter(Cov %in% cpgi_covs) %>%
+  summarise(label=max(label), Estmax=max(Estmax))
 sig10txt2$Cov <- factor(sig10txt2$Cov, levels=cpgi_covs)
 
 cpgi_plotdat %>%
@@ -190,7 +217,7 @@ cpgi_plotdat %>%
     scale_colour_manual(values=gp_cols, drop=FALSE)+
     scale_x_discrete(drop=FALSE)+
     # scale_y_log10(breaks=c(.125, .25, 0.5, 1, 2, 4, 8))+
-    scale_y_log10(breaks=c(.125, .25, 0.5, 1, 2, 4, 8))+
+    scale_y_log10(breaks=c(.125, .25, 0.5, 1, 2, 4, 8), labels=c(.125, .25, 0.5, 1, 2, 4, 8))+
     scale_alpha_discrete(range = c(0.95, 0.96), guide=F)+
     facet_wrap(~Cov, ncol=3, drop=F)+
     ylab("odds ratio for mutability")+
@@ -225,14 +252,14 @@ cpg_plotdat %>%
     scale_colour_manual(values=gp_cols, drop=FALSE)+
     scale_x_discrete(drop=FALSE)+
     # scale_y_log10(breaks=c(.125, .25, 0.5, 1, 2, 4, 8))+
-    scale_y_log10(breaks=c(0.5, 1, 2, 4))+
+    scale_y_log10(breaks=c(0.5, 1, 2, 4), limits=c(0.25,5))+
     scale_alpha_discrete(range = c(0.95, 0.96), guide=F)+
     # facet_wrap(~Cov, ncol=4, drop=F)+
     ylab("odds ratio for mutability")+
     guides(fill = FALSE, colour=FALSE)+
     theme_coef()+
     theme(axis.text.x=element_text(angle=90))
-ggsave(paste0(parentdir, "/images/coef_violin_cpg_effects.pdf"), width=6.5, height=3)
+ggsave(paste0(parentdir, "/images/coef_violin_cpg_effects.pdf"), width=6.5, height=6.5)
 
 ##############################################################################
 # Code below is used to validate specific results of feature-associated subtypes

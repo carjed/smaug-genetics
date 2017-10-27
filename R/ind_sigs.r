@@ -185,8 +185,10 @@ plot_ind_sigs2 <- function(sigdat){
 # Prepare data and run NMF
 ###############################################################################
 ind_wide <- ind_counts  %>%
-  dplyr::select(ID, subtype, ERV_rel_rate) %>%
-  spread(subtype, ERV_rel_rate)
+  # dplyr::select(ID, subtype, ERV_rel_rate) %>%
+  dplyr::select(ID, subtype, n) %>%
+  # spread(subtype, ERV_rel_rate)
+  spread(subtype, n)
 
 ind_wide[is.na(ind_wide)] <- 0
 
@@ -213,7 +215,9 @@ nmfdat1 <- merge(nmfdat1, p4, by="ID") %>%
     sig1=X1/sum,
     sig2=X2/sum,
     sig3=X3/sum) %>%
-  mutate(top_r=apply(.[,51:53], 1, function(x) names(x)[which.max(x)]))
+  mutate(top_r=apply(.[,51:53], 1, function(x) names(x)[which.max(x)])) %>%
+  mutate(flag=ifelse(sig1 > keep_cis[1,]$conf.high, "sig1",
+   ifelse(sig3 > keep_cis[3,]$conf.high, "sig3", "sig2")))
 
 nmfdat1$ID <- factor(nmfdat1$ID, levels = unique(nmfdat1$ID))
 
@@ -309,8 +313,8 @@ ggsave(paste0(parentdir, "/images/gp_qc.png"))
 # IDs to keep
 ###############################################################################
 keep_cis <- ind_nmf_long %>%
-  dplyr::select(cluster, prob) %>%
-  group_by(cluster) %>%
+  dplyr::select(Signature, prob) %>%
+  group_by(Signature) %>%
   summarise_each(funs(mean,sd)) %>%
   mutate(conf.low=mean-1.96*sd, conf.high=mean+1.96*sd)
   # do(tidy(t.test(.$prob))) %>%
@@ -324,7 +328,7 @@ keep_ids <- nmfdat1 %>%
 
 drop_ids <- nmfdat1 %>%
   filter(!(ID %in% keep_ids$ID)) %>%
-  dplyr::select(ID)
+  dplyr::select(ID, flag)
 
 
 ind_nmf_long %>%
@@ -374,7 +378,7 @@ nmfdat2 <- merge(nmfdat2, p4, by="ID") %>%
 nmfdat2$ID <- factor(nmfdat2$ID, levels = unique(nmfdat2$ID))
 
 ind_nmf_long <- nmfdat2 %>%
-  gather(cluster, prob, sig1:sig3) %>%
+  gather(Signature, prob, sig1:sig3) %>%
   arrange(Study, sum)
 
 plot_ind_sigs(ind_nmf_long)

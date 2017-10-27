@@ -115,7 +115,7 @@ for(j in 1:5){
 		testlist[[i]] <- hettests
 	}
 
-	write.table(gpdat,
+	write.table(gpdat[,c("Type", "Motif", "nERVs", "nMotifs", "ERV_rel_rate")],
 		paste0(parentdir, "/output/rates/", nbptmp, "bp_final_rates2.txt"),
 		col.names=T, row.names=F, quote=F, sep="\t")
 }

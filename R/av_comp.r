@@ -139,6 +139,7 @@ format_mac_comp_nf <- list(
   geom_abline(intercept=0, linetype="dashed"))
 
 ervlab <- "Relative mutation rate \n (BRIDGES ERVs)"
+ervmasklab <- "Relative mutation rate \n (BRIDGES ERVs passing 1000G strict mask)"
 mac10lab <- "Relative mutation rate \n (BRIDGES MAC10+ variants)"
 avlab <- "Relative mutation rate \n (1000G EUR intergenic variants)"
 
@@ -180,13 +181,62 @@ ggsave(paste0(parentdir, "/images/ERV_vs_MAC10_corr.png"),
 	width=4, height=5)
 
 corlabs <- r5m %>%
-	group_by(Category2) %>%
+	# group_by(Category2) %>%
 	summarise(cor=cor(ERV_rel_rate, MAC10_rel_rate, method="spearman")) %>%
 	mutate(label=paste0("rho=", round(cor,2)))
 
 p + format_mac_comp_facet(corlabs)
 ggsave(paste0(parentdir, "/images/ERV_vs_MAC10_corr_facet.png"),
   width=6, height=6)
+
+##############################################################################
+# ERVs vs masked ERVs
+##############################################################################
+
+rm2 <- maskgpdat %>% filter(nERVs_mask>20) %>% dplyr::select(-Category2)
+
+maskgpdat$Category2 <- ifelse(substr(maskgpdat$Motif,4,5)=="CG",
+  paste0("cpg_",maskgpdat$Type),
+  maskgpdat$Type)
+
+maskgpdat <- maskgpdat %>%
+  mutate(Category2 = plyr::mapvalues(Category2, orderedcats1, orderedcats2))
+
+maskgpdat$Category2 <- factor(maskgpdat$Category2, levels=orderedcats2)
+
+p <- ggplot(data=maskgpdat[maskgpdat$nERVs_mask>20,],
+    aes(x=ERV_rel_rate, y=ERV_rel_rate_mask*mean(ERV_rel_rate)/mean(ERV_rel_rate_mask)))+
+  xlab(ervlab)+
+  ylab(ervmasklab)+
+  format_mac_comp+
+  theme_mac_comp()
+
+p + format_mac_comp_nf
+ggsave(paste0(parentdir, "/images/ERV_vs_mask_corr.png"),
+	width=4, height=5)
+
+corlabs <- maskgpdat %>%
+  filter(nERVs_mask>20) %>%
+	group_by(Category2) %>%
+	summarise(cor=cor(ERV_rel_rate, ERV_rel_rate_mask, method="spearman")) %>%
+	mutate(label=paste0("r=", round(cor,2)))
+
+p + format_mac_comp_facet(corlabs)
+ggsave(paste0(parentdir, "/images/ERV_vs_mask_corr_facet.png"),
+  width=6, height=6)
+
+maskgpdat %>%
+  filter(nERVs_mask>20) %>%
+  mutate(r1=ERV_rel_rate_mask*mean(ERV_rel_rate)/mean(ERV_rel_rate_mask)) %>%
+  mutate(prop=r1/ERV_rel_rate) %>%
+  ggplot(aes(x=nERVs_mask, y=log(prop)))+
+    geom_point(alpha=0.4)+
+    xlab("#ERVs in masked subtype")+
+    ylab("log(masked rate/unmasked rate)")
+
+ggsave(paste0(parentdir, "/images/nervs_vs_prop.png"),
+  width=6, height=6)
+
 
 ##############################################################################
 # MAC10 vs AV
@@ -210,6 +260,38 @@ corlabs <- r5m %>%
 p + format_mac_comp_facet(corlabs)
 ggsave(paste0(parentdir, "/images/MAC10_vs_AV_corr_facet.png"),
   width=6, height=6)
+
+
+
+r5m %>%
+  mutate(Category2 = gsub(" ", "\n", Category2)) %>%
+	mutate(Category2=factor(Category2, levels=oc3[-1])) %>%
+  mutate(av_rel_rate=eur*mean(ERV_rel_rate)/mean(eur)) %>%
+  # filter(Type %in% c("AT_CG", "AT_GC")) %>%
+  mutate(num_GC_flank = str_count(paste(substr(Motif,1,3), substr(Motif,5,7)), "C|G")) %>%
+  # mutate(highGC = ifelse(str_count(substr(Motif,1,7), "A|T")<=3,"High","Low")) %>%
+  mutate(maxc = ifelse(prop_diff4>=2, ">=2", "<2")) %>%
+ggplot(
+		aes(x=prop_diff, group=factor(num_GC_flank),
+			colour=factor(num_GC_flank)))+
+  geom_vline(xintercept=1, linetype="dashed")+
+  geom_density()+
+  # geom_point(alpha=0.7, size=2)+
+	scale_colour_brewer(palette="YlGn")+
+	scale_x_continuous(trans = "log", breaks=c(0.25,0.5,1,2,4))+
+	# scale_y_log10()+
+  facet_wrap(~Category2, ncol=1, scales="free_y", strip.position="left")+
+	# scale_shape(solid = FALSE)+
+  xlab("1000G:ERV rate ratio")+
+  # ylab(avlab)+
+	guides(
+		colour = guide_legend("# G:C base pairs \n in flanking sequence", override.aes = list(alpha=1)))+
+  theme_bw()+
+  theme(legend.position = "bottom",
+    legend.title=element_text(size=12),
+    axis.title.x=element_text(size=14),
+    axis.title.y=element_text(size=14))
+ggsave(paste0(parentdir, "/images/AT_GC_scatter.png"), width=7, height=7)
 
 ##############################################################################
 # Plot heatmap of change in relative rates

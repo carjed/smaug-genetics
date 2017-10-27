@@ -215,9 +215,7 @@ nmfdat1 <- merge(nmfdat1, p4, by="ID") %>%
     sig1=X1/sum,
     sig2=X2/sum,
     sig3=X3/sum) %>%
-  mutate(top_r=apply(.[,51:53], 1, function(x) names(x)[which.max(x)])) %>%
-  mutate(flag=ifelse(sig1 > keep_cis[1,]$conf.high, "sig1",
-   ifelse(sig3 > keep_cis[3,]$conf.high, "sig3", "sig2")))
+  mutate(top_r=apply(.[,51:53], 1, function(x) names(x)[which.max(x)]))
 
 nmfdat1$ID <- factor(nmfdat1$ID, levels = unique(nmfdat1$ID))
 
@@ -316,9 +314,13 @@ keep_cis <- ind_nmf_long %>%
   dplyr::select(Signature, prob) %>%
   group_by(Signature) %>%
   summarise_each(funs(mean,sd)) %>%
-  mutate(conf.low=mean-1.96*sd, conf.high=mean+1.96*sd)
+  mutate(conf.low=mean-2*sd, conf.high=mean+2*sd)
   # do(tidy(t.test(.$prob))) %>%
   # dplyr::select(cluster, conf.low, conf.high)
+
+nmfdat1 <- nmfdat1 %>%
+  mutate(flag=ifelse(sig1 > keep_cis[1,]$conf.high, "sig1",
+   ifelse(sig3 > keep_cis[3,]$conf.high, "sig3", "sig2")))
 
 keep_ids <- nmfdat1 %>%
   filter(sig1 > keep_cis[1,]$conf.low & sig1 < keep_cis[1,]$conf.high) %>%
@@ -329,6 +331,7 @@ keep_ids <- nmfdat1 %>%
 drop_ids <- nmfdat1 %>%
   filter(!(ID %in% keep_ids$ID)) %>%
   dplyr::select(ID, flag)
+
 
 
 ind_nmf_long %>%

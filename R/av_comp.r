@@ -97,7 +97,8 @@ kspvals <- r5m %>%
 theme_mac_comp <- function(base_size = 12, base_family = ""){
   theme_bw(base_size = base_size) %+replace%
   theme(legend.position="bottom",
-    strip.text.x=element_text(size=14),
+    # strip.text.x=element_text(size=12),
+    # strip.background = element_rect(size=3),
     legend.title=element_text(size=12),
     axis.title.x=element_text(size=14),
     axis.title.y=element_text(size=14, angle=90),
@@ -106,16 +107,16 @@ theme_mac_comp <- function(base_size = 12, base_family = ""){
 }
 
 format_mac_comp <- list(
-  coord_fixed(),
+  # coord_fixed(),
   scale_colour_manual(values=gp_cols),
   guides(colour = guide_legend(title=NULL,
       nrow=3,
       override.aes = list(alpha=1, shape=16))),
-  scale_x_log10(expand=c(0,0),
+  scale_x_log10(#expand=c(0,0),
     labels=c(0.0001, 0.001, 0.01, 0.1),
     breaks=c(0.0001, 0.001, 0.01, 0.1),
     limits=c(0.00005, 0.22)),
-  scale_y_log10(expand=c(0,0),
+  scale_y_log10(#expand=c(0,0),
     labels=c(0.0001, 0.001, 0.01, 0.1),
 		breaks=c(0.0001, 0.001, 0.01, 0.1),
 		limits=c(0.00005, 0.22)))
@@ -125,8 +126,8 @@ format_mac_comp_facet <- function(corlabs){
     geom_point(data=rm2, alpha=0.3, size=2, colour="grey70"),
     geom_hex(bins=50),
     geom_abline(intercept=0, linetype="dashed"),
-    geom_text(data=corlabs, aes(label=paste0("rho==", round(cor,2))),
-              x=-Inf, y=Inf, hjust=0, vjust=1, parse=TRUE, size=4),
+    geom_text(data=corlabs, aes(x=x, y=y, label=label),
+              hjust=0, vjust=1, size=4),
     scale_fill_gradientn(colours = myPalette(6)),
     facet_wrap(~Category2, dir="v"),
     theme(legend.position="none")
@@ -154,16 +155,17 @@ p <- ggplot(data=r5m,
   theme_mac_comp()
 
 p + format_mac_comp_nf
-ggsave(paste0(parentdir, "/images/ERV_vs_AV_corr.png"),
+ggsave(paste0(parentdir, "/images/ERV_vs_AV_corr.pdf"),
 	width=4, height=5)
 
 corlabs <- r5m %>%
 	group_by(Category2) %>%
 	summarise(cor=cor(ERV_rel_rate, eur, method="spearman")) %>%
-	mutate(label=paste0("rho=", round(cor,2)))
+	mutate(label=paste0("r=", round(cor,2))) %>%
+  mutate(x=0.0001, y=0.1)
 
 p + format_mac_comp_facet(corlabs)
-ggsave(paste0(parentdir, "/images/ERV_vs_AV_corr_facet.png"),
+ggsave(paste0(parentdir, "/images/ERV_vs_AV_corr_facet.pdf"),
   width=6, height=6)
 
 ##############################################################################
@@ -177,23 +179,22 @@ p <- ggplot(data=r5m,
   theme_mac_comp()
 
 p + format_mac_comp_nf
-ggsave(paste0(parentdir, "/images/ERV_vs_MAC10_corr.png"),
+ggsave(paste0(parentdir, "/images/ERV_vs_MAC10_corr.pdf"),
 	width=4, height=5)
 
 corlabs <- r5m %>%
-	# group_by(Category2) %>%
+	group_by(Category2) %>%
 	summarise(cor=cor(ERV_rel_rate, MAC10_rel_rate, method="spearman")) %>%
-	mutate(label=paste0("rho=", round(cor,2)))
+  mutate(label=paste0("r=", round(cor,2))) %>%
+  mutate(x=0.0001, y=0.1)
 
 p + format_mac_comp_facet(corlabs)
-ggsave(paste0(parentdir, "/images/ERV_vs_MAC10_corr_facet.png"),
+ggsave(paste0(parentdir, "/images/ERV_vs_MAC10_corr_facet.pdf"),
   width=6, height=6)
 
 ##############################################################################
 # ERVs vs masked ERVs
 ##############################################################################
-
-rm2 <- maskgpdat %>% filter(nERVs_mask>20) %>% dplyr::select(-Category2)
 
 maskgpdat$Category2 <- ifelse(substr(maskgpdat$Motif,4,5)=="CG",
   paste0("cpg_",maskgpdat$Type),
@@ -204,6 +205,10 @@ maskgpdat <- maskgpdat %>%
 
 maskgpdat$Category2 <- factor(maskgpdat$Category2, levels=orderedcats2)
 
+rm2 <- maskgpdat %>%
+  filter(nERVs_mask>20) %>%
+  dplyr::select(-Category2)
+
 p <- ggplot(data=maskgpdat[maskgpdat$nERVs_mask>20,],
     aes(x=ERV_rel_rate, y=ERV_rel_rate_mask*mean(ERV_rel_rate)/mean(ERV_rel_rate_mask)))+
   xlab(ervlab)+
@@ -212,17 +217,18 @@ p <- ggplot(data=maskgpdat[maskgpdat$nERVs_mask>20,],
   theme_mac_comp()
 
 p + format_mac_comp_nf
-ggsave(paste0(parentdir, "/images/ERV_vs_mask_corr.png"),
+ggsave(paste0(parentdir, "/images/ERV_vs_mask_corr.pdf"),
 	width=4, height=5)
 
 corlabs <- maskgpdat %>%
   filter(nERVs_mask>20) %>%
 	group_by(Category2) %>%
 	summarise(cor=cor(ERV_rel_rate, ERV_rel_rate_mask, method="spearman")) %>%
-	mutate(label=paste0("r=", round(cor,2)))
+  mutate(label=paste0("r=", round(cor,2))) %>%
+  mutate(x=0.0001, y=0.1)
 
 p + format_mac_comp_facet(corlabs)
-ggsave(paste0(parentdir, "/images/ERV_vs_mask_corr_facet.png"),
+ggsave(paste0(parentdir, "/images/ERV_vs_mask_corr_facet.pdf"),
   width=6, height=6)
 
 maskgpdat %>%
@@ -234,7 +240,7 @@ maskgpdat %>%
     xlab("#ERVs in masked subtype")+
     ylab("log(masked rate/unmasked rate)")
 
-ggsave(paste0(parentdir, "/images/nervs_vs_prop.png"),
+ggsave(paste0(parentdir, "/images/nervs_vs_prop.pdf"),
   width=6, height=6)
 
 
@@ -249,19 +255,20 @@ p <- ggplot(data=r5m,
   theme_mac_comp()
 
 p + format_mac_comp_nf
-ggsave(paste0(parentdir, "/images/MAC10_vs_AV_corr.png"),
+ggsave(paste0(parentdir, "/images/MAC10_vs_AV_corr.pdf"),
 	width=4, height=5)
 
 corlabs <- r5m %>%
 	group_by(Category2) %>%
 	summarise(cor=cor(MAC10_rel_rate, eur, method="spearman")) %>%
-	mutate(label=paste0("rho=", round(cor,2)))
+  mutate(label=paste0("r=", round(cor,2))) %>%
+  mutate(x=0.0001, y=0.1)
 
 p + format_mac_comp_facet(corlabs)
-ggsave(paste0(parentdir, "/images/MAC10_vs_AV_corr_facet.png"),
+ggsave(paste0(parentdir, "/images/MAC10_vs_AV_corr_facet.pdf"),
   width=6, height=6)
 
-
+oc3 <- c("ALL", gsub(" ", "\n", orderedcats2))
 
 r5m %>%
   mutate(Category2 = gsub(" ", "\n", Category2)) %>%
@@ -291,7 +298,7 @@ ggplot(
     legend.title=element_text(size=12),
     axis.title.x=element_text(size=14),
     axis.title.y=element_text(size=14))
-ggsave(paste0(parentdir, "/images/AT_GC_scatter.png"), width=7, height=7)
+ggsave(paste0(parentdir, "/images/AT_GC_scatter.pdf"), width=8, height=8)
 
 ##############################################################################
 # Plot heatmap of change in relative rates

@@ -185,10 +185,10 @@ plot_ind_sigs2 <- function(sigdat){
 # Prepare data and run NMF
 ###############################################################################
 ind_wide <- ind_counts  %>%
-  # dplyr::select(ID, subtype, ERV_rel_rate) %>%
-  dplyr::select(ID, subtype, n) %>%
-  # spread(subtype, ERV_rel_rate)
-  spread(subtype, n)
+  dplyr::select(ID, subtype, ERV_rel_rate) %>%
+  # dplyr::select(ID, subtype, n) %>%
+  spread(subtype, ERV_rel_rate)
+  # spread(subtype, n)
 
 ind_wide[is.na(ind_wide)] <- 0
 
@@ -314,7 +314,7 @@ keep_cis <- ind_nmf_long %>%
   dplyr::select(Signature, prob) %>%
   group_by(Signature) %>%
   summarise_each(funs(mean,sd)) %>%
-  mutate(conf.low=mean-2*sd, conf.high=mean+2*sd)
+  mutate(conf.low=mean-1.96*sd, conf.high=mean+1.96*sd)
   # do(tidy(t.test(.$prob))) %>%
   # dplyr::select(cluster, conf.low, conf.high)
 
@@ -331,8 +331,6 @@ keep_ids <- nmfdat1 %>%
 drop_ids <- nmfdat1 %>%
   filter(!(ID %in% keep_ids$ID)) %>%
   dplyr::select(ID, flag)
-
-
 
 ind_nmf_long %>%
   filter(ID %in% keep_ids$ID) %>%

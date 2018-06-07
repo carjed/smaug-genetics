@@ -56,8 +56,9 @@ for(j in 1:5){
 			p1 <- rrheat2(gpdat[gpdat$Type==categ,], i)
 			p1a <- p1+theme(legend.position="none")
 
-			png(paste0(parentdir, "/images/", categ, "_", nbptmp, "bp_heatmap.png"),
-			height=5, width=5, units="in", res=300)
+			setEPS()
+			postscript(paste0(parentdir, "/images/", categ, "_", nbptmp, "bp_heatmap.eps"),
+			height=5, width=5)
 			pushViewport(viewport(width=unit(5, "in"), height=unit(5, "in")))
 			grid.draw(ggplotGrob(p1a))
 			dev.off()
@@ -66,13 +67,14 @@ for(j in 1:5){
 		cat("Trimming panel whitespace...\n")
 		# trim whitespace on panels with imagemagick mogrify
 		trimcmd <- paste0("mogrify -trim ",
-			parentdir, "/images/*", nbptmp, "bp_heatmap.png")
+			parentdir, "/images/*", nbptmp, "bp_heatmap.eps")
 		system(trimcmd)
 
 		# extract legend
 		legend <- get_legend(p1)
-		png(paste0(parentdir, "/images/heatmap_legend.png"),
-			height=8, width=3, units="in", res=300)
+		setEPS()
+		postscript(paste0(parentdir, "/images/heatmap_legend.eps"),
+			height=8, width=3)
 		grid.draw(legend)
 		dev.off()
 

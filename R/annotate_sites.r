@@ -90,5 +90,5 @@ sites$TIME <- repCol(sites,
 sites$GC <- gcCol(sites,
 	paste0(parentdir, "/reference_data/gc10kb.bed"))
 
-write.table(sites[,!(names(mtcars) %in% c("CHR", "POS", "Sequence"))],
-	paste0(parentdir, "/output/logmod_data/annotated/", escmotif, "_annotated.txt"))
+write.table(sites[,!(names(sites) %in% c("CHR", "POS", "Sequence"))],
+	paste0(parentdir, "/output/logmod_data/annotated/", escmotif, "_annotated.txt"), sep="\t", row.names=F, quote=F)

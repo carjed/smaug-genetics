@@ -16,6 +16,13 @@ jobid <- as.numeric(jobid)
 options(useHTTPS=FALSE)
 options(scipen = 8)
 
+suppressPackageStartupMessages(library("speedglm", quietly=TRUE, warn.conflicts=FALSE))
+suppressPackageStartupMessages(library("smaug", quietly=TRUE, warn.conflicts=FALSE))
+suppressPackageStartupMessages(library("dplyr", quietly=TRUE, warn.conflicts=FALSE))
+suppressPackageStartupMessages(library("boot", quietly=TRUE, warn.conflicts=FALSE))
+suppressPackageStartupMessages(library("yaml", quietly=TRUE, warn.conflicts=FALSE))
+suppressPackageStartupMessages(library("bedr", quietly=TRUE, warn.conflicts=FALSE))
+
 
 # source(paste0(parentdir, "/smaug-genetics/R/get_functions.r"))
 
@@ -47,13 +54,6 @@ escmotif <- substr(runmotif, 0, nbp_run)
 outfile <- paste0(parentdir, "/output/logmod_data/annotated/", escmotif, "_annotated.txt")
 
 if(!file.exists(outfile)){
-	
-	suppressPackageStartupMessages(library("speedglm", quietly=TRUE, warn.conflicts=FALSE))
-	suppressPackageStartupMessages(library("smaug", quietly=TRUE, warn.conflicts=FALSE))
-	suppressPackageStartupMessages(library("dplyr", quietly=TRUE, warn.conflicts=FALSE))
-	suppressPackageStartupMessages(library("boot", quietly=TRUE, warn.conflicts=FALSE))
-	suppressPackageStartupMessages(library("yaml", quietly=TRUE, warn.conflicts=FALSE))
-	suppressPackageStartupMessages(library("bedr", quietly=TRUE, warn.conflicts=FALSE))
 	
 	# stopif(file.exists(paste0(parentdir, "output/logmod_data/coefs")))
 	

@@ -16,6 +16,34 @@ jobid <- as.numeric(jobid)
 options(useHTTPS=FALSE)
 options(scipen = 8)
 
+
+# source(paste0(parentdir, "/smaug-genetics/R/get_functions.r"))
+
+yaml_args <- yaml.load_file(paste0(parentdir, "/smaug-genetics/_config.yaml"))
+attach(yaml_args)
+
+nbp_run <- 7
+
+# Fast list of 6 basic categories from agg_5bp_100k data
+mut_cats <- c("AT_CG", "AT_GC", "AT_TA", "GC_AT", "GC_CG", "GC_TA")
+
+# subset reference data to only AT or GC bases
+# catopt <- substr(categ,0,2)
+
+run_cats <- mut_cats[grepl(paste0("^", catopt), mut_cats)]
+
+motiffile <- paste0(parentdir, "/output/7bp_1000k_rates.txt")
+incmd <- paste0("cut -f1-3 ", motiffile)
+motifdat <- read.table(pipe(incmd), header=T, stringsAsFactors=F)
+motifs <- motifdat %>%
+	mutate(Category=gsub("cpg_", "", Category2)) %>%
+	filter(grepl(paste0("^", catopt), Category)) %>%
+	dplyr::select(Sequence) %>%
+	unlist %>% unique
+
+runmotif <- motifs[jobid]
+escmotif <- substr(runmotif, 0, nbp_run)
+
 outfile <- paste0(parentdir, "/output/logmod_data/annotated/", escmotif, "_annotated.txt")
 
 if(!file.exists(outfile)){
@@ -26,33 +54,6 @@ if(!file.exists(outfile)){
 	suppressPackageStartupMessages(library("boot", quietly=TRUE, warn.conflicts=FALSE))
 	suppressPackageStartupMessages(library("yaml", quietly=TRUE, warn.conflicts=FALSE))
 	suppressPackageStartupMessages(library("bedr", quietly=TRUE, warn.conflicts=FALSE))
-	
-	# source(paste0(parentdir, "/smaug-genetics/R/get_functions.r"))
-	
-	yaml_args <- yaml.load_file(paste0(parentdir, "/smaug-genetics/_config.yaml"))
-	attach(yaml_args)
-	
-	nbp_run <- 7
-	
-	# Fast list of 6 basic categories from agg_5bp_100k data
-	mut_cats <- c("AT_CG", "AT_GC", "AT_TA", "GC_AT", "GC_CG", "GC_TA")
-	
-	# subset reference data to only AT or GC bases
-	# catopt <- substr(categ,0,2)
-	
-	run_cats <- mut_cats[grepl(paste0("^", catopt), mut_cats)]
-	
-	motiffile <- paste0(parentdir, "/output/7bp_1000k_rates.txt")
-	incmd <- paste0("cut -f1-3 ", motiffile)
-	motifdat <- read.table(pipe(incmd), header=T, stringsAsFactors=F)
-	motifs <- motifdat %>%
-		mutate(Category=gsub("cpg_", "", Category2)) %>%
-		filter(grepl(paste0("^", catopt), Category)) %>%
-		dplyr::select(Sequence) %>%
-		unlist %>% unique
-	
-	runmotif <- motifs[jobid]
-	escmotif <- substr(runmotif, 0, nbp_run)
 	
 	# stopif(file.exists(paste0(parentdir, "output/logmod_data/coefs")))
 	

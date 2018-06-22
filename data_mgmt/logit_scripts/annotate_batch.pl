@@ -57,11 +57,11 @@ if($parentjob>1){
   print $mdFH "#!/bin/bash \n";
 	print $mdFH "#SGRIDBATCH CAT='AT' 'GC'\n";
 # 	print $mdFH "#SGRIDBATCH INDEX=\$(seq 1 4096)\n";
-	print $mdFH "#SGRIDBATCH INDEX=\$(seq 1 100)\n"; # redo
+	print $mdFH "#SGRIDBATCH INDEX=\$(seq 1 2)\n"; # redo
   print $mdFH "#SBATCH --mail-type=FAIL \n";
   print $mdFH "#SBATCH --mail-user=$email \n";
   print $mdFH "#SBATCH --ntasks=1 \n";
-  print $mdFH "#SBATCH --mem=8000 \n";
+  print $mdFH "#SBATCH --mem=12000 \n";
   print $mdFH "#SBATCH --time 00:20:00 \n";
   # print $mdFH "#SBATCH --job-name=logmod \n";
   print $mdFH "#SBATCH --partition=bipolar \n";

@@ -111,7 +111,7 @@ curl -s "http://mccarrolllab.com/wp-content/uploads/2015/03/Koren-et-al-Table-S2
 #############################################################################
 # Recombination rate
 #############################################################################
-curl -s "http://hgdownload.cse.ucsc.edu/gbdb/hg19/decode/SexAveraged.bw" | "$refdir/SexAvaraged.bw"
+curl -s "http://hgdownload.cse.ucsc.edu/gbdb/hg19/decode/SexAveraged.bw" > "$refdir/SexAveraged.bw"
 bigWigToWig "$refdir/SexAveraged.bw" "$refdir/SexAveraged.wig"
 echo "CHR\tSTART\tEND\tRATE" > "$refdir/recomb_rate.bed"
 awk 'NR>1' "$refdir/SexAveraged.wig" | cat >> "$refdir/recomb_rate.bed"
@@ -119,7 +119,7 @@ awk 'NR>1' "$refdir/SexAveraged.wig" | cat >> "$refdir/recomb_rate.bed"
 #############################################################################
 # Histone marks
 #############################################################################
-wget -r -nd -P . --accept-regex 'E062' http://egg2.wustl.edu/roadmap/data/byFileType/peaks/consolidated/broadPeak/
+wget -r -nd -P . --accept-regex 'E062' https://egg2.wustl.edu/roadmap/data/byFileType/peaks/consolidated/broadPeak/
 
 gunzip *.broadPeak.gz
 for f in *.broadPeak; do

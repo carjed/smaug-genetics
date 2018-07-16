@@ -2,14 +2,14 @@
 # Global configuration--parameters used in multiple scripts
 ##############################################################################
 # Set your email to get notifications for slurm jobs
-email: "jedidiah@umich.edu"
+email: "beckandy@umich.edu"
 
 # inputdir defines the directory containing the prepared VCF and .summary files
 inputdir: "/net/bipolar/jedidiah/testpipe"
 
 # parentdir defines the parent directory containing this repository,
 # output directories, reference data, etc.
-parentdir: "/net/bipolar/jedidiah/mutation"
+parentdir: "/net/snowwhite/home/beckandy/research/rerun_jed"
 
 # mac defines the minor allele count of variants to examine, provided the
 # appropriately named directory exists containing the summarized VCF tables

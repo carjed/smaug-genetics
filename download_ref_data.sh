@@ -158,7 +158,10 @@ bedtools coverage -a "$refdir/testmask2.bed" -b "$refdir/cytoBand.txt" > "$refdi
 #############################################################################
 # Human Accelerated Regions
 #############################################################################
-curl -s "http://www.broadinstitute.org/ftp/pub/assemblies/mammals/29mammals/2xHARs.bed" > "$refdir/2xHARs.bed"
+curl -s "ftp://ftp.broadinstitute.org/pub/assemblies/mammals/29mammals/2xHARs.bed" > "$refdir/2xHARs.bed"
+
+curl -s "http://hgdownload.soe.ucsc.edu/admin/exe/linux.x86_64/liftOver" > liftOver
+curl -s "http://hgdownload.cse.ucsc.edu/goldenPath/hg18/liftOver/hg18ToHg19.over.chain.gz" > "$refdir/hg18ToHg19.over.chain.gz"
 
 "$refdir/liftOver" "$refdir/2xHARs.bed" "$refdir/hg18ToHg19.over.chain.gz" "$refdir/2xHARs.hg19.bed" "$refdir/unlifted.bed"
 

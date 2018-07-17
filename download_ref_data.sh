@@ -133,6 +133,7 @@ done
 #############################################################################
 # de novo mutations
 #############################################################################
+mkdir $refdir/DNMs
 # GoNL
 curl -s "https://molgenis26.target.rug.nl/downloads/gonl_public/variants/release5.2/GoNL_DNMs.txt" > "$refdir/DNMs/GoNL_DNMs.txt"
 

@@ -111,7 +111,7 @@ curl -s "http://mccarrolllab.com/wp-content/uploads/2015/03/Koren-et-al-Table-S2
 #############################################################################
 # Recombination rate
 #############################################################################
-curl -s "http://hgdownload.cse.ucsc.edu/gbdb/hg19/decode/SexAveraged.bw" | "$refdir/SexAvaraged.bw"
+curl -s "http://hgdownload.cse.ucsc.edu/gbdb/hg19/decode/SexAveraged.bw" > "$refdir/SexAveraged.bw"
 bigWigToWig "$refdir/SexAveraged.bw" "$refdir/SexAveraged.wig"
 echo "CHR\tSTART\tEND\tRATE" > "$refdir/recomb_rate.bed"
 awk 'NR>1' "$refdir/SexAveraged.wig" | cat >> "$refdir/recomb_rate.bed"
@@ -119,7 +119,7 @@ awk 'NR>1' "$refdir/SexAveraged.wig" | cat >> "$refdir/recomb_rate.bed"
 #############################################################################
 # Histone marks
 #############################################################################
-wget -r -nd -P . --accept-regex 'E062' http://egg2.wustl.edu/roadmap/data/byFileType/peaks/consolidated/broadPeak/
+wget -r -nd -P . --accept-regex 'E062' https://egg2.wustl.edu/roadmap/data/byFileType/peaks/consolidated/broadPeak/
 
 gunzip *.broadPeak.gz
 for f in *.broadPeak; do
@@ -133,6 +133,7 @@ done
 #############################################################################
 # de novo mutations
 #############################################################################
+mkdir $refdir/DNMs
 # GoNL
 curl -s "https://molgenis26.target.rug.nl/downloads/gonl_public/variants/release5.2/GoNL_DNMs.txt" > "$refdir/DNMs/GoNL_DNMs.txt"
 
@@ -157,7 +158,12 @@ bedtools coverage -a "$refdir/testmask2.bed" -b "$refdir/cytoBand.txt" > "$refdi
 #############################################################################
 # Human Accelerated Regions
 #############################################################################
-curl -s "http://www.broadinstitute.org/ftp/pub/assemblies/mammals/29mammals/2xHARs.bed" > "$refdir/2xHARs.bed"
+curl -s "ftp://ftp.broadinstitute.org/pub/assemblies/mammals/29mammals/2xHARs.bed" > "$refdir/2xHARs.bed"
+
+curl -s "http://hgdownload.soe.ucsc.edu/admin/exe/linux.x86_64/liftOver" > liftOver
+chmod +x liftOver
+
+curl -s "http://hgdownload.cse.ucsc.edu/goldenPath/hg18/liftOver/hg18ToHg19.over.chain.gz" > "$refdir/hg18ToHg19.over.chain.gz"
 
 "$refdir/liftOver" "$refdir/2xHARs.bed" "$refdir/hg18ToHg19.over.chain.gz" "$refdir/2xHARs.hg19.bed" "$refdir/unlifted.bed"
 

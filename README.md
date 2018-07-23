@@ -15,7 +15,7 @@ This pipeline can be applied to analyze mutation patterns from any human genomic
 
 1. Run `bash download_ref_data.sh` to download the necessary reference data.
 
-1. Run `perl data_mgmt/data_prep/vcf_to_summary.pl` to extract positions and alleles of singleton (or common) variants.
+1. Run `perl data_mgmt/data_prep/vcf_to_summary.pl copy` to extract positions and alleles of singleton (or common) variants.
 
 1. Run `perl data_mgmt/data_prep/augment_batch.pl` to annotate these summary files with local K-mer sequence context and get data file of motif counts in the reference genome.
 
